@@ -13,16 +13,16 @@ class AAsteroid : public AActor
 	GENERATED_BODY()
 
 public:
-	typedef struct FMeteorInfo
+	typedef struct FAsteroidInfo
 	{
 		float Speed;
 		float Size;
 		float Health;
 		float Damage;
-	} FMeteorInfo;
+	} FAsteroidInfo;
 
 private:
-	FMeteorInfo MeteorInfo;
+	FAsteroidInfo AsteroidInfo;
 
 	FVector Direction;
 public:
@@ -37,8 +37,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	void SetMeteorInfo(
-		const FMeteorInfo& InMeteorInfo,
+	void SetAsteroidInfo(
+		const FAsteroidInfo& InAsteroidInfo,
 		FVector VSpaceShip,
 		FVector Velocity);
 };

@@ -24,21 +24,21 @@ void AAsteroid::Tick(float DeltaTime)
 	SetActorLocation(GetActorLocation() + Direction * DeltaTime);
 }
 
-void AAsteroid::SetMeteorInfo(
-	const FMeteorInfo& InMeteorInfo,
+void AAsteroid::SetAsteroidInfo(
+	const FAsteroidInfo& InAsteroidInfo,
 	FVector VSpaceShip,
 	FVector Velocity)
 {
-	MeteorInfo = InMeteorInfo;
+	AsteroidInfo = InAsteroidInfo;
 
 	//운석의 크기 설정
-	SetActorScale3D(FVector(MeteorInfo.Size));
+	SetActorScale3D(FVector(AsteroidInfo.Size));
 
 	//운석의 속도에 따라 우주선 방향과 속도가 더해진 벡터로 운석의 이동 방향이 정해짐
 	Direction = VSpaceShip - GetActorLocation() + (Velocity * Direction.Size());
 
 	Direction.Normalize();
 
-	Direction *= MeteorInfo.Speed;
+	Direction *= AsteroidInfo.Speed;
 }
 

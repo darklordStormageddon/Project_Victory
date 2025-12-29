@@ -31,13 +31,18 @@ void UAsteroidComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	UWorld* World = GetWorld();
+
+	AActor* Owner = GetOwner();
+	if (!World || !Owner) return;
+
+	ShipSpeed = Owner->GetVelocity();
+
+	UE_LOG(LogTemp, Warning, TEXT("%.f, %.f, %.f"), ShipSpeed.X, ShipSpeed.Y, ShipSpeed.Z)
+
 	// 이미 스폰 중이면 아무것도 안함
 	if (bIsSpawning) return;
 
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	// 타이머가 이미 활성화되어 있지 않으면 타이머 설정 (중복 설정 방지)
 	FTimerManager& TimerManager = World->GetTimerManager();
 	if (!TimerManager.IsTimerActive(SpawnTimerHandle))
 	{
@@ -49,7 +54,13 @@ void UAsteroidComponent::SpawnMeteor()
 {
 	UWorld* World = GetWorld();
 	AActor* Owner = GetOwner();
+
 	if (!World || !Owner) return;
+
+	ACharacter* Ship = Cast<ACharacter>(Owner);
+
+	if (!Ship)
+		return;
 
 	// 스폰 플래그 설정
 	bIsSpawning = true;
@@ -65,46 +76,44 @@ void UAsteroidComponent::SpawnMeteor()
 	// 회전 랜덤
 	FRotator SpawnRotation = FRotator(FMath::RandRange(0.f, 360.f), FMath::RandRange(0.f, 360.f), FMath::RandRange(0.f, 360.f));
 
-	if (MeteorClasses.Num() == 0)
+	if (AsteroidClasses.Num() == 0)
 	{
 		bIsSpawning = false;
 		return;
 	}
 
-	int32 Index = FMath::RandRange(0, MeteorClasses.Num() - 1);
-	TSubclassOf<AAsteroid> MeteorClass = MeteorClasses[Index];
-	if (!*MeteorClass)
+	int Index = FMath::RandRange(0, AsteroidClasses.Num() - 1);
+
+	TSubclassOf<AAsteroid> AsteroidClass = AsteroidClasses[Index];
+	if (!*AsteroidClass)
 	{
 		bIsSpawning = false;
 		return;
 	}
 
-	AAsteroid* Meteor = World->SpawnActor<AAsteroid>(
-		MeteorClass,
+	AAsteroid* Asteroid = World->SpawnActor<AAsteroid>(
+		AsteroidClass,
 		SpawnLocation,
 		SpawnRotation
 	);
 
 	bIsSpawning = false;
 
-	if (Meteor) // Check if Meteor is successfully spawned
+	if (Asteroid) // Check if Meteor is successfully spawned
 	{
-		// AAsteroid 내에 정의된 FMeteorInfo를 명시적으로 사용하여 구조체 생성
-		AAsteroid::FMeteorInfo Info;
+		AAsteroid::FAsteroidInfo Info;
 		Info.Speed = Speed;
 		Info.Size = Size;
 		Info.Health = Health;
 		Info.Damage = SetDamage(Speed, Size);
 
-		Meteor->SetMeteorInfo(
+
+		Asteroid->SetAsteroidInfo(
 			Info, // 운석의 속도, 크기, 체력, 대미지
-			Owner->GetActorLocation(),
-			Owner->GetVelocity() // 이 컴포넌트의 주인인 우주선 속도
+			Ship->GetActorLocation(),
+			ShipSpeed // 이 컴포넌트의 주인인 우주선 속도
 		);
 	}
-	// (참고) 타이머를 계속 반복시키려면 ClearTimer를 호출하지 않습니다.
-	// 일회성으로만 스폰하려면 아래 주석을 해제하세요.
-	// World->GetTimerManager().ClearTimer(SpawnTimerHandle);
 }
 
 float UAsteroidComponent::SetDamage(float Speed, float Size)

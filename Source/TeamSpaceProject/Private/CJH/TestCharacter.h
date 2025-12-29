@@ -3,29 +3,33 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
-
 #include "Asteroid/AsteroidComponent.h"
 
-#include "TestSpaceShip.generated.h"
+#include "TeamSpaceProject/TeamSpaceProjectCharacter.h"
 
+#include "TestCharacter.generated.h"
+
+/**
+ * 
+ */
 UCLASS()
-class ATestSpaceShip : public ACharacter
+class ATestCharacter : public ATeamSpaceProjectCharacter
 {
 	GENERATED_BODY()
 private:
+	UPROPERTY(EditAnywhere, Category = "Speed")
+		float Speed;
 
 	UPROPERTY(VisibleAnywhere)
-	UAsteroidComponent* AsteroidComponent;
-public:	
-	ATestSpaceShip();
+		UAsteroidComponent* AsteroidComponent;
+public:
+	ATestCharacter();
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 };

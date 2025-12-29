@@ -7,6 +7,9 @@
 
 #include "CJH/Asteroid/Asteroid.h"
 
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
 #include "AsteroidComponent.generated.h"
 
 
@@ -18,26 +21,27 @@ class UAsteroidComponent : public UActorComponent
 private:
 	FTimerHandle SpawnTimerHandle;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Meteor Spawn")
+	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float SpawnDistance;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Meteor Spawn")
+	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float SpawnDelay = 1.0f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Meteor Spawn")
+	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float BaseDamage = 10.0f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Meteor Spawn")
+	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float MinSpeed = 300.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Meteor Spawn")
+	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float MaxSpeed = 1000.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Meteor Spawn")
-	TArray<TSubclassOf<AAsteroid>> MeteorClasses;
+	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
+	TArray<TSubclassOf<AAsteroid>> AsteroidClasses;
 
 	bool bIsSpawning = false;
 
+	FVector ShipSpeed;
 private:
 	void SpawnMeteor();
 	float SetDamage(float Speed, float Size);
