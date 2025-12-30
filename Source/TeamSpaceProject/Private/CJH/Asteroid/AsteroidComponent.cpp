@@ -21,7 +21,6 @@ UAsteroidComponent::UAsteroidComponent()
 void UAsteroidComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
 	// ...
 }
 
@@ -31,6 +30,14 @@ void UAsteroidComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	// 이미 스폰 중이면 아무것도 안함
+	if (bIsSpawning) return;
+
+	CanSpawn();
+}
+
+void UAsteroidComponent::CanSpawn()
+{
 	UWorld* World = GetWorld();
 
 	AActor* Owner = GetOwner();
@@ -38,29 +45,19 @@ void UAsteroidComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 
 	ShipSpeed = Owner->GetVelocity();
 
-	UE_LOG(LogTemp, Warning, TEXT("%.f, %.f, %.f"), ShipSpeed.X, ShipSpeed.Y, ShipSpeed.Z)
-
-	// 이미 스폰 중이면 아무것도 안함
-	if (bIsSpawning) return;
+	//UE_LOG(LogTemp, Warning, TEXT("Ship Speed: %.f, %.f, %.f"), ShipSpeed.X, ShipSpeed.Y, ShipSpeed.Z)
 
 	FTimerManager& TimerManager = World->GetTimerManager();
-	if (!TimerManager.IsTimerActive(SpawnTimerHandle))
-	{
-		TimerManager.SetTimer(SpawnTimerHandle, this, &UAsteroidComponent::SpawnMeteor, SpawnDelay, true);
-	}
-}
 
+	if (!TimerManager.IsTimerActive(SpawnTimerHandle))
+		TimerManager.SetTimer(SpawnTimerHandle, this, &UAsteroidComponent::SpawnMeteor, FMath::RandRange(MinSpawnDelay, MaxSpawnDelay), true);
+}
 void UAsteroidComponent::SpawnMeteor()
 {
 	UWorld* World = GetWorld();
 	AActor* Owner = GetOwner();
 
 	if (!World || !Owner) return;
-
-	ACharacter* Ship = Cast<ACharacter>(Owner);
-
-	if (!Ship)
-		return;
 
 	// 스폰 플래그 설정
 	bIsSpawning = true;
@@ -110,7 +107,7 @@ void UAsteroidComponent::SpawnMeteor()
 
 		Asteroid->SetAsteroidInfo(
 			Info, // 운석의 속도, 크기, 체력, 대미지
-			Ship->GetActorLocation(),
+			Owner->GetActorLocation(),
 			ShipSpeed // 이 컴포넌트의 주인인 우주선 속도
 		);
 	}
