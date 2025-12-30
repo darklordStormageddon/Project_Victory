@@ -1,24 +1,18 @@
 #include "CJH/Asteroid/Asteroid.h"
 
 // Sets default values
-// Sets default values
+
 AAsteroid::AAsteroid()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
 }
 
 // Called when the game starts or when spawned
 void AAsteroid::BeginPlay()
 {
 	Super::BeginPlay();
-	ConstRotaion = FRotator(
-		FMath::RandRange(-1.0f, 1.0f),
-		FMath::RandRange(-1.0f, 1.0f),
-		FMath::RandRange(-1.0f, 1.0f));
-	
-	RotateSpeed = FMath::RandRange(3.0f, 100.0f);
+
+	SetAsteroidRot();
 }
 
 // Called every frame
@@ -45,6 +39,16 @@ void AAsteroid::SetAsteroidInfo(
 	Direction.Normalize();
 
 	Direction *= AsteroidInfo.Speed;
+}
+
+void AAsteroid::SetAsteroidRot()
+{
+	ConstRotaion = FRotator(
+		FMath::RandRange(-1.0f, 1.0f),
+		FMath::RandRange(-1.0f, 1.0f),
+		FMath::RandRange(-1.0f, 1.0f));
+
+	RotateSpeed = FMath::RandRange(MinRotateSpeed, MaxRotateSpeed);
 }
 
 void AAsteroid::MoveAsteroid(float DeltaTime)

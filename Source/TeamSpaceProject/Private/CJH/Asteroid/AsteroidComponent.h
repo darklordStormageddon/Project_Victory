@@ -25,7 +25,10 @@ private:
 	float SpawnDistance;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
-	float SpawnDelay = 1.0f;
+	float MinSpawnDelay = 0.1f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
+	float MaxSpawnDelay = 3.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float BaseDamage = 10.0f;
@@ -43,6 +46,7 @@ private:
 
 	FVector ShipSpeed;
 private:
+	void CanSpawn();
 	void SpawnMeteor();
 	float SetDamage(float Speed, float Size);
 
