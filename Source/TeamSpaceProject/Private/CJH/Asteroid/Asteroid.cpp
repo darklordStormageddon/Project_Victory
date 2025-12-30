@@ -13,7 +13,12 @@ AAsteroid::AAsteroid()
 void AAsteroid::BeginPlay()
 {
 	Super::BeginPlay();
-
+	ConstRotaion = FRotator(
+		FMath::RandRange(-1.0f, 1.0f),
+		FMath::RandRange(-1.0f, 1.0f),
+		FMath::RandRange(-1.0f, 1.0f));
+	
+	RotateSpeed = FMath::RandRange(3.0f, 100.0f);
 }
 
 // Called every frame
@@ -21,7 +26,7 @@ void AAsteroid::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	SetActorLocation(GetActorLocation() + Direction * DeltaTime);
+	MoveAsteroid(DeltaTime);
 }
 
 void AAsteroid::SetAsteroidInfo(
@@ -42,3 +47,8 @@ void AAsteroid::SetAsteroidInfo(
 	Direction *= AsteroidInfo.Speed;
 }
 
+void AAsteroid::MoveAsteroid(float DeltaTime)
+{
+		AddActorWorldOffset(Direction * DeltaTime, true);
+		AddActorWorldRotation(ConstRotaion * RotateSpeed * DeltaTime);
+}

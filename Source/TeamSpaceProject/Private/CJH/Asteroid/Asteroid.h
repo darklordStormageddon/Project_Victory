@@ -25,6 +25,17 @@ private:
 	FAsteroidInfo AsteroidInfo;
 
 	FVector Direction;
+
+	FRotator ConstRotaion;
+	float RotateSpeed;
+
+	UPROPERTY(EditAnywhere, Category = "Rotation")
+	float MinRotateSpeed = 5.0f; 
+	UPROPERTY(EditAnywhere, Category = "Rotation")
+	float MaxRotateSpeed = 20.0f;
+private:
+	void MoveAsteroid(float DeltaTime);
+
 public:
 	// Sets default values for this actor's properties
 	AAsteroid();
