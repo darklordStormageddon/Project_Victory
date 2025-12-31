@@ -66,8 +66,8 @@ void UAsteroidComponent::SpawnMeteor()
 	FVector RandomDirection = FMath::VRand();
 	FVector SpawnLocation = Owner->GetActorLocation() + RandomDirection * SpawnDistance;
 
-	float Size = FMath::RandRange(0.1f, 3.0f);
-	float Speed = FMath::RandRange(300.f, 1000.f);
+	float Size = FMath::RandRange(MinSize, MaxSize);
+	float Speed = FMath::RandRange(MinSpeed, MaxSpeed);
 	float Health = Size * 100.f;
 
 	// È¸Àü ·£´ý
