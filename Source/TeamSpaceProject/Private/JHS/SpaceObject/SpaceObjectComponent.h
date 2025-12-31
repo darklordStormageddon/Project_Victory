@@ -3,22 +3,24 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "Components/ActorComponent.h"
 #include "JHS/SpaceObject/SpaceObjectManager.h"
 
-#include "SpaceObjectBase.generated.h"
+#include "SpaceObjectComponent.generated.h"
 
-UCLASS()
-class ASpaceObjectBase : public AActor
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class USpaceObjectComponent : public UActorComponent
 {
 	GENERATED_BODY()
-	
+
 public:	
-	// Sets default values for this actor's properties
-	ASpaceObjectBase();
+	// Sets default values for this component's properties
+	USpaceObjectComponent();
 
 private:
 	TObjectPtr<USpaceObjectManager> _spaceObjectManager = nullptr;
+
+	TObjectPtr<AActor> _owner = nullptr;
 
 	FTimerHandle _updateTimerHandle;
 
@@ -30,21 +32,17 @@ protected:
 	float _updateInterval = 0.1f;
 
 protected:
-	// Called when the game starts or when spawned
+	// Called when the game starts
 	virtual void BeginPlay() override;
 
 public:	
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-protected:
-	virtual void MovementTick(float DeltaTime) {};
-
-public:
-	void InitializeSpaceObject();
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
-	void UpdateMovement(float DeltaTime);
+	void InitializeSpaceObject();
+
+	void Send();
 
 	void UpdateSpaceObjectData(FSpaceObjectData NewSpaceObjectData);
 
@@ -53,8 +51,6 @@ private:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_UpdateSpaceObjectData(FSpaceObjectData NewSpaceObjectData);
-
-	void Send();
 
 	FSpaceObjectData GetSpaceObjectData();
 };

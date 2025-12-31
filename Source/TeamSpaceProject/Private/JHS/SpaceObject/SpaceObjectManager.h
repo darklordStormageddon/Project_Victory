@@ -6,15 +6,17 @@
 #include "Components/ActorComponent.h"
 #include "SpaceObjectManager.generated.h"
 
-class ASpaceObjectBase;
+class USpaceObjectComponent;
 
 UENUM(BlueprintType)
 enum class E_SPACE_OBJECT_TYPE : uint8
 {
-	SpaceShip = 0 UMETA(DisplayName = "SpaceShip"),				// 우주선
+	SpaceStation = 0 UMETA(DisplayName = "SpaceStation"),		// 우주 정거장
 	SpaceGarbage UMETA(DisplayName = "SpaceGarbage"),			// 우주 폐기물
 	Asteroid UMETA(DisplayName = "Asteroid"),					// 소행성
 	Enemy UMETA(DisplayName = "Enemy"),							// 적
+
+	SpaceShip UMETA(DisplayName = "SpaceShip"),					// 우주선
 };
 
 USTRUCT(BlueprintType)
@@ -24,7 +26,7 @@ struct FSpaceObjectData
 
 public:
 	UPROPERTY()
-	TObjectPtr<ASpaceObjectBase> SpaceObjectPtr;
+	TObjectPtr<USpaceObjectComponent> SpaceObjectComponent;
 
 	UPROPERTY()
 	E_SPACE_OBJECT_TYPE SpaceObjectType;
@@ -47,11 +49,15 @@ public:
 
 private:
 	UPROPERTY()
-	TMap<ASpaceObjectBase*, FSpaceObjectData> _spaceObjectMap;
+	TMap<USpaceObjectComponent*, FSpaceObjectData> _spaceObjectMap;
+
+protected:
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceObjectManager|SpaceShip")
+
 
 public:
 	UFUNCTION()
-	TMap<ASpaceObjectBase*, FSpaceObjectData> GetSpaceObjectMap() { return _spaceObjectMap; }
+	TMap<USpaceObjectComponent*, FSpaceObjectData> GetSpaceObjectMap() { return _spaceObjectMap; }
 
 protected:
 	// Called when the game starts
@@ -64,5 +70,7 @@ public:
 public:
 	void UpdateSpaceObject(FSpaceObjectData SpaceObjectData);
 
-	void RemoveSpaceObject(TObjectPtr<ASpaceObjectBase> NewSpaceObjectPtr);
+	void RemoveSpaceObject(TObjectPtr<USpaceObjectComponent> NewSpaceObjectPtr);
+
+	TArray<FSpaceObjectData> GetNearSpaceObjectArray(float MaxDixtance);
 };

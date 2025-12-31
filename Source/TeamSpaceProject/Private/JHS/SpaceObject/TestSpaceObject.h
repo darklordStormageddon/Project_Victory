@@ -3,13 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "JHS/SpaceObject/SpaceObjectBase.h"
+#include "GameFramework/Actor.h"
 #include "TestSpaceObject.generated.h"
 
 UCLASS()
-class ATestSpaceObject : public ASpaceObjectBase
+class ATestSpaceObject : public AActor
 {
 	GENERATED_BODY()
+
+public:
+	ATestSpaceObject();
 	
 private:
 	float _currentMovementTime = 0.0f;
@@ -23,10 +26,10 @@ private:
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "RepeatMove")
-	TObjectPtr<ASpaceObjectBase> StartPoint = nullptr;
+	TObjectPtr<AActor> StartPoint = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "RepeatMove")
-	TObjectPtr<ASpaceObjectBase> EndPoint = nullptr;
+	TObjectPtr<AActor> EndPoint = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "RepeatMove")
 	float MovementDuration = 2.0f;
@@ -42,9 +45,6 @@ protected:
 
 public:
 	virtual void Tick(float DeltaTime) override;
-
-protected:
-	virtual void MovementTick(float DeltaTime) override;
 
 private:
 	void StartMovement();

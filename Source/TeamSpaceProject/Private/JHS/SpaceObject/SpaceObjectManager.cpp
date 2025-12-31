@@ -2,7 +2,6 @@
 
 
 #include "JHS/SpaceObject/SpaceObjectManager.h"
-#include "JHS/SpaceObject/SpaceObjectBase.h"
 
 // Sets default values for this component's properties
 USpaceObjectManager::USpaceObjectManager()
@@ -32,18 +31,25 @@ void USpaceObjectManager::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 void USpaceObjectManager::UpdateSpaceObject(FSpaceObjectData SpaceObjectData)
 {
-	if (!_spaceObjectMap.Contains(SpaceObjectData.SpaceObjectPtr))
+	if (!_spaceObjectMap.Contains(SpaceObjectData.SpaceObjectComponent))
 	{
-		_spaceObjectMap.Add(SpaceObjectData.SpaceObjectPtr, SpaceObjectData);
+		_spaceObjectMap.Add(SpaceObjectData.SpaceObjectComponent, SpaceObjectData);
 	}
 
-	_spaceObjectMap[SpaceObjectData.SpaceObjectPtr] = SpaceObjectData;
+	_spaceObjectMap[SpaceObjectData.SpaceObjectComponent] = SpaceObjectData;
 }
 
-void USpaceObjectManager::RemoveSpaceObject(TObjectPtr<ASpaceObjectBase> NewSpaceObjectPtr)
+void USpaceObjectManager::RemoveSpaceObject(TObjectPtr<USpaceObjectComponent> NewSpaceObjectPtr)
 {
 	if (_spaceObjectMap.Contains(NewSpaceObjectPtr))
 	{
 		_spaceObjectMap.Remove(NewSpaceObjectPtr);
 	}
+}
+
+TArray<FSpaceObjectData> GetNearSpaceObjectArray(float MaxDixtance)
+{
+	TArray<FSpaceObjectData> _nearSpaceObjectDataArray;
+
+	return _nearSpaceObjectDataArray;
 }
