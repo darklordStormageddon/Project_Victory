@@ -2,6 +2,10 @@
 
 
 #include "JHS/SpaceObject/SpaceObjectBase.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+
+#include "Kismet/GameplayStatics.h"
+#include "JHS/GameControl/JHSGameMode.h"
 
 // Sets default values
 ASpaceObjectBase::ASpaceObjectBase()
@@ -18,6 +22,8 @@ ASpaceObjectBase::ASpaceObjectBase()
 void ASpaceObjectBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	InitializeSpaceObject();
 }
 
 // Called every frame
@@ -28,9 +34,13 @@ void ASpaceObjectBase::Tick(float DeltaTime)
 	UpdateMovement(DeltaTime);
 }
 
-void ASpaceObjectBase::InitializeSpaceObject(TObjectPtr<ASpaceObjectManager> SpaceObjectManager)
+void ASpaceObjectBase::InitializeSpaceObject()
 {
-	_spaceObjectManager = SpaceObjectManager;
+	USpaceObjectManager* OutSpaceObjectManager = nullptr;
+	if (!UStaticFunctionLibrary::GetSpaceObjectManager(OutSpaceObjectManager))
+		return;
+
+	_spaceObjectManager = OutSpaceObjectManager;
 	Send();
 }
 
@@ -98,6 +108,7 @@ FSpaceObjectData ASpaceObjectBase::GetSpaceObjectData()
 	FSpaceObjectData _newSpaceObjectData;
 
 	_newSpaceObjectData.SpaceObjectPtr = this;
+	_newSpaceObjectData.SpaceObjectType = _spaceObjctType;
 	_newSpaceObjectData.Location = GetActorLocation();
 	_newSpaceObjectData.Rotator = GetActorRotation();
 	return _newSpaceObjectData;

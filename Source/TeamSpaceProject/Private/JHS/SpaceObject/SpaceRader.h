@@ -4,9 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SpaceRader.generated.h"
+#include "JHS/SpaceObject/SpaceObjectManager.h"
 
-class ASpaceObjectManager;
+#include "SpaceRader.generated.h"
 
 UCLASS()
 class ASpaceRader : public AActor
@@ -18,34 +18,52 @@ public:
 	ASpaceRader();
 
 private:
-	TArray<TObjectPtr<AActor>> _raderObjectArray;
+	UPROPERTY()
+	TObjectPtr<USpaceObjectManager> _spaceObjectManager;
 
+	UPROPERTY()
 	FTimerHandle _updateTimerHandle;
 
+	// 우주선 렌더링
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> _raderSpaceShipArray;
+
+	UPROPERTY()
+	int32 _spaceShipLastIndex = 0;
+	
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> _raderAsteroidArray;
+
+	UPROPERTY()
+	int32 _asteroidLastIndex = 0;
+
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Debug")
+	bool _isDrawDebug = false;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SpaceRader|Components")
 	TObjectPtr<UStaticMeshComponent> _rootComponent = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SpaceRader|Center")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SpaceRader|Rader")
 	TObjectPtr<UStaticMeshComponent> _raderCenter = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Space Center")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Rader")
+	float _raderRadius = 1000.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Space")
 	TObjectPtr<AActor> _spaceCenter;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Space Object Manager")
-	TObjectPtr<ASpaceObjectManager> _spaceObjectManager;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Space")
+	float _spaceRadius = 10000.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Update")
 	float _updateInterval = 2.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Size")
-	float _spaceRadius = 10000.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Object Mesh")
+	TObjectPtr<AActor> _objectMeshSpaceShip;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Size")
-	float _raderRadius = 1000.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Rader Object")
-	TObjectPtr<AActor> _raderObjectTemplate;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Object Mesh")
+	TObjectPtr<AActor> _objectMeshAsteroid;
 
 protected:
 	// Called when the game starts or when spawned
@@ -56,5 +74,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 private:
+	void InitializeSpaceRader();
+
 	void UpdateSpaceObject();
+
+	TObjectPtr<AActor> GetRenderRaderObject(E_SPACE_OBJECT_TYPE SpaceObjectType);
 };

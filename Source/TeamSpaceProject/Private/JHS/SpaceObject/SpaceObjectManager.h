@@ -3,20 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "Components/ActorComponent.h"
 #include "SpaceObjectManager.generated.h"
 
 class ASpaceObjectBase;
 
 UENUM(BlueprintType)
-enum class E_PUZZLE_TRIGGER_TYPE : uint8
+enum class E_SPACE_OBJECT_TYPE : uint8
 {
-	SpaceShip UMETA(DisplayName = "SpaceShip"),				// øÏ¡÷º±
-	SpaceGarbage UMETA(DisplayName = "SpaceGarbage"),		// øÏ¡÷ ∆Û±‚π∞
-	Asteroid = 0 UMETA(DisplayName = "Asteroid"),			// º“«‡º∫
-	Enemy UMETA(DisplayName = "Enemy"),						// ¿˚
-
-	SIZE UMETA(DisplayName = "SIZE")
+	SpaceShip = 0 UMETA(DisplayName = "SpaceShip"),				// Ïö∞Ï£ºÏÑ†
+	SpaceGarbage UMETA(DisplayName = "SpaceGarbage"),			// Ïö∞Ï£º ÌèêÍ∏∞Î¨º
+	Asteroid UMETA(DisplayName = "Asteroid"),					// ÏÜåÌñâÏÑ±
+	Enemy UMETA(DisplayName = "Enemy"),							// Ï†Å
 };
 
 USTRUCT(BlueprintType)
@@ -29,7 +27,7 @@ public:
 	TObjectPtr<ASpaceObjectBase> SpaceObjectPtr;
 
 	UPROPERTY()
-	E_PUZZLE_TRIGGER_TYPE SpaceObjectType;
+	E_SPACE_OBJECT_TYPE SpaceObjectType;
 
 	UPROPERTY()
 	FVector Location;
@@ -38,32 +36,30 @@ public:
 	FRotator Rotator;
 };
 
-UCLASS()
-class ASpaceObjectManager : public AActor
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class USpaceObjectManager : public UActorComponent
 {
 	GENERATED_BODY()
-	
+
 public:	
-	// Sets default values for this actor's properties
-	ASpaceObjectManager();
+	// Sets default values for this component's properties
+	USpaceObjectManager();
 
 private:
-	TMap<TObjectPtr<ASpaceObjectBase>, FSpaceObjectData> _spaceObjectMap;
-
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceObjectManager|SpaceObject")
-	TArray<TObjectPtr<ASpaceObjectBase>> _initializeSpaceObjectArray;
+	UPROPERTY()
+	TMap<ASpaceObjectBase*, FSpaceObjectData> _spaceObjectMap;
 
 public:
-	TMap<TObjectPtr<ASpaceObjectBase>, FSpaceObjectData> GetSpaceObjectMap() { return _spaceObjectMap; }
+	UFUNCTION()
+	TMap<ASpaceObjectBase*, FSpaceObjectData> GetSpaceObjectMap() { return _spaceObjectMap; }
 
 protected:
-	// Called when the game starts or when spawned
+	// Called when the game starts
 	virtual void BeginPlay() override;
 
 public:	
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
 	void UpdateSpaceObject(FSpaceObjectData SpaceObjectData);

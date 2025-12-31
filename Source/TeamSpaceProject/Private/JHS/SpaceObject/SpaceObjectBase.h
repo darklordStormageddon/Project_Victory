@@ -18,11 +18,14 @@ public:
 	ASpaceObjectBase();
 
 private:
-	TObjectPtr<ASpaceObjectManager> _spaceObjectManager = nullptr;
+	TObjectPtr<USpaceObjectManager> _spaceObjectManager = nullptr;
 
 	FTimerHandle _updateTimerHandle;
 
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceObject|Update")
+	E_SPACE_OBJECT_TYPE _spaceObjctType;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceObject|Update")
 	float _updateInterval = 0.1f;
 
@@ -38,7 +41,7 @@ protected:
 	virtual void MovementTick(float DeltaTime) {};
 
 public:
-	void InitializeSpaceObject(TObjectPtr<ASpaceObjectManager> SpaceObjectManager);
+	void InitializeSpaceObject();
 
 private:
 	void UpdateMovement(float DeltaTime);

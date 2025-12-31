@@ -28,38 +28,44 @@ void ATestSpaceObject::MovementTick(float DeltaTime)
 	_currentMovementTime += DeltaTime;
 	float _alpha = FMath::Clamp(_currentMovementTime / MovementDuration, 0.0f, 1.0f);
 
-	// À§Ä¡ º¸°£
+	// ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½
 	FVector _nextLocation = FMath::Lerp(_startMovementLocation, _endMovementLocation, _alpha);
 
-	// È¸Àü º¸°£
+	// È¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	FRotator _nextRotator = FMath::Lerp(_startMovementRotator, _endMovementRotator, _alpha);
 
-	// yÃà È¸Àü Ãß°¡
+	// yï¿½ï¿½ È¸ï¿½ï¿½ ï¿½ß°ï¿½
 	if (YawRotationSpeed != 0.0f)
 	{
 		float _yawDelta = YawRotationSpeed * DeltaTime;
-		_nextRotator.Yaw += _yawDelta;
+		_accumulatedYaw += _yawDelta;
+		_nextRotator.Yaw += _accumulatedYaw;
 	}
 
-	// À§Ä¡¿Í È¸Àü Àû¿ë
+	// ï¿½ï¿½Ä¡ï¿½ï¿½ È¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	SetActorLocation(_nextLocation);
 	SetActorRotation(_nextRotator);
 
-	// ¸ñÇ¥ ÁöÁ¡±îÁöÀÇ °Å¸® È®ÀÎ
+	// ï¿½ï¿½Ç¥ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Å¸ï¿½ È®ï¿½ï¿½
 	FVector _targetLocation = _isMovingToEnd ? EndPoint->GetActorLocation() : StartPoint->GetActorLocation();
 	float _distanceToTarget = FVector::Dist(_nextLocation, _targetLocation);
 
-	// ¸ñÇ¥ ÁöÁ¡¿¡ µµ´ÞÇß°Å³ª ½Ã°£ÀÌ Áö³µÀ¸¸é
+	// ï¿½ï¿½Ç¥ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ß°Å³ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (_distanceToTarget <= ReachDistance || _currentMovementTime >= MovementDuration)
 	{
-		// ÃÖÁ¾ À§Ä¡¿Í È¸Àü ¼³Á¤
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ È¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (yaw íšŒì „ì€ ìœ ì§€)
 		SetActorLocation(_targetLocation);
-		SetActorRotation(_isMovingToEnd ? EndPoint->GetActorRotation() : StartPoint->GetActorRotation());
+		FRotator _targetRotator = _isMovingToEnd ? EndPoint->GetActorRotation() : StartPoint->GetActorRotation();
+		if (YawRotationSpeed != 0.0f)
+		{
+			_targetRotator.Yaw += _accumulatedYaw;
+		}
+		SetActorRotation(_targetRotator);
 
-		// ÀÌµ¿ ¹æÇâ ÀüÈ¯
+		// ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯
 		_isMovingToEnd = !_isMovingToEnd;
 
-		// ¹Ý´ëÆíÀ¸·Î ÀÌµ¿ ½ÃÀÛ
+		// ï¿½Ý´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½
 		StartMovement();
 	}
 }
@@ -68,20 +74,20 @@ void ATestSpaceObject::StartMovement()
 {
 	_currentMovementTime = 0.0f;
 
-	// ½ÃÀÛ À§Ä¡¿Í È¸Àü°ª ¼³Á¤
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ È¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	_startMovementLocation = GetActorLocation();
 	_startMovementRotator = GetActorRotation();
 
-	// ÀÌµ¿ ¹æÇâ¿¡ µû¶ó ¸ñÇ¥ À§Ä¡¿Í È¸Àü°ª ¼³Á¤
+	// ï¿½Ìµï¿½ ï¿½ï¿½ï¿½â¿¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥ ï¿½ï¿½Ä¡ï¿½ï¿½ È¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (_isMovingToEnd)
 	{
-		// ³¡Á¡À¸·Î ÀÌµ¿
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½
 		_endMovementLocation = EndPoint->GetActorLocation();
 		_endMovementRotator = EndPoint->GetActorRotation();
 	}
 	else
 	{
-		// ½ÃÀÛÁ¡À¸·Î ÀÌµ¿
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½
 		_endMovementLocation = StartPoint->GetActorLocation();
 		_endMovementRotator = StartPoint->GetActorRotation();
 	}

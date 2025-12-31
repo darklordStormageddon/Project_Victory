@@ -14,6 +14,7 @@ class ATestSpaceObject : public ASpaceObjectBase
 private:
 	float _currentMovementTime = 0.0f;
 	bool _isMovingToEnd = true;
+	float _accumulatedYaw = 0.0f;
 
 	FVector _startMovementLocation;
 	FRotator _startMovementRotator;

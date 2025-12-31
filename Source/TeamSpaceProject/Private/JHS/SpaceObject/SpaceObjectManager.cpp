@@ -4,33 +4,33 @@
 #include "JHS/SpaceObject/SpaceObjectManager.h"
 #include "JHS/SpaceObject/SpaceObjectBase.h"
 
-// Sets default values
-ASpaceObjectManager::ASpaceObjectManager()
+// Sets default values for this component's properties
+USpaceObjectManager::USpaceObjectManager()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
+	// off to improve performance if you don't need them.
+	PrimaryComponentTick.bCanEverTick = true;
 
+	// ...
 }
 
-// Called when the game starts or when spawned
-void ASpaceObjectManager::BeginPlay()
+
+// Called when the game starts
+void USpaceObjectManager::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	for (TObjectPtr<ASpaceObjectBase> _spaceObject : _initializeSpaceObjectArray)
-	{
-		_spaceObject->InitializeSpaceObject(this);
-	}
 }
+
 
 // Called every frame
-void ASpaceObjectManager::Tick(float DeltaTime)
+void USpaceObjectManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	Super::Tick(DeltaTime);
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	// ...
 }
 
-void ASpaceObjectManager::UpdateSpaceObject(FSpaceObjectData SpaceObjectData)
+void USpaceObjectManager::UpdateSpaceObject(FSpaceObjectData SpaceObjectData)
 {
 	if (!_spaceObjectMap.Contains(SpaceObjectData.SpaceObjectPtr))
 	{
@@ -40,7 +40,7 @@ void ASpaceObjectManager::UpdateSpaceObject(FSpaceObjectData SpaceObjectData)
 	_spaceObjectMap[SpaceObjectData.SpaceObjectPtr] = SpaceObjectData;
 }
 
-void ASpaceObjectManager::RemoveSpaceObject(TObjectPtr<ASpaceObjectBase> NewSpaceObjectPtr)
+void USpaceObjectManager::RemoveSpaceObject(TObjectPtr<ASpaceObjectBase> NewSpaceObjectPtr)
 {
 	if (_spaceObjectMap.Contains(NewSpaceObjectPtr))
 	{
