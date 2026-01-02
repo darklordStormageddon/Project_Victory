@@ -42,14 +42,40 @@ void AASWing::Spawn_Wing()
 	if (!Manager)
 		return;
 
-	AASWing* WingActor = Manager->Artifical_Satellite_Wing_Spawn(
-		this->GetActorLocation(),
-		this->GetActorRotation(),
-		RestWing,
-		Numbering
-	);
+	FVector WingOrigin, WingExtent;
+	GetActorBounds(true, WingOrigin, WingExtent);
 
-	if (WingActor)
-		WingActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+	float WingRadius = WingExtent.X;
+
+	float AttachDist = WingRadius * 2;
+
+	if (Direction)
+	{
+		AASWing* WingActor = Manager->Artifical_Satellite_Wing_Spawn(
+			this->GetActorLocation() + AttachDist,
+			this->GetActorRotation(),
+			RestWing,
+			Numbering,
+			true
+		);
+
+		if (WingActor)
+			WingActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+	}
+	else
+	{
+
+		AASWing* WingActor = Manager->Artifical_Satellite_Wing_Spawn(
+			this->GetActorLocation() - AttachDist,
+			this->GetActorRotation(),
+			RestWing,
+			Numbering,
+			false
+		);
+
+		if (WingActor)
+			WingActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+	}
+
 }
 

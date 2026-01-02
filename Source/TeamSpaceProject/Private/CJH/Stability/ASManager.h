@@ -62,5 +62,5 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	AASBody* Artifical_Satellite_Body_Spawn(FVector Spawn_Location, FRotator Spawn_Rotation, int Value);
-	AASWing* Artifical_Satellite_Wing_Spawn(FVector Spawn_Location, FRotator Spawn_Rotation, float RestNum, int Value);
+	AASWing* Artifical_Satellite_Wing_Spawn(FVector Spawn_Location, FRotator Spawn_Rotation, float RestNum, int Value, bool Direction);
 };
