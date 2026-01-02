@@ -22,7 +22,16 @@ private:
 	TObjectPtr<USpaceObjectManager> _spaceObjectManager;
 
 	UPROPERTY()
+	TMap<E_SPACE_OBJECT_TYPE, TSubclassOf<AActor>> _raderObjectMeshMap;
+
+	UPROPERTY()
 	FTimerHandle _updateTimerHandle;
+
+	UPROPERTY()
+	FString _fileFolderPath = "/Game/Main/PS_JHS/Resource/SpaceRaderMesh/";
+
+	UPROPERTY()
+	FString _fileHeaderName = "BP_RO";
 
 	// 우주선 렌더링
 	UPROPERTY()
@@ -59,11 +68,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Update")
 	float _updateInterval = 2.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Object Mesh")
-	TObjectPtr<AActor> _objectMeshSpaceShip;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Object Mesh")
-	TObjectPtr<AActor> _objectMeshAsteroid;
+public:
+	float GetMaxSpaceDistance() { return _spaceRadius; }
 
 protected:
 	// Called when the game starts or when spawned
@@ -75,6 +81,8 @@ public:
 
 private:
 	void InitializeSpaceRader();
+
+	void LoadRaderObjectMesh();
 
 	void UpdateSpaceObject();
 
