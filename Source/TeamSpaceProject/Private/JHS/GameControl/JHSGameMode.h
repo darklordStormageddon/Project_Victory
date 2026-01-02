@@ -24,6 +24,13 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Space Object Manager")
 	TObjectPtr<USpaceObjectManager> _spaceObjectManager;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Space Size")
+	float _spaceRadius = 1000.0f;
+
+public:
+	UFUNCTION()
+	float GetSpaceRadius() { return _spaceRadius; }
+
 protected:
 	virtual void BeginPlay() override;
 

@@ -47,13 +47,19 @@ private:
 	TObjectPtr<AActor> _spaceStation = nullptr;
 
 	UPROPERTY()
+	float _spaceRadius = 0.0f;
+
+	UPROPERTY()
+	float _raderRate = 0.0f;
+
+	UPROPERTY()
 	FTimerHandle _updateTimerHandle;
 
 	UPROPERTY()
-	FString _fileFolderPath = "/Game/Main/PS_JHS/Resource/SpaceRaderMesh/";
+	FString FILE_FOLDER_PATH = "/Game/Main/PS_JHS/Resource/SpaceRaderMesh/";
 
 	UPROPERTY()
-	FString _fileHeaderName = "BP_RO";
+	FString FILE_HEADER_NAME = "BP_RO";
 
 	// 레이더 오브젝트
 	TMap<E_SPACE_OBJECT_TYPE, FRaderObjectData> _raderObjectDataMap;
@@ -71,14 +77,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Rader")
 	float _raderRadius = 1000.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Space")
-	float _spaceRadius = 10000.0f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Update")
 	float _updateInterval = 2.0f;
-
-public:
-	float GetMaxSpaceDistance() { return _spaceRadius; }
 
 protected:
 	// Called when the game starts or when spawned
@@ -95,5 +95,5 @@ private:
 
 	void UpdateSpaceObject();
 
-	TObjectPtr<AActor> GetRenderRaderObject(E_SPACE_OBJECT_TYPE SpaceObjectType);
+	void RenderSpaceObjectToRader(FSpaceObjectData SpaceObjectData);
 };

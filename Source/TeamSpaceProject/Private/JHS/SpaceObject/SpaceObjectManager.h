@@ -51,10 +51,6 @@ private:
 	UPROPERTY()
 	TMap<USpaceObjectComponent*, FSpaceObjectData> _spaceObjectMap;
 
-protected:
-	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceObjectManager|SpaceShip")
-
-
 public:
 	UFUNCTION()
 	TMap<USpaceObjectComponent*, FSpaceObjectData> GetSpaceObjectMap() { return _spaceObjectMap; }

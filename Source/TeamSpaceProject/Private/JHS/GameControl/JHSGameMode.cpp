@@ -28,6 +28,7 @@ ASpaceStation* AJHSGameMode::GetSpaceStation()
 		UWorld* _world = GetWorld();
 		if (!_world)
 		{
+			UE_LOG(LogTemp, Error, TEXT("AJHSGameMode: _world is nullptr"));
 			return nullptr;
 		}
 
@@ -37,6 +38,12 @@ ASpaceStation* AJHSGameMode::GetSpaceStation()
 		{
 			_spaceStation = Cast<ASpaceStation>(_foundSpaceStationArray[0]);
 		}
+	}
+
+	if (_spaceStation == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("AJHSGameMode: SpaceStation is not found"));
+		return nullptr;
 	}
 
 	return _spaceStation;
