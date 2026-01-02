@@ -51,6 +51,8 @@ void ASpaceRader::InitializeSpaceRader()
 
 	_spaceObjectManager = OutGameMode->GetSpaceObjectManager();
 	_spaceStation = Cast<AActor>(OutGameMode->GetSpaceStation());
+	_spaceRadius = OutGameMode->GetSpaceRadius();
+	_raderRate = _raderRadius / _spaceRadius;
 
 	// 레이더 메쉬 캐싱
 	LoadRaderObjectMesh();
@@ -92,8 +94,8 @@ void ASpaceRader::LoadRaderObjectMesh()
 		}
 
 		// BP_RO[타입명]_C 형식의 블루프린트 경로 생성
-		FString _blueprintName = _fileHeaderName + _typeName;
-		FString _blueprintPath = _fileFolderPath + _blueprintName + "." + _blueprintName + "_C";
+		FString _blueprintName = this->FILE_HEADER_NAME + _typeName;
+		FString _blueprintPath = this->FILE_FOLDER_PATH + _blueprintName + "." + _blueprintName + "_C";
 		
 		// 블루프린트 클래스 로드
 		UClass* _blueprintClass = StaticLoadClass(AActor::StaticClass(), nullptr, *_blueprintPath);
@@ -111,7 +113,7 @@ void ASpaceRader::LoadRaderObjectMesh()
 		_raderObjectData.LastRaderObjectIndex = 0;
 
 		_raderObjectDataMap.Add(_raderObjectData.SpaceObjectType, _raderObjectData);
-		UE_LOG(LogTemp, Warning, TEXT("SpaceRader: Loaded blueprint [%s] for type [%s]"), *_blueprintPath, *_typeName);
+		//UE_LOG(LogTemp, Warning, TEXT("SpaceRader: Loaded blueprint [%s] for type [%s]"), *_blueprintPath, *_typeName);
 	}
 }
 
@@ -128,33 +130,21 @@ void ASpaceRader::UpdateSpaceObject()
 		Elem.Value.LastRaderObjectIndex = 0;
 	}
 
-	float _raderRate = _raderRadius / _spaceRadius;
+	// 거점 우주 정거장 표시
+	FSpaceObjectData _spaceStationData;
+	_spaceStationData.SpaceObjectType = E_SPACE_OBJECT_TYPE::SpaceStation;
+	_spaceStationData.Location = _spaceStation->GetActorLocation();
+	_spaceStationData.Rotator = _spaceStation->GetActorRotation();
+	RenderSpaceObjectToRader(_spaceStationData);
 
+	// 우주 부유물 표시
 	auto _spaceObjectMap = _spaceObjectManager->GetSpaceObjectMap();
-
 	TArray<FSpaceObjectData> _spaceObjectArray;
 	_spaceObjectMap.GenerateValueArray(_spaceObjectArray);
 	for (int32 i = 0; i < _spaceObjectArray.Num(); i++)
 	{
 		FSpaceObjectData _spaceObjectData = _spaceObjectArray[i];
-		FVector _centerToObject = _spaceObjectData.Location - _spaceStation->GetActorLocation();
-
-		if (_centerToObject.Length() >= _spaceRadius)
-			continue;
-
-		FVector _spaceObjectToRaderLocation = _centerToObject * _raderRate;
-
-		TObjectPtr<AActor> _renderRaderObject = GetRenderRaderObject(_spaceObjectData.SpaceObjectType);
-		if (_renderRaderObject)
-		{
-			_renderRaderObject->SetActorLocation(_raderCenter->GetComponentLocation() + _spaceObjectToRaderLocation);
-			_renderRaderObject->SetActorRotation(_spaceObjectData.Rotator);
-			
-			if (_isDrawDebug && HasAuthority())
-			{
-				DrawDebugLine(GetWorld(), _raderCenter->GetComponentLocation(), _renderRaderObject->GetActorLocation(), FColor::Red, false, _updateInterval);
-			}
-		}
+		RenderSpaceObjectToRader(_spaceObjectData);
 	}
 
 	GetWorld()->GetTimerManager().SetTimer(
@@ -165,11 +155,17 @@ void ASpaceRader::UpdateSpaceObject()
 	);
 }
 
-TObjectPtr<AActor> ASpaceRader::GetRenderRaderObject(E_SPACE_OBJECT_TYPE SpaceObjectType)
+void ASpaceRader::RenderSpaceObjectToRader(FSpaceObjectData SpaceObjectData)
 {
-	// 타입에 따라 원본 데이터를 직접 수정
-	FRaderObjectData& _raderObjectData = _raderObjectDataMap[SpaceObjectType];
-	
+	// 우주 중심에서 우주 부유물의 거리 벡터
+	FVector _centerToObject = SpaceObjectData.Location - _spaceStation->GetActorLocation();
+	// 맵 범위 이탈
+	if (_centerToObject.Length() >= _spaceRadius)
+		return;
+
+	// 우주 부유물 타입의 렌더 메쉬 선정
+	FRaderObjectData& _raderObjectData = _raderObjectDataMap[SpaceObjectData.SpaceObjectType];
+
 	TObjectPtr<AActor> _raderObject = nullptr;
 	if (_raderObjectData.RaderObjectArray.Num() <= _raderObjectData.LastRaderObjectIndex)
 	{
@@ -181,5 +177,22 @@ TObjectPtr<AActor> ASpaceRader::GetRenderRaderObject(E_SPACE_OBJECT_TYPE SpaceOb
 
 	_raderObject = _raderObjectData.RaderObjectArray[_raderObjectData.LastRaderObjectIndex];
 	_raderObjectData.LastRaderObjectIndex++;
-	return _raderObject;
+	
+	if (_raderObject == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ASpaceRader: RaderObject is nullptr"));
+		return;
+	}
+
+	// 렌더 메쉬 좌표, 방향 표시
+	FVector _spaceObjectToRaderLocation = _centerToObject * _raderRate;
+
+
+	_raderObject->SetActorLocation(_raderCenter->GetComponentLocation() + _spaceObjectToRaderLocation);
+	_raderObject->SetActorRotation(SpaceObjectData.Rotator);
+
+	if (_isDrawDebug && HasAuthority())
+	{
+		DrawDebugLine(GetWorld(), _raderCenter->GetComponentLocation(), _raderObject->GetActorLocation(), FColor::Red, false, _updateInterval);
+	}
 }
