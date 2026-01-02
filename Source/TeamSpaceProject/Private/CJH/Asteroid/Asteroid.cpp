@@ -1,4 +1,5 @@
 #include "CJH/Asteroid/Asteroid.h"
+#include "CJH/Asteroid/AsteroidComponent.h"
 
 // Sets default values
 
@@ -21,6 +22,9 @@ void AAsteroid::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	MoveAsteroid(DeltaTime);
+
+	if (AsteroidComponent->GetDistance()*2 <= MoveDistance)
+		DestroyAsteroid();
 }
 
 void AAsteroid::SetAsteroidInfo(
@@ -53,6 +57,13 @@ void AAsteroid::SetAsteroidRot()
 
 void AAsteroid::MoveAsteroid(float DeltaTime)
 {
+		MoveDistance += Direction.Size() * DeltaTime;
+
 		AddActorWorldOffset(Direction * DeltaTime, true);
 		AddActorWorldRotation(ConstRotaion * RotateSpeed * DeltaTime);
+}
+
+void AAsteroid::DestroyAsteroid()
+{
+	this->Destroy();
 }

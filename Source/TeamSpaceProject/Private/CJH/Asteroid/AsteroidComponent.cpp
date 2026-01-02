@@ -107,6 +107,7 @@ void UAsteroidComponent::SpawnAsteroid()
 		Info.Health = Health;
 		Info.Damage = SetDamage(Speed, Size);
 
+		Asteroid->AsteroidComponent = this;
 
 		Asteroid->SetAsteroidInfo(
 			Info, // 운석의 속도, 크기, 체력, 대미지
@@ -121,3 +122,5 @@ float UAsteroidComponent::SetDamage(float Speed, float Size)
 	float Damage = BaseDamage + (Size * Speed / 100.f);//0.3~40 //10.3~50
 	return Damage;
 }
+
+float UAsteroidComponent::GetDistance() { return SpawnDistance; }

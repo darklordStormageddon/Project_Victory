@@ -6,11 +6,15 @@
 #include "GameFramework/Actor.h"
 #include "Asteroid.generated.h"
 
+class UAsteroidComponent;
+
 UCLASS()
 
 class AAsteroid : public AActor
 {
 	GENERATED_BODY()
+private:
+	float MoveDistance;
 
 public:
 	typedef struct FAsteroidInfo
@@ -21,6 +25,7 @@ public:
 		float Damage;
 	} FAsteroidInfo;
 
+	UAsteroidComponent* AsteroidComponent;
 private:
 	FAsteroidInfo AsteroidInfo;
 
@@ -34,9 +39,14 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Rotation")
 	float MaxRotateSpeed = 20.0f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Death")
+	float DestroyDistance = 5000.0f;
 private:
 	void MoveAsteroid(float DeltaTime);
 	void SetAsteroidRot();
+
+	UFUNCTION()
+	void DestroyAsteroid();
 public:
 	// Sets default values for this actor's properties
 	AAsteroid();
