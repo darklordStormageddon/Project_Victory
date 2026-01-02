@@ -5,7 +5,6 @@
 
 #include "CJH/Stability/ASCore.h"
 #include "CJH/Stability/ASBody.h"
-#include "CJH/Stability/ASWing.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -78,13 +77,19 @@ AASWing* AASManager::Artifical_Satellite_Wing_Spawn(
 	FVector Spawn_Location,
 	FRotator Spawn_Rotation,
 	float RestNum,
-	int Value)
+	int Value,
+	bool Direction)
 {
 	if (RestNum > 0)
 	{
 		AASWing* NextWing = GetWorld()->SpawnActor<AASWing>(Wings[Value], Spawn_Location, Spawn_Rotation);
 		NextWing->RestWing = RestNum - 1;
 		NextWing->Numbering = Value;
+
+		if(Direction)
+			NextWing->Direction = true;
+		else
+			NextWing->Direction = false;
 
 		return NextWing;
 	}

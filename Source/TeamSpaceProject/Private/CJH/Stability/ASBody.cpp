@@ -2,10 +2,11 @@
 
 
 #include "CJH/Stability/ASBody.h"
-#include "CJH/Stability/ASWing.h"
+
 #include "CJH/Stability/ASManager.h"
 
 #include "Kismet/GameplayStatics.h"
+
 
 // Sets default values
 AASBody::AASBody()
@@ -32,26 +33,68 @@ void AASBody::Tick(float DeltaTime)
 
 void AASBody::SpawnFirstWing()
 {
-	AActor* ActorManager = UGameplayStatics::GetActorOfClass(this, AASManager::StaticClass());
-	if (!ActorManager)
+	AActor* SpawnManager = UGameplayStatics::GetActorOfClass(this, AASManager::StaticClass());
+	if (!SpawnManager)
 		return;
 
-	AASManager* Manager = Cast<AASManager>(ActorManager);
+	AASManager* Manager;
+
+	Manager = Cast<AASManager>(SpawnManager);
 	if (!Manager)
 		return;
 
 	if (Manager->GetWingsNum() - 1 < 0)
 		return;
 
-	int WingsNum = FMath::RandRange(0, Manager->GetWingsNum() - 1);
-	int RestWing = Manager->CorrectWingNum();
-	for (int i = 0; i <= 1; i++)
+	WingsNum = FMath::RandRange(0, Manager->GetWingsNum() - 1);
+	RestWing = Manager->CorrectWingNum();
+
+	WingArrow(Direction::RightWing);
+	WingArrow(Direction::LeftWing);
+}
+
+void AASBody::WingArrow(Direction wArrow)
+{
+	AActor* SpawnManager = UGameplayStatics::GetActorOfClass(this, AASManager::StaticClass());
+	if (!SpawnManager)
+		return;
+
+	AASManager* Manager;
+
+	Manager = Cast<AASManager>(SpawnManager);
+	if (!Manager)
+		return;
+
+	FVector BodyOrigin, BodyExtent;
+	GetActorBounds(true, BodyOrigin, BodyExtent);
+
+	float BodyRadius = BodyExtent.X; 
+
+	
+
+	if(wArrow == Direction::RightWing)
 	{
-		AASWing* WingActor = Manager->Artifical_Satellite_Wing_Spawn(
-			this->GetActorLocation(),
+			WingActor = Manager->Artifical_Satellite_Wing_Spawn(
+			this->GetActorLocation() + AttachDist(BodyRadius),
 			this->GetActorRotation(),
 			RestWing,
-			WingsNum
+			WingsNum,
+			true
+		);
+
+		if (!WingActor)
+			return;
+
+		WingActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+	}
+	else
+	{
+			WingActor = Manager->Artifical_Satellite_Wing_Spawn(
+			this->GetActorLocation() - AttachDist(BodyRadius),
+			this->GetActorRotation(),
+			RestWing,
+			WingsNum,
+			false
 		);
 
 		if (!WingActor)
@@ -60,6 +103,20 @@ void AASBody::SpawnFirstWing()
 		WingActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 	}
 }
-
-
 float AASBody::WingDist() { return FMath::RandRange(MinRandomDist, MaxRandomDist); }
+
+float AASBody::AttachDist(float BodyRadius)
+{
+	FVector WingOrigin, WingExtent;
+
+	if (!WingActor)
+		return 0.f;
+
+	WingActor->GetActorBounds(true, WingOrigin, WingExtent);
+
+	float WingRadius = WingExtent.X;
+
+	float AttachDist = BodyRadius + WingRadius + WingDist();
+
+	return AttachDist;
+}
