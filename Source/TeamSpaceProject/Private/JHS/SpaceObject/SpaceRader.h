@@ -8,6 +8,28 @@
 
 #include "SpaceRader.generated.h"
 
+class AJHSGameMode;
+class ASpaceStation;
+
+USTRUCT(BlueprintType)
+struct FRaderObjectData
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY()
+	E_SPACE_OBJECT_TYPE SpaceObjectType;
+
+	UPROPERTY()
+	TSubclassOf<AActor> RaderObjectMesh;
+
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> RaderObjectArray;
+
+	UPROPERTY()
+	int32 LastRaderObjectIndex = 0;
+};
+
 UCLASS()
 class ASpaceRader : public AActor
 {
@@ -19,10 +41,10 @@ public:
 
 private:
 	UPROPERTY()
-	TObjectPtr<USpaceObjectManager> _spaceObjectManager;
+	TObjectPtr<USpaceObjectManager> _spaceObjectManager = nullptr;
 
 	UPROPERTY()
-	TMap<E_SPACE_OBJECT_TYPE, TSubclassOf<AActor>> _raderObjectMeshMap;
+	TObjectPtr<AActor> _spaceStation = nullptr;
 
 	UPROPERTY()
 	FTimerHandle _updateTimerHandle;
@@ -33,18 +55,8 @@ private:
 	UPROPERTY()
 	FString _fileHeaderName = "BP_RO";
 
-	// 우주선 렌더링
-	UPROPERTY()
-	TArray<TObjectPtr<AActor>> _raderSpaceShipArray;
-
-	UPROPERTY()
-	int32 _spaceShipLastIndex = 0;
-	
-	UPROPERTY()
-	TArray<TObjectPtr<AActor>> _raderAsteroidArray;
-
-	UPROPERTY()
-	int32 _asteroidLastIndex = 0;
+	// 레이더 오브젝트
+	TMap<E_SPACE_OBJECT_TYPE, FRaderObjectData> _raderObjectDataMap;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Debug")
@@ -58,9 +70,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Rader")
 	float _raderRadius = 1000.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Space")
-	TObjectPtr<AActor> _spaceCenter;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceRader|Space")
 	float _spaceRadius = 10000.0f;

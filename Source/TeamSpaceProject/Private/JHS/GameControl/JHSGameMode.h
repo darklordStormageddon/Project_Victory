@@ -4,13 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
+#include "JHS/Player/SpaceStation.h"
 #include "JHSGameMode.generated.h"
 
 class USpaceObjectManager;
 
-/**
- * 
- */
 UCLASS()
 class AJHSGameMode : public AGameMode
 {
@@ -20,15 +18,21 @@ public:
 	AJHSGameMode();
 
 protected:
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Space Station")
+	TObjectPtr<ASpaceStation> _spaceStation;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Space Object Manager")
+	TObjectPtr<USpaceObjectManager> _spaceObjectManager;
+
+protected:
 	virtual void BeginPlay() override;
 
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 
-protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Space Object Manager")
-	TObjectPtr<USpaceObjectManager> _spaceObjectManager;
-
 public:
+	UFUNCTION()
+	ASpaceStation* GetSpaceStation();
+
 	UFUNCTION()
 	USpaceObjectManager* GetSpaceObjectManager() { return _spaceObjectManager; }
 };

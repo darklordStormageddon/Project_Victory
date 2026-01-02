@@ -3,6 +3,7 @@
 
 #include "JHS/SpaceObject/SpaceRader.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameMode.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/Engine.h"
 
@@ -25,7 +26,6 @@ void ASpaceRader::BeginPlay()
 	Super::BeginPlay();
 
 	InitializeSpaceRader();
-	UpdateSpaceObject();
 }
 
 // Called every frame
@@ -34,7 +34,10 @@ void ASpaceRader::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	// _spaceRadius 만큼 DebugDrawSphere 그리기
-	DrawDebugSphere(GetWorld(), _spaceCenter->GetActorLocation(), _spaceRadius, 10, FColor::Yellow, false, DeltaTime * 1.01);
+	if (_spaceStation)
+	{
+		DrawDebugSphere(GetWorld(), _spaceStation->GetActorLocation(), _spaceRadius, 10, FColor::Yellow, false, DeltaTime * 1.01);
+	}
 
 	// _raderRadius 만큼 DebugDrawSphere 그리기
 	DrawDebugSphere(GetWorld(), _raderCenter->GetComponentLocation(), _raderRadius, 10, FColor::Blue, false, DeltaTime * 1.01);
@@ -42,18 +45,24 @@ void ASpaceRader::Tick(float DeltaTime)
 
 void ASpaceRader::InitializeSpaceRader()
 {
-	USpaceObjectManager* OutSpaceObjectManager = nullptr;
-	if (!UStaticFunctionLibrary::GetSpaceObjectManager(OutSpaceObjectManager))
+	AJHSGameMode* OutGameMode = nullptr;
+	if (!UStaticFunctionLibrary::GetGameMode(OutGameMode))
 		return;
 
-	_spaceObjectManager = OutSpaceObjectManager;
+	_spaceObjectManager = OutGameMode->GetSpaceObjectManager();
+	_spaceStation = Cast<AActor>(OutGameMode->GetSpaceStation());
 
 	// 레이더 메쉬 캐싱
 	LoadRaderObjectMesh();
+
+	// 레이더 표시 시작
+	UpdateSpaceObject();
 }
 
 void ASpaceRader::LoadRaderObjectMesh()
 {
+	_raderObjectDataMap.Empty();
+
 	// E_SPACE_OBJECT_TYPE의 모든 값 반복
 	for (int32 i = 0; i < (int32)E_SPACE_OBJECT_TYPE::SpaceShip + 1; i++)
 	{
@@ -95,8 +104,13 @@ void ASpaceRader::LoadRaderObjectMesh()
 			continue;
 		}
 
-		// 맵에 캐싱
-		_raderObjectMeshMap.Add(_spaceObjectType, _blueprintClass);
+		FRaderObjectData _raderObjectData;
+		_raderObjectData.SpaceObjectType = _spaceObjectType;
+		_raderObjectData.RaderObjectMesh = _blueprintClass;
+		_raderObjectData.RaderObjectArray.Empty();
+		_raderObjectData.LastRaderObjectIndex = 0;
+
+		_raderObjectDataMap.Add(_raderObjectData.SpaceObjectType, _raderObjectData);
 		UE_LOG(LogTemp, Warning, TEXT("SpaceRader: Loaded blueprint [%s] for type [%s]"), *_blueprintPath, *_typeName);
 	}
 }
@@ -109,8 +123,10 @@ void ASpaceRader::UpdateSpaceObject()
 		return;
 	}
 
-	_spaceShipLastIndex = 0;
-	_asteroidLastIndex = 0;
+	for (auto& Elem : _raderObjectDataMap)
+	{
+		Elem.Value.LastRaderObjectIndex = 0;
+	}
 
 	float _raderRate = _raderRadius / _spaceRadius;
 
@@ -121,7 +137,7 @@ void ASpaceRader::UpdateSpaceObject()
 	for (int32 i = 0; i < _spaceObjectArray.Num(); i++)
 	{
 		FSpaceObjectData _spaceObjectData = _spaceObjectArray[i];
-		FVector _centerToObject = _spaceObjectData.Location - _spaceCenter->GetActorLocation();
+		FVector _centerToObject = _spaceObjectData.Location - _spaceStation->GetActorLocation();
 
 		if (_centerToObject.Length() >= _spaceRadius)
 			continue;
@@ -152,43 +168,18 @@ void ASpaceRader::UpdateSpaceObject()
 TObjectPtr<AActor> ASpaceRader::GetRenderRaderObject(E_SPACE_OBJECT_TYPE SpaceObjectType)
 {
 	// 타입에 따라 원본 데이터를 직접 수정
-	TObjectPtr<AActor> _objectMesh = nullptr;
-	TArray<TObjectPtr<AActor>>* _objectMeshArray = nullptr;
-	int32* _lastIndex = nullptr;
-
-	switch (SpaceObjectType)
-	{
-		case E_SPACE_OBJECT_TYPE::SpaceShip:
-			_objectMesh = _raderObjectMeshMap[SpaceObjectType].GetDefaultObject();
-			_objectMeshArray = &_raderSpaceShipArray;
-			_lastIndex = &_spaceShipLastIndex;
-			break;
-		case E_SPACE_OBJECT_TYPE::Asteroid:
-			_objectMesh = _raderObjectMeshMap[SpaceObjectType].GetDefaultObject();
-			_objectMeshArray = &_raderAsteroidArray;
-			_lastIndex = &_asteroidLastIndex;
-			break;
-		default:
-			break;
-	}
-
-	if (!_objectMesh || !_objectMeshArray || !_lastIndex)
-	{
-		UE_LOG(LogTemp, Error, TEXT("SpaceRader: ObjectMesh, MeshArray, or LastIndex is nullptr"));
-		return nullptr;
-	}
+	FRaderObjectData& _raderObjectData = _raderObjectDataMap[SpaceObjectType];
 	
 	TObjectPtr<AActor> _raderObject = nullptr;
-	if (_objectMeshArray->Num() <= *_lastIndex)
+	if (_raderObjectData.RaderObjectArray.Num() <= _raderObjectData.LastRaderObjectIndex)
 	{
-		float SpawnPosition = (*_lastIndex) * 100.0f;
-		_raderObject = GetWorld()->SpawnActor<AActor>(_objectMesh->GetClass(), FVector(SpawnPosition, SpawnPosition, SpawnPosition), FRotator::ZeroRotator);
+		float SpawnPosition = _raderObjectData.LastRaderObjectIndex * 100.0f;
+		_raderObject = GetWorld()->SpawnActor<AActor>(_raderObjectData.RaderObjectMesh, FVector(SpawnPosition, SpawnPosition, SpawnPosition), FRotator::ZeroRotator);
 		_raderObject->SetActorScale3D(FVector(1.0f, 1.0f, 1.0f));
-		_objectMeshArray->Add(_raderObject);
+		_raderObjectData.RaderObjectArray.Add(_raderObject);
 	}
 
-	_raderObject = (*_objectMeshArray)[*_lastIndex];
-	//UE_LOG(LogTemp, Warning, TEXT("%s : LastIndex: %d"), (int32)SpaceObjectType, *_lastIndex);
-	(*_lastIndex)++;
+	_raderObject = _raderObjectData.RaderObjectArray[_raderObjectData.LastRaderObjectIndex];
+	_raderObjectData.LastRaderObjectIndex++;
 	return _raderObject;
 }
