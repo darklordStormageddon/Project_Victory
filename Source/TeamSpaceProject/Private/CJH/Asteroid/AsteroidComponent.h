@@ -38,12 +38,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float MaxSpeed = 1000.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
-	float MinSpeed = 300.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
-	float MaxSpeed = 1000.f; 
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float MinSize = 0.1f;
@@ -54,12 +48,15 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	TArray<TSubclassOf<AAsteroid>> AsteroidClasses;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
+	TSubclassOf<AActor> TargetShip;
+
 	bool bIsSpawning = false;
 
 	FVector ShipSpeed;
 private:
 	void CanSpawn();
-	void SpawnMeteor();
+	void SpawnAsteroid();
 	float SetDamage(float Speed, float Size);
 
 public:
