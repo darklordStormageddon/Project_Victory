@@ -19,9 +19,9 @@ class AASManager : public AActor
 private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
-	float min_Spawn = 30;
+	int min_Spawn = 30;
 	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
-	float max_Spawn = 60;
+	int max_Spawn = 60;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
 	float min_Wing = 1.f;

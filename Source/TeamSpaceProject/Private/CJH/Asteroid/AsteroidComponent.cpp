@@ -6,6 +6,7 @@
 #include "TimerManager.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "JHS/GameControl/JHSGameMode.h"
 
 // Sets default values for this component's properties
 UAsteroidComponent::UAsteroidComponent()
@@ -54,6 +55,7 @@ void UAsteroidComponent::CanSpawn()
 	if (!TimerManager.IsTimerActive(SpawnTimerHandle))
 		TimerManager.SetTimer(SpawnTimerHandle, this, &UAsteroidComponent::SpawnAsteroid, FMath::RandRange(MinSpawnDelay, MaxSpawnDelay), true);
 }
+
 void UAsteroidComponent::SpawnAsteroid()
 {
 	UWorld* World = GetWorld();
@@ -62,12 +64,16 @@ void UAsteroidComponent::SpawnAsteroid()
 
 	if (!World || !Owner || !Target) return;
 
+	AJHSGameMode* InGameMode = Cast<AJHSGameMode>(World->GetAuthGameMode());
+	if (!InGameMode)
+		return;
+
 	// 스폰 플래그 설정
 	bIsSpawning = true;
 
 	// 랜덤 방향과 위치
 	FVector RandomDirection = FMath::VRand();
-	FVector SpawnLocation = Owner->GetActorLocation() + RandomDirection * SpawnDistance;
+	FVector SpawnLocation = InGameMode->GetSpaceStation()->GetActorLocation() + RandomDirection * SpawnDistance;
 
 	float Size = FMath::RandRange(MinSize, MaxSize);
 	float Speed = FMath::RandRange(MinSpeed, MaxSpeed);
@@ -114,6 +120,8 @@ void UAsteroidComponent::SpawnAsteroid()
 			Target->GetActorLocation(),
 			ShipSpeed // 이 컴포넌트의 주인인 우주선 속도
 		);
+
+		Asteroid->DestroyDistance = SpawnDistance;
 	}
 }
 

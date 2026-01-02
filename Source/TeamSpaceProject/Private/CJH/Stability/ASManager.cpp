@@ -33,7 +33,7 @@ void AASManager::Tick(float DeltaTime)
 
 void AASManager::Artifical_Satellite_Core_Spawn()
 {
-	float Spawn_Num = FMath::RandRange(min_Spawn, max_Spawn);
+	int Spawn_Num = FMath::RandRange(min_Spawn, max_Spawn);
 
 	AActor* Center_Actor = UGameplayStatics::GetActorOfClass(GetWorld(), Center);
 	if (!Center_Actor)

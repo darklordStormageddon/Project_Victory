@@ -1,6 +1,7 @@
 #include "CJH/Asteroid/Asteroid.h"
 #include "CJH/Asteroid/AsteroidComponent.h"
-
+#include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/SpaceObject/SpaceRader.h"
 // Sets default values
 
 AAsteroid::AAsteroid()
@@ -21,9 +22,14 @@ void AAsteroid::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	MoveAsteroid(DeltaTime);
+	AJHSGameMode* InGameMode = Cast<AJHSGameMode>(GetWorld()->GetAuthGameMode());
+	if (!InGameMode)
+		return;
 
-	if (AsteroidComponent->GetDistance()*2 <= MoveDistance)
+	MoveAsteroid(DeltaTime);
+	float DestroyDist = FVector::Dist(InGameMode->GetSpaceStation()->GetActorLocation(), GetActorLocation());
+
+	if (DestroyDist > DestroyDistance)
 		DestroyAsteroid();
 }
 

@@ -39,8 +39,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Rotation")
 	float MaxRotateSpeed = 20.0f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Death")
-	float DestroyDistance = 5000.0f;
 private:
 	void MoveAsteroid(float DeltaTime);
 	void SetAsteroidRot();
@@ -51,6 +49,7 @@ public:
 	// Sets default values for this actor's properties
 	AAsteroid();
 
+	float DestroyDistance = ;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
