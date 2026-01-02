@@ -15,7 +15,7 @@ class AAsteroid : public AActor
 	GENERATED_BODY()
 private:
 	float MoveDistance;
-
+	`
 public:
 	typedef struct FAsteroidInfo
 	{

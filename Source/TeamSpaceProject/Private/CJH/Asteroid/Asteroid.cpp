@@ -29,7 +29,7 @@ void AAsteroid::Tick(float DeltaTime)
 	MoveAsteroid(DeltaTime);
 	float DestroyDist = FVector::Dist(InGameMode->GetSpaceStation()->GetActorLocation(), GetActorLocation());
 
-	if (DestroyDist > DestroyDistance)
+	if (DestroyDist > DestroyDistance - 1)
 		DestroyAsteroid();
 }
 

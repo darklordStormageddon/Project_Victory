@@ -73,7 +73,7 @@ void UAsteroidComponent::SpawnAsteroid()
 
 	// 랜덤 방향과 위치
 	FVector RandomDirection = FMath::VRand();
-	FVector SpawnLocation = InGameMode->GetSpaceStation()->GetActorLocation() + RandomDirection * SpawnDistance;
+	FVector SpawnLocation = InGameMode->GetSpaceStation()->GetActorLocation() + RandomDirection * InGameMode->GetSpaceRadius();
 
 	float Size = FMath::RandRange(MinSize, MaxSize);
 	float Speed = FMath::RandRange(MinSpeed, MaxSpeed);
@@ -121,7 +121,7 @@ void UAsteroidComponent::SpawnAsteroid()
 			ShipSpeed // 이 컴포넌트의 주인인 우주선 속도
 		);
 
-		Asteroid->DestroyDistance = SpawnDistance;
+		Asteroid->DestroyDistance = InGameMode->GetSpaceRadius();
 	}
 }
 
@@ -130,5 +130,3 @@ float UAsteroidComponent::SetDamage(float Speed, float Size)
 	float Damage = BaseDamage + (Size * Speed / 100.f);//0.3~40 //10.3~50
 	return Damage;
 }
-
-float UAsteroidComponent::GetDistance() { return SpawnDistance; }

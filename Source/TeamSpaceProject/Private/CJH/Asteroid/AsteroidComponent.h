@@ -22,9 +22,6 @@ private:
 	FTimerHandle SpawnTimerHandle;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
-	float SpawnDistance = 2000.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float MinSpawnDelay = 0.1f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
@@ -62,7 +59,6 @@ private:
 public:
 	// Sets default values for this component's properties
 	UAsteroidComponent();
-	float GetDistance();
 
 protected:
 	// Called when the game starts
