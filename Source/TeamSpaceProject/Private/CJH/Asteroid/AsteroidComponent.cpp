@@ -5,6 +5,7 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
 UAsteroidComponent::UAsteroidComponent()
@@ -22,6 +23,7 @@ void UAsteroidComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	// ...
+	SpawnAsteroid();
 }
 
 
@@ -40,7 +42,7 @@ void UAsteroidComponent::CanSpawn()
 {
 	UWorld* World = GetWorld();
 
-	AActor* Owner = GetOwner();
+	AActor* Owner = Cast<AActor>(UGameplayStatics::GetActorOfClass(World, TargetShip));
 	if (!World || !Owner) return;
 
 	ShipSpeed = Owner->GetVelocity();
@@ -50,14 +52,15 @@ void UAsteroidComponent::CanSpawn()
 	FTimerManager& TimerManager = World->GetTimerManager();
 
 	if (!TimerManager.IsTimerActive(SpawnTimerHandle))
-		TimerManager.SetTimer(SpawnTimerHandle, this, &UAsteroidComponent::SpawnMeteor, FMath::RandRange(MinSpawnDelay, MaxSpawnDelay), true);
+		TimerManager.SetTimer(SpawnTimerHandle, this, &UAsteroidComponent::SpawnAsteroid, FMath::RandRange(MinSpawnDelay, MaxSpawnDelay), true);
 }
-void UAsteroidComponent::SpawnMeteor()
+void UAsteroidComponent::SpawnAsteroid()
 {
 	UWorld* World = GetWorld();
 	AActor* Owner = GetOwner();
+	AActor* Target = Cast<AActor>(UGameplayStatics::GetActorOfClass(World, TargetShip));
 
-	if (!World || !Owner) return;
+	if (!World || !Owner || !Target) return;
 
 	// 스폰 플래그 설정
 	bIsSpawning = true;
@@ -107,7 +110,7 @@ void UAsteroidComponent::SpawnMeteor()
 
 		Asteroid->SetAsteroidInfo(
 			Info, // 운석의 속도, 크기, 체력, 대미지
-			Owner->GetActorLocation(),
+			Target->GetActorLocation(),
 			ShipSpeed // 이 컴포넌트의 주인인 우주선 속도
 		);
 	}
