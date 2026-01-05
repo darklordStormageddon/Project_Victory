@@ -4,29 +4,32 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "DriveSeatRader.generated.h"
 
-#include "SpaceStation.generated.h"
-
-class USpaceObjectComponent;
+class USpaceObjectManager;
 
 UCLASS()
-class ASpaceStation : public AActor
+class ADriveSeatRader : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	ASpaceStation();
+	ADriveSeatRader();
+
+private:
+	UPROPERTY()
+	TObjectPtr<USpaceObjectManager> _spaceObjectManager = nullptr;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SpaceRader|Components")
 	TObjectPtr<UStaticMeshComponent> _rootComponent = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SpaceRader|Rader")
-	TObjectPtr<USpaceObjectComponent> _spaceObjectComponent = nullptr;
+	TObjectPtr<UStaticMeshComponent> _spaceShipCenter = nullptr;
 
-public:
-	TObjectPtr<USpaceObjectComponent> GetSpaceObjectComponent() { return _spaceObjectComponent; }
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DriveSeatRader|Rader")
+	float _raderRadius = 100.0f;
 
 protected:
 	// Called when the game starts or when spawned
@@ -35,4 +38,9 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+private:
+	void InitializeDriveSeatRader();
+
+	void UpdateDriveSeatRader();
 };
