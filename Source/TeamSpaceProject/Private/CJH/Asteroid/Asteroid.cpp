@@ -34,11 +34,15 @@ void AAsteroid::Tick(float DeltaTime)
 	if (!InGameMode)
 		return;
 
+	if (!HasAuthority())
+		return;
+
 	MoveAsteroid(DeltaTime);
+
 	float DestroyDist = FVector::Dist(InGameMode->GetSpaceStation()->GetActorLocation(), GetActorLocation());
 
 	if (DestroyDist > DestroyDistance - 1)
-		DestroyAsteroid();
+		Destroy();
 }
 
 void AAsteroid::SetAsteroidInfo(
@@ -71,17 +75,17 @@ void AAsteroid::SetAsteroidRot()
 
 void AAsteroid::MoveAsteroid(float DeltaTime)
 {
-		MoveDistance += Direction.Size() * DeltaTime;
+	MoveDistance += Direction.Size() * DeltaTime;
 
-		AddActorWorldOffset(Direction * DeltaTime, true);
-		AddActorWorldRotation(ConstRotaion * RotateSpeed * DeltaTime);
+	AddActorWorldOffset(Direction * DeltaTime, true);
+	AddActorWorldRotation(ConstRotaion * RotateSpeed * DeltaTime);
 }
 
-void AAsteroid::DestroyAsteroid()
+void AAsteroid::Destroyed()
 {
-	SpaceObject_Remove();
+	Super::Destroyed();
 
-	this->Destroy();
+	SpaceObject_Remove();
 }
 
 void AAsteroid::SpaceObject_Remove()

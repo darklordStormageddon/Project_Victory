@@ -3,6 +3,7 @@
 #include "CJH/Asteroid/AsteroidComponent.h"
 #include "CJH/Asteroid/Asteroid.h"
 #include "Engine/World.h"
+
 #include "TimerManager.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -24,7 +25,10 @@ void UAsteroidComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	// ...
-	SpawnAsteroid();
+	_ownerActor = GetOwner();
+
+	if (_ownerActor->HasAuthority())
+		SpawnAsteroid();
 }
 
 
@@ -38,6 +42,8 @@ void UAsteroidComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 
 	CanSpawn();
 }
+
+
 
 void UAsteroidComponent::CanSpawn()
 {
@@ -114,6 +120,8 @@ void UAsteroidComponent::SpawnAsteroid()
 		Info.Damage = SetDamage(Speed, Size);
 
 		Asteroid->AsteroidComponent = this;
+		Asteroid->SetReplicates(true);
+		Asteroid->SetReplicateMovement(true);
 
 		Asteroid->SetAsteroidInfo(
 			Info, // 운석의 속도, 크기, 체력, 대미지

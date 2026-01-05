@@ -45,12 +45,12 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Rotation")
 	float MaxRotateSpeed = 20.0f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float ShockConstant = 0.01f;
+
 private:
 	void MoveAsteroid(float DeltaTime);
 	void SetAsteroidRot();
-
-	UFUNCTION()
-	void DestroyAsteroid();
 public:
 	// Sets default values for this actor's properties
 	AAsteroid();
@@ -59,6 +59,8 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void Destroyed() override;
+
 	void SpaceObject_Remove();
 public:
 	// Called every frame

@@ -48,6 +48,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	TSubclassOf<AActor> TargetShip;
 
+	AActor* _ownerActor = nullptr;
+
 	bool bIsSpawning = false;
 
 	FVector ShipSpeed;
