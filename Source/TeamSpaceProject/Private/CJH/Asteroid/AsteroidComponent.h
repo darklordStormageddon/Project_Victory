@@ -37,10 +37,10 @@ private:
 	float MaxSpeed = 1000.f;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
-	float MinSize = 0.1f;
+	float MinSize;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
-	float MaxSize = 2.f;
+	float MaxSize;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	TArray<TSubclassOf<AAsteroid>> AsteroidClasses;
