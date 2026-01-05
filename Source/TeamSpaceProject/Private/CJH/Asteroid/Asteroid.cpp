@@ -1,12 +1,20 @@
 #include "CJH/Asteroid/Asteroid.h"
 #include "CJH/Asteroid/AsteroidComponent.h"
+
 #include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/SpaceObject/SpaceRader.h"
+
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+
+#include "JHS/SpaceObject/SpaceObjectComponent.h"
+#include "JHS/SpaceObject/SpaceObjectManager.h"
 // Sets default values
 
 AAsteroid::AAsteroid()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	SpaceObjectComp = CreateDefaultSubobject<USpaceObjectComponent>(TEXT("SpaceObjectComponent"));
 }
 
 // Called when the game starts or when spawned
@@ -71,5 +79,17 @@ void AAsteroid::MoveAsteroid(float DeltaTime)
 
 void AAsteroid::DestroyAsteroid()
 {
+	SpaceObject_Remove();
+
 	this->Destroy();
+}
+
+void AAsteroid::SpaceObject_Remove()
+{
+	USpaceObjectManager* _spaceManager = nullptr;
+
+	if (UStaticFunctionLibrary::GetSpaceObjectManager(_spaceManager))
+	{
+		_spaceManager->RemoveSpaceObject(SpaceObjectComp);
+	}
 }

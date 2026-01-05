@@ -7,6 +7,7 @@
 #include "Asteroid.generated.h"
 
 class UAsteroidComponent;
+class USpaceObjectComponent;
 
 UCLASS()
 
@@ -26,12 +27,17 @@ public:
 	} FAsteroidInfo;
 
 	UAsteroidComponent* AsteroidComponent;
+
 private:
+	UPROPERTY(EditDefaultsOnly, Category = "SpaceObject")
+	USpaceObjectComponent* SpaceObjectComp;
+
 	FAsteroidInfo AsteroidInfo;
 
 	FVector Direction;
 
 	FRotator ConstRotaion;
+
 	float RotateSpeed;
 
 	UPROPERTY(EditAnywhere, Category = "Rotation")
@@ -53,6 +59,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	void SpaceObject_Remove();
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
