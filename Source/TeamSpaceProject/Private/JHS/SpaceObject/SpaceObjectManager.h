@@ -7,6 +7,7 @@
 #include "SpaceObjectManager.generated.h"
 
 class USpaceObjectComponent;
+class ASpaceStation;
 
 UENUM(BlueprintType)
 enum class E_SPACE_OBJECT_TYPE : uint8
@@ -51,6 +52,9 @@ private:
 	UPROPERTY()
 	TMap<USpaceObjectComponent*, FSpaceObjectData> _spaceObjectMap;
 
+	UPROPERTY()
+	TObjectPtr<ASpaceStation> _spaceStation = nullptr;
+
 public:
 	UFUNCTION()
 	TMap<USpaceObjectComponent*, FSpaceObjectData> GetSpaceObjectMap() { return _spaceObjectMap; }
@@ -63,10 +67,11 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+private:
+	void InitializeSpaceObjectManager();
+
 public:
 	void UpdateSpaceObject(FSpaceObjectData SpaceObjectData);
 
 	void RemoveSpaceObject(TObjectPtr<USpaceObjectComponent> NewSpaceObjectPtr);
-
-	TArray<FSpaceObjectData> GetNearSpaceObjectArray(float MaxDixtance);
 };

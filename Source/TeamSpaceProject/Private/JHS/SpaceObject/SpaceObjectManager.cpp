@@ -2,6 +2,8 @@
 
 
 #include "JHS/SpaceObject/SpaceObjectManager.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameMode.h"
 
 // Sets default values for this component's properties
 USpaceObjectManager::USpaceObjectManager()
@@ -18,6 +20,8 @@ USpaceObjectManager::USpaceObjectManager()
 void USpaceObjectManager::BeginPlay()
 {
 	Super::BeginPlay();
+
+	InitializeSpaceObjectManager();
 }
 
 
@@ -29,8 +33,37 @@ void USpaceObjectManager::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	// ...
 }
 
+void USpaceObjectManager::InitializeSpaceObjectManager()
+{
+	
+}
+
 void USpaceObjectManager::UpdateSpaceObject(FSpaceObjectData SpaceObjectData)
 {
+	if (!_spaceStation)
+	{
+		AJHSGameMode* OutGameMode = nullptr;
+		if (!UStaticFunctionLibrary::GetGameMode(OutGameMode))
+			return;
+
+		_spaceStation = OutGameMode->GetSpaceStation();
+
+		FSpaceObjectData _spaceStationData;
+		_spaceStationData.SpaceObjectComponent = _spaceStation->GetSpaceObjectComponent();
+		_spaceStationData.SpaceObjectType = E_SPACE_OBJECT_TYPE::SpaceStation;
+		_spaceStationData.Location = _spaceStation->GetActorLocation();
+		_spaceStationData.Rotator = _spaceStation->GetActorRotation();
+
+		_spaceObjectMap.Add(_spaceStationData.SpaceObjectComponent, _spaceStationData);
+	}
+
+	// _spaceStation이 여전히 nullptr이면 오류 로그 후 리턴
+	if (!_spaceStation)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SpaceObjectManager: UpdateSpaceObject: _spaceStation is nullptr"));
+		return;
+	}
+
 	if (!_spaceObjectMap.Contains(SpaceObjectData.SpaceObjectComponent))
 	{
 		_spaceObjectMap.Add(SpaceObjectData.SpaceObjectComponent, SpaceObjectData);
