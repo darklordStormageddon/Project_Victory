@@ -29,6 +29,12 @@ private:
 	float max_Wing = 5.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
+	float MinRandomFirstDist = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
+	float MaxRandomFirstDist = 30.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
 	float Spawn_Distance = 10000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
@@ -47,20 +53,18 @@ private:
 	void Artifical_Satellite_Core_Spawn();
 
 public:
-	// Sets default values for this actor's properties
-	AASManager();
-
 	float CorrectWingNum();
 	int GetBodiesNum();
 	int GetWingsNum();
+	
+	float GetRandomFirstDist(bool IsMin);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 	AASBody* Artifical_Satellite_Body_Spawn(FVector Spawn_Location, FRotator Spawn_Rotation, int Value);
 	AASWing* Artifical_Satellite_Wing_Spawn(FVector Spawn_Location, FRotator Spawn_Rotation, float RestNum, int Value, bool Direction);
+
 };

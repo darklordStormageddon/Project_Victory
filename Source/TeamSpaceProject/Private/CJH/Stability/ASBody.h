@@ -9,6 +9,8 @@
 
 #include "ASBody.generated.h"
 
+class AASManager;
+
 UCLASS()
 class AASBody : public AActor
 {
@@ -20,12 +22,6 @@ private:
 		LeftWing = -1
 	};
 
-	UPROPERTY(EditDefaultsOnly, Category = "WingSpawn")
-	float MinRandomDist = 100.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "WingSpawn")
-	float MaxRandomDist = 300.f;
-
 	void SpawnFirstWing();
 	void WingArrow(Direction wArrow);
 	float AttachDist(float BodyRadius);
@@ -33,19 +29,18 @@ private:
 	int WingsNum;
 	int RestWing;
 
-	AActor* ActorManager;
+	AASManager* Manager;
+
 	AASWing* WingActor = nullptr;
+
+private:
+	void Call_WingSpawn();
+
 public:
-	// Sets default values for this actor's properties
-	AASBody();
 	float WingDist();
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 };
