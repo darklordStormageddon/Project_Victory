@@ -3,13 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "JHS/SpaceObject/RaderBase.h"
 #include "DriveSeatRader.generated.h"
 
 class USpaceObjectManager;
 
 UCLASS()
-class ADriveSeatRader : public AActor
+class ADriveSeatRader : public ARaderBase
 {
 	GENERATED_BODY()
 	
@@ -22,14 +22,20 @@ private:
 	TObjectPtr<USpaceObjectManager> _spaceObjectManager = nullptr;
 
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SpaceRader|Components")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rader|DriveSeatRader|Components")
 	TObjectPtr<UStaticMeshComponent> _rootComponent = nullptr;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SpaceRader|Rader")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rader|DriveSeatRader|Components")
 	TObjectPtr<UStaticMeshComponent> _spaceShipCenter = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DriveSeatRader|Rader")
-	float _raderRadius = 100.0f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rader|DriveSeatRader|Components")
+	TObjectPtr<UStaticMeshComponent> _driveSeatRaderCenter = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|Radius")
+	TObjectPtr<AActor> _spaceShip = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|Radius")
+	float _spaceShipDetectRadius = 1000.0f;
 
 protected:
 	// Called when the game starts or when spawned
@@ -39,8 +45,10 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-private:
-	void InitializeDriveSeatRader();
+protected:
+	void InitializeRader() override;
 
-	void UpdateDriveSeatRader();
+	FString GetFilePathName() override;
+
+	FString GetFileHeaderName() override;
 };

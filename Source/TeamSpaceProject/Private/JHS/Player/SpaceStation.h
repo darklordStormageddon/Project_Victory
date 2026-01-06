@@ -22,7 +22,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SpaceRader|Components")
 	TObjectPtr<UStaticMeshComponent> _rootComponent = nullptr;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SpaceRader|Rader")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SpaceRader|Rader")
 	TObjectPtr<USpaceObjectComponent> _spaceObjectComponent = nullptr;
 
 public:

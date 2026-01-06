@@ -4,11 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "JHS/SpaceObject/RaderBase.h"
-#include "JHS/SpaceObject/SpaceObjectManager.h"
 
 #include "SpaceRader.generated.h"
 
-class AJHSGameMode;
 class ASpaceStation;
 
 UCLASS()
@@ -24,11 +22,7 @@ private:
 	UPROPERTY()
 	TObjectPtr<AActor> _spaceStation = nullptr;
 
-	UPROPERTY()
 	float _spaceRadius = 0.0f;
-
-	UPROPERTY()
-	float _raderRate = 0.0f;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rader|SpaceRader|Components")
@@ -47,6 +41,8 @@ public:
 
 protected:
 	void InitializeRader() override;
+
+	FString GetFilePathName() override;
 
 	FString GetFileHeaderName() override;
 };
