@@ -38,9 +38,8 @@ public:
 
 private:
 	UPROPERTY()
-	FString FILE_FOLDER_PATH = "/Game/Main/PS_JHS/Resource/SpaceRaderMesh/";
+	FString FILE_FOLDER_PATH = "/Game/Main/PS_JHS/Resource/RaderMesh/";
 
-	// 레이더 오브젝트 메쉬
 	TMap<E_SPACE_OBJECT_TYPE, FRaderObjectData> _raderObjectDataMap;
 
 	UPROPERTY()
@@ -54,6 +53,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|Common")
 	float _raderRadius = 1000.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|Common", meta = (ClampMin = 0.1f, ClampMax = 1.0f))
+	float _raderMeshSize = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|Common")
 	float _updateInterval = 2.0f;
@@ -69,9 +71,11 @@ public:
 protected:
 	virtual void InitializeRader() {}
 
+	virtual FString GetFilePathName() { return ""; }
+
 	virtual FString GetFileHeaderName() { return ""; }
 
-	void RenderSpaceObjectToRader(TObjectPtr<AActor> StandardActor, FVector RaderCenterLocation, float MaxDistance, float RaderRadiusRate);
+	void RenderSpaceObjectToRader(TObjectPtr<AActor> StandardActor, TObjectPtr<UStaticMeshComponent> RaderCenter, float MaxDistance);
 
 private:
 	void LoadRaderObjectMesh();

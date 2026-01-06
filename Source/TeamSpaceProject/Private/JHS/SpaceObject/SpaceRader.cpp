@@ -49,13 +49,17 @@ void ASpaceRader::InitializeRader()
 
 	_spaceStation = Cast<AActor>(OutGameMode->GetSpaceStation());
 	_spaceRadius = OutGameMode->GetSpaceRadius();
-	_raderRate = _raderRadius / _spaceRadius;
 
 	// 레이더 표시 시작
-	RenderSpaceObjectToRader(_spaceStation, _raderCenter->GetComponentLocation(), _spaceRadius, _raderRate);
+	RenderSpaceObjectToRader(_spaceStation, _raderCenter, OutGameMode->GetSpaceRadius());
+}
+
+FString ASpaceRader::GetFilePathName()
+{
+	return "SpaceRader/";
 }
 
 FString ASpaceRader::GetFileHeaderName()
 {
-	return "BP_RO";
+	return "BP_SR";
 }

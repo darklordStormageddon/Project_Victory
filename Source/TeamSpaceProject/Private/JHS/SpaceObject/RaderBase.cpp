@@ -34,7 +34,7 @@ void ARaderBase::Tick(float DeltaTime)
 
 }
 
-void ARaderBase::RenderSpaceObjectToRader(TObjectPtr<AActor> StandardActor, FVector RaderCenterLocation, float MaxDistance, float RaderRadiusRate)
+void ARaderBase::RenderSpaceObjectToRader(TObjectPtr<AActor> StandardActor, TObjectPtr<UStaticMeshComponent> RaderCenter, float MaxDistance)
 {
 	if (!_spaceObjectManager)
 	{
@@ -60,6 +60,9 @@ void ARaderBase::RenderSpaceObjectToRader(TObjectPtr<AActor> StandardActor, FVec
 		if (_fromCenterLocation.Length() > MaxDistance)
 			continue;
 
+		if (!_raderObjectDataMap.Contains(_spaceObjectData.SpaceObjectType))
+			continue;
+
 		FRaderObjectData& _raderObjectData = _raderObjectDataMap[_spaceObjectData.SpaceObjectType];
 
 		// 레이더 메쉬 선정
@@ -68,7 +71,8 @@ void ARaderBase::RenderSpaceObjectToRader(TObjectPtr<AActor> StandardActor, FVec
 		{
 			float SpawnPosition = _raderObjectData.LastRaderObjectIndex * 100.0f;
 			_raderObject = GetWorld()->SpawnActor<AActor>(_raderObjectData.RaderObjectMesh, FVector(SpawnPosition, SpawnPosition, SpawnPosition), FRotator::ZeroRotator);
-			_raderObject->SetActorScale3D(FVector(1.0f, 1.0f, 1.0f));
+			_raderObject->AttachToComponent(RaderCenter, FAttachmentTransformRules::KeepWorldTransform);
+			_raderObject->SetActorScale3D(FVector(_raderMeshSize, _raderMeshSize, _raderMeshSize));
 			_raderObjectData.RaderObjectArray.Add(_raderObject);
 		}
 
@@ -86,14 +90,15 @@ void ARaderBase::RenderSpaceObjectToRader(TObjectPtr<AActor> StandardActor, FVec
 		_raderObject->SetActorTickEnabled(true);
 
 		// 레이더 좌표 설정
-		FVector _raderLocation = _fromCenterLocation * RaderRadiusRate;
+		float _raderRate = _raderRadius / MaxDistance;
+		FVector _raderLocation = _fromCenterLocation * _raderRate;
 
-		_raderObject->SetActorLocation(RaderCenterLocation + _raderLocation);
-		_raderObject->SetActorRotation(_spaceObjectData.Rotator);
+		_raderObject->SetActorRelativeLocation(_raderLocation);
+		_raderObject->SetActorRelativeRotation(_spaceObjectData.Rotator);
 
 		if (_isDrawDebug && HasAuthority())
 		{
-			DrawDebugLine(GetWorld(), RaderCenterLocation, _raderObject->GetActorLocation(), FColor::Red, false, _updateInterval);
+			DrawDebugLine(GetWorld(), RaderCenter->GetComponentLocation(), _raderObject->GetActorLocation(), FColor::Red, false, _updateInterval);
 		}
 	}
 
@@ -117,7 +122,7 @@ void ARaderBase::RenderSpaceObjectToRader(TObjectPtr<AActor> StandardActor, FVec
 	// 딜레이 후 반복
 	GetWorld()->GetTimerManager().SetTimer(
 		_updateTimerHandle,
-		FTimerDelegate::CreateUObject(this, &ARaderBase::RenderSpaceObjectToRader, StandardActor, RaderCenterLocation, MaxDistance, RaderRadiusRate),
+		FTimerDelegate::CreateUObject(this, &ARaderBase::RenderSpaceObjectToRader, StandardActor, RaderCenter, MaxDistance),
 		_updateInterval,
 		false
 	);
@@ -152,15 +157,15 @@ void ARaderBase::LoadRaderObjectMesh()
 		default:
 			continue;
 		}
-
+		
 		FString _blueprintName = this->GetFileHeaderName() + _typeName;
-		FString _blueprintPath = this->FILE_FOLDER_PATH + _blueprintName + "." + _blueprintName + "_C";
+		FString _blueprintPath = this->FILE_FOLDER_PATH + this->GetFilePathName() + _blueprintName + "." + _blueprintName + "_C";
 
 		UClass* _blueprintClass = StaticLoadClass(AActor::StaticClass(), nullptr, *_blueprintPath);
 
 		if (!_blueprintClass)
 		{
-			UE_LOG(LogTemp, Error, TEXT("SpaceRader: Blueprint class is nullptr in [%s]"), *_blueprintPath);
+			UE_LOG(LogTemp, Error, TEXT("RaderBase: Blueprint class is nullptr in [%s]"), *_blueprintPath);
 			continue;
 		}
 
