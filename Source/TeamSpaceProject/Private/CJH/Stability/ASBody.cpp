@@ -8,27 +8,13 @@
 #include "Kismet/GameplayStatics.h"
 
 
-// Sets default values
-AASBody::AASBody()
-{
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-
-}
-
 // Called when the game starts or when spawned
 void AASBody::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	// 양쪽 첫번째 날개 스폰
 	SpawnFirstWing();
-}
-
-// Called every frame
-void AASBody::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
 }
 
 void AASBody::SpawnFirstWing()
@@ -37,20 +23,26 @@ void AASBody::SpawnFirstWing()
 	if (!SpawnManager)
 		return;
 
-	AASManager* Manager;
-
 	Manager = Cast<AASManager>(SpawnManager);
 	if (!Manager)
 		return;
 
+	// 날개 개수가 0개인 경우 리턴
 	if (Manager->GetWingsNum() - 1 < 0)
 		return;
 
+	Call_WingSpawn();
+}
+
+void AASBody::Call_WingSpawn()
+{
+	// 랜덤으로 사용할 날개 선택
 	WingsNum = FMath::RandRange(0, Manager->GetWingsNum() - 1);
+	// 남은 날개 수 계산
 	RestWing = Manager->CorrectWingNum();
 
-	WingArrow(Direction::RightWing);
-	WingArrow(Direction::LeftWing);
+	WingArrow(Direction::RightWing);// 우측 첫번째 날개 스폰
+	WingArrow(Direction::LeftWing);// 좌측 첫번째 날개 스폰
 }
 
 void AASBody::WingArrow(Direction wArrow)
@@ -59,24 +51,24 @@ void AASBody::WingArrow(Direction wArrow)
 	if (!SpawnManager)
 		return;
 
-	AASManager* Manager;
-
 	Manager = Cast<AASManager>(SpawnManager);
 	if (!Manager)
 		return;
 
 	FVector BodyOrigin, BodyExtent;
+
+	// 본체의 바운드 구하기
 	GetActorBounds(true, BodyOrigin, BodyExtent);
 
+	// 본체 반지름 계산
 	float BodyRadius = BodyExtent.X; 
-
-	
 
 	if(wArrow == Direction::RightWing)
 	{
+		// 우측 첫번째 날개 스폰
 			WingActor = Manager->Artifical_Satellite_Wing_Spawn(
-			this->GetActorLocation() + AttachDist(BodyRadius),
-			this->GetActorRotation(),
+			GetActorLocation(),
+			GetActorRotation(),
 			RestWing,
 			WingsNum,
 			true
@@ -85,25 +77,40 @@ void AASBody::WingArrow(Direction wArrow)
 		if (!WingActor)
 			return;
 
+		//x값만 AttachDist만큼 이동
+		FVector LocalOffset(AttachDist(BodyRadius), 0, 0);
+		FVector WorldOffset = GetActorTransform().TransformVector(LocalOffset);
+		WingActor->SetActorLocation(GetActorLocation() + WorldOffset);
+
 		WingActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 	}
 	else
 	{
+		// 좌측 첫번째 날개 스폰
 			WingActor = Manager->Artifical_Satellite_Wing_Spawn(
-			this->GetActorLocation() - AttachDist(BodyRadius),
-			this->GetActorRotation(),
+			GetActorLocation(),
+			GetActorRotation(),
 			RestWing,
 			WingsNum,
 			false
 		);
-
+		
 		if (!WingActor)
 			return;
+
+		//x값만 AttachDist만큼 이동
+		FVector LocalOffset(AttachDist(BodyRadius), 0, 0);
+		FVector WorldOffset = GetActorTransform().TransformVector(LocalOffset);
+		WingActor->SetActorLocation(GetActorLocation() - WorldOffset);
 
 		WingActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 	}
 }
-float AASBody::WingDist() { return FMath::RandRange(MinRandomDist, MaxRandomDist); }
+
+float AASBody::WingDist() 
+{
+	return FMath::RandRange(Manager->GetRandomFirstDist(true), Manager->GetRandomFirstDist(false)); // 날개와 본체 사이의 거리 랜덤 설정
+}
 
 float AASBody::AttachDist(float BodyRadius)
 {
@@ -112,11 +119,15 @@ float AASBody::AttachDist(float BodyRadius)
 	if (!WingActor)
 		return 0.f;
 
+	// 날개의 바운드 구하기
 	WingActor->GetActorBounds(true, WingOrigin, WingExtent);
 
+	// 날개 반지름 계산
 	float WingRadius = WingExtent.X;
 
+	// 본체와 날개 사이의 거리 계산
 	float AttachDist = BodyRadius + WingRadius + WingDist();
 
+	// 계산된 거리 반환
 	return AttachDist;
 }

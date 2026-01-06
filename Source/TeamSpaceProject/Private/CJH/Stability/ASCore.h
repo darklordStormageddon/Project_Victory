@@ -19,10 +19,6 @@ private:
 	UPROPERTY()
 	AASManager* Manager;
 
-public:
-	// Sets default values for this actor's properties
-	AASCore();
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

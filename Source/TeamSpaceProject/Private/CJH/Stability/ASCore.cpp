@@ -9,13 +9,6 @@
 
 #include "Kismet/GameplayStatics.h"
 
-// Sets default values
-AASCore::AASCore()
-{
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-}
-
 // Called when the game starts or when spawned
 void AASCore::BeginPlay()
 {
@@ -29,6 +22,7 @@ void AASCore::BeginPlay()
 	if (!Manager)
 		return;
 	
+	// 본체 스폰 함수 호출
 	SpawnBody();
 }
 
@@ -42,13 +36,15 @@ void AASCore::SpawnBody()
 	if (!GetManager)
 		return;
 
+	// 스폰할 수 있는 본체 종류 수 가져오기
 	int BodiesNum = GetManager->GetBodiesNum();
 	if (BodiesNum <= 0)
 		return;
 
-	// 유효한 인덱스(0 .. BodiesNum-1)를 랜덤으로 선택
+	// 본체 종류 중 랜덤으로 하나 선택
 	int Index = FMath::RandRange(0, BodiesNum - 1);
 
+	// 폐기물 매니저한테 본체 스폰 함수 호출 요청
 	AASBody* BodyActor = GetManager->Artifical_Satellite_Body_Spawn(
 		this->GetActorLocation(),
 		this->GetActorRotation(),
@@ -58,6 +54,7 @@ void AASCore::SpawnBody()
 	if(!BodyActor)
 		return;
 
+	// 스폰된 본체를 코어에 부착
 	BodyActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 
 }
