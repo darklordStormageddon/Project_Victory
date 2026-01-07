@@ -63,7 +63,7 @@ void ADriveSeatRader::Tick(float DeltaTime)
 
 void ADriveSeatRader::InitializeRader()
 {
-	RenderSpaceObjectToRader(_spaceShip, _driveSeatRaderCenter, _spaceShipDetectRadius);
+	
 }
 
 FString ADriveSeatRader::GetFilePathName()
@@ -74,4 +74,10 @@ FString ADriveSeatRader::GetFilePathName()
 FString ADriveSeatRader::GetFileHeaderName()
 {
 	return ConstantLibrary::Resource.SpaceObject.DRIVE_RADER_HEADER;
+}
+
+void ADriveSeatRader::SetSpaceShip(TObjectPtr<AActor> SpaceShip)
+{
+	_spaceShip = SpaceShip;
+	RenderSpaceObjectToRader(_spaceShip, _driveSeatRaderCenter, _spaceShipDetectRadius);
 }

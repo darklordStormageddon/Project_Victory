@@ -51,4 +51,7 @@ protected:
 	FString GetFilePathName() override;
 
 	FString GetFileHeaderName() override;
+
+public:
+	void SetSpaceShip(TObjectPtr<AActor> SpaceShip);
 };
