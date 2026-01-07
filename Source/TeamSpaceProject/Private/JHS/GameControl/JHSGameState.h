@@ -8,18 +8,26 @@
 
 #include "JHSGameState.generated.h"
 
-/**
- * 
- */
+class UEventManager;
+
 UCLASS()
 class AJHSGameState : public AGameState
 {
 	GENERATED_BODY()
+
+private:
+	TObjectPtr<UEventManager> _cachedEventManager = nullptr;
 	
 protected:
 	UPROPERTY(EditAnywhere, Category = "GameMode|Game Data")
 	FSpaceShipData _spaceShipData;
 
 public:
-	FSpaceShipData GetSpaceShipMaxHP() { return _spaceShipData; }
+	FSpaceShipData GetSpaceShipData() { return _spaceShipData; }
+
+private:
+	TObjectPtr<UEventManager> GetEventManager();
+
+public:
+	void ChangeSpaceShipData(FSpaceShipData SpaceShipData);
 };

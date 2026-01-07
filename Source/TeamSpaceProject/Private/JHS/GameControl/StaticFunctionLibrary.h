@@ -8,6 +8,9 @@
 
 class AJHSGameMode;
 class AJHSGameState;
+class USpaceObjectManager;
+class UUIManager;
+class UEventManager;
 
 UCLASS()
 class UStaticFunctionLibrary : public UBlueprintFunctionLibrary
@@ -29,4 +32,7 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|UIManager")
     static bool TryGetUIManager(UUIManager*& OutUIManager);
+
+    UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|EventManager")
+    static bool TryGetEventManager(UEventManager*& OutEventManager);
 };

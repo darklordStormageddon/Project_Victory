@@ -46,13 +46,13 @@ void UUIManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompo
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-void UUIManager::OpenUI(E_UI_TYPE UIType)
+UUIBase* UUIManager::OpenUI(E_UI_TYPE UIType)
 {
 	UUIBase* _ui = LoadUIInternal(UIType);
 	if (_ui == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UUIManager: Failed to load UI [%d]"), (int32)UIType);
-		return;
+		return nullptr;
 	}
 
 	// Panel UI인 경우 (100 미만) Viewport에 추가
@@ -69,6 +69,8 @@ void UUIManager::OpenUI(E_UI_TYPE UIType)
 		_ui->Open();
 		//_openedUIStack.Push(_ui);
 	}
+
+	return _ui;
 }
 
 void UUIManager::CloseUI(E_UI_TYPE UIType)

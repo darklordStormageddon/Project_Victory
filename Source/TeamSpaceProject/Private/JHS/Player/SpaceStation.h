@@ -8,6 +8,7 @@
 #include "SpaceStation.generated.h"
 
 class USpaceObjectComponent;
+class AJHSGameState;
 
 UCLASS()
 class ASpaceStation : public AActor
@@ -17,6 +18,9 @@ class ASpaceStation : public AActor
 public:	
 	// Sets default values for this actor's properties
 	ASpaceStation();
+
+private:
+	TObjectPtr<AJHSGameState> _gameState = nullptr;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SpaceRader|Components")

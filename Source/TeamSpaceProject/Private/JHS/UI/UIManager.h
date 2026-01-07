@@ -28,7 +28,7 @@ public:
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "UIManager")
-	void OpenUI(E_UI_TYPE UIType);
+	UUIBase* OpenUI(E_UI_TYPE UIType);
 
 	UFUNCTION(BlueprintCallable, Category = "UIManager")
 	void CloseUI(E_UI_TYPE UIType);

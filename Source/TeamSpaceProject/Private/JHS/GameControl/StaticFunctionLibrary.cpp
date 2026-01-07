@@ -6,6 +6,7 @@
 #include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/SpaceObject/SpaceObjectManager.h"
+#include "JHS/Event/EventManager.h"
 #include "Engine/Engine.h"
 
 bool UStaticFunctionLibrary::TryGetWorld(UWorld*& OutWorld)
@@ -115,6 +116,22 @@ bool UStaticFunctionLibrary::TryGetUIManager(UUIManager*& OutUIManager)
 	if (OutUIManager == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("TryGetUIManager: UIManager is nullptr"));
+		return false;
+	}
+
+	return true;
+}
+
+bool UStaticFunctionLibrary::TryGetEventManager(UEventManager*& OutEventManager)
+{
+	AJHSGameMode* _gameMode = nullptr;
+	if (!TryGetGameMode(_gameMode))
+		return false;
+
+	OutEventManager = _gameMode->GetEventManager();
+	if (OutEventManager == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TryGetEventManager: EventManager is nullptr"));
 		return false;
 	}
 

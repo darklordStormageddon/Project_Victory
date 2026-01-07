@@ -5,11 +5,13 @@
 #include "Kismet/GameplayStatics.h"
 #include "JHS/SpaceObject/SpaceObjectManager.h"
 #include "JHS/UI/UIManager.h"
+#include "JHS/Event/EventManager.h"
 
 AJHSGameMode::AJHSGameMode()
 {
 	_spaceObjectManager = CreateDefaultSubobject<USpaceObjectManager>(TEXT("SpaceObjectManager"));
 	_uiManager = CreateDefaultSubobject<UUIManager>(TEXT("UIManager"));
+	_eventManager = CreateDefaultSubobject<UEventManager>(TEXT("EventManager"));
 }
 
 void AJHSGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)

@@ -15,5 +15,11 @@ public:
 	float MaxHP;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceShipData")
+	float CurrentHP;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceShipData")
 	float MaxShield;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceShipData")
+	float CurrentShield;
 };

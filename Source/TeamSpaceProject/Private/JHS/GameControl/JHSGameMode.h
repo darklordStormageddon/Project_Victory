@@ -9,6 +9,7 @@
 
 class USpaceObjectManager;
 class UUIManager;
+class UEventManager;
 
 UCLASS()
 class AJHSGameMode : public AGameMode
@@ -27,6 +28,9 @@ protected:
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameMode|UI Manager")
 	TObjectPtr<UUIManager> _uiManager;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Event Manager")
+	TObjectPtr<UEventManager> _eventManager;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Space Size")
 	float _spaceRadius = 1000.0f;
@@ -49,4 +53,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "GameMode|UI Manager")
 	UUIManager* GetUIManager() { return _uiManager; }
+
+	UFUNCTION(BlueprintCallable, Category = "GameMode|Event Manager")
+	UEventManager* GetEventManager() { return _eventManager; }
 };

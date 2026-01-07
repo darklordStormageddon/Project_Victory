@@ -7,6 +7,7 @@
 
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/UI/UIManager.h"
+#include "JHS/UI/UIPanelDriveSeat.h"
 
 // Sets default values
 ASpaceStation::ASpaceStation()
@@ -27,11 +28,11 @@ void ASpaceStation::BeginPlay()
 	
 	AJHSGameState* _outGameState = nullptr;
 	UStaticFunctionLibrary::TryGetGameState(_outGameState);
-	UE_LOG(LogTemp, Warning, TEXT("%f"), _outGameState->GetSpaceShipMaxHP().MaxHP);
+	_gameState = _outGameState;
 
 	UUIManager* _outUIManager = nullptr;
 	UStaticFunctionLibrary::TryGetUIManager(_outUIManager);
-	_outUIManager->OpenUI(E_UI_TYPE::UIPanelPlayer);
+	_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
 }
 
 // Called every frame
@@ -39,4 +40,20 @@ void ASpaceStation::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (_gameState != nullptr)
+	{
+		FSpaceShipData _spaceShipData = _gameState->GetSpaceShipData();
+		_spaceShipData.MaxHP += 1.0f;
+		_spaceShipData.CurrentHP += 0.3f;
+
+		if (_spaceShipData.MaxHP >= 1500)
+		{
+			UUIManager* _outUIManager = nullptr;
+			UStaticFunctionLibrary::TryGetUIManager(_outUIManager);
+			_outUIManager->CloseUI(E_UI_TYPE::UIPanelDriveSeat);
+			return;
+		}
+
+		_gameState->ChangeSpaceShipData(_spaceShipData);
+	}
 }
