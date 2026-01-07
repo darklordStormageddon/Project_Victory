@@ -4,22 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "JHS/UI/UIBase.h"
 #include "UIManager.generated.h"
-
-UENUM(BlueprintType)
-enum class E_UI_TYPE : uint8
-{
-	// Panel
-	UIPanelPlayer = 0 UMETA(DisplayName = "UIPanelPlayer"),
-	UIPanelDriveSeat UMETA(DisplayName = "UIPanelDriveSeat"),
-	UIPanel UMETA(DisplayName = "SpaceGarbage"),
-
-	// Popup
-	UIPopupCommon = 100 UMETA(DisplayName = "UIPopupCommon"),
-
-	// System
-	UISystemSetting = 200 UMETA(DisplayName = "UISystemSetting"),
-};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UUIManager : public UActorComponent
@@ -28,18 +14,48 @@ class UUIManager : public UActorComponent
 
 public:	
 	// Sets default values for this component's properties
-	UUIManager();
+	UUIManager(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
+	UFUNCTION(BlueprintCallable, Category = "UIManager")
 	void OpenUI(E_UI_TYPE UIType);
 
+	UFUNCTION(BlueprintCallable, Category = "UIManager")
 	void CloseUI(E_UI_TYPE UIType);
+
+	UFUNCTION(BlueprintCallable, Category = "UIManager")
+	void CloseAllUI();
+
+	UFUNCTION(BlueprintCallable, Category = "UIManager")
+	UUIBase* GetUI(E_UI_TYPE UIType) const;
+
+	template<typename T>
+	T* LoadUI(E_UI_TYPE UIType)
+	{
+		return Cast<T>(LoadUIInternal(UIType));
+	}
+
+private:
+	UUIBase* LoadUIInternal(E_UI_TYPE UIType);
+
+	UUIBase* InstantiateUI(E_UI_TYPE UIType);
+
+	FString GetUIPath(E_UI_TYPE UIType) const;
+
+private:
+	UPROPERTY()
+	TMap<E_UI_TYPE, TObjectPtr<UUIBase>> _loadedUIDict;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Manager|Settings", meta = (AllowPrivateAccess = "true"))
+	TMap<E_UI_TYPE, TSoftClassPtr<UUIBase>> _uiClassMap;
 };

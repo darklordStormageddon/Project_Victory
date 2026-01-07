@@ -2,7 +2,7 @@
 
 
 #include "JHS/SpaceObject/DriveSeatRader.h"
-#include "JHS/GameControl/ConstantLibrary.h"
+#include "JHS/GameControl/Contant/ConstantLibrary.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 
 // Sets default values
@@ -68,10 +68,10 @@ void ADriveSeatRader::InitializeRader()
 
 FString ADriveSeatRader::GetFilePathName()
 {
-	return ConstantLibrary::Resource.DRIVE_RADER_FOLDER;
+	return ConstantLibrary::Resource.SpaceObject.DRIVE_RADER_FOLDER;
 }
 
 FString ADriveSeatRader::GetFileHeaderName()
 {
-	return ConstantLibrary::Resource.DRIVE_RADER_HEADER;
+	return ConstantLibrary::Resource.SpaceObject.DRIVE_RADER_HEADER;
 }

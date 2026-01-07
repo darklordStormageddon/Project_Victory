@@ -2,7 +2,7 @@
 
 
 #include "JHS/SpaceObject/RaderBase.h"
-#include "JHS/GameControl/ConstantLibrary.h"
+#include "JHS/GameControl/Contant/ConstantLibrary.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/SpaceObject/SpaceObjectManager.h"
 #include "UObject/ConstructorHelpers.h"
@@ -159,7 +159,7 @@ void ARaderBase::LoadRaderObjectMesh()
 		}
 		
 		FString _blueprintName = this->GetFileHeaderName() + _typeName;
-		FString _blueprintPath = ConstantLibrary::Resource.RADER_MESH_FOLDER_PATH + this->GetFilePathName() + _blueprintName + "." + _blueprintName + "_C";
+		FString _blueprintPath = ConstantLibrary::Resource.SpaceObject.RADER_MESH_FOLDER_PATH + this->GetFilePathName() + _blueprintName + "." + _blueprintName + "_C";
 
 		UClass* _blueprintClass = StaticLoadClass(AActor::StaticClass(), nullptr, *_blueprintPath);
 

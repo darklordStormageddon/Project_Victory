@@ -3,8 +3,10 @@
 
 #include "JHS/Player/SpaceStation.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
-#include "JHS/GameControl/JHSGameState.h"
 #include "JHS/SpaceObject/SpaceObjectComponent.h"
+
+#include "JHS/GameControl/JHSGameState.h"
+#include "JHS/UI/UIManager.h"
 
 // Sets default values
 ASpaceStation::ASpaceStation()
@@ -26,6 +28,10 @@ void ASpaceStation::BeginPlay()
 	AJHSGameState* _outGameState = nullptr;
 	UStaticFunctionLibrary::TryGetGameState(_outGameState);
 	UE_LOG(LogTemp, Warning, TEXT("%f"), _outGameState->GetSpaceShipMaxHP().MaxHP);
+
+	UUIManager* _outUIManager = nullptr;
+	UStaticFunctionLibrary::TryGetUIManager(_outUIManager);
+	_outUIManager->OpenUI(E_UI_TYPE::UIPanelPlayer);
 }
 
 // Called every frame

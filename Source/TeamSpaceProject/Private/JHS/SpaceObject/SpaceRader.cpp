@@ -2,7 +2,7 @@
 
 
 #include "JHS/SpaceObject/SpaceRader.h"
-#include "JHS/GameControl/ConstantLibrary.h"
+#include "JHS/GameControl/Contant/ConstantLibrary.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameMode.h"
 #include "UObject/ConstructorHelpers.h"
@@ -57,10 +57,10 @@ void ASpaceRader::InitializeRader()
 
 FString ASpaceRader::GetFilePathName()
 {
-	return ConstantLibrary::Resource.SPACE_RADER_FOLDER;
+	return ConstantLibrary::Resource.SpaceObject.SPACE_RADER_FOLDER;
 }
 
 FString ASpaceRader::GetFileHeaderName()
 {
-	return ConstantLibrary::Resource.SPACE_RADER_HEADER;
+	return ConstantLibrary::Resource.SpaceObject.SPACE_RADER_HEADER;
 }
