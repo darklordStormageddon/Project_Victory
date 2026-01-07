@@ -5,21 +5,17 @@
 #include "Engine/World.h"
 
 #include "TimerManager.h"
+
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "JHS/GameControl/JHSGameMode.h"
 
-// Sets default values for this component's properties
+#include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+
 UAsteroidComponent::UAsteroidComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
 }
-
-
 // Called when the game starts
 void UAsteroidComponent::BeginPlay()
 {
@@ -70,9 +66,9 @@ void UAsteroidComponent::SpawnAsteroid()
 
 	if (!World || !Owner || !Target) return;
 
-	AJHSGameMode* InGameMode = Cast<AJHSGameMode>(World->GetAuthGameMode());
-	if (!InGameMode)
-		return;
+	AJHSGameMode* InGameMode;
+	
+	UStaticFunctionLibrary::GetGameMode(InGameMode);
 
 	// 스폰 플래그 설정
 	bIsSpawning = true;

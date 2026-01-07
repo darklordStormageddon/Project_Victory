@@ -10,17 +10,5 @@ UCLASS()
 class AASWing : public AActor
 {
 	GENERATED_BODY()
-public:
-	float RestWing;
-	float Numbering;
-
-private:
-	void Spawn_Wing();
-
-public:
-	bool Direction;
-
-protected:
-	virtual void BeginPlay() override;
 
 };
