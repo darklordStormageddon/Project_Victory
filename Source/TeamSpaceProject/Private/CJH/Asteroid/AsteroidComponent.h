@@ -21,6 +21,9 @@ class UAsteroidComponent : public UActorComponent
 private:
 	FTimerHandle SpawnTimerHandle;
 
+	UPROPERTY(EditAnywhere, Category = "Asteroid Spawn")
+	bool debugDraw = false;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float MinSpawnDelay = 0.1f;
 
@@ -53,9 +56,13 @@ private:
 	bool bIsSpawning = false;
 
 	FVector ShipSpeed;
+
+	TArray<AAsteroid> Asteroids;
+
 private:
 	void CanSpawn();
 	void SpawnAsteroid();
+
 	float SetDamage(float Speed, float Size);
 
 public:
