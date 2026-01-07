@@ -43,7 +43,7 @@ void USpaceObjectComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 void USpaceObjectComponent::InitializeSpaceObject()
 {
 	USpaceObjectManager* OutSpaceObjectManager = nullptr;
-	if (!UStaticFunctionLibrary::GetSpaceObjectManager(OutSpaceObjectManager))
+	if (!UStaticFunctionLibrary::TryGetSpaceObjectManager(OutSpaceObjectManager))
 		return;
 
 	_spaceObjectManager = OutSpaceObjectManager;

@@ -8,7 +8,7 @@
 #include "JHS/SpaceObject/SpaceObjectManager.h"
 #include "Engine/Engine.h"
 
-bool UStaticFunctionLibrary::GetWorld(UWorld*& OutWorld)
+bool UStaticFunctionLibrary::TryGetWorld(UWorld*& OutWorld)
 {
 	UWorld* _world = nullptr;
 
@@ -36,71 +36,87 @@ bool UStaticFunctionLibrary::GetWorld(UWorld*& OutWorld)
 	OutWorld = _world;
 	if (!OutWorld)
 	{
-		UE_LOG(LogTemp, Error, TEXT("GetWorld: World is nullptr"));
+		UE_LOG(LogTemp, Error, TEXT("TryGetWorld: World is nullptr"));
 		return false;
 	}
 
 	return true;
 }
 
-bool UStaticFunctionLibrary::GetGameMode(AJHSGameMode*& OutGameMode)
+bool UStaticFunctionLibrary::TryGetGameMode(AJHSGameMode*& OutGameMode)
 {
 	UWorld* _world = nullptr;
-	if (!GetWorld(_world))
+	if (!TryGetWorld(_world))
 		return false;
 
 	AGameModeBase* _gameModeBase = UGameplayStatics::GetGameMode(_world);
 	if (!_gameModeBase)
 	{
-		UE_LOG(LogTemp, Error, TEXT("GetGameMode: GameModeBase is nullptr"));
+		UE_LOG(LogTemp, Error, TEXT("TryGetGameMode: GameModeBase is nullptr"));
 		return false;
 	}
 
 	OutGameMode = Cast<AJHSGameMode>(_gameModeBase);
     if (OutGameMode == nullptr)
     {
-        UE_LOG(LogTemp, Error, TEXT("GetGameMode: GameMode is nullptr, GameModeBase class: %s"), *_gameModeBase->GetClass()->GetName());
+        UE_LOG(LogTemp, Error, TEXT("TryGetGameMode: GameMode is nullptr, GameModeBase class: %s"), *_gameModeBase->GetClass()->GetName());
         return false;
     }
 
 	return true;
 }
 
-bool UStaticFunctionLibrary::GetGameState(AJHSGameState*& OutGameState)
+bool UStaticFunctionLibrary::TryGetGameState(AJHSGameState*& OutGameState)
 {
 	UWorld* _world = nullptr;
-	if (!GetWorld(_world))
+	if (!TryGetWorld(_world))
 		return false;
 
 	AGameStateBase* _gameStateBase = UGameplayStatics::GetGameState(_world);
 	if (!_gameStateBase)
 	{
-		UE_LOG(LogTemp, Error, TEXT("GetGameState: GameStateBase is nullptr"));
+		UE_LOG(LogTemp, Error, TEXT("TryGetGameState: GameStateBase is nullptr"));
 		return false;
 	}
 
 	OutGameState = Cast<AJHSGameState>(_gameStateBase);
 	if (OutGameState == nullptr)
 	{
-		UE_LOG(LogTemp, Error, TEXT("GetGameState: GameState is nullptr, GameStateBase class: %s"), *_gameStateBase->GetClass()->GetName());
+		UE_LOG(LogTemp, Error, TEXT("TryGetGameState: GameState is nullptr, GameStateBase class: %s"), *_gameStateBase->GetClass()->GetName());
 		return false;
 	}
 
 	return true;
 }
 
-bool UStaticFunctionLibrary::GetSpaceObjectManager(USpaceObjectManager*& OutSpaceObjectManager)
+bool UStaticFunctionLibrary::TryGetSpaceObjectManager(USpaceObjectManager*& OutSpaceObjectManager)
 {
 	AJHSGameMode* _gameMode = nullptr;
-	if (!GetGameMode(_gameMode))
+	if (!TryGetGameMode(_gameMode))
         return false;
 
 	OutSpaceObjectManager = _gameMode->GetSpaceObjectManager();	
     if (OutSpaceObjectManager == nullptr)
     {
-        UE_LOG(LogTemp, Error, TEXT("GetSpaceObjectManager: SpaceObjectManager is nullptr"));
+        UE_LOG(LogTemp, Error, TEXT("TryGetSpaceObjectManager: SpaceObjectManager is nullptr"));
         return false;
     }
+
+	return true;
+}
+
+bool UStaticFunctionLibrary::TryGetUIManager(UUIManager*& OutUIManager)
+{
+	AJHSGameMode* _gameMode = nullptr;
+	if (!TryGetGameMode(_gameMode))
+		return false;
+
+	OutUIManager = _gameMode->GetUIManager();
+	if (OutUIManager == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TryGetUIManager: UIManager is nullptr"));
+		return false;
+	}
 
 	return true;
 }

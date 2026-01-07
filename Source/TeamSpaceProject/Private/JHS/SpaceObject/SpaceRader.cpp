@@ -45,7 +45,7 @@ void ASpaceRader::Tick(float DeltaTime)
 void ASpaceRader::InitializeRader()
 {
 	AJHSGameMode* OutGameMode = nullptr;
-	if (!UStaticFunctionLibrary::GetGameMode(OutGameMode))
+	if (!UStaticFunctionLibrary::TryGetGameMode(OutGameMode))
 		return;
 
 	_spaceStation = Cast<AActor>(OutGameMode->GetSpaceStation());

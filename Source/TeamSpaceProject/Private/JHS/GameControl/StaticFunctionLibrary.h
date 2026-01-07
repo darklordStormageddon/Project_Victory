@@ -15,15 +15,18 @@ class UStaticFunctionLibrary : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 
 private:
-    static bool GetWorld(UWorld*& OutWorld);
+    static bool TryGetWorld(UWorld*& OutWorld);
 	
 public:
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|GameMode")
-    static bool GetGameMode(AJHSGameMode*& OutGameMode);
+    static bool TryGetGameMode(AJHSGameMode*& OutGameMode);
 
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|GameState")
-    static bool GetGameState(AJHSGameState*& OutGameState);
+    static bool TryGetGameState(AJHSGameState*& OutGameState);
     
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|SpaceObjectManager")
-    static bool GetSpaceObjectManager(USpaceObjectManager*& OutSpaceObjectManager);
+    static bool TryGetSpaceObjectManager(USpaceObjectManager*& OutSpaceObjectManager);
+
+    UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|UIManager")
+    static bool TryGetUIManager(UUIManager*& OutUIManager);
 };

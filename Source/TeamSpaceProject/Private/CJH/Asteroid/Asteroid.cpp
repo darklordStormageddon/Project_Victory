@@ -92,7 +92,7 @@ void AAsteroid::SpaceObject_Remove()
 {
 	USpaceObjectManager* _spaceManager = nullptr;
 
-	if (UStaticFunctionLibrary::GetSpaceObjectManager(_spaceManager))
+	if (UStaticFunctionLibrary::TryGetSpaceObjectManager(_spaceManager))
 	{
 		_spaceManager->RemoveSpaceObject(SpaceObjectComp);
 	}

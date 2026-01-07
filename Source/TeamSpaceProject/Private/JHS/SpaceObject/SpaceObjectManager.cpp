@@ -43,7 +43,7 @@ void USpaceObjectManager::UpdateSpaceObject(FSpaceObjectData SpaceObjectData)
 	if (!_spaceStation)
 	{
 		AJHSGameMode* OutGameMode = nullptr;
-		if (!UStaticFunctionLibrary::GetGameMode(OutGameMode))
+		if (!UStaticFunctionLibrary::TryGetGameMode(OutGameMode))
 			return;
 
 		_spaceStation = OutGameMode->GetSpaceStation();

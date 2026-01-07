@@ -24,7 +24,7 @@ void ASpaceStation::BeginPlay()
 	Super::BeginPlay();
 	
 	AJHSGameState* _outGameState = nullptr;
-	UStaticFunctionLibrary::GetGameState(_outGameState);
+	UStaticFunctionLibrary::TryGetGameState(_outGameState);
 	UE_LOG(LogTemp, Warning, TEXT("%f"), _outGameState->GetSpaceShipMaxHP().MaxHP);
 }
 
