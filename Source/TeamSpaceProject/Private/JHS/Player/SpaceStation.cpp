@@ -3,7 +3,7 @@
 
 #include "JHS/Player/SpaceStation.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
-#include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/JHSGameState.h"
 #include "JHS/SpaceObject/SpaceObjectComponent.h"
 
 // Sets default values
@@ -16,7 +16,6 @@ ASpaceStation::ASpaceStation()
 	_rootComponent->SetupAttachment(RootComponent);
 
 	_spaceObjectComponent = CreateDefaultSubobject<USpaceObjectComponent>(TEXT("SpaceObjectComponent"));
-	//_spaceObjectComponent->SetOwner(_rootComponent);
 }
 
 // Called when the game starts or when spawned
@@ -24,6 +23,9 @@ void ASpaceStation::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	AJHSGameState* _outGameState = nullptr;
+	UStaticFunctionLibrary::GetGameState(_outGameState);
+	UE_LOG(LogTemp, Warning, TEXT("%f"), _outGameState->GetSpaceShipMaxHP().MaxHP);
 }
 
 // Called every frame

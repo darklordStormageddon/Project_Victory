@@ -2,7 +2,7 @@
 
 
 #include "JHS/SpaceObject/RaderBase.h"
-
+#include "JHS/GameControl/ConstantLibrary.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/SpaceObject/SpaceObjectManager.h"
 #include "UObject/ConstructorHelpers.h"
@@ -69,8 +69,8 @@ void ARaderBase::RenderSpaceObjectToRader(TObjectPtr<AActor> StandardActor, TObj
 		TObjectPtr<AActor> _raderObject = nullptr;
 		if (_raderObjectData.RaderObjectArray.Num() <= _raderObjectData.LastRaderObjectIndex)
 		{
-			float SpawnPosition = _raderObjectData.LastRaderObjectIndex * 100.0f;
-			_raderObject = GetWorld()->SpawnActor<AActor>(_raderObjectData.RaderObjectMesh, FVector(SpawnPosition, SpawnPosition, SpawnPosition), FRotator::ZeroRotator);
+			float _spawnPosition = _raderObjectData.LastRaderObjectIndex * 100.0f;
+			_raderObject = GetWorld()->SpawnActor<AActor>(_raderObjectData.RaderObjectMesh, FVector(_spawnPosition, _spawnPosition, _spawnPosition), FRotator::ZeroRotator);
 			_raderObject->AttachToComponent(RaderCenter, FAttachmentTransformRules::KeepWorldTransform);
 			_raderObject->SetActorScale3D(FVector(_raderMeshSize, _raderMeshSize, _raderMeshSize));
 			_raderObjectData.RaderObjectArray.Add(_raderObject);
@@ -159,7 +159,7 @@ void ARaderBase::LoadRaderObjectMesh()
 		}
 		
 		FString _blueprintName = this->GetFileHeaderName() + _typeName;
-		FString _blueprintPath = this->FILE_FOLDER_PATH + this->GetFilePathName() + _blueprintName + "." + _blueprintName + "_C";
+		FString _blueprintPath = ConstantLibrary::Resource.RADER_MESH_FOLDER_PATH + this->GetFilePathName() + _blueprintName + "." + _blueprintName + "_C";
 
 		UClass* _blueprintClass = StaticLoadClass(AActor::StaticClass(), nullptr, *_blueprintPath);
 

@@ -37,9 +37,6 @@ public:
 	ARaderBase();
 
 private:
-	UPROPERTY()
-	FString FILE_FOLDER_PATH = "/Game/Main/PS_JHS/Resource/RaderMesh/";
-
 	TMap<E_SPACE_OBJECT_TYPE, FRaderObjectData> _raderObjectDataMap;
 
 	UPROPERTY()

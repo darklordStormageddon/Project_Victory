@@ -7,15 +7,22 @@
 #include "StaticFunctionLibrary.generated.h"
 
 class AJHSGameMode;
+class AJHSGameState;
 
 UCLASS()
 class UStaticFunctionLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
+
+private:
+    static bool GetWorld(UWorld*& OutWorld);
 	
 public:
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|GameMode")
     static bool GetGameMode(AJHSGameMode*& OutGameMode);
+
+    UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|GameState")
+    static bool GetGameState(AJHSGameState*& OutGameState);
     
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|SpaceObjectManager")
     static bool GetSpaceObjectManager(USpaceObjectManager*& OutSpaceObjectManager);
