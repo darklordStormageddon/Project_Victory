@@ -15,6 +15,9 @@ class AJHSGameState : public AGameState
 {
 	GENERATED_BODY()
 
+public:
+	AJHSGameState();
+
 private:
 	TObjectPtr<UEventManager> _cachedEventManager = nullptr;
 	
@@ -22,12 +25,19 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "GameMode|Game Data")
 	FSpaceShipData _spaceShipData;
 
-public:
-	FSpaceShipData GetSpaceShipData() { return _spaceShipData; }
-
 private:
 	TObjectPtr<UEventManager> GetEventManager();
 
+	void ChangeSpaceShipData(FMaxCurrentData* OriginalData, float CurrentValue);
+
+	void ChangeSpaceShipData(FMaxCurrentData* OriginalData, float CurrentValue, float MaxValue);
+
 public:
-	void ChangeSpaceShipData(FSpaceShipData SpaceShipData);
+	void SendCurrentDataEvent();
+
+	void RepairSpaceShip();
+
+	void DecreaseSpaceShipData(E_DATA_TYPE DataType, float DecreaseValue);
+
+	void RepairShield(float RepairShieldValue);
 };

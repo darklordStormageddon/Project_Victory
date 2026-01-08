@@ -4,6 +4,8 @@
 #include "JHS/Player/JHSPlayerBase.h"
 #include "JHS/UI/UIInteracter.h"
 
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "JHS/SpaceObject/DriveSeatRader.h"
 
@@ -28,6 +30,13 @@ void AJHSPlayerBase::BeginPlay()
 		ADriveSeatRader* _driveSeatRaderActor = Cast<ADriveSeatRader>(_driveSeatRader);
 		_driveSeatRaderActor->SetSpaceShip(this);
 	}
+
+	AJHSGameState* _outGameState = nullptr;
+	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+		return;
+
+	_gameState = _outGameState;
+	_gameState->RepairSpaceShip();
 }
 
 // Called every frame
@@ -35,6 +44,12 @@ void AJHSPlayerBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (_gameState == nullptr)
+		return;
+
+	/*_gameState->DecreaseSpaceShipData(E_DATA_TYPE::HP, 0.02f);
+	_gameState->DecreaseSpaceShipData(E_DATA_TYPE::Shield, 0.005f);
+	_gameState->DecreaseSpaceShipData(E_DATA_TYPE::Fuel, 0.01f);*/
 }
 
 // Called to bind functionality to input
@@ -43,26 +58,3 @@ void AJHSPlayerBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 }
-
-//void AJHSPlayerBase::InteractInput()
-//{
-//	if (_uiInteracter == nullptr)
-//		return;
-//
-//	if (!_isInteract)
-//	{
-//		//_uiInteracter->OpenUI();
-//		_isInteract = true;
-//	}
-//	else
-//	{
-//		//_uiInteracter->CloseUI();
-//		_uiInteracter = nullptr;
-//		_isInteract = false;
-//	}
-//}
-//
-//void AJHSPlayerBase::ChangeInteractable(TObjectPtr<UUIInteracter> UIInteracter)
-//{
-//	_uiInteracter = UIInteracter;
-//}

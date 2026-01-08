@@ -6,6 +6,8 @@
 #include "TeamSpaceProject/TeamSpaceProjectCharacter.h"
 #include "JHSPlayerBase.generated.h"
 
+class AJHSGameState;
+
 UCLASS()
 class AJHSPlayerBase : public ATeamSpaceProjectCharacter
 {
@@ -14,6 +16,9 @@ class AJHSPlayerBase : public ATeamSpaceProjectCharacter
 public:
 	// Sets default values for this pawn's properties
 	AJHSPlayerBase();
+
+private:
+	TObjectPtr<AJHSGameState> _gameState = nullptr;
 
 protected:
 	// Called when the game starts or when spawned
