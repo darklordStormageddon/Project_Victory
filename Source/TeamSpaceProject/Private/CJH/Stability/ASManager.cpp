@@ -4,7 +4,6 @@
 #include "CJH/Stability/ASManager.h"
 
 #include "CJH/Stability/ASCore.h"
-#include "CJH/Stability/ASBody.h"
 
 #include "JHS/Player/SpaceStation.h"
 
@@ -29,7 +28,7 @@ void AASManager::GetSetting()
 {
 	AJHSGameMode* InGameMode = nullptr;
 	
-	UStaticFunctionLibrary::GetGameMode(InGameMode);
+	if (!UStaticFunctionLibrary::TryGetGameMode(InGameMode)) return;
 	
 	if (InGameMode)
 	{

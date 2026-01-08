@@ -67,8 +67,8 @@ void UAsteroidComponent::SpawnAsteroid()
 	if (!World || !Owner || !Target) return;
 
 	AJHSGameMode* InGameMode;
-	
-	UStaticFunctionLibrary::GetGameMode(InGameMode);
+
+	if (!UStaticFunctionLibrary::TryGetGameMode(InGameMode)) return;
 
 	// 스폰 플래그 설정
 	bIsSpawning = true;
