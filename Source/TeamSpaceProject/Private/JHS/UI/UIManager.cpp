@@ -226,8 +226,8 @@ FString UUIManager::GetUIPath(E_UI_TYPE UIType) const
 		// Fallback: 직접 이름 매핑
 		switch (UIType)
 		{
-		case E_UI_TYPE::UIPanelPlayer:
-			_uiName = ConstantLibrary::Resource.UI.UI_WIDGET_PREFIX + TEXT("UIPanelPlayer");
+		case E_UI_TYPE::UIPanelPlayerFPS:
+			_uiName = ConstantLibrary::Resource.UI.UI_WIDGET_PREFIX + TEXT("UIPanelPlayerFPS");
 			break;
 		case E_UI_TYPE::UIPanelDriveSeat:
 			_uiName = ConstantLibrary::Resource.UI.UI_WIDGET_PREFIX + TEXT("UIPanelDriveSeat");
