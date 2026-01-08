@@ -44,25 +44,25 @@ void AJHSPlayerBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 }
 
-void AJHSPlayerBase::InteractInput()
-{
-	if (_uiInteracter == nullptr)
-		return;
-
-	if (!_isInteract)
-	{
-		_uiInteracter->OpenUI();
-		_isInteract = true;
-	}
-	else
-	{
-		_uiInteracter->CloseUI();
-		_uiInteracter = nullptr;
-		_isInteract = false;
-	}
-}
-
-void AJHSPlayerBase::ChangeInteractable(TObjectPtr<UUIInteracter> UIInteracter)
-{
-	_uiInteracter = UIInteracter;
-}
+//void AJHSPlayerBase::InteractInput()
+//{
+//	if (_uiInteracter == nullptr)
+//		return;
+//
+//	if (!_isInteract)
+//	{
+//		//_uiInteracter->OpenUI();
+//		_isInteract = true;
+//	}
+//	else
+//	{
+//		//_uiInteracter->CloseUI();
+//		_uiInteracter = nullptr;
+//		_isInteract = false;
+//	}
+//}
+//
+//void AJHSPlayerBase::ChangeInteractable(TObjectPtr<UUIInteracter> UIInteracter)
+//{
+//	_uiInteracter = UIInteracter;
+//}

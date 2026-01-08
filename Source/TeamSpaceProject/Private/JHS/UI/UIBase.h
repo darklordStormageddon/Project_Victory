@@ -10,7 +10,7 @@ UENUM(BlueprintType)
 enum class E_UI_TYPE : uint8
 {
 	// Panel
-	UIPanelPlayer = 0 UMETA(DisplayName = "UIPanelPlayer"),
+	UIPanelPlayerFPS = 0 UMETA(DisplayName = "UIPanelPlayerFPS"),
 	UIPanelDriveSeat UMETA(DisplayName = "UIPanelDriveSeat"),
 	UIPanel UMETA(DisplayName = "SpaceGarbage"),
 

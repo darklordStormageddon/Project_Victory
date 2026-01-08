@@ -47,21 +47,16 @@ void USpaceObjectManager::UpdateSpaceObject(FSpaceObjectData SpaceObjectData)
 			return;
 
 		_spaceStation = OutGameMode->GetSpaceStation();
+		if (!_spaceStation)
+		{
+			FSpaceObjectData _spaceStationData;
+			_spaceStationData.SpaceObjectComponent = _spaceStation->GetSpaceObjectComponent();
+			_spaceStationData.SpaceObjectType = E_SPACE_OBJECT_TYPE::SpaceStation;
+			_spaceStationData.Location = _spaceStation->GetActorLocation();
+			_spaceStationData.Rotator = _spaceStation->GetActorRotation();
 
-		FSpaceObjectData _spaceStationData;
-		_spaceStationData.SpaceObjectComponent = _spaceStation->GetSpaceObjectComponent();
-		_spaceStationData.SpaceObjectType = E_SPACE_OBJECT_TYPE::SpaceStation;
-		_spaceStationData.Location = _spaceStation->GetActorLocation();
-		_spaceStationData.Rotator = _spaceStation->GetActorRotation();
-
-		_spaceObjectMap.Add(_spaceStationData.SpaceObjectComponent, _spaceStationData);
-	}
-
-	// _spaceStation이 여전히 nullptr이면 오류 로그 후 리턴
-	if (!_spaceStation)
-	{
-		UE_LOG(LogTemp, Error, TEXT("SpaceObjectManager: UpdateSpaceObject: _spaceStation is nullptr"));
-		return;
+			_spaceObjectMap.Add(_spaceStationData.SpaceObjectComponent, _spaceStationData);
+		}
 	}
 
 	if (!_spaceObjectMap.Contains(SpaceObjectData.SpaceObjectComponent))
