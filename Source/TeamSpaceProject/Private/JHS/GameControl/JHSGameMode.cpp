@@ -44,11 +44,5 @@ ASpaceStation* AJHSGameMode::GetSpaceStation()
 		}
 	}
 
-	if (_spaceStation == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("AJHSGameMode: SpaceStation is not found"));
-		return nullptr;
-	}
-
 	return _spaceStation;
 }

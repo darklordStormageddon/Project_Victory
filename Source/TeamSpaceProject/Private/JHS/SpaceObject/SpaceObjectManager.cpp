@@ -47,7 +47,7 @@ void USpaceObjectManager::UpdateSpaceObject(FSpaceObjectData SpaceObjectData)
 			return;
 
 		_spaceStation = OutGameMode->GetSpaceStation();
-		if (!_spaceStation)
+		if (_spaceStation)
 		{
 			FSpaceObjectData _spaceStationData;
 			_spaceStationData.SpaceObjectComponent = _spaceStation->GetSpaceObjectComponent();
