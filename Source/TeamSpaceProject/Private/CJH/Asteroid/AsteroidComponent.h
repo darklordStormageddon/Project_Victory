@@ -12,7 +12,6 @@
 
 #include "AsteroidComponent.generated.h"
 
-
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 
 class UAsteroidComponent : public UActorComponent
@@ -57,7 +56,7 @@ private:
 
 	FVector ShipSpeed;
 
-	TArray<AAsteroid> Asteroids;
+	TArray<AAsteroid*> Asteroids;
 
 private:
 	void CanSpawn();
@@ -76,7 +75,7 @@ protected:
 public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
+	void RemoveAsteroid(AAsteroid* _removeTarget);
 
 };
  

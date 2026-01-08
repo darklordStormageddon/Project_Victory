@@ -1,7 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "CJH/Asteroid/AsteroidComponent.h"
-#include "CJH/Asteroid/Asteroid.h"
 #include "Engine/World.h"
 
 #include "TimerManager.h"
@@ -118,6 +117,7 @@ void UAsteroidComponent::SpawnAsteroid()
 		Asteroid->AsteroidComponent = this;
 		Asteroid->SetReplicates(true);
 		Asteroid->SetReplicateMovement(true);
+		Asteroid->AsteroidComponent = this;
 
 		Asteroid->SetAsteroidInfo(
 			Info, // 운석의 속도, 크기, 체력, 대미지
@@ -126,6 +126,10 @@ void UAsteroidComponent::SpawnAsteroid()
 		);
 
 		Asteroid->DestroyDistance = InGameMode->GetSpaceRadius();
+		Asteroids.Add(Asteroid);
+
+		if(debugDraw)
+			Asteroid->DebugDrawing();
 	}
 }
 
@@ -133,4 +137,14 @@ float UAsteroidComponent::SetDamage(float Speed, float Size)
 {
 	float Damage = BaseDamage + (Size * Speed / 100.f);//0.3~40 //10.3~50
 	return Damage;
+}
+
+void UAsteroidComponent::RemoveAsteroid(AAsteroid* _removeTarget)
+{
+	if (_removeTarget)
+	{
+		Asteroids.Remove(_removeTarget);
+		//어레이 공간 정리
+		Asteroids.Shrink();
+	}
 }

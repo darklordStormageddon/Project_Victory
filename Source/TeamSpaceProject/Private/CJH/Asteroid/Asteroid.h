@@ -28,6 +28,8 @@ public:
 
 	UAsteroidComponent* AsteroidComponent;
 
+	FVector TargetLocation;
+
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "SpaceObject")
 	USpaceObjectComponent* SpaceObjectComp;
@@ -46,11 +48,20 @@ private:
 	float MaxRotateSpeed = 20.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float ShockConstant = 0.01f;
+	float ShockConstant = 0.01f;//충격량 보정 상수
 
 private:
 	void MoveAsteroid(float DeltaTime);
 	void SetAsteroidRot();
+
+	bool CalculateInterceptPoint(
+		const FVector& AsteroidPos,
+		float AsteroidSpeed,
+		const FVector& ShipPos,
+		const FVector& ShipVelocity,
+		FVector& OutTargetLocation
+	);
+
 public:
 	// Sets default values for this actor's properties
 	AAsteroid();
@@ -66,8 +77,11 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	void DebugDrawing();
+
 	void SetAsteroidInfo(
 		const FAsteroidInfo& InAsteroidInfo,
 		FVector VSpaceShip,
 		FVector Velocity);
 };
+
