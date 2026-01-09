@@ -5,7 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "JHS/UI/UIBase.h"
-#include "JHS/UI/UIInteracterable.h"
+#include "JHS/Interact/InteractableBase.h"
+#include "JHS/GameControl/CommonEnums.h"
 
 #include "InteractableChairBase.generated.h"
 
@@ -19,7 +20,7 @@ public:
 	AInteractableChairBase();
 
 private:
-	TObjectPtr<UUIInteracterable> _uiInteracterable = nullptr;
+	TObjectPtr<UInteractableBase> _uiInteracterable = nullptr;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ChairBase|Debug")

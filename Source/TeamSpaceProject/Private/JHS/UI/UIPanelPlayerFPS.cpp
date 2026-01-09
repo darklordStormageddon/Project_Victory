@@ -5,18 +5,17 @@
 
 void UUIPanelPlayerFPS::InitializeUI()
 {
-	ChangeInteractable(false);
+	ChangeInteractable(E_INTERACT_TYPE::None);
 }
 
-void UUIPanelPlayerFPS::ChangeInteractable(bool IsInteract)
+void UUIPanelPlayerFPS::ChangeInteractable(E_INTERACT_TYPE InteractType)
 {
-	_isInteractable = IsInteract;
-	if (_isInteractable)
+	if (InteractType == E_INTERACT_TYPE::None)
 	{
-		Plate_Interact->SetVisibility(ESlateVisibility::Visible);
+		Plate_Interact->SetVisibility(ESlateVisibility::Hidden);
 	}
 	else
 	{
-		Plate_Interact->SetVisibility(ESlateVisibility::Hidden);
+		Plate_Interact->SetVisibility(ESlateVisibility::Visible);
 	}
 }

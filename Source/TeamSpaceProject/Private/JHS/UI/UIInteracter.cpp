@@ -2,7 +2,7 @@
 
 
 #include "JHS/UI/UIInteracter.h"
-#include "JHS/UI/UIInteracterable.h"
+#include "JHS/Interact/InteractableBase.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/UI/UIManager.h"
 #include "JHS/UI/UIPanelPlayerFPS.h"
@@ -42,25 +42,35 @@ void UUIInteracter::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 	// ...
 }
 
-void UUIInteracter::OnInteractable(TObjectPtr<UUIInteracterable> UIInteractable)
+void UUIInteracter::OnInteractable(TObjectPtr<UInteractableBase> Interactable, bool IsInterrupt)
 {
-	_uiInteractable = UIInteractable;
-	_uiPanelPlayer->ChangeInteractable(true);
+	_interactable = Interactable;
+	if (_interactable != nullptr)
+	{
+		E_INTERACT_TYPE _interactType = IsInterrupt ? E_INTERACT_TYPE::DumpThrow : _interactable->GetInteractType();
+		_uiPanelPlayer->ChangeInteractable(_interactType);
+	}
 }
 
 void UUIInteracter::OnDisInteractable()
 {
-	_uiInteractable = nullptr;
-	_uiPanelPlayer->ChangeInteractable(false);
+	_interactable = nullptr;
+	_uiPanelPlayer->ChangeInteractable(E_INTERACT_TYPE::None);
 	_uiPanelPlayer->Open();
 }
 
-void UUIInteracter::InteractInput()
+bool UUIInteracter::TryInteractInput(bool& OutIsInterupt, bool& OutIsInteractEnter)
 {
-	if (_uiInteractable == nullptr)
-		return;
+	if (_interactable == nullptr)
+		return false;
 
-	if (_uiInteractable->TryInteract())
+	if (!_interactable->TryInteract(OutIsInterupt, OutIsInteractEnter))
+		return false;
+
+	if (OutIsInterupt)
+		return true;
+
+	if (OutIsInteractEnter)
 	{
 		_uiPanelPlayer->Close();
 	}
@@ -68,4 +78,6 @@ void UUIInteracter::InteractInput()
 	{
 		_uiPanelPlayer->Open();
 	}
+
+	return true;
 }

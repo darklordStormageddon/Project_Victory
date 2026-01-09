@@ -9,10 +9,14 @@
 UENUM(BlueprintType)
 enum class E_UI_TYPE : uint8
 {
+	NONE = 255 UMETA(DisplayName = "NONE"),
+
 	// Panel
 	UIPanelPlayerFPS = 0 UMETA(DisplayName = "UIPanelPlayerFPS"),
 	UIPanelDriveSeat UMETA(DisplayName = "UIPanelDriveSeat"),
-	UIPanel UMETA(DisplayName = "SpaceGarbage"),
+	UIPanelCollectSeat UMETA(DisplayName = "UIPanelCollectSeat"),
+	UIPanelTurretSeat UMETA(DisplayName = "UIPanelTurretSeat"),
+	UIPanelContainer UMETA(DisplayName = "UIPanelContainer"),
 
 	// Popup
 	UIPopupCommon = 100 UMETA(DisplayName = "UIPopupCommon"),

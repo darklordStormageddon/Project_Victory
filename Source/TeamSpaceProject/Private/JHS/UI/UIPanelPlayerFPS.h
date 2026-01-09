@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "JHS/UI/UIBase.h"
 #include "Components/CanvasPanel.h"
+#include "JHS/GameControl/CommonEnums.h"
 
 #include "UIPanelPlayerFPS.generated.h"
 
@@ -17,13 +18,8 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	UCanvasPanel* Plate_Interact;
 
-	bool _isInteractable = false;
-	
-public:
-	bool GetIsInteractable() { return _isInteractable; }
-
 public:
 	void InitializeUI();
 
-	void ChangeInteractable(bool IsInteract);
+	void ChangeInteractable(E_INTERACT_TYPE InteractType);
 };

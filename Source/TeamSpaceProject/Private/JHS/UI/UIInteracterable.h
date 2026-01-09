@@ -3,20 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "JHS/Interact/InteractableBase.h"
 #include "Components/SphereComponent.h"
 #include "JHS/UI/UIBase.h"
 
 #include "UIInteracterable.generated.h"
 
 class UUIManager;
-class UUIInteracter;
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractEnter);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractExit);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class UUIInteracterable : public UActorComponent
+class UUIInteracterable : public UInteractableBase
 {
 	GENERATED_BODY()
 
@@ -27,29 +23,9 @@ public:
 private:
 	TObjectPtr<UUIManager> _uiManager = nullptr;
 
-	TObjectPtr<USphereComponent> _collisionComponent = nullptr;
-
-	TObjectPtr<UUIInteracter> _uiInteracter = nullptr;
-
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UIInteracter|Debug")
-	bool _isDebugDraw = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UIInteracter|Collision")
-	float _collisionRadius = 100.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UIInteracter|UI")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interacter|Type")
 	E_UI_TYPE _openUIType;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UIInteracter|UI")
-	bool _isInteract = false;
-
-public:
-	UPROPERTY(BlueprintAssignable, Category = "UIInteracter|Events")
-	FOnInteractEnter OnInteractEnter;
-
-	UPROPERTY(BlueprintAssignable, Category = "UIInteracter|Events")
-	FOnInteractExit OnInteractExit;
 
 protected:
 	// Called when the game starts
@@ -59,19 +35,8 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	UFUNCTION()
-	void OnTriggerEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnTriggerExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+protected:
 
 public:
-	void InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_UI_TYPE InteractUIType);
-
-	bool TryInteract();
-
-private:
-	void OpenInteractUI();
-
-	void CloseInteractUI();
+	
 };

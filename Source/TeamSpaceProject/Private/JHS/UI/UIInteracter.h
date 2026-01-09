@@ -10,7 +10,7 @@
 
 class UUIManager;
 class UUIPanelPlayerFPS;
-class UUIInteracterable;
+class UInteractableBase;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UUIInteracter : public UActorComponent
@@ -26,7 +26,7 @@ private:
 
 	TObjectPtr<UUIPanelPlayerFPS> _uiPanelPlayer = nullptr;
 
-	TObjectPtr<UUIInteracterable> _uiInteractable = nullptr;
+	TObjectPtr<UInteractableBase> _interactable = nullptr;
 
 protected:
 	// Called when the game starts
@@ -37,10 +37,10 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	void OnInteractable(TObjectPtr<UUIInteracterable> UIInteractable);
+	void OnInteractable(TObjectPtr<UInteractableBase> Interactable, bool IsInterrupt);
 
 	void OnDisInteractable();
 
 	UFUNCTION(BlueprintCallable, Category = "UIInteracter|Interact")
-	void InteractInput();
+	bool TryInteractInput(bool& OutIsInterupt, bool& OutIsInteractEnter);
 };

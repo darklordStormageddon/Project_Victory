@@ -10,7 +10,7 @@ AInteractableChairBase::AInteractableChairBase()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	_uiInteracterable = CreateDefaultSubobject<UUIInteracterable>(TEXT("UIInteractable"));
+	_uiInteracterable = CreateDefaultSubobject<UInteractableBase>(TEXT("Interactable"));
 }
 
 // Called when the game starts or when spawned
@@ -21,9 +21,9 @@ void AInteractableChairBase::BeginPlay()
 	if (_uiInteracterable != nullptr)
 	{
 		// 델리게이트 바인딩
-		_uiInteracterable->InitializeUIInteractable(_isDebugDraw, _interactRadius, _interatUIType);
-		_uiInteracterable->OnInteractEnter.AddDynamic(this, &AInteractableChairBase::InteractEnter);
-		_uiInteracterable->OnInteractExit.AddDynamic(this, &AInteractableChairBase::InteractExit);
+		_uiInteracterable->InitializeUIInteractable(_isDebugDraw, _interactRadius, E_INTERACT_TYPE::Chair, _interatUIType);
+		_uiInteracterable->OnInteractEnterAction.AddDynamic(this, &AInteractableChairBase::InteractEnter);
+		_uiInteracterable->OnInteractExitAction.AddDynamic(this, &AInteractableChairBase::InteractExit);
 	}
 	else
 	{

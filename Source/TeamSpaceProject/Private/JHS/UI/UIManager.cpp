@@ -219,31 +219,47 @@ FString UUIManager::GetUIPath(E_UI_TYPE UIType) const
 	if (_enum != nullptr)
 	{
 		FString _enumName = _enum->GetNameStringByValue((int64)UIType);
-		_uiName = ConstantLibrary::Resource.UI.UI_WIDGET_PREFIX + _enumName;
+		_uiName = ConstantLibrary::Resource.UI.UI_WIDGET_HEADER + _enumName;
 	}
 	else
 	{
 		// Fallback: 직접 이름 매핑
+		FString _widgetName = TEXT("");
 		switch (UIType)
 		{
 		case E_UI_TYPE::UIPanelPlayerFPS:
-			_uiName = ConstantLibrary::Resource.UI.UI_WIDGET_PREFIX + TEXT("UIPanelPlayerFPS");
+			_widgetName = TEXT("UIPanelPlayerFPS");
 			break;
+
 		case E_UI_TYPE::UIPanelDriveSeat:
-			_uiName = ConstantLibrary::Resource.UI.UI_WIDGET_PREFIX + TEXT("UIPanelDriveSeat");
+			_widgetName = TEXT("UIPanelDriveSeat");
 			break;
-		case E_UI_TYPE::UIPanel:
-			_uiName = ConstantLibrary::Resource.UI.UI_WIDGET_PREFIX + TEXT("UIPanel");
+
+		case E_UI_TYPE::UIPanelCollectSeat:
+			_widgetName = TEXT("UIPanelCollectSeat");
 			break;
+
+		case E_UI_TYPE::UIPanelTurretSeat:
+			_widgetName = TEXT("UIPanelTurretSeat");
+			break;
+
 		case E_UI_TYPE::UIPopupCommon:
-			_uiName = ConstantLibrary::Resource.UI.UI_WIDGET_PREFIX + TEXT("UIPopupCommon");
+			_widgetName = TEXT("UIPopupCommon");
 			break;
+
+		case E_UI_TYPE::UIPanelContainer:
+			_widgetName = TEXT("UIPanelContainer");
+			break;
+
 		case E_UI_TYPE::UISystemSetting:
-			_uiName = ConstantLibrary::Resource.UI.UI_WIDGET_PREFIX + TEXT("UISystemSetting");
+			_widgetName = TEXT("UISystemSetting");
 			break;
+
 		default:
 			return TEXT("");
 		}
+
+		_uiName = ConstantLibrary::Resource.UI.UI_WIDGET_HEADER + _widgetName;
 	}
 
 	// 전체 경로 구성: /Game/Main/PS_JHS/Blueprint/UI/Popup/Common/WBP_UIPopupCommon.WBP_UIPopupCommon_C

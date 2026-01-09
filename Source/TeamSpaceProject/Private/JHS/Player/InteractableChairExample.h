@@ -14,6 +14,8 @@ class AInteractableChairExample : public AInteractableChairBase
 {
 	GENERATED_BODY()
 
+
+
 protected:
 	void OnInteractEnter() override;
 	
