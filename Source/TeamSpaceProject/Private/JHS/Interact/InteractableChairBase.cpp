@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "JHS/Player/InteractableChairBase.h"
-#include "JHS/UI/UIInteracterable.h"
+#include "JHS/Interact/InteractableChairBase.h"
+#include "JHS/Interact/InteractableComponent.h"
 
 // Sets default values
 AInteractableChairBase::AInteractableChairBase()
@@ -10,7 +10,7 @@ AInteractableChairBase::AInteractableChairBase()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	_uiInteracterable = CreateDefaultSubobject<UInteractableBase>(TEXT("Interactable"));
+	_uiInteracterable = CreateDefaultSubobject<UInteractableComponent>(TEXT("Interactable"));
 }
 
 // Called when the game starts or when spawned
@@ -27,7 +27,7 @@ void AInteractableChairBase::BeginPlay()
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AInteractableChairBase: UUIInteracterable component not found"));
+		UE_LOG(LogTemp, Warning, TEXT("AInteractableChairBase: UInteractableComponent component not found"));
 	}
 }
 

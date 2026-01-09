@@ -6,27 +6,27 @@
 #include "Components/ActorComponent.h"
 #include "JHS/UI/UIBase.h"
 
-#include "UIInteracter.generated.h"
+#include "InteracterComponent.generated.h"
 
 class UUIManager;
 class UUIPanelPlayerFPS;
-class UInteractableBase;
+class UInteractableComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class UUIInteracter : public UActorComponent
+class UInteracterComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:	
 	// Sets default values for this component's properties
-	UUIInteracter();
+	UInteracterComponent();
 
 private:
 	const E_UI_TYPE _playerUI = E_UI_TYPE::UIPanelPlayerFPS;
 
 	TObjectPtr<UUIPanelPlayerFPS> _uiPanelPlayer = nullptr;
 
-	TObjectPtr<UInteractableBase> _interactable = nullptr;
+	TObjectPtr<UInteractableComponent> _interactable = nullptr;
 
 protected:
 	// Called when the game starts
@@ -37,10 +37,10 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	void OnInteractable(TObjectPtr<UInteractableBase> Interactable, bool IsInterrupt);
+	void OnInteractable(TObjectPtr<UInteractableComponent> Interactable, bool IsInterrupt);
 
 	void OnDisInteractable();
 
-	UFUNCTION(BlueprintCallable, Category = "UIInteracter|Interact")
+	UFUNCTION(BlueprintCallable, Category = "Interacter|Interact")
 	bool TryInteractInput(bool& OutIsInterupt, bool& OutIsInteractEnter);
 };

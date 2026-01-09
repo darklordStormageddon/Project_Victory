@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "JHS/Player/InteractableChairExample.h"
+#include "JHS/Interact/InteractableChairExample.h"
 
 void AInteractableChairExample::OnInteractEnter()
 {

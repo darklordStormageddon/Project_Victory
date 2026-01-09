@@ -8,9 +8,9 @@
 #include "JHS/UI/UIBase.h"
 #include "JHS/GameControl/CommonEnums.h"
 
-#include "InteractableBase.generated.h"
+#include "InteractableComponent.generated.h"
 
-class UUIInteracter;
+class UInteracterComponent;
 class UUIManager;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractEnterAction);
@@ -18,22 +18,22 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractExitAction);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractInterruptAction);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class UInteractableBase : public UActorComponent
+class UInteractableComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:	
 	// Sets default values for this component's properties
-	UInteractableBase();
+	UInteractableComponent();
 
 private:
 	TObjectPtr<USphereComponent> _collisionComponent = nullptr;
 
-	TObjectPtr<UUIInteracter> _interacter = nullptr;
+	TObjectPtr<UInteracterComponent> _interacter = nullptr;
 
 	bool _isInteract = false;
 
-	TObjectPtr<UUIInteracter> _InterruptInteracter = nullptr;
+	TObjectPtr<UInteracterComponent> _InterruptInteracter = nullptr;
 
 	TObjectPtr<UUIManager> _uiManager = nullptr;
 

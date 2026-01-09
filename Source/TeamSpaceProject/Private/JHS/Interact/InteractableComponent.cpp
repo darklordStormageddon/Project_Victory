@@ -1,13 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "JHS/Interact/InteractableBase.h"
+#include "JHS/Interact/InteractableComponent.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/UI/UIManager.h"
-#include "JHS/UI/UIInteracter.h"
+#include "JHS/Interact/InteracterComponent.h"
 
 // Sets default values for this component's properties
-UInteractableBase::UInteractableBase()
+UInteractableComponent::UInteractableComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
@@ -18,7 +18,7 @@ UInteractableBase::UInteractableBase()
 
 
 // Called when the game starts
-void UInteractableBase::BeginPlay()
+void UInteractableComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -51,15 +51,15 @@ void UInteractableBase::BeginPlay()
 			_owner->AddInstanceComponent(_collisionComponent);
 			_collisionComponent->RegisterComponent();
 
-			_collisionComponent->OnComponentBeginOverlap.AddDynamic(this, &UInteractableBase::OnTriggerEnter);
-			_collisionComponent->OnComponentEndOverlap.AddDynamic(this, &UInteractableBase::OnTriggerExit);
+			_collisionComponent->OnComponentBeginOverlap.AddDynamic(this, &UInteractableComponent::OnTriggerEnter);
+			_collisionComponent->OnComponentEndOverlap.AddDynamic(this, &UInteractableComponent::OnTriggerExit);
 		}
 	}
 }
 
 
 // Called every frame
-void UInteractableBase::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UInteractableComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
@@ -69,7 +69,7 @@ void UInteractableBase::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 	}
 }
 
-void UInteractableBase::OnTriggerEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void UInteractableComponent::OnTriggerEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (!_isInterrupt && _interacter != nullptr)
 		return;
@@ -77,8 +77,8 @@ void UInteractableBase::OnTriggerEnter(UPrimitiveComponent* OverlappedComponent,
 	if (OtherActor == nullptr)
 		return;
 
-	// 오브젝트에서 UUIInteracter 컴포넌트 찾기
-	UUIInteracter* _foundInteracter = OtherActor->FindComponentByClass<UUIInteracter>();
+	// 오브젝트에서 UInteracterComponent 컴포넌트 찾기
+	UInteracterComponent* _foundInteracter = OtherActor->FindComponentByClass<UInteracterComponent>();
 	if (_isInterrupt && _interacter != nullptr && _interacter != _foundInteracter)
 	{
 		_InterruptInteracter = _foundInteracter;
@@ -94,21 +94,21 @@ void UInteractableBase::OnTriggerEnter(UPrimitiveComponent* OverlappedComponent,
 	_interacter->OnInteractable(this, false);
 }
 
-void UInteractableBase::OnTriggerExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void UInteractableComponent::OnTriggerExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (OtherActor == nullptr)
 		return;
 
-	// 오브젝트에서 UUIInteracter 컴포넌트 찾기
-	UUIInteracter* _foundInteracter = OtherActor->FindComponentByClass<UUIInteracter>();
+	// 오브젝트에서 UInteracterComponent 컴포넌트 찾기
+	UInteracterComponent* _foundInteracter = OtherActor->FindComponentByClass<UInteracterComponent>();
 	if (_foundInteracter == nullptr)
 		return;
 
-	// 오브젝트의 UUIInteracter 컴포넌트와 비교
+	// 오브젝트의 UInteracterComponent 컴포넌트와 비교
 	if (_interacter != _foundInteracter)
 		return;
 
-	// UUIInteracter 컴포넌트와 UUIInteracterable 컴포넌트 연결 해제
+	// UInteracterComponent 컴포넌트와 UInteractableComponent 컴포넌트 연결 해제
 	_interacter = nullptr;
 	_foundInteracter->OnDisInteractable();
 
@@ -118,7 +118,7 @@ void UInteractableBase::OnTriggerExit(UPrimitiveComponent* OverlappedComponent, 
 	}
 }
 
-void UInteractableBase::InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType)
+void UInteractableComponent::InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType)
 {
 	_isDebugDraw = IsDebugDraw;
 	_collisionRadius = InteractRadius;
@@ -126,7 +126,7 @@ void UInteractableBase::InitializeUIInteractable(bool IsDebugDraw, float Interac
 	_interactUIType = InteractUIType;
 }
 
-bool UInteractableBase::TryInteract(bool& OutIsInterupt, bool& OutIsInteractEnter)
+bool UInteractableComponent::TryInteract(bool& OutIsInterupt, bool& OutIsInteractEnter)
 {
 	OutIsInterupt = false;
 	OutIsInteractEnter = false;
@@ -148,7 +148,7 @@ bool UInteractableBase::TryInteract(bool& OutIsInterupt, bool& OutIsInteractEnte
 	return true;
 }
 
-void UInteractableBase::ChangeInteractState(bool IsInteract)
+void UInteractableComponent::ChangeInteractState(bool IsInteract)
 {
 	_isInteract = IsInteract;
 	if (_isInteract)

@@ -1,14 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "JHS/UI/UIInteracter.h"
-#include "JHS/Interact/InteractableBase.h"
+#include "JHS/Interact/InteracterComponent.h"
+#include "JHS/Interact/InteractableComponent.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/UI/UIManager.h"
 #include "JHS/UI/UIPanelPlayerFPS.h"
 
 // Sets default values for this component's properties
-UUIInteracter::UUIInteracter()
+UInteracterComponent::UInteracterComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
@@ -17,7 +17,7 @@ UUIInteracter::UUIInteracter()
 
 
 // Called when the game starts
-void UUIInteracter::BeginPlay()
+void UInteracterComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -28,21 +28,21 @@ void UUIInteracter::BeginPlay()
 	_uiPanelPlayer = Cast<UUIPanelPlayerFPS>(_outUIManager->OpenUI(_playerUI));
 	if (_uiPanelPlayer == nullptr)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UUIInteracter: Failed to cast UI to UUIPanelPlayerFPS"));
+		UE_LOG(LogTemp, Error, TEXT("UInteracterComponent: Failed to cast UI to UUIPanelPlayerFPS"));
 		return;
 	}
 
 	_uiPanelPlayer->InitializeUI();
 }
 
-void UUIInteracter::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UInteracterComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
 }
 
-void UUIInteracter::OnInteractable(TObjectPtr<UInteractableBase> Interactable, bool IsInterrupt)
+void UInteracterComponent::OnInteractable(TObjectPtr<UInteractableComponent> Interactable, bool IsInterrupt)
 {
 	_interactable = Interactable;
 	if (_interactable != nullptr)
@@ -52,14 +52,14 @@ void UUIInteracter::OnInteractable(TObjectPtr<UInteractableBase> Interactable, b
 	}
 }
 
-void UUIInteracter::OnDisInteractable()
+void UInteracterComponent::OnDisInteractable()
 {
 	_interactable = nullptr;
 	_uiPanelPlayer->ChangeInteractable(E_INTERACT_TYPE::None);
 	_uiPanelPlayer->Open();
 }
 
-bool UUIInteracter::TryInteractInput(bool& OutIsInterupt, bool& OutIsInteractEnter)
+bool UInteracterComponent::TryInteractInput(bool& OutIsInterupt, bool& OutIsInteractEnter)
 {
 	if (_interactable == nullptr)
 		return false;
