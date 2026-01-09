@@ -103,34 +103,50 @@ void UUIInteracterable::OnTriggerExit(UPrimitiveComponent* OverlappedComponent, 
 	// UUIInteracter에서 이 UUIInteracterable 제거
 	_uiInteracter = nullptr;
 	_foundInteracter->OnDisInteractable();
-	_isInteract = false;
-	CloseUI();
+	if (_isInteract)
+	{
+		_isInteract = false;
+		OnInteractExit.Broadcast();
+		CloseInteractUI();
+	}
+}
+
+void UUIInteracterable::InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_UI_TYPE InteractUIType)
+{
+	_isDebugDraw = IsDebugDraw;
+	_collisionRadius = InteractRadius;
+	_openUIType = InteractUIType;
 }
 
 bool UUIInteracterable::TryInteract()
 {
 	if (_uiInteracter == nullptr)
+	{
+		OnInteractExit.Broadcast();
 		return false;
+	}
 
 	_isInteract = !_isInteract;
 	if (_isInteract)
 	{
-		OpenUI();
+		OpenInteractUI();
+		OnInteractEnter.Broadcast();
 		return true;
 	}
 	else
 	{
-		CloseUI();
+		OnInteractExit.Broadcast();
+		CloseInteractUI();
 		return false;
 	}
 }
 
-void UUIInteracterable::OpenUI()
+void UUIInteracterable::OpenInteractUI()
 {
 	_uiManager->OpenUI(_openUIType);
 }
 
-void UUIInteracterable::CloseUI()
+void UUIInteracterable::CloseInteractUI()
 {
 	_uiManager->CloseUI(_openUIType);
 }

@@ -12,6 +12,9 @@
 class UUIManager;
 class UUIInteracter;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractEnter);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractExit);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UUIInteracterable : public UActorComponent
 {
@@ -41,6 +44,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UIInteracter|UI")
 	bool _isInteract = false;
 
+public:
+	UPROPERTY(BlueprintAssignable, Category = "UIInteracter|Events")
+	FOnInteractEnter OnInteractEnter;
+
+	UPROPERTY(BlueprintAssignable, Category = "UIInteracter|Events")
+	FOnInteractExit OnInteractExit;
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -56,10 +66,12 @@ public:
 	void OnTriggerExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 public:
+	void InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_UI_TYPE InteractUIType);
+
 	bool TryInteract();
 
 private:
-	void OpenUI();
+	void OpenInteractUI();
 
-	void CloseUI();
+	void CloseInteractUI();
 };
