@@ -36,11 +36,11 @@ void AAsteroid::Tick(float DeltaTime)
 
 	if (!HasAuthority())
 		return;
-
+	
 	MoveAsteroid(DeltaTime);
 
 	float DestroyDist = FVector::Dist(InGameMode->GetSpaceStation()->GetActorLocation(), GetActorLocation());
-
+	
 	if (DestroyDist > DestroyDistance - 1)
 		Destroy();
 }
@@ -55,12 +55,58 @@ void AAsteroid::SetAsteroidInfo(
 	//운석의 크기 설정
 	SetActorScale3D(FVector(AsteroidInfo.Size));
 
-	//운석의 속도에 따라 우주선 방향과 속도가 더해진 벡터로 운석의 이동 방향이 정해짐
-	Direction = VSpaceShip - GetActorLocation() + (Velocity * Direction.Size());
+	bool bHasIntercept = CalculateInterceptPoint(
+		GetActorLocation(),
+		AsteroidInfo.Speed,
+		VSpaceShip,
+		Velocity,
+		TargetLocation
+	);
 
-	Direction.Normalize();
+	if (!bHasIntercept)
+		TargetLocation = VSpaceShip;
 
+	// === 방향 계산 ===
+	Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();
 	Direction *= AsteroidInfo.Speed;
+
+}
+
+bool AAsteroid::CalculateInterceptPoint(
+	const FVector& AsteroidPos,
+	float AsteroidSpeed,
+	const FVector& ShipPos,
+	const FVector& ShipVelocity,
+	FVector& OutTargetLocation
+)
+{
+	FVector R = ShipPos - AsteroidPos;
+	FVector V = ShipVelocity;
+
+	float a = FVector::DotProduct(V, V) - AsteroidSpeed * AsteroidSpeed;
+	float b = 2.f * FVector::DotProduct(R, V);
+	float c = FVector::DotProduct(R, R);
+
+	float Discriminant = b * b - 4.f * a * c;
+
+	if (Discriminant < 0.f)
+		return false;
+
+	float sqrtD = FMath::Sqrt(Discriminant);
+
+	float t1 = (-b - sqrtD) / (2.f * a);
+	float t2 = (-b + sqrtD) / (2.f * a);
+
+	float t = TNumericLimits<float>::Max();
+
+	if (t1 > 0.f) t = t1;
+	if (t2 > 0.f && t2 < t) t = t2;
+
+	if (t == TNumericLimits<float>::Max())
+		return false;
+
+	OutTargetLocation = ShipPos + ShipVelocity * t;
+	return true;
 }
 
 void AAsteroid::SetAsteroidRot()
@@ -85,6 +131,8 @@ void AAsteroid::Destroyed()
 {
 	Super::Destroyed();
 
+	AsteroidComponent->RemoveAsteroid(this);
+
 	SpaceObject_Remove();
 }
 
@@ -96,4 +144,17 @@ void AAsteroid::SpaceObject_Remove()
 	{
 		_spaceManager->RemoveSpaceObject(SpaceObjectComp);
 	}
+}
+
+void AAsteroid::DebugDrawing()
+{
+	DrawDebugSphere(
+		GetWorld(),
+		TargetLocation,
+		50.f,
+		16,
+		FColor::Red,
+		false,
+		5.f
+	);
 }

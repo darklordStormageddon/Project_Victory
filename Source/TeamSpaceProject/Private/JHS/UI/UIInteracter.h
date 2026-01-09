@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Components/BoxComponent.h"
 #include "JHS/UI/UIBase.h"
 
 #include "UIInteracter.generated.h"
 
 class UUIManager;
-class AJHSPlayerBase;
+class UUIPanelPlayerFPS;
+class UUIInteracterable;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UUIInteracter : public UActorComponent
@@ -22,16 +22,11 @@ public:
 	UUIInteracter();
 
 private:
-	TObjectPtr<UUIManager> _uiManager = nullptr;
+	const E_UI_TYPE _playerUI = E_UI_TYPE::UIPanelPlayerFPS;
 
-	TObjectPtr<UBoxComponent> _collisionComponent = nullptr;
+	TObjectPtr<UUIPanelPlayerFPS> _uiPanelPlayer = nullptr;
 
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UIInteracter|Open UI")
-	E_UI_TYPE _openUIType;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UIInteracter|Collision")
-	FVector _collisionBoxExtent = FVector(100.0f, 100.0f, 100.0f);
+	TObjectPtr<UUIInteracterable> _uiInteractable = nullptr;
 
 protected:
 	// Called when the game starts
@@ -41,14 +36,11 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	UFUNCTION()
-	void OnTriggerEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnTriggerExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
 public:
-	void OpenUI();
+	void OnInteractable(TObjectPtr<UUIInteracterable> UIInteractable);
 
-	void CloseUI();
+	void OnDisInteractable();
+
+	UFUNCTION(BlueprintCallable, Category = "UIInteracter|Interact")
+	void InteractInput();
 };

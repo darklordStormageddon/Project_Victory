@@ -5,6 +5,30 @@
 #include "CoreMinimal.h"
 #include "DataStruct.generated.h"
 
+UENUM(BlueprintType)
+enum class E_DATA_TYPE : uint8
+{
+	HP = 0 UMETA(DisplayName = "HP"),
+	Shield UMETA(DisplayName = "Shield"),
+	Fuel UMETA(DisplayName = "Fuel"),
+};
+
+USTRUCT(BlueprintType)
+struct FMaxCurrentData
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	E_DATA_TYPE DataType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float MaxValue;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float CurrentValue;
+};
+
 USTRUCT(BlueprintType)
 struct FSpaceShipData
 {
@@ -12,14 +36,11 @@ struct FSpaceShipData
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceShipData")
-	float MaxHP;
+	FMaxCurrentData Hp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceShipData")
-	float CurrentHP;
+	FMaxCurrentData Shield;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceShipData")
-	float MaxShield;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceShipData")
-	float CurrentShield;
+	FMaxCurrentData Fuel;
 };

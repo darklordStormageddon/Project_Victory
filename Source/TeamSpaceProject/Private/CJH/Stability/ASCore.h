@@ -6,20 +6,35 @@
 #include "GameFramework/Actor.h"
 #include "ASCore.generated.h"
 
-class AASManager;
+class ASpaceStation;
 
 UCLASS()
 class AASCore : public AActor
 {
 	GENERATED_BODY()
+private:
+	struct FInfo
+	{
+		float Speed;
+		FVector Direction;
+	};
 
 private:
-	void SpawnBody();
+	bool bChangeDirection = false;
 
-	UPROPERTY()
-	AASManager* Manager;
+	UPROPERTY(EditDefaultsOnly, Category = "Delay")
+	float ResetChangeDelay = 3.f;
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+public:
+	FInfo Info;
+
+private:
+	void Move(float DeltaTime);
+	void DistanceCheck();
+	void ReSetVector(ASpaceStation* SpaceStation, float Radius);
+	void ResetChangeDirection();
+
+public:
+	AASCore();
+	virtual void Tick(float DeltaTime) override;
 };

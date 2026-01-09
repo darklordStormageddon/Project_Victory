@@ -6,7 +6,7 @@
 #include "TeamSpaceProject/TeamSpaceProjectCharacter.h"
 #include "JHSPlayerBase.generated.h"
 
-class UUIInteracter;
+class AJHSGameState;
 
 UCLASS()
 class AJHSPlayerBase : public ATeamSpaceProjectCharacter
@@ -18,9 +18,7 @@ public:
 	AJHSPlayerBase();
 
 private:
-	TObjectPtr<UUIInteracter> _uiInteracter = nullptr;
-
-	bool _isInteract = false;
+	TObjectPtr<AJHSGameState> _gameState = nullptr;
 
 protected:
 	// Called when the game starts or when spawned
@@ -32,11 +30,4 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-protected:
-	UFUNCTION(BlueprintCallable, Category = "JHSPlayerBase|Input")
-	void InteractInput();
-
-public:
-	void ChangeInteractable(TObjectPtr<UUIInteracter> UIInteracter);
 };

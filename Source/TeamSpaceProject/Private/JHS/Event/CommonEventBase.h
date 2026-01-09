@@ -31,11 +31,11 @@ public:
 		: Super(ObjectInitializer)
 	{}
 
-	UEventOnChangeSpaceShipData(FSpaceShipData InSpaceShipData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+	UEventOnChangeSpaceShipData(FMaxCurrentData InMaxCurrentData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
-		, SpaceShipData(InSpaceShipData)
+		, MaxCurrentData(InMaxCurrentData)
 	{}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|SpaceShipData")
-	FSpaceShipData SpaceShipData;
+	FMaxCurrentData MaxCurrentData;
 };

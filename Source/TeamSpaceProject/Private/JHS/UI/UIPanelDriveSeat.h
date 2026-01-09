@@ -36,6 +36,12 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* TXT_SpaceShipHP;
 
+	UPROPERTY(meta = (BindWidget))
+	UProgressBar* PROG_SpaceShipFuel;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* TXT_SpaceShipFuel;
+
 	FDelegateHandle _eventHandle;
 
 protected:
@@ -45,4 +51,6 @@ protected:
 
 public:
 	void OnChangeSpaceShipData(UEventOnChangeSpaceShipData* Event);
+
+	void UpdateSpaceShipUI(float CurrentValue, float MaxValue, UTextBlock* TextBlock, UProgressBar* ProgressBar);
 };

@@ -3,60 +3,72 @@
 
 #include "CJH/Stability/ASCore.h"
 
-#include "CJH/Stability/ASManager.h"
-#include "CJH/Stability/ASBody.h"
-#include "CJH/Stability/ASWing.h"
+#include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/Player/SpaceStation.h"
 
-#include "Kismet/GameplayStatics.h"
-
-// Called when the game starts or when spawned
-void AASCore::BeginPlay()
+AASCore::AASCore()
 {
-	Super::BeginPlay();
+	PrimaryActorTick.bCanEverTick = true;
+}
 
-	AActor* ActorManager = UGameplayStatics::GetActorOfClass(this, AASManager::StaticClass());
-	if (!ActorManager)
+void AASCore::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if(!bChangeDirection)
+		DistanceCheck();
+
+	Move(DeltaTime);
+}
+
+void AASCore::Move(float DeltaTime)
+{
+	FVector NewLocation = GetActorLocation() + (Info.Direction * Info.Speed * DeltaTime);
+	AddActorWorldOffset(NewLocation - GetActorLocation());
+}
+
+void AASCore::DistanceCheck()
+{
+	AJHSGameMode* InGameMode = Cast<AJHSGameMode>(GetWorld()->GetAuthGameMode());
+	if (!InGameMode)
 		return;
 
-	Manager = Cast<AASManager>(ActorManager);
-	if (!Manager)
+	ASpaceStation* SpaceStation = InGameMode->GetSpaceStation();
+	if (!SpaceStation)
 		return;
+
+	//SpaceRadius 범위를 벗어나면 범위 내 특정 장소를 랜덤으로 설정 해서 도달 후 방향 재설정
+	float Distance = FVector::Dist(SpaceStation->GetActorLocation(), GetActorLocation());
+	float Radius = InGameMode->GetSpaceRadius();
 	
-	// 본체 스폰 함수 호출
-	SpawnBody();
+	if (!bChangeDirection && Distance > Radius)
+	{
+		FTimerHandle TimerHandle;
+
+		ReSetVector(SpaceStation, Radius);
+		bChangeDirection = true;
+
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle,
+			this,
+			&AASCore::ResetChangeDirection,
+			ResetChangeDelay,
+			false
+		);
+	}
 }
 
-void AASCore::SpawnBody()
+void AASCore::ReSetVector(ASpaceStation* SpaceStation, float Radius)
 {
-	AActor* ActorManager = UGameplayStatics::GetActorOfClass(this, AASManager::StaticClass());
-	if (!ActorManager)
-		return;
-
-	AASManager* GetManager = Cast<AASManager>(ActorManager);
-	if (!GetManager)
-		return;
-
-	// 스폰할 수 있는 본체 종류 수 가져오기
-	int BodiesNum = GetManager->GetBodiesNum();
-	if (BodiesNum <= 0)
-		return;
-
-	// 본체 종류 중 랜덤으로 하나 선택
-	int Index = FMath::RandRange(0, BodiesNum - 1);
-
-	// 폐기물 매니저한테 본체 스폰 함수 호출 요청
-	AASBody* BodyActor = GetManager->Artifical_Satellite_Body_Spawn(
-		this->GetActorLocation(),
-		this->GetActorRotation(),
-		Index
+	FVector TargetLocation = FVector(
+		FMath::RandRange(SpaceStation->GetActorLocation().X - Radius, SpaceStation->GetActorLocation().X + Radius),
+		FMath::RandRange(SpaceStation->GetActorLocation().Y - Radius, SpaceStation->GetActorLocation().Y + Radius),
+		FMath::RandRange(SpaceStation->GetActorLocation().Z - Radius, SpaceStation->GetActorLocation().Z + Radius)
 	);
-
-	if(!BodyActor)
-		return;
-
-	// 스폰된 본체를 코어에 부착
-	BodyActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-
+	Info.Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();
 }
 
-
+void AASCore::ResetChangeDirection()
+{
+	bChangeDirection = false;
+}

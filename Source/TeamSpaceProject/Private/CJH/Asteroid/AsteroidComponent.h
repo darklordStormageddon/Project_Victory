@@ -12,7 +12,6 @@
 
 #include "AsteroidComponent.generated.h"
 
-
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 
 class UAsteroidComponent : public UActorComponent
@@ -20,6 +19,9 @@ class UAsteroidComponent : public UActorComponent
 	GENERATED_BODY()
 private:
 	FTimerHandle SpawnTimerHandle;
+
+	UPROPERTY(EditAnywhere, Category = "Asteroid Spawn")
+	bool debugDraw = false;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float MinSpawnDelay = 0.1f;
@@ -53,9 +55,13 @@ private:
 	bool bIsSpawning = false;
 
 	FVector ShipSpeed;
+
+	TArray<AAsteroid*> Asteroids;
+
 private:
 	void CanSpawn();
 	void SpawnAsteroid();
+
 	float SetDamage(float Speed, float Size);
 
 public:
@@ -69,7 +75,7 @@ protected:
 public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
+	void RemoveAsteroid(AAsteroid* _removeTarget);
 
 };
  
