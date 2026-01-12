@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "JHS/UI/UIBase.h"
+#include "Delegates/Delegate.h"
 #include "Components/CanvasPanel.h"
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
-#include "Delegates/Delegate.h"
 #include "UIPanelDriveSeat.generated.h"
 
 class UEventOnChangeSpaceShipData;
@@ -21,6 +21,8 @@ class UUIPanelDriveSeat : public UUIBase
 	GENERATED_BODY()
 
 private:
+	FDelegateHandle _eventHandle;
+
 	UPROPERTY(meta = (BindWidget))
 	UCanvasPanel* Plate_SpaceShipInfo;
 
@@ -42,15 +44,11 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* TXT_SpaceShipFuel;
 
-	FDelegateHandle _eventHandle;
-
 protected:
-	void OnOpen() override;
+	void RegisterEvent() override;
 
-	void OnClose() override;
+	void UnregisterEvent() override;
 
 public:
 	void OnChangeSpaceShipData(UEventOnChangeSpaceShipData* Event);
-
-	void UpdateSpaceShipUI(float CurrentValue, float MaxValue, UTextBlock* TextBlock, UProgressBar* ProgressBar);
 };

@@ -20,24 +20,51 @@ public:
 
 private:
 	TObjectPtr<UEventManager> _cachedEventManager = nullptr;
+
+	TMap<int32, FPlayerStateData> _playerStateMap;
 	
 protected:
 	UPROPERTY(EditAnywhere, Category = "GameMode|Game Data")
-	FSpaceShipData _spaceShipData;
+	FSpaceShipState _spaceShipState;
+
+	UPROPERTY(EditAnywhere, Category = "GameMode|Game Data")
+	float _maxPlayerRadiation = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Test")
+	int32 _testPlayerCount = 4;
+
+public:
+	int32 GetPlayerCount() { return _playerStateMap.Num(); }
+
+protected:
+	virtual void BeginPlay() override;
+
+public:
+	void InitializeGameState(TArray<FPlayerStateData> PlayerStateArray);
+
+	void SendCurrentDataEvent();
+
+#pragma region SpaceShip
+public:
+	void RepairSpaceShip();
+
+	void DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType, float DecreaseValue);
+
+	void RepairShield(float RepairShieldValue);
+
+private:
+	void ChangeSpaceShipData(FSpaceShipData* OriginalData, float CurrentValue);
+
+	void ChangeSpaceShipData(FSpaceShipData* OriginalData, float CurrentValue, float MaxValue);
+#pragma endregion SpaceShip
+
+#pragma region Player State
+public:
+	void IncreasePlayerRadiation(int32 PlayerIdx, float IncreaseValue);
+#pragma endregion Player State
 
 private:
 	TObjectPtr<UEventManager> GetEventManager();
 
-	void ChangeSpaceShipData(FMaxCurrentData* OriginalData, float CurrentValue);
-
-	void ChangeSpaceShipData(FMaxCurrentData* OriginalData, float CurrentValue, float MaxValue);
-
-public:
-	void SendCurrentDataEvent();
-
-	void RepairSpaceShip();
-
-	void DecreaseSpaceShipData(E_DATA_TYPE DataType, float DecreaseValue);
-
-	void RepairShield(float RepairShieldValue);
+	
 };

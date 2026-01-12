@@ -3,6 +3,8 @@
 
 #include "JHS/UI/UIBase.h"
 #include "Components/Widget.h"
+#include "Components/TextBlock.h"
+#include "Components/ProgressBar.h"
 
 UUIBase::UUIBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -75,5 +77,21 @@ void UUIBase::SetAsLastSibling()
 	{
 		RemoveFromParent();
 		AddToViewport(INT_MAX);
+	}
+}
+
+void UUIBase::SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar* ProgressBar, UTextBlock* TextBlock)
+{
+	if (ProgressBar == nullptr)
+		return;
+
+	float _percent = MaxValue > 0.0f ? (CurrentValue / MaxValue) : 0.0f;
+	ProgressBar->SetPercent(_percent);
+
+	if (TextBlock != nullptr)
+	{
+		FString _text = FString::Printf(TEXT("%d / %d"), (int32)CurrentValue, (int32)MaxValue);
+		TextBlock->SetText(FText::FromString(_text));
+		
 	}
 }

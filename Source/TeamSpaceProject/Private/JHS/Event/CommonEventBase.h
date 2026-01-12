@@ -31,11 +31,31 @@ public:
 		: Super(ObjectInitializer)
 	{}
 
-	UEventOnChangeSpaceShipData(FMaxCurrentData InMaxCurrentData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+	UEventOnChangeSpaceShipData(FSpaceShipData SpaceShipData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
-		, MaxCurrentData(InMaxCurrentData)
+		, SpaceShipDataData(SpaceShipData)
 	{}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|SpaceShipData")
-	FMaxCurrentData MaxCurrentData;
+	FSpaceShipData SpaceShipDataData;
+};
+
+UCLASS(BlueprintType)
+class UEventOnChangePlayerRadiation : public UCommonEventBase
+{
+	GENERATED_BODY()
+
+public:
+	UEventOnChangePlayerRadiation(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{}
+
+	UEventOnChangePlayerRadiation(FPlayerStateData PlayerStateData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+		, PlayerStateData(PlayerStateData)
+	{
+	}
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|SpaceShipData")
+	FPlayerStateData PlayerStateData;
 };

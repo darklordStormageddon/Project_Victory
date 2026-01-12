@@ -25,9 +25,9 @@ enum class E_UI_TYPE : uint8
 	UISystemSetting = 200 UMETA(DisplayName = "UISystemSetting"),
 };
 
-/**
- * 
- */
+class UTextBlock;
+class UProgressBar;
+
 UCLASS()
 class UUIBase : public UUserWidget
 {
@@ -35,6 +35,10 @@ class UUIBase : public UUserWidget
 
 public:
 	UUIBase(const FObjectInitializer& ObjectInitializer);
+
+private:
+	bool _isInitialized = false;
+	bool _isActive = false;
 
 protected:
 	virtual void NativeConstruct() override;
@@ -64,7 +68,6 @@ public:
 
 	void SetAsLastSibling();
 
-private:
-	bool _isInitialized = false;
-	bool _isActive = false;
+public:
+	static void SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar* ProgressBar, UTextBlock* TextBlock);
 };

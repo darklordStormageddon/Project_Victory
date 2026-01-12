@@ -46,9 +46,14 @@ void AJHSPlayerBase::Tick(float DeltaTime)
 	if (_gameState == nullptr)
 		return;
 
-	/*_gameState->DecreaseSpaceShipData(E_DATA_TYPE::HP, 0.02f);
-	_gameState->DecreaseSpaceShipData(E_DATA_TYPE::Shield, 0.005f);
-	_gameState->DecreaseSpaceShipData(E_DATA_TYPE::Fuel, 0.01f);*/
+	if (_gameState->GetPlayerCount() > 0)
+	{
+		for (int32 _playerIdx = 0; _playerIdx < _gameState->GetPlayerCount(); ++_playerIdx)
+		{
+			float _increaseValue = (_playerIdx + 1) * 0.01f;
+			_gameState->IncreasePlayerRadiation(_playerIdx, _increaseValue);
+		}
+	}
 }
 
 // Called to bind functionality to input

@@ -7,10 +7,8 @@
 #include "JHS/Event/EventManager.h"
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/DataStruct.h"
-#include "Components/TextBlock.h"
-#include "Components/ProgressBar.h"
 
-void UUIPanelDriveSeat::OnOpen()
+void UUIPanelDriveSeat::RegisterEvent()
 {
 	// 이벤트 리스너 등록
 	UEventManager* _outEventManager = nullptr;
@@ -31,7 +29,7 @@ void UUIPanelDriveSeat::OnOpen()
 	_outGameState->SendCurrentDataEvent();
 }
 
-void UUIPanelDriveSeat::OnClose()
+void UUIPanelDriveSeat::UnregisterEvent()
 {
 	// 이벤트 리스너 제거
 	UEventManager* _eventManager = nullptr;
@@ -50,35 +48,23 @@ void UUIPanelDriveSeat::OnChangeSpaceShipData(UEventOnChangeSpaceShipData* Event
 	if (Event == nullptr)
 		return;
 
-	FMaxCurrentData _maxCurrentData = Event->MaxCurrentData;
+	FSpaceShipData _maxCurrentData = Event->SpaceShipDataData;
 
 	switch (_maxCurrentData.DataType)
 	{
-		case E_DATA_TYPE::HP:
-			UpdateSpaceShipUI(_maxCurrentData.CurrentValue, _maxCurrentData.MaxValue, TXT_SpaceShipHP, PROG_SpaceShipHP);
+		case E_SPACE_SHIP_DATA_TYPE::HP:
+			SetProgressBarUI(_maxCurrentData.Values.CurrentValue, _maxCurrentData.Values.MaxValue, PROG_SpaceShipHP, TXT_SpaceShipHP);
 			break;
 
-		case E_DATA_TYPE::Shield:
-			UpdateSpaceShipUI(_maxCurrentData.CurrentValue, _maxCurrentData.MaxValue, TXT_SpaceShipShield, PROG_SpaceShipShield);
+		case E_SPACE_SHIP_DATA_TYPE::Shield:
+			SetProgressBarUI(_maxCurrentData.Values.CurrentValue, _maxCurrentData.Values.MaxValue, PROG_SpaceShipShield, TXT_SpaceShipShield);
 			break;
 
-		case E_DATA_TYPE::Fuel:
-			UpdateSpaceShipUI(_maxCurrentData.CurrentValue, _maxCurrentData.MaxValue, TXT_SpaceShipFuel, PROG_SpaceShipFuel);
+		case E_SPACE_SHIP_DATA_TYPE::Fuel:
+			SetProgressBarUI(_maxCurrentData.Values.CurrentValue, _maxCurrentData.Values.MaxValue, PROG_SpaceShipFuel, TXT_SpaceShipFuel);
 			break;
 
 		default:
 			break;
 	}
-}
-
-void UUIPanelDriveSeat::UpdateSpaceShipUI(float CurrentValue, float MaxValue, UTextBlock* TextBlock, UProgressBar* ProgressBar)
-{
-	if (TextBlock == nullptr || ProgressBar == nullptr)
-		return;
-
-	float _percent = MaxValue > 0.0f ? (CurrentValue / MaxValue) : 0.0f;
-	ProgressBar->SetPercent(_percent);
-
-	FString _text = FString::Printf(TEXT("%d / %d"), (int32)CurrentValue, (int32)MaxValue);
-	TextBlock->SetText(FText::FromString(_text));
 }
