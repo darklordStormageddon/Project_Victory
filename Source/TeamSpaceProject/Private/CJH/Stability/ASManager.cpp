@@ -4,45 +4,49 @@
 #include "CJH/Stability/ASManager.h"
 
 #include "CJH/Stability/ASCore.h"
-#include "CJH/Stability/ASBody.h"
+
+#include "JHS/Player/SpaceStation.h"
+
+#include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
 
 #include "Kismet/GameplayStatics.h"
 
-// Sets default values
-AASManager::AASManager()
-{
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-
-}
 
 // Called when the game starts or when spawned
 void AASManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Artifical_Satellite_Core_Spawn();
+	GetSetting();
+
+	// 폐기물 위성 스폰 함수 호출
+	Artifical_Satellite_Spawn();
 }
 
-// Called every frame
-void AASManager::Tick(float DeltaTime)
+void AASManager::GetSetting()
 {
-	Super::Tick(DeltaTime);
-
+	AJHSGameMode* InGameMode = nullptr;
+	
+	if (!UStaticFunctionLibrary::TryGetGameMode(InGameMode)) return;
+	
+	if (InGameMode)
+	{
+		spaceStation = InGameMode->GetSpaceStation();
+		Spawn_Distance = InGameMode->GetSpaceRadius();
+	}
 }
 
-void AASManager::Artifical_Satellite_Core_Spawn()
+void AASManager::Artifical_Satellite_Spawn()
 {
+	// 폐기물 스폰 개수 랜덤 결정
 	int Spawn_Num = FMath::RandRange(min_Spawn, max_Spawn);
 
-	AActor* Center_Actor = UGameplayStatics::GetActorOfClass(GetWorld(), Center);
-	if (!Center_Actor)
-		return;
-
-	FVector CenterLocation = Center_Actor->GetActorLocation();
+	FVector CenterLocation = spaceStation->GetActorLocation();
 
 	for (int i = 0; i < Spawn_Num; i++)
 	{
+		// 스폰 위치와 회전 랜덤 결정
 		FVector Spawn_Location = FVector(
 			FMath::RandRange(CenterLocation.X - Spawn_Distance, CenterLocation.X + Spawn_Distance),
 			FMath::RandRange(CenterLocation.Y - Spawn_Distance, CenterLocation.Y + Spawn_Distance),
@@ -55,49 +59,22 @@ void AASManager::Artifical_Satellite_Core_Spawn()
 			FMath::RandRange(0, 360)
 		);
 
-		GetWorld()->SpawnActor<AActor>(Core, Spawn_Location, Spawn_Rotation);
+		// 폐기물 위성 코어 스폰
+		if(Artifical_Satellite.Num() <= 0)
+			return;
+
+		int AS_Num = FMath::RandRange(0, Artifical_Satellite.Num() - 1);
+
+		AASCore* Spawned_AS;
+		Spawned_AS = GetWorld()->SpawnActor<AASCore>(Artifical_Satellite[AS_Num], Spawn_Location, Spawn_Rotation);
+		
+		Spawned_AS->Info.Speed = FMath::RandRange(min_Speed, max_Speed);
+		FVector RandDir = FVector(
+			FMath::RandRange(-1.f, 1.f),
+			FMath::RandRange(-1.f, 1.f),
+			FMath::RandRange(-1.f, 1.f)
+		);
+		Spawned_AS->Info.Direction = RandDir.GetSafeNormal();
 	}
 }
 
-AASBody* AASManager::Artifical_Satellite_Body_Spawn(
-	FVector Spawn_Location,
-	FRotator Spawn_Rotation,
-	int Value)
-{
-	// 범위 검사 추가
-	if (Value < 0 || Value >= Bodies.Num())
-		return nullptr;
-
-	if (Bodies[Value])
-		return GetWorld()->SpawnActor<AASBody>(Bodies[Value], Spawn_Location, Spawn_Rotation);
-	else
-		return nullptr;
-}
-AASWing* AASManager::Artifical_Satellite_Wing_Spawn(
-	FVector Spawn_Location,
-	FRotator Spawn_Rotation,
-	float RestNum,
-	int Value,
-	bool Direction)
-{
-	if (RestNum > 0)
-	{
-		AASWing* NextWing = GetWorld()->SpawnActor<AASWing>(Wings[Value], Spawn_Location, Spawn_Rotation);
-		NextWing->RestWing = RestNum - 1;
-		NextWing->Numbering = Value;
-
-		if(Direction)
-			NextWing->Direction = true;
-		else
-			NextWing->Direction = false;
-
-		return NextWing;
-	}
-	else
-		return nullptr;
-}
-
-float AASManager::CorrectWingNum() { return FMath::RandRange(min_Wing, max_Wing); }
-
-int AASManager::GetBodiesNum() { return Bodies.Num(); }
-int AASManager::GetWingsNum() { return Wings.Num(); }

@@ -2,8 +2,8 @@
 
 
 #include "JHS/SpaceObject/DriveSeatRader.h"
+#include "JHS/GameControl/Contant/ConstantLibrary.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
-#include "JHS/GameControl/JHSGameMode.h"
 
 // Sets default values
 ADriveSeatRader::ADriveSeatRader()
@@ -14,16 +14,17 @@ ADriveSeatRader::ADriveSeatRader()
 	_rootComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RootComponent"));
 	_rootComponent->SetupAttachment(RootComponent);
 
-	_spaceShipCenter = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RaderCenter"));
+	_spaceShipCenter = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpaceShipCenter"));
 	_spaceShipCenter->SetupAttachment(_rootComponent);
+
+	_driveSeatRaderCenter = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DriveRaderCenter"));
+	_driveSeatRaderCenter->SetupAttachment(_rootComponent);
 }
 
 // Called when the game starts or when spawned
 void ADriveSeatRader::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	InitializeDriveSeatRader();
 }
 
 // Called every frame
@@ -31,22 +32,52 @@ void ADriveSeatRader::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-}
-
-void ADriveSeatRader::InitializeDriveSeatRader()
-{
-	AJHSGameMode* OutGameMode = nullptr;
-	if (!UStaticFunctionLibrary::GetGameMode(OutGameMode))
-		return;
-
-	_spaceObjectManager = OutGameMode->GetSpaceObjectManager();
-}
-
-void ADriveSeatRader::UpdateDriveSeatRader()
-{
-	if (!_spaceObjectManager)
+	// _spaceShip의 회전각의 부호 반대값으로 _driveSeatRaderCenter 회전
+	if (_spaceShip != nullptr)
 	{
-		UE_LOG(LogTemp, Error, TEXT("SpaceRader: SpaceObjectManager is nullptr"));
-		return;
+		// _spaceShipCenter를 회전
+		FRotator _spaceShipRotator = _spaceShip->GetActorRotation();
+		_spaceShipCenter->SetRelativeRotation(_spaceShipRotator);
+
+		// _driveSeatRaderCenter를 회전
+		//FVector _spaceShipRotation = FVector(_spaceShipRotator.Roll, _spaceShipRotator.Pitch, _spaceShipRotator.Yaw);
+
+		//FVector _driveRaderRotation;
+		//_driveRaderRotation.X = 360.f - FMath::Fmod((_spaceShipRotation.X + 360.f), 360.f);
+		//_driveRaderRotation.Y = 360.f - FMath::Fmod((_spaceShipRotation.Y + 360.f), 360.f);
+		//_driveRaderRotation.Z = 360.f - FMath::Fmod((_spaceShipRotation.Z + 360.f), 360.f);
+
+		////언리얼 에디터에 디스플레이 로그
+		//GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Blue, FString::Printf(TEXT("X: %f, Y: %f, Z: %f"), _driveRaderRotation.X, _driveRaderRotation.Y, _driveRaderRotation.Z));
+		//FRotator _driveRaderRotator = FRotator::MakeFromEuler(_driveRaderRotation);
+		//_driveSeatRaderCenter->SetRelativeRotation(_driveRaderRotator);
 	}
+
+	if (_spaceShip != nullptr)
+	{
+		DrawDebugSphere(GetWorld(), _spaceShip->GetActorLocation(), _spaceShipDetectRadius, 10, FColor::Green, false, DeltaTime * 1.01);
+	}
+
+	DrawDebugSphere(GetWorld(), _driveSeatRaderCenter->GetComponentLocation(), _raderRadius, 10, FColor::Blue, false, DeltaTime * 1.01);
+}
+
+void ADriveSeatRader::InitializeRader()
+{
+	
+}
+
+FString ADriveSeatRader::GetFilePathName()
+{
+	return ConstantLibrary::Resource.SpaceObject.DRIVE_RADER_FOLDER;
+}
+
+FString ADriveSeatRader::GetFileHeaderName()
+{
+	return ConstantLibrary::Resource.SpaceObject.DRIVE_RADER_HEADER;
+}
+
+void ADriveSeatRader::SetSpaceShip(TObjectPtr<AActor> SpaceShip)
+{
+	_spaceShip = SpaceShip;
+	RenderSpaceObjectToRader(_spaceShip, _driveSeatRaderCenter, _spaceShipDetectRadius);
 }

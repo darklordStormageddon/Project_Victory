@@ -1,25 +1,20 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "CJH/Asteroid/AsteroidComponent.h"
-#include "CJH/Asteroid/Asteroid.h"
 #include "Engine/World.h"
 
 #include "TimerManager.h"
+
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "JHS/GameControl/JHSGameMode.h"
 
-// Sets default values for this component's properties
+#include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+
 UAsteroidComponent::UAsteroidComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
 }
-
-
 // Called when the game starts
 void UAsteroidComponent::BeginPlay()
 {
@@ -70,9 +65,9 @@ void UAsteroidComponent::SpawnAsteroid()
 
 	if (!World || !Owner || !Target) return;
 
-	AJHSGameMode* InGameMode = Cast<AJHSGameMode>(World->GetAuthGameMode());
-	if (!InGameMode)
-		return;
+	AJHSGameMode* InGameMode;
+
+	if (!UStaticFunctionLibrary::TryGetGameMode(InGameMode)) return;
 
 	// 스폰 플래그 설정
 	bIsSpawning = true;
@@ -122,6 +117,7 @@ void UAsteroidComponent::SpawnAsteroid()
 		Asteroid->AsteroidComponent = this;
 		Asteroid->SetReplicates(true);
 		Asteroid->SetReplicateMovement(true);
+		Asteroid->AsteroidComponent = this;
 
 		Asteroid->SetAsteroidInfo(
 			Info, // 운석의 속도, 크기, 체력, 대미지
@@ -130,6 +126,10 @@ void UAsteroidComponent::SpawnAsteroid()
 		);
 
 		Asteroid->DestroyDistance = InGameMode->GetSpaceRadius();
+		Asteroids.Add(Asteroid);
+
+		if(debugDraw)
+			Asteroid->DebugDrawing();
 	}
 }
 
@@ -137,4 +137,14 @@ float UAsteroidComponent::SetDamage(float Speed, float Size)
 {
 	float Damage = BaseDamage + (Size * Speed / 100.f);//0.3~40 //10.3~50
 	return Damage;
+}
+
+void UAsteroidComponent::RemoveAsteroid(AAsteroid* _removeTarget)
+{
+	if (_removeTarget)
+	{
+		Asteroids.Remove(_removeTarget);
+		//어레이 공간 정리
+		Asteroids.Shrink();
+	}
 }
