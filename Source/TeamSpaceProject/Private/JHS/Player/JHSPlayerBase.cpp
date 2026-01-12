@@ -2,7 +2,6 @@
 
 
 #include "JHS/Player/JHSPlayerBase.h"
-#include "JHS/UI/UIInteracter.h"
 
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"

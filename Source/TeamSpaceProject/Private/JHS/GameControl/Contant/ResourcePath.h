@@ -47,7 +47,7 @@ public:
 		, UI_PANEL_FOLDER(TEXT("UI/Panel/"))
 		, UI_POPUP_FOLDER(TEXT("UI/Popup/Common/"))
 		, UI_SYSTEM_FOLDER(TEXT("UI/System/"))
-		, UI_WIDGET_PREFIX(TEXT("WBP_"))
+		, UI_WIDGET_HEADER(TEXT("WBP_"))
 	{}
 
 	// UI Blueprint
@@ -64,7 +64,7 @@ public:
 	FString UI_SYSTEM_FOLDER;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|UI")
-	FString UI_WIDGET_PREFIX;
+	FString UI_WIDGET_HEADER;
 };
 
 /**
