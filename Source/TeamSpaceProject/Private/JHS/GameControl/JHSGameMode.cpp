@@ -4,10 +4,14 @@
 #include "JHS/GameControl/JHSGameMode.h"
 #include "Kismet/GameplayStatics.h"
 #include "JHS/SpaceObject/SpaceObjectManager.h"
+#include "JHS/UI/UIManager.h"
+#include "JHS/Event/EventManager.h"
 
 AJHSGameMode::AJHSGameMode()
 {
 	_spaceObjectManager = CreateDefaultSubobject<USpaceObjectManager>(TEXT("SpaceObjectManager"));
+	_uiManager = CreateDefaultSubobject<UUIManager>(TEXT("UIManager"));
+	_eventManager = CreateDefaultSubobject<UEventManager>(TEXT("EventManager"));
 }
 
 void AJHSGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
@@ -38,12 +42,6 @@ ASpaceStation* AJHSGameMode::GetSpaceStation()
 		{
 			_spaceStation = Cast<ASpaceStation>(_foundSpaceStationArray[0]);
 		}
-	}
-
-	if (_spaceStation == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("AJHSGameMode: SpaceStation is not found"));
-		return nullptr;
 	}
 
 	return _spaceStation;

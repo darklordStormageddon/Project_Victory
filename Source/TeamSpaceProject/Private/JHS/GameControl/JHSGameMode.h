@@ -8,6 +8,8 @@
 #include "JHSGameMode.generated.h"
 
 class USpaceObjectManager;
+class UUIManager;
+class UEventManager;
 
 UCLASS()
 class AJHSGameMode : public AGameMode
@@ -24,6 +26,12 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Space Object Manager")
 	TObjectPtr<USpaceObjectManager> _spaceObjectManager;
 
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameMode|UI Manager")
+	TObjectPtr<UUIManager> _uiManager;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Event Manager")
+	TObjectPtr<UEventManager> _eventManager;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Space Size")
 	float _spaceRadius = 1000.0f;
 
@@ -37,9 +45,15 @@ protected:
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 
 public:
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Category = "GameMode|Space Station")
 	ASpaceStation* GetSpaceStation();
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Category = "GameMode|Space Object Manager")
 	USpaceObjectManager* GetSpaceObjectManager() { return _spaceObjectManager; }
+
+	UFUNCTION(BlueprintCallable, Category = "GameMode|UI Manager")
+	UUIManager* GetUIManager() { return _uiManager; }
+
+	UFUNCTION(BlueprintCallable, Category = "GameMode|Event Manager")
+	UEventManager* GetEventManager() { return _eventManager; }
 };

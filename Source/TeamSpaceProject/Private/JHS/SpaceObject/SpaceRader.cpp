@@ -2,6 +2,7 @@
 
 
 #include "JHS/SpaceObject/SpaceRader.h"
+#include "JHS/GameControl/Contant/ConstantLibrary.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameMode.h"
 #include "UObject/ConstructorHelpers.h"
@@ -44,18 +45,22 @@ void ASpaceRader::Tick(float DeltaTime)
 void ASpaceRader::InitializeRader()
 {
 	AJHSGameMode* OutGameMode = nullptr;
-	if (!UStaticFunctionLibrary::GetGameMode(OutGameMode))
+	if (!UStaticFunctionLibrary::TryGetGameMode(OutGameMode))
 		return;
 
 	_spaceStation = Cast<AActor>(OutGameMode->GetSpaceStation());
 	_spaceRadius = OutGameMode->GetSpaceRadius();
-	_raderRate = _raderRadius / _spaceRadius;
 
 	// 레이더 표시 시작
-	RenderSpaceObjectToRader(_spaceStation, _raderCenter->GetComponentLocation(), _spaceRadius, _raderRate);
+	RenderSpaceObjectToRader(_spaceStation, _raderCenter, OutGameMode->GetSpaceRadius());
+}
+
+FString ASpaceRader::GetFilePathName()
+{
+	return ConstantLibrary::Resource.SpaceObject.SPACE_RADER_FOLDER;
 }
 
 FString ASpaceRader::GetFileHeaderName()
 {
-	return "BP_RO";
+	return ConstantLibrary::Resource.SpaceObject.SPACE_RADER_HEADER;
 }

@@ -3,8 +3,11 @@
 
 #include "JHS/Player/SpaceStation.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
-#include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/SpaceObject/SpaceObjectComponent.h"
+
+#include "JHS/GameControl/JHSGameState.h"
+#include "JHS/UI/UIManager.h"
+#include "JHS/UI/UIPanelDriveSeat.h"
 
 // Sets default values
 ASpaceStation::ASpaceStation()
@@ -16,19 +19,16 @@ ASpaceStation::ASpaceStation()
 	_rootComponent->SetupAttachment(RootComponent);
 
 	_spaceObjectComponent = CreateDefaultSubobject<USpaceObjectComponent>(TEXT("SpaceObjectComponent"));
-	//_spaceObjectComponent->SetOwner(_rootComponent);
 }
 
 // Called when the game starts or when spawned
 void ASpaceStation::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
 void ASpaceStation::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }

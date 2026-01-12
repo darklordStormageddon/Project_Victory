@@ -17,12 +17,11 @@ class ASpaceStation : public AActor
 public:	
 	// Sets default values for this actor's properties
 	ASpaceStation();
-
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SpaceRader|Components")
 	TObjectPtr<UStaticMeshComponent> _rootComponent = nullptr;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SpaceRader|Rader")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SpaceRader|Rader")
 	TObjectPtr<USpaceObjectComponent> _spaceObjectComponent = nullptr;
 
 public:
