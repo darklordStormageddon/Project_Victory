@@ -12,7 +12,6 @@ public class TeamSpaceProject : ModuleRules
 
         PrivateDependencyModuleNames.AddRange(new string[] { });
 
-        DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
     }
 
 }
