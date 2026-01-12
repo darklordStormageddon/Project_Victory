@@ -1,0 +1,46 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "JHS/UI/UIBase.h"
+
+#include "UIInteracter.generated.h"
+
+class UUIManager;
+class UUIPanelPlayerFPS;
+class UUIInteracterable;
+
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class UUIInteracter : public UActorComponent
+{
+	GENERATED_BODY()
+
+public:	
+	// Sets default values for this component's properties
+	UUIInteracter();
+
+private:
+	const E_UI_TYPE _playerUI = E_UI_TYPE::UIPanelPlayerFPS;
+
+	TObjectPtr<UUIPanelPlayerFPS> _uiPanelPlayer = nullptr;
+
+	TObjectPtr<UUIInteracterable> _uiInteractable = nullptr;
+
+protected:
+	// Called when the game starts
+	virtual void BeginPlay() override;
+
+public:	
+	// Called every frame
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+public:
+	void OnInteractable(TObjectPtr<UUIInteracterable> UIInteractable);
+
+	void OnDisInteractable();
+
+	UFUNCTION(BlueprintCallable, Category = "UIInteracter|Interact")
+	void InteractInput();
+};
