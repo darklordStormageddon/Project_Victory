@@ -6,6 +6,9 @@
 #include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
+#include "JHS/UI/UIManager.h"
+#include "JHS/UI/UIBase.h"
+#include "JHS/UI/Panel/CommonInfo/UIPanelCommonInfo.h"
 
 AJHSGameState::AJHSGameState()
 {
@@ -39,6 +42,13 @@ void AJHSGameState::InitializeGameState(TArray<FPlayerStateData> PlayerStateArra
 
 		_playerStateMap.Add(_playerState.PlayerIdx, _playerState);
 	}
+
+	UUIManager* _outUIManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
+		return;
+
+	UUIBase* _uiCommonInfo = _outUIManager->OpenUI(E_UI_TYPE::UIPanelCommonInfo);
+	Cast<UUIPanelCommonInfo>(_uiCommonInfo)->InitializeUI();
 }
 
 void AJHSGameState::SendCurrentDataEvent()

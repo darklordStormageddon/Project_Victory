@@ -1,14 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "JHS/UI/PlayerFPS/UIPanelPlayerFPS.h"
+#include "JHS/UI/Panel/CommonInfo/UIPanelCommonInfo.h"
+#include "JHS/UI/Panel/CommonInfo/PlayerInfoRow.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/GameControl/JHSGameState.h"
-#include "JHS/GameControl/DataStruct.h"
-#include "JHS/UI/PlayerFPS/PlayerInfoRow.h"
 
-void UUIPanelPlayerFPS::RegisterEvent()
+void UUIPanelCommonInfo::RegisterEvent()
 {
 	UEventManager* _outEventManager = nullptr;
 	if (UStaticFunctionLibrary::TryGetEventManager(_outEventManager))
@@ -28,7 +27,7 @@ void UUIPanelPlayerFPS::RegisterEvent()
 	_outGameState->SendCurrentDataEvent();
 }
 
-void UUIPanelPlayerFPS::UnregisterEvent()
+void UUIPanelCommonInfo::UnregisterEvent()
 {
 	UEventManager* _eventManager = nullptr;
 	if (UStaticFunctionLibrary::TryGetEventManager(_eventManager))
@@ -41,7 +40,7 @@ void UUIPanelPlayerFPS::UnregisterEvent()
 	}
 }
 
-void UUIPanelPlayerFPS::OnChangePlayerRadiation(UEventOnChangePlayerRadiation* Event)
+void UUIPanelCommonInfo::OnChangePlayerRadiation(UEventOnChangePlayerRadiation* Event)
 {
 	if (Event == nullptr)
 		return;
@@ -52,10 +51,8 @@ void UUIPanelPlayerFPS::OnChangePlayerRadiation(UEventOnChangePlayerRadiation* E
 
 }
 
-void UUIPanelPlayerFPS::InitializeUI()
+void UUIPanelCommonInfo::InitializeUI()
 {
-	ChangeInteractable(E_INTERACT_TYPE::None);
-
 	// Test
 	AJHSGameState* _outGameState = nullptr;
 	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
@@ -64,37 +61,22 @@ void UUIPanelPlayerFPS::InitializeUI()
 	BuildRows(_outGameState->GetPlayerCount());
 }
 
-void UUIPanelPlayerFPS::ChangeInteractable(E_INTERACT_TYPE InteractType)
-{
-	if (Plate_Interact == nullptr)
-		return;
-
-	if (InteractType == E_INTERACT_TYPE::None)
-	{
-		Plate_Interact->SetVisibility(ESlateVisibility::Hidden);
-	}
-	else
-	{
-		Plate_Interact->SetVisibility(ESlateVisibility::Visible);
-	}
-}
-
-void UUIPanelPlayerFPS::ClearDynamicRows()
+void UUIPanelCommonInfo::ClearDynamicRows()
 {
 	if (!Plate_RadiationDose)
 	{
 		return;
 	}
 
-	// 0ë²ˆì€ TopSpacerë¼ê³  ê°€ì •í•˜ê³ , ë‚˜ë¨¸ì§€ëŠ” ì œê±°
-	// (TopSpacer ì™¸ì— ê³ ì • ìœ„ì ¯ì´ ë” ìˆìœ¼ë©´ "ë‚¨ê¸¸ ì¸ë±ìŠ¤/ì´ë¦„" ê¸°ì¤€ìœ¼ë¡œ í•„í„°ë§í•˜ì„¸ìš”.)
+	// 0¹øÀº TopSpacer¶ó°í °¡Á¤ÇÏ°í, ³ª¸ÓÁö´Â Á¦°Å
+	// (TopSpacer ¿Ü¿¡ °íÁ¤ À§Á¬ÀÌ ´õ ÀÖÀ¸¸é "³²±æ ÀÎµ¦½º/ÀÌ¸§" ±âÁØÀ¸·Î ÇÊÅÍ¸µÇÏ¼¼¿ä.)
 	for (int32 _i = Plate_RadiationDose->GetChildrenCount() - 1; _i >= 1; --_i)
 	{
 		Plate_RadiationDose->RemoveChildAt(_i);
 	}
 }
 
-void UUIPanelPlayerFPS::BuildRows(int32 InPlayerCount)
+void UUIPanelCommonInfo::BuildRows(int32 InPlayerCount)
 {
 	if (!Plate_RadiationDose || !WBP_PlayerInfoRow)
 	{
@@ -104,7 +86,7 @@ void UUIPanelPlayerFPS::BuildRows(int32 InPlayerCount)
 
 	ClearDynamicRows();
 
-	// WBP_PlayerInfoRowì˜ ì‹¤ì œ í´ë˜ìŠ¤ ê°€ì ¸ì˜¤ê¸° (ë¸”ë£¨í”„ë¦°íŠ¸ í´ë˜ìŠ¤ì¼ ìˆ˜ ìˆìŒ)
+	// WBP_PlayerInfoRowÀÇ ½ÇÁ¦ Å¬·¡½º °¡Á®¿À±â (ºí·çÇÁ¸°Æ® Å¬·¡½ºÀÏ ¼ö ÀÖÀ½)
 	UClass* _widgetClass = WBP_PlayerInfoRow->GetClass();
 	if (!_widgetClass)
 	{
@@ -112,7 +94,7 @@ void UUIPanelPlayerFPS::BuildRows(int32 InPlayerCount)
 		return;
 	}
 
-	// PlayerController ê°€ì ¸ì˜¤ê¸° (CreateWidgetì— í•„ìš”)
+	// PlayerController °¡Á®¿À±â (CreateWidget¿¡ ÇÊ¿ä)
 	APlayerController* _playerController = GetOwningPlayer();
 	if (!_playerController)
 	{
@@ -121,7 +103,7 @@ void UUIPanelPlayerFPS::BuildRows(int32 InPlayerCount)
 	}
 	for (int32 _playerIndex = InPlayerCount - 1; _playerIndex >= 0; --_playerIndex)
 	{
-		// GetClass()ë¥¼ ì‚¬ìš©í•˜ì—¬ ë¸”ë£¨í”„ë¦°íŠ¸ í´ë˜ìŠ¤ë„ ì˜¬ë°”ë¥´ê²Œ ì²˜ë¦¬
+		// GetClass()¸¦ »ç¿ëÇÏ¿© ºí·çÇÁ¸°Æ® Å¬·¡½ºµµ ¿Ã¹Ù¸£°Ô Ã³¸®
 		UPlayerInfoRow* _row = CreateWidget<UPlayerInfoRow>(_playerController, _widgetClass);
 		if (!_row)
 		{
@@ -129,15 +111,15 @@ void UUIPanelPlayerFPS::BuildRows(int32 InPlayerCount)
 			continue;
 		}
 
-		// ìœ„ì ¯ ì´ˆê¸°í™”
+		// À§Á¬ ÃÊ±âÈ­
 		_row->InitializeRaw(_playerIndex + 1);
-		
-		// Visibility í™•ì¸ ë° ì„¤ì •
+
+		// Visibility È®ÀÎ ¹× ¼³Á¤
 		_row->SetVisibility(ESlateVisibility::Visible);
 		Plate_RadiationDose->AddChild(_row);
 
 		_playerRadiationDoseMap.Add(_playerIndex, _row);
-		
+
 		UE_LOG(LogTemp, Warning, TEXT("UIPanelPlayerFPS: Created and added widget for player %d"), _playerIndex);
 	}
 }

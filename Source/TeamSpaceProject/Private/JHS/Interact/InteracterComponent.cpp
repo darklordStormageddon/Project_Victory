@@ -5,7 +5,7 @@
 #include "JHS/Interact/InteractableComponent.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/UI/UIManager.h"
-#include "JHS/UI/PlayerFPS/UIPanelPlayerFPS.h"
+#include "JHS/UI/Panel/UIPanelPlayerFPS.h"
 
 // Sets default values for this component's properties
 UInteracterComponent::UInteracterComponent()

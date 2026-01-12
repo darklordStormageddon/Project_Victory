@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "JHS/UI/UIPanelDriveSeat.h"
+#include "JHS/UI/Panel/UIPanelDriveSeat.h"
 #include "JHS/Event/CommonEventBase.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/Event/EventManager.h"

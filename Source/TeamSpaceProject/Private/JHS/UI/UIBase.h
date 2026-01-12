@@ -12,7 +12,8 @@ enum class E_UI_TYPE : uint8
 	NONE = 255 UMETA(DisplayName = "NONE"),
 
 	// Panel
-	UIPanelPlayerFPS = 0 UMETA(DisplayName = "UIPanelPlayerFPS"),
+	UIPanelCommonInfo = 0 UMETA(DisplayName = "UIPanelCommonInfo"),
+	UIPanelPlayerFPS UMETA(DisplayName = "UIPanelPlayerFPS"),
 	UIPanelDriveSeat UMETA(DisplayName = "UIPanelDriveSeat"),
 	UIPanelCollectSeat UMETA(DisplayName = "UIPanelCollectSeat"),
 	UIPanelTurretSeat UMETA(DisplayName = "UIPanelTurretSeat"),

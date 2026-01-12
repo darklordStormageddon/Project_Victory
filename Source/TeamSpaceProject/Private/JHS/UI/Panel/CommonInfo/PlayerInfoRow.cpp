@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "JHS/UI/PlayerFPS/PlayerInfoRow.h"
+#include "JHS/UI/Panel/CommonInfo/PlayerInfoRow.h"
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
 #include "JHS/UI/UIBase.h"

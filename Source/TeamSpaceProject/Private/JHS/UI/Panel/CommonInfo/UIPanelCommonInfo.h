@@ -5,25 +5,20 @@
 #include "CoreMinimal.h"
 #include "JHS/UI/UIBase.h"
 #include "Delegates/Delegate.h"
-#include "Components/CanvasPanel.h"
 #include "Components/VerticalBox.h"
-#include "JHS/GameControl/CommonEnums.h"
 
-#include "UIPanelPlayerFPS.generated.h"
+#include "UIPanelCommonInfo.generated.h"
 
 class UPlayerInfoRow;
 class UEventOnChangePlayerRadiation;
 
 UCLASS()
-class UUIPanelPlayerFPS : public UUIBase
+class UUIPanelCommonInfo : public UUIBase
 {
 	GENERATED_BODY()
 
 private:
 	FDelegateHandle _eventHandle;
-
-	UPROPERTY(meta = (BindWidget))
-	UCanvasPanel* Plate_Interact;
 
 #pragma region Player Radiation Dose
 	const FString TEXT_HEADER = "TXT_RadiationDoseP";
@@ -47,10 +42,7 @@ protected:
 public:
 	void OnChangePlayerRadiation(UEventOnChangePlayerRadiation* Event);
 
-public:
 	void InitializeUI();
-
-	void ChangeInteractable(E_INTERACT_TYPE InteractType);
 
 public:
 	void BuildRows(int32 InPlayerCount);

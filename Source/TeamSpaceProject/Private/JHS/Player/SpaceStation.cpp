@@ -7,7 +7,7 @@
 
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/UI/UIManager.h"
-#include "JHS/UI/UIPanelDriveSeat.h"
+#include "JHS/UI/Panel/UIPanelDriveSeat.h"
 
 // Sets default values
 ASpaceStation::ASpaceStation()
