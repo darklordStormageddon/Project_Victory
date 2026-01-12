@@ -2,7 +2,6 @@
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
-#include "JHS/UI/UIInteracterable.h"
 
 
 AYSHPlayerBase::AYSHPlayerBase()
