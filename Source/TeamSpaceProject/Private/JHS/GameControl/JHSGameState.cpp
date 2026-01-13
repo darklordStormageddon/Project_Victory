@@ -35,6 +35,10 @@ void AJHSGameState::BeginPlay()
 
 void AJHSGameState::InitializeGameState(TArray<FPlayerStateData> PlayerStateArray)
 {
+	// SpaceShip
+	RepairSpaceShip();
+
+	// Player State
 	for (FPlayerStateData _playerState : PlayerStateArray)
 	{
 		_playerState.Radiation.MaxValue = _maxPlayerRadiation;
@@ -43,19 +47,34 @@ void AJHSGameState::InitializeGameState(TArray<FPlayerStateData> PlayerStateArra
 		_playerStateMap.Add(_playerState.PlayerIdx, _playerState);
 	}
 
+	// Turret
+	_turretData.Ammo.CurrentValue = _turretData.Ammo.MaxValue;
+
 	UUIManager* _outUIManager = nullptr;
 	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
 		return;
 
-	UUIBase* _uiCommonInfo = _outUIManager->OpenUI(E_UI_TYPE::UIPanelCommonInfo);
-	Cast<UUIPanelCommonInfo>(_uiCommonInfo)->InitializeUI();
+	_outUIManager->OpenUI(E_UI_TYPE::UIPanelCommonInfo);
 }
 
 void AJHSGameState::SendCurrentDataEvent()
 {
+	// SpaceShip
 	ChangeSpaceShipData(&_spaceShipState.Hp, _spaceShipState.Hp.Values.CurrentValue, _spaceShipState.Hp.Values.MaxValue);
 	ChangeSpaceShipData(&_spaceShipState.Shield, _spaceShipState.Shield.Values.CurrentValue, _spaceShipState.Shield.Values.MaxValue);
 	ChangeSpaceShipData(&_spaceShipState.Fuel, _spaceShipState.Fuel.Values.CurrentValue, _spaceShipState.Fuel.Values.MaxValue);
+
+	// Player State
+	if (_playerStateMap.Num() > 0)
+	{
+		for (auto _playerState : _playerStateMap)
+		{
+			IncreasePlayerRadiation(_playerState.Key, 0.0f);
+		}
+	}
+
+	// Turret
+	ChangeTurretAmmo(0);
 }
 
 #pragma region SpaceShip
@@ -145,6 +164,40 @@ void AJHSGameState::IncreasePlayerRadiation(int32 PlayerIdx, float IncreaseValue
 	GetEventManager()->ExecuteEvent<UEventOnChangePlayerRadiation>(_event);
 }
 #pragma endregion Player State
+
+#pragma region Turret
+bool AJHSGameState::TryFireTurret()
+{
+	if (_turretData.Ammo.CurrentValue <= 0)
+		return false;
+
+	ChangeTurretAmmo(_consumeAmmo);
+	return true;
+}
+
+void AJHSGameState::ReloadTurret()
+{
+	ChangeTurretAmmo(_turretData.ReloadAmmo);
+}
+
+void AJHSGameState::ChangeTurretAmmo(int32 ChangeValue)
+{
+	FMaxCurrentData* _originalData = &_turretData.Ammo;
+	_originalData->CurrentValue += ChangeValue;
+	if (_originalData->CurrentValue > _originalData->MaxValue)
+	{
+		_originalData->CurrentValue = _originalData->MaxValue;
+	}
+	if (_originalData->CurrentValue < 0)
+	{
+		_originalData->CurrentValue = 0;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("%d"), (int32)_originalData->CurrentValue);
+	UEventOnChangeTurretAmmo* _event = NewObject<UEventOnChangeTurretAmmo>(this);
+	_event->Ammo = *_originalData;
+	GetEventManager()->ExecuteEvent<UEventOnChangeTurretAmmo>(_event);
+}
+#pragma endregion Turret
 
 TObjectPtr<UEventManager> AJHSGameState::GetEventManager()
 {

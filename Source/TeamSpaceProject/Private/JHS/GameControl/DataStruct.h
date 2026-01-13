@@ -70,3 +70,19 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerStateData")
 	FMaxCurrentData Radiation;
 };
+
+USTRUCT(BlueprintType)
+struct FTurretData
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "TurretData")
+	FMaxCurrentData Ammo;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "TurretData")
+	float FireCoolTime = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "TurretData")
+	int32 ReloadAmmo = 100;
+};

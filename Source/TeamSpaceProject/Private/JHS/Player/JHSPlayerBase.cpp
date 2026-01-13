@@ -36,6 +36,8 @@ void AJHSPlayerBase::BeginPlay()
 
 	_gameState = _outGameState;
 	_gameState->RepairSpaceShip();
+
+	//FireTurret();
 }
 
 // Called every frame
@@ -46,14 +48,7 @@ void AJHSPlayerBase::Tick(float DeltaTime)
 	if (_gameState == nullptr)
 		return;
 
-	if (_gameState->GetPlayerCount() > 0)
-	{
-		for (int32 _playerIdx = 0; _playerIdx < _gameState->GetPlayerCount(); ++_playerIdx)
-		{
-			float _increaseValue = (_playerIdx + 1) * 0.01f;
-			_gameState->IncreasePlayerRadiation(_playerIdx, _increaseValue);
-		}
-	}
+	//_gameState->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, 0.01f);
 }
 
 // Called to bind functionality to input
@@ -61,4 +56,21 @@ void AJHSPlayerBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+}
+
+void AJHSPlayerBase::FireTurret()
+{
+	if (_gameState == nullptr)
+		return;
+
+	if (!_gameState->TryFireTurret())
+	{
+		_gameState->ReloadTurret();
+	}
+
+	float _fireCoolTime = _gameState->GetTurretFireCoolTime();
+	if (_fireCoolTime > 0.0f)
+	{
+		GetWorld()->GetTimerManager().SetTimer(_turretFireTimerHandle, this, &AJHSPlayerBase::FireTurret, _fireCoolTime, false);
+	}
 }

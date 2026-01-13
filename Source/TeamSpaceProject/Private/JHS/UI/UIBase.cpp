@@ -2,6 +2,9 @@
 
 
 #include "JHS/UI/UIBase.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameState.h"
+#include "JHS/Event/EventManager.h"
 #include "Components/Widget.h"
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
@@ -42,7 +45,14 @@ void UUIBase::Open()
 		AddToViewport();
 	}
 
+	AJHSGameState* _outGameState = nullptr;
+	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+		return;
+
+	_outGameState->SendCurrentDataEvent();
+
 	SetVisibility(ESlateVisibility::Visible);
+
 	OnOpen();
 }
 
@@ -94,4 +104,18 @@ void UUIBase::SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar*
 		TextBlock->SetText(FText::FromString(_text));
 		
 	}
+}
+
+TObjectPtr<UEventManager> UUIBase::GetEventManager()
+{
+	if (_cachedEventManager == nullptr)
+	{
+		UEventManager* _outEventManager = nullptr;
+		if (!UStaticFunctionLibrary::TryGetEventManager(_outEventManager))
+			return nullptr;
+
+		_cachedEventManager = _outEventManager;
+	}
+
+	return _cachedEventManager;
 }

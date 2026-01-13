@@ -24,11 +24,19 @@ private:
 	TMap<int32, FPlayerStateData> _playerStateMap;
 	
 protected:
+	// SpaceShip
 	UPROPERTY(EditAnywhere, Category = "GameMode|Game Data")
 	FSpaceShipState _spaceShipState;
 
+	// Player Radiation
 	UPROPERTY(EditAnywhere, Category = "GameMode|Game Data")
 	float _maxPlayerRadiation = 100.0f;
+
+	// Turret
+	const int32 _consumeAmmo = -1;
+
+	UPROPERTY(EditAnywhere, Category = "GameMode|Game Data")
+	FTurretData _turretData;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Test")
 	int32 _testPlayerCount = 4;
@@ -62,6 +70,18 @@ private:
 public:
 	void IncreasePlayerRadiation(int32 PlayerIdx, float IncreaseValue);
 #pragma endregion Player State
+
+#pragma region Turret
+public:
+	float GetTurretFireCoolTime() { return _turretData.FireCoolTime; }
+
+	bool TryFireTurret();
+
+	void ReloadTurret();
+
+private:
+	void ChangeTurretAmmo(int32 ChangeValue);
+#pragma endregion Turret
 
 private:
 	TObjectPtr<UEventManager> GetEventManager();

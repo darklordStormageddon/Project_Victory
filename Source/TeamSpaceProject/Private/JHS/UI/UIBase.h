@@ -8,6 +8,7 @@
 
 #include "UIBase.generated.h"
 
+class UEventManager;
 class UTextBlock;
 class UProgressBar;
 
@@ -20,7 +21,10 @@ public:
 	UUIBase(const FObjectInitializer& ObjectInitializer);
 
 private:
+	TObjectPtr<UEventManager> _cachedEventManager = nullptr;
+
 	bool _isInitialized = false;
+
 	bool _isActive = false;
 
 protected:
@@ -53,4 +57,7 @@ public:
 
 public:
 	static void SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar* ProgressBar, UTextBlock* TextBlock);
+
+protected:
+	TObjectPtr<UEventManager> GetEventManager();
 };

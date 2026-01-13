@@ -53,9 +53,27 @@ public:
 	UEventOnChangePlayerRadiation(FPlayerStateData PlayerStateData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
 		, PlayerStateData(PlayerStateData)
-	{
-	}
+	{}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|SpaceShipData")
 	FPlayerStateData PlayerStateData;
+};
+
+UCLASS(BlueprintType)
+class UEventOnChangeTurretAmmo : public UCommonEventBase
+{
+	GENERATED_BODY()
+
+public:
+	UEventOnChangeTurretAmmo(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{}
+
+	UEventOnChangeTurretAmmo(FMaxCurrentData Ammo, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+		, Ammo(Ammo)
+	{}
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|TurretAmmo")
+	FMaxCurrentData Ammo;
 };

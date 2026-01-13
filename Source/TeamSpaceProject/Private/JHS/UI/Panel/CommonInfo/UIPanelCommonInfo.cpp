@@ -3,40 +3,26 @@
 
 #include "JHS/UI/Panel/CommonInfo/UIPanelCommonInfo.h"
 #include "JHS/UI/Panel/CommonInfo/PlayerInfoRow.h"
-#include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/Event/EventManager.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
 
 void UUIPanelCommonInfo::RegisterEvent()
 {
-	UEventManager* _outEventManager = nullptr;
-	if (UStaticFunctionLibrary::TryGetEventManager(_outEventManager))
-	{
-		_eventHandle = _outEventManager->AddListener<UEventOnChangePlayerRadiation>(
-			[this](UEventOnChangePlayerRadiation* Event)
-			{
-				OnChangePlayerRadiation(Event);
-			}
-		);
-	}
-
-	AJHSGameState* _outGameState = nullptr;
-	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
-		return;
-
-	_outGameState->SendCurrentDataEvent();
+	_eventHandle = GetEventManager()->AddListener<UEventOnChangePlayerRadiation>(
+		[this](UEventOnChangePlayerRadiation* Event)
+		{
+			OnChangePlayerRadiation(Event);
+		}
+	);
 }
 
 void UUIPanelCommonInfo::UnregisterEvent()
 {
-	UEventManager* _eventManager = nullptr;
-	if (UStaticFunctionLibrary::TryGetEventManager(_eventManager))
+	if (_eventHandle.IsValid())
 	{
-		if (_eventHandle.IsValid())
-		{
-			_eventManager->DelListener<UEventOnChangePlayerRadiation>(_eventHandle);
-			_eventHandle.Reset();
-		}
+		GetEventManager()->DelListener<UEventOnChangePlayerRadiation>(_eventHandle);
+		_eventHandle.Reset();
 	}
 }
 
@@ -45,20 +31,19 @@ void UUIPanelCommonInfo::OnChangePlayerRadiation(UEventOnChangePlayerRadiation* 
 	if (Event == nullptr)
 		return;
 
+	if (_playerRadiationDoseMap.Num() <= 0)
+	{
+		AJHSGameState* _outGameState = nullptr;
+		if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+			return;
+
+		BuildRows(_outGameState->GetPlayerCount());
+	}
+
 	FPlayerStateData _maxCurrentData = Event->PlayerStateData;
 
 	_playerRadiationDoseMap[_maxCurrentData.PlayerIdx]->UpdatePlayerRadiationDose(_maxCurrentData.Radiation);
 
-}
-
-void UUIPanelCommonInfo::InitializeUI()
-{
-	// Test
-	AJHSGameState* _outGameState = nullptr;
-	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
-		return;
-
-	BuildRows(_outGameState->GetPlayerCount());
 }
 
 void UUIPanelCommonInfo::ClearDynamicRows()
@@ -68,8 +53,6 @@ void UUIPanelCommonInfo::ClearDynamicRows()
 		return;
 	}
 
-	// 0¹øÀº TopSpacer¶ó°í °¡Á¤ÇÏ°í, ³ª¸ÓÁö´Â Á¦°Å
-	// (TopSpacer ¿Ü¿¡ °íÁ¤ À§Á¬ÀÌ ´õ ÀÖÀ¸¸é "³²±æ ÀÎµ¦½º/ÀÌ¸§" ±âÁØÀ¸·Î ÇÊÅÍ¸µÇÏ¼¼¿ä.)
 	for (int32 _i = Plate_RadiationDose->GetChildrenCount() - 1; _i >= 1; --_i)
 	{
 		Plate_RadiationDose->RemoveChildAt(_i);
@@ -78,7 +61,7 @@ void UUIPanelCommonInfo::ClearDynamicRows()
 
 void UUIPanelCommonInfo::BuildRows(int32 InPlayerCount)
 {
-	if (!Plate_RadiationDose || !WBP_PlayerInfoRow)
+	if (!Plate_RadiationDose)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UIPanelPlayerFPS: Plate_RadiationDose or WBP_PlayerInfoRow is nullptr"));
 		return;
@@ -86,7 +69,7 @@ void UUIPanelCommonInfo::BuildRows(int32 InPlayerCount)
 
 	ClearDynamicRows();
 
-	// WBP_PlayerInfoRowÀÇ ½ÇÁ¦ Å¬·¡½º °¡Á®¿À±â (ºí·çÇÁ¸°Æ® Å¬·¡½ºÀÏ ¼ö ÀÖÀ½)
+	// WBP_PlayerInfoRowï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® Å¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	UClass* _widgetClass = WBP_PlayerInfoRow->GetClass();
 	if (!_widgetClass)
 	{
@@ -94,7 +77,7 @@ void UUIPanelCommonInfo::BuildRows(int32 InPlayerCount)
 		return;
 	}
 
-	// PlayerController °¡Á®¿À±â (CreateWidget¿¡ ÇÊ¿ä)
+	// PlayerController ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (CreateWidgetï¿½ï¿½ ï¿½Ê¿ï¿½)
 	APlayerController* _playerController = GetOwningPlayer();
 	if (!_playerController)
 	{
@@ -103,7 +86,7 @@ void UUIPanelCommonInfo::BuildRows(int32 InPlayerCount)
 	}
 	for (int32 _playerIndex = InPlayerCount - 1; _playerIndex >= 0; --_playerIndex)
 	{
-		// GetClass()¸¦ »ç¿ëÇÏ¿© ºí·çÇÁ¸°Æ® Å¬·¡½ºµµ ¿Ã¹Ù¸£°Ô Ã³¸®
+		// GetClass()ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® Å¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã¹Ù¸ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
 		UPlayerInfoRow* _row = CreateWidget<UPlayerInfoRow>(_playerController, _widgetClass);
 		if (!_row)
 		{
@@ -111,10 +94,10 @@ void UUIPanelCommonInfo::BuildRows(int32 InPlayerCount)
 			continue;
 		}
 
-		// À§Á¬ ÃÊ±âÈ­
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­
 		_row->InitializeRaw(_playerIndex + 1);
 
-		// Visibility È®ÀÎ ¹× ¼³Á¤
+		// Visibility È®ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		_row->SetVisibility(ESlateVisibility::Visible);
 		Plate_RadiationDose->AddChild(_row);
 

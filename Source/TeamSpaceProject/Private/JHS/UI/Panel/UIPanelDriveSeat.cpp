@@ -3,44 +3,26 @@
 
 #include "JHS/UI/Panel/UIPanelDriveSeat.h"
 #include "JHS/Event/CommonEventBase.h"
-#include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/Event/EventManager.h"
-#include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/DataStruct.h"
 
 void UUIPanelDriveSeat::RegisterEvent()
 {
-	// 이벤트 리스너 등록
-	UEventManager* _outEventManager = nullptr;
-	if (UStaticFunctionLibrary::TryGetEventManager(_outEventManager))
-	{
-		_eventHandle = _outEventManager->AddListener<UEventOnChangeSpaceShipData>(
-			[this](UEventOnChangeSpaceShipData* Event)
-			{
-				OnChangeSpaceShipData(Event);
-			}
-		);
-	}
-
-	AJHSGameState* _outGameState = nullptr;
-	if (UStaticFunctionLibrary::TryGetGameState(_outGameState))
-		return;
-
-	_outGameState->SendCurrentDataEvent();
+	_eventHandle = GetEventManager()->AddListener<UEventOnChangeSpaceShipData>(
+		[this](UEventOnChangeSpaceShipData* Event)
+		{
+			OnChangeSpaceShipData(Event);
+		}
+	);
 }
 
 void UUIPanelDriveSeat::UnregisterEvent()
 {
-	// 이벤트 리스너 제거
-	UEventManager* _eventManager = nullptr;
-	if (UStaticFunctionLibrary::TryGetEventManager(_eventManager))
-	{
-		if (_eventHandle.IsValid())
-		{
-			_eventManager->DelListener<UEventOnChangeSpaceShipData>(_eventHandle);
-			_eventHandle.Reset();
-		}
-	}
+	if (_eventHandle.IsValid())
+    {
+        GetEventManager()->DelListener<UEventOnChangeSpaceShipData>(_eventHandle);
+        _eventHandle.Reset();
+    }
 }
 
 void UUIPanelDriveSeat::OnChangeSpaceShipData(UEventOnChangeSpaceShipData* Event)
