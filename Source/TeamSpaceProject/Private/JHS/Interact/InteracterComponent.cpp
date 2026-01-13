@@ -55,7 +55,7 @@ void UInteracterComponent::OnInteractable(TObjectPtr<UInteractableComponent> Int
 void UInteracterComponent::OnDisInteractable()
 {
 	_interactable = nullptr;
-	_uiPanelPlayer->ChangeInteractable(E_INTERACT_TYPE::None);
+	_uiPanelPlayer->ChangeInteractable(E_INTERACT_TYPE::Idle);
 	_uiPanelPlayer->Open();
 }
 

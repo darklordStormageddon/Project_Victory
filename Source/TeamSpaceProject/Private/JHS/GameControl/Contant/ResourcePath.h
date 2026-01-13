@@ -67,6 +67,22 @@ public:
 	FString UI_WIDGET_HEADER;
 };
 
+USTRUCT(BlueprintType)
+struct FResourceImage
+{
+	GENERATED_BODY()
+
+public:
+	FResourceImage()
+		: IMAGE_INTERACT_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/Interact/"))
+	{
+	}
+
+	// UI Blueprint
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|Image")
+	FString IMAGE_INTERACT_FOLDER_PATH;
+};
+
 /**
  * 
  */
@@ -78,4 +94,5 @@ public:
 
 	FResourceSpaceObject SpaceObject;
 	FResourceUI UI;
+	FResourceImage Image;
 };

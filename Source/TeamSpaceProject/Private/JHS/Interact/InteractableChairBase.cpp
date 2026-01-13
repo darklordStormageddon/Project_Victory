@@ -21,7 +21,7 @@ void AInteractableChairBase::BeginPlay()
 	if (_uiInteracterable != nullptr)
 	{
 		// 델리게이트 바인딩
-		_uiInteracterable->InitializeUIInteractable(_isDebugDraw, _interactRadius, E_INTERACT_TYPE::Chair, _interatUIType);
+		_uiInteracterable->InitializeUIInteractable(_isDebugDraw, _interactRadius, E_INTERACT_TYPE::Seat, _interatUIType);
 		_uiInteracterable->OnInteractEnterAction.AddDynamic(this, &AInteractableChairBase::InteractEnter);
 		_uiInteracterable->OnInteractExitAction.AddDynamic(this, &AInteractableChairBase::InteractExit);
 	}
