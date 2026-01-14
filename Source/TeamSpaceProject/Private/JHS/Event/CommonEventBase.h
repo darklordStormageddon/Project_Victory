@@ -22,6 +22,7 @@ public:
 	{}
 };
 
+#pragma region SpaceShip
 UCLASS(BlueprintType)
 class UEventOnChangeSpaceShipData : public UCommonEventBase
 {
@@ -40,7 +41,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Event|SpaceShipData")
 	FSpaceShipData SpaceShipDataData;
 };
+#pragma endregion SpaceShip
 
+#pragma region Player
 UCLASS(BlueprintType)
 class UEventOnChangePlayerRadiation : public UCommonEventBase
 {
@@ -59,6 +62,27 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Event|SpaceShipData")
 	FPlayerStateData PlayerStateData;
 };
+#pragma endregion Player
+
+#pragma region Turret
+UCLASS(BlueprintType)
+class UEventOnChangeTurretData : public UCommonEventBase
+{
+	GENERATED_BODY()
+	
+public:
+	UEventOnChangeTurretData(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{}
+
+	UEventOnChangeTurretData(FTurretData TurretData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+		, TurretData(TurretData)
+	{}
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|TurretData")
+	FTurretData TurretData;
+};
 
 UCLASS(BlueprintType)
 class UEventOnChangeTurretAmmo : public UCommonEventBase
@@ -70,11 +94,16 @@ public:
 		: Super(ObjectInitializer)
 	{}
 
-	UEventOnChangeTurretAmmo(FMaxCurrentData Ammo, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+	UEventOnChangeTurretAmmo(E_TURRET_POSITION TurretPosition, FMaxCurrentData Ammo, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
+		, TurretPosition(TurretPosition)
 		, Ammo(Ammo)
 	{}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|TurretAmmo")
+	E_TURRET_POSITION TurretPosition;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|TurretAmmo")
 	FMaxCurrentData Ammo;
 };
+#pragma endregion Turret

@@ -22,7 +22,8 @@ class UUIPanelTurretSeat : public UUIBase
 	GENERATED_BODY()
 
 private:
-	FDelegateHandle _eventHandle;
+	FDelegateHandle _eventHandleOnChangeTurret;
+	FDelegateHandle _eventHandleOnChangeTurretAmmo;
 
 #pragma region Main Turret
 	UPROPERTY(meta = (BindWidget))
@@ -32,7 +33,7 @@ private:
 	UTextBlock* TXT_LeftAmmo;
 
 	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> _leftAmmoMID;
+	TObjectPtr<UMaterialInstanceDynamic> _mainAmmoMID;
 #pragma endregion Main Turret
 
 #pragma region Left Turret
@@ -70,5 +71,10 @@ protected:
 	void UnregisterEvent() override;
 
 public:
+	void OnChangeTurret(UEventOnChangeTurretData* Event);
+
 	void OnChangeTurretAmmo(UEventOnChangeTurretAmmo* Event);
+
+private:
+	TObjectPtr<UMaterialInstanceDynamic> GetMainTurretMaterial();
 };

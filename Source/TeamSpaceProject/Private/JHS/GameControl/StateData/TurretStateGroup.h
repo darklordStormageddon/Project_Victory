@@ -22,7 +22,9 @@ public:
 private:
 	TObjectPtr<AJHSGameState> _gameState = nullptr;
 
-	FTurretData _turretData;
+	TMap<E_AMMO_TYPE, FAmmoData> _ammoDataMap;
+
+	TMap<E_TURRET_POSITION, FTurretData> _turretDataMap;
 
 	const int32 CONSUME_AMMO = -1;
 
@@ -35,16 +37,20 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	void InitializeTurretState(TObjectPtr<AJHSGameState> GameState, FTurretData InitTurretData);
+	void InitializeTurretState(TObjectPtr<AJHSGameState> GameState, TArray<FAmmoData> AmmoDataArray);
 
 	void UpdateTurretState();
 
-	float GetTurretFireCoolTime() { return _turretData.FireCoolTime; }
+	bool TryGetTurretFireCoolTime(E_TURRET_POSITION TurretPosition, float* OutFireCoolTime);
 
-	bool TryFireTurret();
+	bool TryFireTurret(E_TURRET_POSITION TurretPosition);
 
-	void ReloadTurret();
+	bool TryReloadTurret(E_TURRET_POSITION TurretPosition);
 
 private:
-	void ChangeTurretAmmo(int32 ChangeValue);
+	bool TryEquipTurret(FTurretData TurretData);
+
+	bool TryGetTurretData(E_TURRET_POSITION TurretPosition, FTurretData*& OutTurretData);
+
+	void ChangeTurretAmmo(FTurretData* TurretData, int32 ChangeValue);
 };

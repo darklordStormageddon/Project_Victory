@@ -20,6 +20,12 @@ AJHSGameState::AJHSGameState()
 	_playerStateGroup = CreateDefaultSubobject<UPlayerStateGroup>(TEXT("PlayerStateGroup"));
 
 	_turretStateGroup = CreateDefaultSubobject<UTurretStateGroup>(TEXT("TurretStateGroup"));
+	for (int32 i = 0; i < ((int32)E_AMMO_TYPE::Missile + 1); i++)
+	{
+		FAmmoData _ammoData;
+		_ammoData.AmmoType = (E_AMMO_TYPE)i;
+		_initAmmoDataArray.Add(_ammoData);
+	}
 }
 
 void AJHSGameState::BeginPlay()
@@ -44,7 +50,7 @@ void AJHSGameState::InitializeGameState(TArray<FPlayerStateData> PlayerStateArra
 
 	_playerStateGroup->InitializePlayerState(this, PlayerStateArray, _maxPlayerRadiation);
 	
-	_turretStateGroup->InitializeTurretState(this, _initTurretData);
+	_turretStateGroup->InitializeTurretState(this, _initAmmoDataArray);
 
 	UUIManager* _outUIManager = nullptr;
 	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))

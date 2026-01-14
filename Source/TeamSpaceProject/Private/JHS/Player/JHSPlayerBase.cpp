@@ -41,7 +41,7 @@ void AJHSPlayerBase::BeginPlay()
 	_gameState = _outGameState;
 	_gameState->GetSpaceShipStateGroup()->RepairSpaceShip();
 
-	//FireTurret();
+	GetWorld()->GetTimerManager().SetTimer(_turretFireTimerHandle, this, &AJHSPlayerBase::FireTurret, 3.0f, false);
 }
 
 // Called every frame
@@ -79,14 +79,19 @@ void AJHSPlayerBase::FireTurret()
 	if (_turretStateGroup == nullptr)
 		return;
 
-	if (!_turretStateGroup->TryFireTurret())
+	E_TURRET_POSITION _turretPosition = E_TURRET_POSITION::Left;
+
+	if (!_turretStateGroup->TryFireTurret(_turretPosition))
 	{
-		_turretStateGroup->ReloadTurret();
+		_turretStateGroup->TryReloadTurret(_turretPosition);
 	}
 
-	float _fireCoolTime = _turretStateGroup->GetTurretFireCoolTime();
-	if (_fireCoolTime > 0.0f)
+	float _outFireCoolTime = 0.0f;
+	if (!_turretStateGroup->TryGetTurretFireCoolTime(_turretPosition, &_outFireCoolTime))
+		return;
+
+	if (_outFireCoolTime > 0.0f)
 	{
-		GetWorld()->GetTimerManager().SetTimer(_turretFireTimerHandle, this, &AJHSPlayerBase::FireTurret, _fireCoolTime, false);
+		GetWorld()->GetTimerManager().SetTimer(_turretFireTimerHandle, this, &AJHSPlayerBase::FireTurret, _outFireCoolTime, false);
 	}
 }

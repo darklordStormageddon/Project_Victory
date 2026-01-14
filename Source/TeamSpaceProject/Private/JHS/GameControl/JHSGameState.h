@@ -47,7 +47,7 @@ protected:
 	TObjectPtr<UTurretStateGroup> _turretStateGroup = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "GameState|TurretStateGroup")
-	FTurretData _initTurretData;
+	TArray<FAmmoData> _initAmmoDataArray;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Test")
