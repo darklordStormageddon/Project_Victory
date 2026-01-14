@@ -4,7 +4,7 @@
 #include "JHS/UI/Panel/UIPanelDriveSeat.h"
 #include "JHS/Event/CommonEventBase.h"
 #include "JHS/Event/EventManager.h"
-#include "JHS/GameControl/DataStruct.h"
+#include "JHS/GameControl/StateData/GameStateStructs.h"
 
 void UUIPanelDriveSeat::RegisterEvent()
 {

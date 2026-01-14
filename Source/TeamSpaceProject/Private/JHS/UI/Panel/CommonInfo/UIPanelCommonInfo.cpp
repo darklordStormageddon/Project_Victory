@@ -6,6 +6,7 @@
 #include "JHS/Event/EventManager.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/PlayerStateGroup.h"
 
 void UUIPanelCommonInfo::RegisterEvent()
 {
@@ -37,7 +38,7 @@ void UUIPanelCommonInfo::OnChangePlayerRadiation(UEventOnChangePlayerRadiation* 
 		if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
 			return;
 
-		BuildRows(_outGameState->GetPlayerCount());
+		BuildRows(_outGameState->GetPlayerStateGroup()->GetPlayerCount());
 	}
 
 	FPlayerStateData _maxCurrentData = Event->PlayerStateData;

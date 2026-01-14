@@ -6,6 +6,7 @@
 #include "JHS/UI/UIBase.h"
 #include "Delegates/Delegate.h"
 #include "Components/Image.h"
+#include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "JHS/Event/CommonEventBase.h"
@@ -23,6 +24,7 @@ class UUIPanelTurretSeat : public UUIBase
 private:
 	FDelegateHandle _eventHandle;
 
+#pragma region Main Turret
 	UPROPERTY(meta = (BindWidget))
 	UImage* IMG_LeftAmmo;
 
@@ -31,6 +33,29 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> _leftAmmoMID;
+#pragma endregion Main Turret
+
+#pragma region Left Turret
+	UPROPERTY(meta = (BindWidget))
+	UImage* IMG_LeftTurret;
+
+	UPROPERTY(meta = (BindWidget))
+	UProgressBar* PROG_LeftTurretAmmo;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* TXT_LeftTurretAmmo;
+#pragma endregion Left Turret
+
+#pragma region Right Turret
+	UPROPERTY(meta = (BindWidget))
+	UImage* IMG_RightTurret;
+
+	UPROPERTY(meta = (BindWidget))
+	UProgressBar* PROG_RightTurretAmmo;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* TXT_RightTurretAmmo;
+#pragma endregion Right Turret
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "TurretSeat")

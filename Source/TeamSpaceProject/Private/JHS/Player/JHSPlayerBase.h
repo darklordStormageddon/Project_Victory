@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "TeamSpaceProject/TeamSpaceProjectCharacter.h"
+
 #include "JHSPlayerBase.generated.h"
 
 class AJHSGameState;

@@ -3,26 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DataStruct.generated.h"
+#include "JHS/GameControl/StateData/GameStateData.h"
 
-USTRUCT(BlueprintType)
-struct FMaxCurrentData
-{
-	GENERATED_BODY()
+#include "GameStateStructs.generated.h"
 
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float MaxValue;
+// Forward declaration
+class AJHSGameState;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float CurrentValue;
-};
-
+// FSpaceShipState 구조체 정의 (SpaceShipStateGroup.h에서 가져옴)
 UENUM(BlueprintType)
 enum class E_SPACE_SHIP_DATA_TYPE : uint8
 {
-	HP = 0 UMETA(DisplayName = "HP"),
-	Shield UMETA(DisplayName = "Shield"),
+	Shield = 0 UMETA(DisplayName = "Shield"),
+	HP UMETA(DisplayName = "HP"),
 	Fuel UMETA(DisplayName = "Fuel"),
 };
 
@@ -46,15 +39,16 @@ struct FSpaceShipState
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceShipData")
-	FSpaceShipData Hp;
+	FSpaceShipData Shield;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceShipData")
-	FSpaceShipData Shield;
+	FSpaceShipData HP;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceShipData")
 	FSpaceShipData Fuel;
 };
 
+// FPlayerStateData 구조체 정의 (PlayerStateGroup.h에서 가져옴)
 USTRUCT(BlueprintType)
 struct FPlayerStateData
 {
@@ -71,6 +65,7 @@ public:
 	FMaxCurrentData Radiation;
 };
 
+// FTurretData 구조체 정의 (TurretStateGroup.h에서 가져옴)
 USTRUCT(BlueprintType)
 struct FTurretData
 {

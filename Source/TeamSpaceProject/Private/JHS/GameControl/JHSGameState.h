@@ -4,11 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameState.h"
-#include "JHS/GameControl/DataStruct.h"
+#include "JHS/GameControl/StateData/GameStateStructs.h"
 
 #include "JHSGameState.generated.h"
 
 class UEventManager;
+class USpaceShipStateGroup;
+class UPlayerStateGroup;
+class UTurretStateGroup;
 
 UCLASS()
 class AJHSGameState : public AGameState
@@ -20,29 +23,42 @@ public:
 
 private:
 	TObjectPtr<UEventManager> _cachedEventManager = nullptr;
-
-	TMap<int32, FPlayerStateData> _playerStateMap;
 	
 protected:
-	// SpaceShip
-	UPROPERTY(EditAnywhere, Category = "GameMode|Game Data")
-	FSpaceShipState _spaceShipState;
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|Components")
+	TObjectPtr<UStaticMeshComponent> _rootComponent = nullptr;
 
-	// Player Radiation
-	UPROPERTY(EditAnywhere, Category = "GameMode|Game Data")
+protected:
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|SpaceShipStateGroup")
+	TObjectPtr<USpaceShipStateGroup> _spaceShipStateGroup = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "GameState|SpaceShipStateGroup")
+	FSpaceShipState _initSpaceShipState;
+
+protected:
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|PlayerStateGroup")
+	TObjectPtr<UPlayerStateGroup> _playerStateGroup = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "GameState|PlayerStateGroup")
 	float _maxPlayerRadiation = 100.0f;
 
-	// Turret
-	const int32 _consumeAmmo = -1;
+protected:
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|TurretStateGroup")
+	TObjectPtr<UTurretStateGroup> _turretStateGroup = nullptr;
 
-	UPROPERTY(EditAnywhere, Category = "GameMode|Game Data")
-	FTurretData _turretData;
+	UPROPERTY(EditAnywhere, Category = "GameState|TurretStateGroup")
+	FTurretData _initTurretData;
 
+protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Test")
 	int32 _testPlayerCount = 4;
 
 public:
-	int32 GetPlayerCount() { return _playerStateMap.Num(); }
+	TObjectPtr<USpaceShipStateGroup> GetSpaceShipStateGroup() { return _spaceShipStateGroup; }
+
+	TObjectPtr<UPlayerStateGroup> GetPlayerStateGroup() { return _playerStateGroup; }
+
+	TObjectPtr<UTurretStateGroup> GetTurretStateGroup() { return _turretStateGroup; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -52,39 +68,6 @@ public:
 
 	void SendCurrentDataEvent();
 
-#pragma region SpaceShip
 public:
-	void RepairSpaceShip();
-
-	void DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType, float DecreaseValue);
-
-	void RepairShield(float RepairShieldValue);
-
-private:
-	void ChangeSpaceShipData(FSpaceShipData* OriginalData, float CurrentValue);
-
-	void ChangeSpaceShipData(FSpaceShipData* OriginalData, float CurrentValue, float MaxValue);
-#pragma endregion SpaceShip
-
-#pragma region Player State
-public:
-	void IncreasePlayerRadiation(int32 PlayerIdx, float IncreaseValue);
-#pragma endregion Player State
-
-#pragma region Turret
-public:
-	float GetTurretFireCoolTime() { return _turretData.FireCoolTime; }
-
-	bool TryFireTurret();
-
-	void ReloadTurret();
-
-private:
-	void ChangeTurretAmmo(int32 ChangeValue);
-#pragma endregion Turret
-
-private:
 	TObjectPtr<UEventManager> GetEventManager();
-
-	
 };

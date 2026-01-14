@@ -5,6 +5,10 @@
 
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
+#include "JHS/GameControl/StateData/PlayerStateGroup.h"
+#include "JHS/GameControl/StateData/TurretStateGroup.h"
+#include "JHS/GameControl/StateData/GameStateStructs.h"
 #include "Kismet/GameplayStatics.h"
 #include "JHS/SpaceObject/DriveSeatRader.h"
 
@@ -35,7 +39,7 @@ void AJHSPlayerBase::BeginPlay()
 		return;
 
 	_gameState = _outGameState;
-	_gameState->RepairSpaceShip();
+	_gameState->GetSpaceShipStateGroup()->RepairSpaceShip();
 
 	//FireTurret();
 }
@@ -48,7 +52,15 @@ void AJHSPlayerBase::Tick(float DeltaTime)
 	if (_gameState == nullptr)
 		return;
 
-	//_gameState->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, 0.01f);
+	/*_gameState->GetSpaceShipStateGroup()->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::Shield, 0.001f);
+	_gameState->GetSpaceShipStateGroup()->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, 0.01f);
+	_gameState->GetSpaceShipStateGroup()->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::Fuel, 0.05f);*/
+
+	/*for (int i = 0; i < _gameState->GetPlayerStateGroup()->GetPlayerCount(); i++)
+	{
+		float _value = (i + 1) * 0.01;
+		_gameState->GetPlayerStateGroup()->IncreasePlayerRadiation(i, _value);
+	}*/
 }
 
 // Called to bind functionality to input
@@ -63,12 +75,16 @@ void AJHSPlayerBase::FireTurret()
 	if (_gameState == nullptr)
 		return;
 
-	if (!_gameState->TryFireTurret())
+	UTurretStateGroup* _turretStateGroup = _gameState->GetTurretStateGroup();
+	if (_turretStateGroup == nullptr)
+		return;
+
+	if (!_turretStateGroup->TryFireTurret())
 	{
-		_gameState->ReloadTurret();
+		_turretStateGroup->ReloadTurret();
 	}
 
-	float _fireCoolTime = _gameState->GetTurretFireCoolTime();
+	float _fireCoolTime = _turretStateGroup->GetTurretFireCoolTime();
 	if (_fireCoolTime > 0.0f)
 	{
 		GetWorld()->GetTimerManager().SetTimer(_turretFireTimerHandle, this, &AJHSPlayerBase::FireTurret, _fireCoolTime, false);

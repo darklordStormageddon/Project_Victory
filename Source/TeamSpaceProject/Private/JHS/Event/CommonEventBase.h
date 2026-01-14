@@ -4,7 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
-#include "JHS/GameControl/DataStruct.h"
+#include "JHS/GameControl/StateData/GameStateStructs.h"
+
 #include "CommonEventBase.generated.h"
 
 /**
