@@ -56,6 +56,7 @@ private:
 
 	FVector ShipSpeed;
 
+	UPROPERTY()
 	TArray<AAsteroid*> Asteroids;
 
 private:

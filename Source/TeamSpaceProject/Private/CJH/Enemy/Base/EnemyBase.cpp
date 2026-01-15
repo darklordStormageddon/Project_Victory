@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "CJH/Enemy/EnemyBase.h"
+#include "CJH/Enemy/Base/EnemyBase.h"
 
 #include "JHS/GameControl/JHSGameMode.h"
 
@@ -24,7 +24,7 @@ void AEnemyBase::BeginPlay()
 		DelayHandle,
 		this,
 		&AEnemyBase::SetInfo,
-		0.1f, 
+		0.01f, 
 		false
 	);
 }
@@ -33,14 +33,6 @@ void AEnemyBase::BeginPlay()
 void AEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	delayTime += DeltaTime;
-
-	if (delayTime >= 1.0f)
-	{
-		DistanceCheck();
-		delayTime = 0.0f;
-	}
 }
 
 void AEnemyBase::SetInfo()
@@ -58,20 +50,20 @@ void AEnemyBase::SetInfo()
 	_spawnedInfo.Current_HP = _spawnedInfo.Max_HP;
 }
 // 플레이어와의 거리 체크
-bool AEnemyBase::DistanceCheck()
+bool AEnemyBase::DistanceCheck(float _condition)
 {
 	if (!_spaceShip)
 		return false;
 
 	float Distance = FVector::Dist(GetActorLocation(), _spaceShip->GetActorLocation());
 
-	if (Distance <= _spawnedInfo.Attack_Range)
+	if (Distance <= _condition)
 		return true;
 
 	return false;
 }
 
-void AEnemyBase::SetTargetShip(TSubclassOf<AActor> Target) 
+void AEnemyBase::SetTargetShip(TSubclassOf<AActor> Targetenemy) 
 { 
-	_spaceShip = UGameplayStatics::GetActorOfClass(GetWorld(), Target); 
+	_spaceShip = UGameplayStatics::GetActorOfClass(GetWorld(), Targetenemy);
 }
