@@ -47,7 +47,7 @@ public:
 		, UI_PANEL_FOLDER(TEXT("UI/Panel/"))
 		, UI_POPUP_FOLDER(TEXT("UI/Popup/Common/"))
 		, UI_SYSTEM_FOLDER(TEXT("UI/System/"))
-		, UI_WIDGET_PREFIX(TEXT("WBP_"))
+		, UI_WIDGET_HEADER(TEXT("WBP_"))
 	{}
 
 	// UI Blueprint
@@ -64,7 +64,23 @@ public:
 	FString UI_SYSTEM_FOLDER;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|UI")
-	FString UI_WIDGET_PREFIX;
+	FString UI_WIDGET_HEADER;
+};
+
+USTRUCT(BlueprintType)
+struct FResourceImage
+{
+	GENERATED_BODY()
+
+public:
+	FResourceImage()
+		: IMAGE_INTERACT_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/Interact/"))
+	{
+	}
+
+	// UI Blueprint
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|Image")
+	FString IMAGE_INTERACT_FOLDER_PATH;
 };
 
 /**
@@ -78,4 +94,5 @@ public:
 
 	FResourceSpaceObject SpaceObject;
 	FResourceUI UI;
+	FResourceImage Image;
 };

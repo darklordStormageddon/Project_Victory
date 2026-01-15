@@ -3,26 +3,80 @@
 
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
-#include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
+#include "JHS/GameControl/StateData/PlayerStateGroup.h"
+#include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "JHS/Event/EventManager.h"
-#include "JHS/Event/CommonEventBase.h"
+#include "JHS/UI/UIManager.h"
+#include "JHS/UI/UIBase.h"
 
 AJHSGameState::AJHSGameState()
 {
-	_spaceShipData.Hp.DataType = E_DATA_TYPE::HP;
-	_spaceShipData.Shield.DataType = E_DATA_TYPE::Shield;
-	_spaceShipData.Fuel.DataType = E_DATA_TYPE::Fuel;
+	_rootComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RootComponent"));
+	_rootComponent->SetupAttachment(RootComponent);
+
+	_spaceShipStateGroup = CreateDefaultSubobject<USpaceShipStateGroup>(TEXT("SpaceShipStateGroup"));
+
+	_playerStateGroup = CreateDefaultSubobject<UPlayerStateGroup>(TEXT("PlayerStateGroup"));
+
+	_turretStateGroup = CreateDefaultSubobject<UTurretStateGroup>(TEXT("TurretStateGroup"));
+	for (int32 i = 0; i < ((int32)E_AMMO_TYPE::Missile + 1); i++)
+	{
+		FAmmoData _ammoData;
+		_ammoData.AmmoType = (E_AMMO_TYPE)i;
+		_initAmmoDataArray.Add(_ammoData);
+	}
+}
+
+void AJHSGameState::BeginPlay()
+{
+	Super::BeginPlay();
+
+	TArray<FPlayerStateData> _playerStateArray;
+	for (int32 i = 0; i < _testPlayerCount; i++)
+	{
+		FPlayerStateData _new;
+		_new.PlayerUID = i;
+		_new.PlayerIdx = i;
+		_playerStateArray.Add(_new);
+	}
+
+	InitializeGameState(_playerStateArray);
+}
+
+void AJHSGameState::InitializeGameState(TArray<FPlayerStateData> PlayerStateArray)
+{
+	_spaceShipStateGroup->InitializeSpaceShipState(this, _initSpaceShipState);
+
+	_playerStateGroup->InitializePlayerState(this, PlayerStateArray, _maxPlayerRadiation);
+	
+	_turretStateGroup->InitializeTurretState(this, _initAmmoDataArray);
+
+	UUIManager* _outUIManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
+		return;
+
+	_outUIManager->OpenUI(E_UI_TYPE::UIPanelCommonInfo);
+}
+
+void AJHSGameState::SendCurrentDataEvent()
+{
+	_spaceShipStateGroup->UpdateSpaceShipState();
+
+	_playerStateGroup->UpdatePlayerState();
+
+	_turretStateGroup->UpdateTurretState();
 }
 
 TObjectPtr<UEventManager> AJHSGameState::GetEventManager()
 {
 	if (_cachedEventManager == nullptr)
 	{
-		AJHSGameMode* _outGameMode = nullptr;
-		if (!UStaticFunctionLibrary::TryGetGameMode(_outGameMode))
+		UEventManager* _outEventManager = nullptr;
+		if (!UStaticFunctionLibrary::TryGetEventManager(_outEventManager))
 			return nullptr;
 
-		_cachedEventManager = _outGameMode->GetEventManager();
+		_cachedEventManager = _outEventManager;
 	}
 
 	if (_cachedEventManager == nullptr)
@@ -32,81 +86,4 @@ TObjectPtr<UEventManager> AJHSGameState::GetEventManager()
 	}
 
 	return _cachedEventManager;
-}
-
-void AJHSGameState::ChangeSpaceShipData(FMaxCurrentData* OriginalData, float CurrentValue)
-{
-	ChangeSpaceShipData(OriginalData, CurrentValue, OriginalData->MaxValue);
-}
-
-void AJHSGameState::ChangeSpaceShipData(FMaxCurrentData* OriginalData, float CurrentValue, float MaxValue)
-{
-	// FMaxCurrentData 원본 데이터 참조
-	OriginalData->CurrentValue = CurrentValue;
-	OriginalData->MaxValue = MaxValue;
-	if (OriginalData->CurrentValue > OriginalData->MaxValue)
-	{
-		OriginalData->CurrentValue = OriginalData->MaxValue;
-	}
-	if (OriginalData->CurrentValue < 0.0f)
-	{
-		OriginalData->CurrentValue = 0.0f;
-	}
-
-	UEventManager* _eventManager = GetEventManager();
-	if (_eventManager == nullptr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AJHSGameState: EventManager is nullptr, skipping event execution"));
-		return;
-	}
-
-	UEventOnChangeSpaceShipData* _event = NewObject<UEventOnChangeSpaceShipData>(this);
-	if (_event == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("AJHSGameState: Failed to create UEventOnChangeSpaceShipData"));
-		return;
-	}
-
-	_event->MaxCurrentData = *OriginalData;
-	_eventManager->ExecuteEvent<UEventOnChangeSpaceShipData>(_event);
-}
-
-void AJHSGameState::SendCurrentDataEvent()
-{
-	ChangeSpaceShipData(&_spaceShipData.Hp, _spaceShipData.Hp.CurrentValue, _spaceShipData.Hp.MaxValue);
-	ChangeSpaceShipData(&_spaceShipData.Shield, _spaceShipData.Shield.CurrentValue, _spaceShipData.Shield.MaxValue);
-	ChangeSpaceShipData(&_spaceShipData.Fuel, _spaceShipData.Fuel.CurrentValue, _spaceShipData.Fuel.MaxValue);
-}
-
-void AJHSGameState::RepairSpaceShip()
-{
-	ChangeSpaceShipData(&_spaceShipData.Hp, _spaceShipData.Hp.MaxValue);
-	ChangeSpaceShipData(&_spaceShipData.Shield, _spaceShipData.Shield.MaxValue);
-	ChangeSpaceShipData(&_spaceShipData.Fuel, _spaceShipData.Fuel.MaxValue);
-}
-
-void AJHSGameState::DecreaseSpaceShipData(E_DATA_TYPE DataType, float DecreaseValue)
-{
-	switch (DataType)
-	{
-		case E_DATA_TYPE::HP:
-			ChangeSpaceShipData(&_spaceShipData.Hp, _spaceShipData.Hp.CurrentValue - DecreaseValue);
-			break;
-
-		case E_DATA_TYPE::Shield:
-			ChangeSpaceShipData(&_spaceShipData.Shield, _spaceShipData.Shield.CurrentValue - DecreaseValue);
-			break;
-
-		case E_DATA_TYPE::Fuel:
-			ChangeSpaceShipData(&_spaceShipData.Fuel, _spaceShipData.Fuel.CurrentValue - DecreaseValue);
-			break;
-
-		default:
-			break;
-	}
-}
-
-void AJHSGameState::RepairShield(float RepairShieldValue)
-{
-	ChangeSpaceShipData(&_spaceShipData.Shield, _spaceShipData.Shield.CurrentValue + RepairShieldValue);
 }

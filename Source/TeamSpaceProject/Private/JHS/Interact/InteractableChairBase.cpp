@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "JHS/Player/InteractableChairBase.h"
-#include "JHS/UI/UIInteracterable.h"
+#include "JHS/Interact/InteractableChairBase.h"
+#include "JHS/Interact/InteractableComponent.h"
 
 // Sets default values
 AInteractableChairBase::AInteractableChairBase()
@@ -10,7 +10,7 @@ AInteractableChairBase::AInteractableChairBase()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	_uiInteracterable = CreateDefaultSubobject<UUIInteracterable>(TEXT("UIInteractable"));
+	_uiInteracterable = CreateDefaultSubobject<UInteractableComponent>(TEXT("Interactable"));
 }
 
 // Called when the game starts or when spawned
@@ -21,13 +21,13 @@ void AInteractableChairBase::BeginPlay()
 	if (_uiInteracterable != nullptr)
 	{
 		// 델리게이트 바인딩
-		_uiInteracterable->InitializeUIInteractable(_isDebugDraw, _interactRadius, _interatUIType);
-		_uiInteracterable->OnInteractEnter.AddDynamic(this, &AInteractableChairBase::InteractEnter);
-		_uiInteracterable->OnInteractExit.AddDynamic(this, &AInteractableChairBase::InteractExit);
+		_uiInteracterable->InitializeUIInteractable(_isDebugDraw, _interactRadius, E_INTERACT_TYPE::Seat, _interatUIType);
+		_uiInteracterable->OnInteractEnterAction.AddDynamic(this, &AInteractableChairBase::InteractEnter);
+		_uiInteracterable->OnInteractExitAction.AddDynamic(this, &AInteractableChairBase::InteractExit);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AInteractableChairBase: UUIInteracterable component not found"));
+		UE_LOG(LogTemp, Warning, TEXT("AInteractableChairBase: UInteractableComponent component not found"));
 	}
 }
 

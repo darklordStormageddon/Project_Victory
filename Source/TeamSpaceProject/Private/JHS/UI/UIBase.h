@@ -4,26 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "JHS/GameControl/CommonEnums.h"
+
 #include "UIBase.generated.h"
 
-UENUM(BlueprintType)
-enum class E_UI_TYPE : uint8
-{
-	// Panel
-	UIPanelPlayerFPS = 0 UMETA(DisplayName = "UIPanelPlayerFPS"),
-	UIPanelDriveSeat UMETA(DisplayName = "UIPanelDriveSeat"),
-	UIPanel UMETA(DisplayName = "SpaceGarbage"),
+class UEventManager;
+class UTextBlock;
+class UProgressBar;
 
-	// Popup
-	UIPopupCommon = 100 UMETA(DisplayName = "UIPopupCommon"),
-
-	// System
-	UISystemSetting = 200 UMETA(DisplayName = "UISystemSetting"),
-};
-
-/**
- * 
- */
 UCLASS()
 class UUIBase : public UUserWidget
 {
@@ -31,6 +19,13 @@ class UUIBase : public UUserWidget
 
 public:
 	UUIBase(const FObjectInitializer& ObjectInitializer);
+
+private:
+	TObjectPtr<UEventManager> _cachedEventManager = nullptr;
+
+	bool _isInitialized = false;
+
+	bool _isActive = false;
 
 protected:
 	virtual void NativeConstruct() override;
@@ -60,7 +55,9 @@ public:
 
 	void SetAsLastSibling();
 
-private:
-	bool _isInitialized = false;
-	bool _isActive = false;
+public:
+	static void SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar* ProgressBar, UTextBlock* TextBlock);
+
+protected:
+	TObjectPtr<UEventManager> GetEventManager();
 };
