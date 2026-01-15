@@ -57,33 +57,29 @@ void AAsteroid::SetAsteroidInfo(
 
 	bool bHasIntercept = CalculateInterceptPoint(
 		GetActorLocation(),
-		AsteroidInfo.Speed,
 		VSpaceShip,
-		Velocity,
-		TargetLocation
+		Velocity
 	);
 
 	if (!bHasIntercept)
 		TargetLocation = VSpaceShip;
 
 	// === 방향 계산 ===
-	Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();
+	Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();// 방향 벡터 단위벡터화
 	Direction *= AsteroidInfo.Speed;
 
 }
 
 bool AAsteroid::CalculateInterceptPoint(
 	const FVector& AsteroidPos,
-	float AsteroidSpeed,
 	const FVector& ShipPos,
-	const FVector& ShipVelocity,
-	FVector& OutTargetLocation
+	const FVector& ShipVelocity
 )
 {
 	FVector R = ShipPos - AsteroidPos;
 	FVector V = ShipVelocity;
 
-	float a = FVector::DotProduct(V, V) - AsteroidSpeed * AsteroidSpeed;
+	float a = FVector::DotProduct(V, V) - AsteroidInfo.Speed * AsteroidInfo.Speed;
 	float b = 2.f * FVector::DotProduct(R, V);
 	float c = FVector::DotProduct(R, R);
 
@@ -105,7 +101,7 @@ bool AAsteroid::CalculateInterceptPoint(
 	if (t == TNumericLimits<float>::Max())
 		return false;
 
-	OutTargetLocation = ShipPos + ShipVelocity * t;
+	TargetLocation = ShipPos + ShipVelocity * t;
 	return true;
 }
 
@@ -127,13 +123,14 @@ void AAsteroid::MoveAsteroid(float DeltaTime)
 	AddActorWorldRotation(ConstRotaion * RotateSpeed * DeltaTime);
 }
 
-void AAsteroid::Destroyed()
+void AAsteroid::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	Super::Destroyed();
-
-	AsteroidComponent->RemoveAsteroid(this);
+	if(AsteroidComponent)
+		AsteroidComponent->RemoveAsteroid(this);
 
 	SpaceObject_Remove();
+	 
+	Super::EndPlay(EndPlayReason);
 }
 
 void AAsteroid::SpaceObject_Remove()

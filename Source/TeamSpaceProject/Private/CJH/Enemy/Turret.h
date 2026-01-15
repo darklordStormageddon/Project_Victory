@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CJH/Enemy/EnemyBase.h"
+#include "CJH/Enemy/Base/SpawnedEnemyBase.h"
 
 #include "Components/ArrowComponent.h"
 
@@ -12,7 +12,7 @@
 class ABullet;
 
 UCLASS()
-class ATurret : public AEnemyBase
+class ATurret : public ASpawnedEnemyBase
 {
 private:
 	GENERATED_BODY()
@@ -33,11 +33,16 @@ private:
 	TSubclassOf<ABullet> Bullet;
 
 	bool CanFire = true;
+	FVector MoveDirection;
+	FRotator RotationDirection;
 
+	float RotateSpeed = 50.0f;
 private:
+	void Move(float DeltaTime);
 	void Fire();
 	void EnableFiring();
 	void LookTarget();
+	void SetDirection();
 
 protected:
 	ATurret();

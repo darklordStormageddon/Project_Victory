@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-
-#include "CJH/Enemy/EnemyBase.h"
-
 #include "EnemyManagerComponent.generated.h"
 
 class AJHSGameMode;
 class ASpaceStation;
+class AEnemyBase;
+class AGarbageEnemyBase;
+class ASpawnedEnemyBase;
 
 USTRUCT(BlueprintType)
 
@@ -28,6 +28,8 @@ struct FSpawnEnemyInfo
 	UPROPERTY(EditDefaultsOnly, Category = "Info")
 	float Attack_Range;
 	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float Detection_Range;
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
 	float Attack_Speed;
 	UPROPERTY(EditDefaultsOnly, Category = "Info")
 	float Move_Speed;
@@ -35,21 +37,16 @@ struct FSpawnEnemyInfo
 	UPROPERTY(EditDefaultsOnly, Category = "Info")
 	float Value;
 };
-//
-//UENUM(BlueprintType)
-//enum class EnemyClass
-//{
-//	Basic_Turret	UMETA(DisplayName = "Basic_Turret"),
-//	Space_Drone	UMETA(DisplayName = "Drone"),
-//	Enemy_C	UMETA(DisplayName = "Turret_C"),
-//	Enemy_D	UMETA(DisplayName = "Turret_D"),
-//};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UEnemyManagerComponent : public UActorComponent
 {
 	GENERATED_BODY()
-private:
+protected:
+	AActor* _owner = nullptr;
+
+	TArray<AEnemyBase*> _spawnedEnemies;
+
 	UPROPERTY(EditDefaultsOnly, Category = "TargetShip")
 	TSubclassOf<AActor> _spaceShip;
 
@@ -60,7 +57,6 @@ private:
 
 	// 적 소환 가능 여부
 	FTimerHandle SpawnHandle;
-	bool CanSpawn = true;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
 	float minSize = 0.1f;
@@ -68,18 +64,17 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
 	float maxSize = 1.5f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
-	float SpawnDelay = 3.0f;
+	//Garbage
+	float SpawnedValue;
 
-	// 적 정보 맵
-	UPROPERTY(EditDefaultsOnly, Category = "EnemyInfo")
-	TMap<TSubclassOf<AEnemyBase>, FSpawnEnemyInfo> _enemyInfoMap;
-
-private:
+	AEnemyBase* SpawnedEnemy;
+		
+protected:
 	// 적 소환 함수
 	void SpawnSetting();
-	void SetCanSpawnTrue();
-	void SpawnEnemy(TSubclassOf<AEnemyBase> Enemy, FSpawnEnemyInfo _enemyInfo, FVector SpawnLocation, FRotator SpawnRotator);
+	void GarbageSpawnSetting();
+
+	virtual void SpawnEnemy(TSubclassOf<AEnemyBase> Enemy, FSpawnEnemyInfo _enemyInfo, FVector SpawnLocation, FRotator SpawnRotator);
 
 public:	
 	// Sets default values for this component's properties
