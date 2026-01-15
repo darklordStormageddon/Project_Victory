@@ -89,10 +89,49 @@ void UMyGameInstance::CreateSession()
 		SessionSettings.Set(TEXT("SessionName"), RoomName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 		SessionSettings.Set(TEXT("Password"), Password, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
-
-		//방생성
 		SessionInterface->CreateSession(0, SESSION_NAME, SessionSettings);
 	}
+}
+
+void UMyGameInstance::PrintPublicConnectionNum()
+{
+	if (SessionInterface.IsValid())
+	{
+		FNamedOnlineSession* Session = SessionInterface->GetNamedSession(SESSION_NAME);
+		if (Session)
+		{
+			UE_LOG(LogTemp, Error, TEXT("=== HOST Session Info ==="));
+			UE_LOG(LogTemp, Error, TEXT("NumPublicConnections: %d"),
+				Session->SessionSettings.NumPublicConnections);
+			UE_LOG(LogTemp, Error, TEXT("NumOpenPublicConnections: %d"),
+				Session->NumOpenPublicConnections);
+			UE_LOG(LogTemp, Error, TEXT("NumPrivateConnections: %d"),
+				Session->SessionSettings.NumPrivateConnections);
+			UE_LOG(LogTemp, Error, TEXT("NumOpenPrivateConnections: %d"),
+				Session->NumOpenPrivateConnections);
+			UE_LOG(LogTemp, Error, TEXT("RegisteredPlayers: %d"),
+				Session->RegisteredPlayers.Num());
+
+			// 등록된 플레이어 목록 출력
+			for (const FUniqueNetIdRef& PlayerId : Session->RegisteredPlayers)
+			{
+				UE_LOG(LogTemp, Error, TEXT("Registered Player: %s"),
+					*PlayerId->ToString());
+			}
+		}
+
+		UNetDriver* NetDriver = GetWorld()->GetNetDriver();
+		if (NetDriver && NetDriver->IsServer())
+		{
+			UE_LOG(LogTemp, Log, TEXT("NetDriver is active and listening."));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("NetDriver not initialized or not a server."));
+		}
+	}
+
+	return;
 }
 
 void UMyGameInstance::RefreshServerList()
@@ -162,14 +201,14 @@ void UMyGameInstance::OnFindSessionComplete(bool IsSuccess)
 			UE_LOG(LogTemp, Display, TEXT("Found Session name : %s"), *SearchResult.GetSessionIdStr());
 			UE_LOG(LogTemp, Display, TEXT("Ping : %d"), SearchResult.PingInMs);
 
+			FString tempName;
+			SearchResult.Session.SessionSettings.Get(FName("SessionName"), tempName);
+			if (!SearchName.IsEmpty() && SearchName != tempName)
+				continue;
+
 			FServerData ServerData;
 			ServerData.CurrentPlayers = SearchResult.Session.SessionSettings.NumPublicConnections - SearchResult.Session.NumOpenPublicConnections;
 			ServerData.HostUserName = SearchResult.Session.OwningUserName;
-
-			FString tempName;
-			SearchResult.Session.SessionSettings.Get(FName("SessionName"), tempName);
-			if (SearchName != tempName || SearchName.IsEmpty())
-				return;
 			SearchResult.Session.SessionSettings.Get(FName("Password"), ServerData.Password);
 			SearchResult.Session.SessionSettings.Get(FName("SessionName"), ServerData.Name);
 			SearchResult.Session.SessionSettings.Get(FName("Public"), ServerData.Accessibility);
@@ -182,6 +221,7 @@ void UMyGameInstance::OnFindSessionComplete(bool IsSuccess)
 		OnSessionListUpdated.Broadcast();
 	}
 }
+
 void UMyGameInstance::OnJoinSessionComplete(FName InSessionName, EOnJoinSessionCompleteResult::Type InResult)
 {
 	if (SessionInterface.IsValid() == false) return;

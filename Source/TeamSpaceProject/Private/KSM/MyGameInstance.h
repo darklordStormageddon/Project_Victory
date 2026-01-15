@@ -99,4 +99,8 @@ public:
 
     UPROPERTY(BlueprintReadOnly)
     TArray<FServerData> ServerNames;
+
+    //디버그용 함수
+    UFUNCTION(BlueprintCallable)
+    void PrintPublicConnectionNum();
 };
