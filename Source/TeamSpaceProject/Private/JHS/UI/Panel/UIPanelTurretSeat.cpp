@@ -70,12 +70,12 @@ void UUIPanelTurretSeat::OnChangeTurret(UEventOnChangeTurretData* Event)
     if (_turretData.TurretPosition == E_TURRET_POSITION::Left)
     {
         IMG_LeftTurret->SetBrushTintColor(_turretColor);
-        SetProgressBarUI(_turretData.Ammo.CurrentValue, _turretData.Ammo.MaxValue, PROG_LeftTurretAmmo, TXT_LeftTurretAmmo);
+        SetProgressBarUI(_turretData.Ammo.CurrentValue, _turretData.Ammo.MaxValue, PROG_LeftTurretAmmo, TXT_LeftTurretAmmo, true);
     }
     else
     {
         IMG_RightTurret->SetBrushTintColor(_turretColor);
-        SetProgressBarUI(_turretData.Ammo.CurrentValue, _turretData.Ammo.MaxValue, PROG_RightTurretAmmo, TXT_RightTurretAmmo);
+        SetProgressBarUI(_turretData.Ammo.CurrentValue, _turretData.Ammo.MaxValue, PROG_RightTurretAmmo, TXT_RightTurretAmmo, true);
     }
 }
 
@@ -102,11 +102,11 @@ void UUIPanelTurretSeat::OnChangeTurretAmmo(UEventOnChangeTurretAmmo* Event)
             break;
 
         case E_TURRET_POSITION::Left:
-            SetProgressBarUI(_ammo.CurrentValue, _ammo.MaxValue, PROG_LeftTurretAmmo, TXT_LeftTurretAmmo);
+            SetProgressBarUI(_ammo.CurrentValue, _ammo.MaxValue, PROG_LeftTurretAmmo, TXT_LeftTurretAmmo, false);
             break;
 
         case E_TURRET_POSITION::Right:
-            SetProgressBarUI(_ammo.CurrentValue, _ammo.MaxValue, PROG_RightTurretAmmo, TXT_RightTurretAmmo);
+            SetProgressBarUI(_ammo.CurrentValue, _ammo.MaxValue, PROG_RightTurretAmmo, TXT_RightTurretAmmo, false);
             break;
     }
 }

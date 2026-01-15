@@ -120,7 +120,7 @@ bool UTurretStateGroup::TryReloadTurret(E_TURRET_POSITION TurretPosition)
 	if (_ammoData == nullptr)
 		return false;
 
-	ChangeTurretAmmo(_outTurretData, _ammoData->ReloadMount);
+	ChangeTurretAmmo(_outTurretData, _ammoData->ReloadCapacity);
 	return true;
 }
 

@@ -12,6 +12,7 @@ class UEventManager;
 class USpaceShipStateGroup;
 class UPlayerStateGroup;
 class UTurretStateGroup;
+class UContainerStateGroup;
 
 UCLASS()
 class AJHSGameState : public AGameState
@@ -50,6 +51,13 @@ protected:
 	TArray<FAmmoData> _initAmmoDataArray;
 
 protected:
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|ContainerStateGroup")
+	TObjectPtr<UContainerStateGroup> _containerStateGroup = nullptr;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|ContainerStateGroup")
+	FContainerState _initContainerState;
+
+protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Test")
 	int32 _testPlayerCount = 4;
 
@@ -59,6 +67,8 @@ public:
 	TObjectPtr<UPlayerStateGroup> GetPlayerStateGroup() { return _playerStateGroup; }
 
 	TObjectPtr<UTurretStateGroup> GetTurretStateGroup() { return _turretStateGroup; }
+
+	TObjectPtr<UContainerStateGroup> GetContainerStateGroup() { return _containerStateGroup; }
 
 protected:
 	virtual void BeginPlay() override;
