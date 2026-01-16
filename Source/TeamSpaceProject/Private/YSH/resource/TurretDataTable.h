@@ -9,12 +9,12 @@
 #include "TurretDataTable.generated.h"
 
 USTRUCT(BlueprintType)
-struct FTurretInfo : public FTableRowBase
+struct FTurretInitState : public FTableRowBase
 {
     GENERATED_BODY()
 
 public:
-    FTurretInfo() : bIsMainTurret(0), AmmoType("Bullet"), InitMaxMag(100), InitFireInterval(0.1f) {}
+    FTurretInitState() : bIsMainTurret(0), AmmoType("Bullet"), InitMaxMag(100), InitFireInterval(0.1f) {}
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bIsMainTurret;

@@ -12,7 +12,7 @@ struct FResourceDataTable
 
 public:
 	FResourceDataTable()
-		: TURRET_INFO_PATH(TEXT("/Game/Main/PS_YSH/"))
+		: TURRET_INFO_PATH(TEXT("/Game/Main/PS_YSH/Data/DT_TurretDataTable.DT_TurretDataTable"))
 		, ELEMENT_INFO_PATH(TEXT("/Game/Main/PS_KSM/"))
 	{
 	}

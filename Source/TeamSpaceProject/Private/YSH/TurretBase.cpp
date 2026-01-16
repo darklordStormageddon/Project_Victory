@@ -88,6 +88,7 @@ void ATurretBase::BeginPlay()
 	if (UStaticFunctionLibrary::TryGetGameState(TempGameState))
 	{
 		_cachedGameState = TempGameState;
+		_cachedGameState->GetTurretStateGroup()->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Cannon);
 	}
 	else
 	{
@@ -243,7 +244,7 @@ void ATurretBase::Tick(float DeltaTime)
 		float CurrentFireCoolTime = 0.0f;
 		UTurretStateGroup* TurretStateGroup = _cachedGameState->GetTurretStateGroup();
 
-		if (TurretStateGroup && TurretStateGroup->TryGetTurretFireCoolTime(TurretPosition, &CurrentFireCoolTime))
+		if (TurretStateGroup && TurretStateGroup->TryGetTurretFireInterval(TurretPosition, &CurrentFireCoolTime))
 		{
 			// FireRateMultiplier Àû¿ë
 			float AdjustedFireCoolTime = CurrentFireCoolTime / FireRateMultiplier;

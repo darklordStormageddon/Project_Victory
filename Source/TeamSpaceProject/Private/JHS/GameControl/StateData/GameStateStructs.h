@@ -71,6 +71,8 @@ public:
 UENUM(BlueprintType)
 enum class E_AMMO_TYPE : uint8
 {
+	NONE = 255 UMETA(DisplayName = "NONE"),
+	
 	Bullet = 0 UMETA(DisplayName = "Bullet"),
 	Cannon UMETA(DisplayName = "Cannon"),
 	Missile UMETA(DisplayName = "Missile"),
@@ -110,19 +112,16 @@ struct FTurretData
 
 public:
 	UPROPERTY()
-	bool IsMainTurret;
-
-	UPROPERTY()
 	E_TURRET_POSITION TurretPosition;
 
 	UPROPERTY()
 	E_AMMO_TYPE AmmoType;
 
 	UPROPERTY()
-	FMaxCurrentData Ammo;
+	FMaxCurrentData Mag;
 
 	UPROPERTY()
-	float FireCoolTime = 1.0f;
+	float FireInterval = 1.0f;
 };
 #pragma endregion Turret
 
