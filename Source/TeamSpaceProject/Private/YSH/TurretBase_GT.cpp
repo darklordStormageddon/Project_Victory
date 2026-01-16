@@ -85,6 +85,7 @@ void ATurretBase_GT::BeginPlay()
 	if (UStaticFunctionLibrary::TryGetGameState(TempGameState))
 	{
 		_cachedGameState = TempGameState;
+		_cachedGameState->GetTurretStateGroup()->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet);
 	}
 	else
 	{
