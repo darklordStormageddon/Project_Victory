@@ -16,6 +16,11 @@ UUIBase::UUIBase(const FObjectInitializer& ObjectInitializer)
 {
 }
 
+bool UUIBase::Initialize()
+{
+	return Super::Initialize();
+}
+
 void UUIBase::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -90,7 +95,7 @@ void UUIBase::SetAsLastSibling()
 	}
 }
 
-void UUIBase::SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar* ProgressBar, UTextBlock* TextBlock)
+void UUIBase::SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar* ProgressBar, UTextBlock* TextBlock, bool IsOnlyCurrentText)
 {
 	if (ProgressBar == nullptr)
 		return;
@@ -100,9 +105,16 @@ void UUIBase::SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar*
 
 	if (TextBlock != nullptr)
 	{
-		FString _text = FString::Printf(TEXT("%d / %d"), (int32)CurrentValue, (int32)MaxValue);
+		FString _text;
+		if (IsOnlyCurrentText)
+		{
+			_text = FString::Printf(TEXT("%d"), (int32)CurrentValue);
+		}
+		else
+		{
+			_text = FString::Printf(TEXT("%d / %d"), (int32)CurrentValue, (int32)MaxValue);
+		}
 		TextBlock->SetText(FText::FromString(_text));
-		
 	}
 }
 

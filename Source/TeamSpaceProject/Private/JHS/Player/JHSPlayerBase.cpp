@@ -8,6 +8,7 @@
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/PlayerStateGroup.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
+#include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
 #include "Kismet/GameplayStatics.h"
 #include "JHS/SpaceObject/DriveSeatRader.h"
@@ -41,7 +42,7 @@ void AJHSPlayerBase::BeginPlay()
 	_gameState = _outGameState;
 	_gameState->GetSpaceShipStateGroup()->RepairSpaceShip();
 
-	GetWorld()->GetTimerManager().SetTimer(_turretFireTimerHandle, this, &AJHSPlayerBase::FireTurret, 3.0f, false);
+	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::AddElement, 3.0f, false);
 }
 
 // Called every frame
@@ -92,6 +93,36 @@ void AJHSPlayerBase::FireTurret()
 
 	if (_outFireCoolTime > 0.0f)
 	{
-		GetWorld()->GetTimerManager().SetTimer(_turretFireTimerHandle, this, &AJHSPlayerBase::FireTurret, _outFireCoolTime, false);
+		GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::FireTurret, _outFireCoolTime, false);
 	}
+}
+
+void AJHSPlayerBase::AddElement()
+{
+	if (_gameState == nullptr)
+		return;
+
+	UContainerStateGroup* _containerStateGroup = _gameState->GetContainerStateGroup();
+	if (_containerStateGroup == nullptr)
+		return;
+
+
+	_elementIndex++;
+	int32 _lastIndex = (int32)E_ELEMENT_TYPE::CarbonFiber;
+	if (_elementIndex >= _lastIndex)
+	{
+		_elementIndex %= _lastIndex;
+		_isAddMode = !_isAddMode;
+	}
+
+	if (_isAddMode)
+	{
+		_containerStateGroup->AddElement((E_ELEMENT_TYPE)_elementIndex, _elementIndex + 1);
+	}
+	else
+	{
+		_containerStateGroup->RemoveElement((E_ELEMENT_TYPE)_elementIndex, _elementIndex + 1);
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::AddElement, 1.0f, false);
 }

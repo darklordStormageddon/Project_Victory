@@ -8,16 +8,16 @@
 #include "JHS/Interact/InteractableComponent.h"
 #include "JHS/GameControl/CommonEnums.h"
 
-#include "InteractableChairBase.generated.h"
+#include "InteractableActorBase.generated.h"
 
 UCLASS()
-class AInteractableChairBase : public AActor
+class AInteractableActorBase : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	AInteractableChairBase();
+	AInteractableActorBase();
 
 private:
 	TObjectPtr<UInteractableComponent> _uiInteracterable = nullptr;

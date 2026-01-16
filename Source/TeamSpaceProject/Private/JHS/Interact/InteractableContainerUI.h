@@ -4,20 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "JHS/Interact/InteractableActorBase.h"
-#include "InteractableChairExample.generated.h"
+#include "InteractableContainerUI.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class AInteractableChairExample : public AInteractableActorBase
+class AInteractableContainerUI : public AInteractableActorBase
 {
 	GENERATED_BODY()
-
-
-
+	
 protected:
 	void OnInteractEnter() override;
-	
+
 	void OnInteractExit() override;
 };

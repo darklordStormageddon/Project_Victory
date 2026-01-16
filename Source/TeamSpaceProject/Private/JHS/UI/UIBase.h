@@ -28,6 +28,8 @@ private:
 	bool _isActive = false;
 
 protected:
+	virtual bool Initialize() override;
+
 	virtual void NativeConstruct() override;
 
 	virtual void NativeDestruct() override;
@@ -56,7 +58,7 @@ public:
 	void SetAsLastSibling();
 
 public:
-	static void SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar* ProgressBar, UTextBlock* TextBlock);
+	static void SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar* ProgressBar, UTextBlock* TextBlock, bool IsOnlyCurrentText);
 
 protected:
 	TObjectPtr<UEventManager> GetEventManager();
