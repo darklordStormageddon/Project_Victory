@@ -3,7 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
+#include "GameFramework/Actor.h"
+
+
+#include "Particles/ParticleSystemComponent.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -21,20 +24,30 @@ struct FEnemyInfo
 	float Attack_Damage;
 	float Attack_Speed;
 	float Attack_Range;
+	float Detection_Range;
 	float Move_Speed;
-
 	float Value;
 };
 
 UCLASS()
-class AEnemyBase : public APawn
+class AEnemyBase : public AActor
 {
 	GENERATED_BODY()
 private:
 	float delayTime;
 
 protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
+	UParticleSystem* FireParticle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
+	UParticleSystemComponent* FireComponent;
+
+	AActor* _owner;
+	UActorComponent* _ownerComponent;
+
 	AActor* _spaceShip;
+	AActor* Target = nullptr;
 
 public:
 	FEnemyInfo _spawnedInfo;
@@ -49,9 +62,13 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	bool DistanceCheck();
+	bool DistanceCheck(float _condition);
 
 public:
 	virtual void Tick(float DeltaTime) override;
 	void SetTargetShip(TSubclassOf<AActor> Target);
+
+public:
+	void OwnerGET(AActor* _getOwner) { _owner = _getOwner; }
+	void ComponentGET(UActorComponent* _getOwner) { _ownerComponent = _getOwner; }
 };

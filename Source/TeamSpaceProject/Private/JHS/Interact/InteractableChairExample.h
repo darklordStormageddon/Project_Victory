@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "JHS/Interact/InteractableChairBase.h"
+#include "JHS/Interact/InteractableActorBase.h"
 #include "InteractableChairExample.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class AInteractableChairExample : public AInteractableChairBase
+class AInteractableChairExample : public AInteractableActorBase
 {
 	GENERATED_BODY()
 

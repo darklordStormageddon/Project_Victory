@@ -15,7 +15,6 @@ ABullet::ABullet()
 void ABullet::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
@@ -33,14 +32,14 @@ void ABullet::Tick(float DeltaTime)
 
 void ABullet::MoveToTarget(float DeltaTime)
 {
-    FVector Direction = (TargetLocation - GetActorLocation());
-
-	Direction.Normalize();
-
-	SetActorLocation(Direction * Speed * DeltaTime + GetActorLocation());
+	SetActorLocation(GetActorLocation() + Direction * Speed * DeltaTime, true);
 }
 
-void ABullet::GetTarget(FVector _TargetLocation)
+void ABullet::GetTarget(FVector _TargetDirection)
 {
-	TargetLocation = _TargetLocation;
+	Direction = _TargetDirection;
 }
+
+
+
+

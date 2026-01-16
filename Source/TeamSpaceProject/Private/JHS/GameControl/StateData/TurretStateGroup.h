@@ -20,11 +20,15 @@ public:
 	UTurretStateGroup();
 
 private:
+	const int32 HUNDRED = 100;
+
 	TObjectPtr<AJHSGameState> _gameState = nullptr;
+
+	TMap<int32, FTurretData> _turretDataMap;
 
 	TMap<E_AMMO_TYPE, FAmmoData> _ammoDataMap;
 
-	TMap<E_TURRET_POSITION, FTurretData> _turretDataMap;
+	TMap<E_TURRET_POSITION, FTurretData> _equipTurretMap;
 
 	const int32 CONSUME_AMMO = -1;
 
@@ -41,16 +45,22 @@ public:
 
 	void UpdateTurretState();
 
-	bool TryGetTurretFireCoolTime(E_TURRET_POSITION TurretPosition, float* OutFireCoolTime);
+	bool TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType);
+
+	bool TryGetTurretFireInterval(E_TURRET_POSITION TurretPosition, float* OutFireCoolTime);
 
 	bool TryFireTurret(E_TURRET_POSITION TurretPosition);
 
 	bool TryReloadTurret(E_TURRET_POSITION TurretPosition);
 
 private:
-	bool TryEquipTurret(FTurretData TurretData);
+	void LoadTurretDataTable();
 
-	bool TryGetTurretData(E_TURRET_POSITION TurretPosition, FTurretData*& OutTurretData);
+	int32 GetTurretKey(bool IsMainTurret, E_AMMO_TYPE AmmoType);
+
+	bool TryGetEquipedTurret(E_TURRET_POSITION TurretPosition, FTurretData*& OutTurretData);
+
+	bool TryGetTurretData(bool IsMainTurret, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData);
 
 	void ChangeTurretAmmo(FTurretData* TurretData, int32 ChangeValue);
 };

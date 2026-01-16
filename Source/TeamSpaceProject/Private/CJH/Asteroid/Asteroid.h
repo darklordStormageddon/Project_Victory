@@ -26,6 +26,7 @@ public:
 		float Damage;
 	} FAsteroidInfo;
 
+	UPROPERTY()
 	UAsteroidComponent* AsteroidComponent;
 
 	FVector TargetLocation;
@@ -56,10 +57,8 @@ private:
 
 	bool CalculateInterceptPoint(
 		const FVector& AsteroidPos,
-		float AsteroidSpeed,
 		const FVector& ShipPos,
-		const FVector& ShipVelocity,
-		FVector& OutTargetLocation
+		const FVector& ShipVelocity
 	);
 
 public:
@@ -70,7 +69,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	virtual void Destroyed() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	void SpaceObject_Remove();
 public:

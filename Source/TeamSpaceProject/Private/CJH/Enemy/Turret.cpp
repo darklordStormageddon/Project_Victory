@@ -23,19 +23,51 @@ ATurret::ATurret()
 void ATurret::BeginPlay()
 {
 	Super::BeginPlay();
+
+	FTimerHandle MoveSetHandle;
+
+	GetWorld()->GetTimerManager().SetTimer(
+		MoveSetHandle,
+		this,
+		&ATurret::SetDirection,
+		0.1f,
+		false
+	);
+}
+
+void ATurret::SetDirection()
+{
+	MoveDirection = (_spaceShip->GetActorLocation() - this->GetActorLocation()).GetSafeNormal();
+	MoveDirection *= _spawnedInfo.Move_Speed;
+
+	RotationDirection = FRotator(
+		FMath::RandRange(-1.f, 1.f), 
+		FMath::RandRange(-1.f, 1.f), 
+		FMath::RandRange(-1.f, 1.f)
+	);
+
 }
 
 void ATurret::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (DistanceCheck())
+	Move(DeltaTime);
+
+	if (DistanceCheck(_spawnedInfo.Attack_Range))
 	{
 		LookTarget();
 
 		if(CanFire)
 			Fire();
 	}
+}
+
+void ATurret::Move(float DeltaTime)
+{
+	AddActorWorldOffset(_spawnedInfo.Move_Speed * MoveDirection * DeltaTime, true);
+
+	AddActorWorldRotation(RotateSpeed * RotationDirection * DeltaTime);
 }
 
 void ATurret::LookTarget()

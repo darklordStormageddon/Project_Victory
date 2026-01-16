@@ -10,6 +10,7 @@ UCLASS()
 class ABullet : public AActor
 {
 	GENERATED_BODY()
+
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Bullet")
 	float Speed = 1000.0f;
@@ -17,11 +18,11 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Bullet")
 	float BulletLifeTime = 5.0f;
 
-	FVector TargetLocation;
+	FVector Direction;
 
 private:
 	void MoveToTarget(float DeltaTime);
-	
+
 public:	
 	// Sets default values for this actor's properties
 	ABullet();
