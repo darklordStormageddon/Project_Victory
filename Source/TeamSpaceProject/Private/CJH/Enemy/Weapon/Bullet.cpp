@@ -30,20 +30,16 @@ void ABullet::Tick(float DeltaTime)
 		Destroy();
 }
 
-void ABullet::SetDirection()
-{
-	Direction = (TargetLocation - GetActorLocation());
-
-	Direction.Normalize();
-}
-
 void ABullet::MoveToTarget(float DeltaTime)
 {
-	AddActorLocalOffset(Direction * Speed * DeltaTime, true);
+	SetActorLocation(GetActorLocation() + Direction * Speed * DeltaTime, true);
 }
 
-void ABullet::GetTarget(FVector _TargetLocation)
+void ABullet::GetTarget(FVector _TargetDirection)
 {
-	TargetLocation = _TargetLocation;
-	SetDirection();
+	Direction = _TargetDirection;
 }
+
+
+
+

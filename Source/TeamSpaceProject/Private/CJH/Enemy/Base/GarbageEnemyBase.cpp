@@ -44,10 +44,7 @@ void AGarbageEnemyBase::FollowOrbitTarget(float DeltaTime)
 		return;
 	}
 
-	// 이동량 계산(스폰된 정보의 Move_Speed 사용)
-	float Speed = _spawnedInfo.Move_Speed;
-
-	if (Speed <= 0.0f) Speed = 100.0f; // 안전값
+	float Speed = 800.f;
 
 	FVector MoveDelta = ToTarget.GetSafeNormal() * Speed * DeltaTime;
 

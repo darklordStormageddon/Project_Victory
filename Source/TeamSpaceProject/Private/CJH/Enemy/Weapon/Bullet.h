@@ -18,12 +18,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Bullet")
 	float BulletLifeTime = 5.0f;
 
-	FVector TargetLocation;
 	FVector Direction;
 
 private:
 	void MoveToTarget(float DeltaTime);
-	void SetDirection();
 
 public:	
 	// Sets default values for this actor's properties

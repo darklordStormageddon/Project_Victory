@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 
+
+#include "Particles/ParticleSystemComponent.h"
+
 #include "Kismet/GameplayStatics.h"
 
 #include "EnemyBase.generated.h"
@@ -23,7 +26,6 @@ struct FEnemyInfo
 	float Attack_Range;
 	float Detection_Range;
 	float Move_Speed;
-
 	float Value;
 };
 
@@ -35,6 +37,12 @@ private:
 	float delayTime;
 
 protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
+	UParticleSystem* FireParticle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
+	UParticleSystemComponent* FireComponent;
+
 	AActor* _owner;
 	UActorComponent* _ownerComponent;
 
