@@ -4,6 +4,9 @@
 #include "YSH/TurretBase_GT.h"
 #include "YSH/Projectile.h"
 
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameState.h"
+
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/InputComponent.h"
