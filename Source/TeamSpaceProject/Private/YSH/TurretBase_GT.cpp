@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "YSH/TurretBase.h"
+#include "YSH/TurretBase_GT.h"
 #include "YSH/Projectile.h"
 
 #include "Components/SceneComponent.h"
@@ -23,7 +23,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraShakeBase.h"
 
-ATurretBase::ATurretBase()
+ATurretBase_GT::ATurretBase_GT()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -43,11 +43,8 @@ ATurretBase::ATurretBase()
 	BarrelMesh->SetupAttachment(PitchPivot);
 
 	// 머즐 컴포넌트 생성
-	LeftMuzzle = CreateDefaultSubobject<USceneComponent>(TEXT("LeftMuzzle"));
-	LeftMuzzle->SetupAttachment(BarrelMesh);
-
-	RightMuzzle = CreateDefaultSubobject<USceneComponent>(TEXT("RightMuzzle"));
-	RightMuzzle->SetupAttachment(BarrelMesh);
+	MainMuzzle = CreateDefaultSubobject<USceneComponent>(TEXT("MainMuzzle"));
+	MainMuzzle->SetupAttachment(BarrelMesh);
 
 	// 카메라 설정
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
@@ -74,7 +71,7 @@ ATurretBase::ATurretBase()
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
-void ATurretBase::BeginPlay()
+void ATurretBase_GT::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -119,7 +116,7 @@ void ATurretBase::BeginPlay()
 	}
 }
 
-void ATurretBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void ATurretBase_GT::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	// IMC 제거 (포탑에서 내릴 때)
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
@@ -137,7 +134,7 @@ void ATurretBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void ATurretBase::Tick(float DeltaTime)
+void ATurretBase_GT::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
@@ -224,7 +221,7 @@ void ATurretBase::Tick(float DeltaTime)
 	}
 }
 
-void ATurretBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void ATurretBase_GT::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
@@ -232,19 +229,19 @@ void ATurretBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	{
 		if (LookAction)
 		{
-			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ATurretBase::Look);
+			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ATurretBase_GT::Look);
 		}
 
 		// Fire 바인딩 수정 - Started만 사용
 		if (FireAction)
 		{
-			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ATurretBase::Fire);
-			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &ATurretBase::StopFire);
+			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ATurretBase_GT::Fire);
+			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &ATurretBase_GT::StopFire);
 		}
 	}
 }
 
-void ATurretBase::Look(const FInputActionValue& Value)
+void ATurretBase_GT::Look(const FInputActionValue& Value)
 {
 	// FVector2D로 마우스 X, Y 값 받기
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
@@ -301,37 +298,36 @@ void ATurretBase::Look(const FInputActionValue& Value)
 	}
 }
 
-void ATurretBase::Fire(const FInputActionValue& Value)
+void ATurretBase_GT::Fire(const FInputActionValue& Value)
 {
 	if (!bIsFiring)
 	{
 		bIsFiring = true;
 		TryFire(); // 첫 발사는 즉시
 		TimeSinceLastFire = 0.0f;
+		UE_LOG(LogTemp, Warning, TEXT("Fire!"));
 	}
 }
 
-void ATurretBase::StopFire(const FInputActionValue& Value)
+void ATurretBase_GT::StopFire(const FInputActionValue& Value)
 {
 	bIsFiring = false;
 	TimeSinceLastFire = 0.0f;
 }
 
-void ATurretBase::TryFire()
+void ATurretBase_GT::TryFire()
 {
-	USceneComponent* CurrentMuzzle = bIsLeftMuzzleNext ? LeftMuzzle : RightMuzzle;
-
-	if (CurrentMuzzle && ProjectileClass)
+	if (MainMuzzle && ProjectileClass)
 	{
 		// 기본 위치와 회전
-		FVector MuzzleLocation = CurrentMuzzle->GetComponentLocation();
-		FRotator MuzzleRotation = CurrentMuzzle->GetComponentRotation();
+		FVector MuzzleLocation = MainMuzzle->GetComponentLocation();
+		FRotator MuzzleRotation = MainMuzzle->GetComponentRotation();
 
-		// ↓↓↓ 이펙트용 회전 및 위치 계산 ↓↓↓
+		//이펙트 회전위치 계산
 		FRotator EffectRotation = MuzzleRotation + MuzzleFlashRotationOffset;
 		FVector EffectLocation = MuzzleLocation + MuzzleRotation.RotateVector(MuzzleFlashLocationOffset);
 
-		// 발사체 스폰 (회전 보정 없음)
+		// 발사체 스폰
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 		SpawnParams.Instigator = GetInstigator();
@@ -339,15 +335,15 @@ void ATurretBase::TryFire()
 
 		bIsLeftMuzzleNext = !bIsLeftMuzzleNext;
 
-		// Cascade 이펙트 (보정된 회전 사용)
+		// Cascade 이펙트
 		if (MuzzleFlashEffect)
 		{
 			UParticleSystemComponent* PSC = UGameplayStatics::SpawnEmitterAtLocation(
 				GetWorld(),
 				MuzzleFlashEffect,
-				EffectLocation,           // ← 오프셋 적용된 위치
-				EffectRotation,           // ← 보정된 회전 (90도 조정)
-				FVector(MuzzleFlashScale), // ← 크기
+				EffectLocation,           
+				EffectRotation,           
+				FVector(MuzzleFlashScale),
 				true,
 				EPSCPoolMethod::AutoRelease,
 				true
@@ -380,7 +376,7 @@ void ATurretBase::TryFire()
 
 
 
-void ATurretBase::AddYawInput(float YawInputDegPerSec, float DeltaTime)
+void ATurretBase_GT::AddYawInput(float YawInputDegPerSec, float DeltaTime)
 {
 	if (YawPivot)
 	{
@@ -399,7 +395,7 @@ void ATurretBase::AddYawInput(float YawInputDegPerSec, float DeltaTime)
 	}
 }
 
-void ATurretBase::AddPitchInput(float PitchInputDegPerSec, float DeltaTime)
+void ATurretBase_GT::AddPitchInput(float PitchInputDegPerSec, float DeltaTime)
 {
 	if (PitchPivot)
 	{
