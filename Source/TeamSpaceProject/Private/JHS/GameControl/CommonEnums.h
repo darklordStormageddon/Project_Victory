@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "JHS/GameControl/StateData/GameStateStructs.h"
 
 UENUM(BlueprintType)
 enum class E_UI_TYPE : uint8
@@ -40,5 +41,19 @@ public:
 	~CommonEnums();
 
 public:
-	static FString GetFStringInteractEnum(E_INTERACT_TYPE InteractType);
+	template <typename EnumType>
+	static FString GetEnum2FString(EnumType InEnum)
+	{
+		static_assert(TIsEnum<EnumType>::Value, "EnumType must be an enum.");
+
+		FString _enumName = TEXT("Unknown");
+		if (UEnum* _enum = StaticEnum<EnumType>())
+		{
+			_enumName = _enum->GetNameStringByValue(static_cast<int64>(InEnum));
+		}
+
+		return _enumName;
+	}
+
+	static bool TryGetAmmoType(FString InEnumName, E_AMMO_TYPE& OutAmmoType);
 };

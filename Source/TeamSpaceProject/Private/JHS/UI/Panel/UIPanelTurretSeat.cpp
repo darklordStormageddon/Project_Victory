@@ -44,13 +44,13 @@ void UUIPanelTurretSeat::OnChangeTurret(UEventOnChangeTurretData* Event)
     FTurretData _turretData = Event->TurretData;
     if (_turretData.TurretPosition == E_TURRET_POSITION::Main)
     {
-        const float _progress = FMath::Clamp(_turretData.Ammo.CurrentValue / _turretData.Ammo.MaxValue, 0.f, 1.f);
+        const float _progress = FMath::Clamp(_turretData.Mag.CurrentValue / _turretData.Mag.MaxValue, 0.f, 1.f);
         GetMainTurretMaterial()->SetScalarParameterValue(TEXT("Progress"), _progress);
 
         FLinearColor _lerpColor = FMath::Lerp(_leftAmmoColorZero, _leftAmmoColorMax, _progress);
         GetMainTurretMaterial()->SetVectorParameterValue(TEXT("Tint"), _lerpColor);
 
-        TXT_LeftAmmo->SetText(FText::FromString(FString::Printf(TEXT("%d"), (int32)_turretData.Ammo.CurrentValue)));
+        TXT_LeftAmmo->SetText(FText::FromString(FString::Printf(TEXT("%d"), (int32)_turretData.Mag.CurrentValue)));
         return;
     }
 
@@ -70,12 +70,12 @@ void UUIPanelTurretSeat::OnChangeTurret(UEventOnChangeTurretData* Event)
     if (_turretData.TurretPosition == E_TURRET_POSITION::Left)
     {
         IMG_LeftTurret->SetBrushTintColor(_turretColor);
-        SetProgressBarUI(_turretData.Ammo.CurrentValue, _turretData.Ammo.MaxValue, PROG_LeftTurretAmmo, TXT_LeftTurretAmmo, true);
+        SetProgressBarUI(_turretData.Mag.CurrentValue, _turretData.Mag.MaxValue, PROG_LeftTurretAmmo, TXT_LeftTurretAmmo, true);
     }
     else
     {
         IMG_RightTurret->SetBrushTintColor(_turretColor);
-        SetProgressBarUI(_turretData.Ammo.CurrentValue, _turretData.Ammo.MaxValue, PROG_RightTurretAmmo, TXT_RightTurretAmmo, true);
+        SetProgressBarUI(_turretData.Mag.CurrentValue, _turretData.Mag.MaxValue, PROG_RightTurretAmmo, TXT_RightTurretAmmo, true);
     }
 }
 

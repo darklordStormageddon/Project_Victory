@@ -3,6 +3,7 @@
 
 #include "JHS/UI/Panel/Container/UIPanelContainer.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/CommonEnums.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
 #include "JHS/UI/Panel/Container/ContainerItemSlot.h"
@@ -72,32 +73,29 @@ void UUIPanelContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 				_currentSlotCount--;
 			}
 		}
-
-		SortItemSlot();
-		return;
-	}
-
-	UContainerItemSlot* _slotWidget = nullptr;
-	if (!_elementSlotMap.Contains(_elementType))
-	{
-		_slotWidget = CreateAndRegisterElementSlot(_elementType);
-		if (_slotWidget == nullptr)
-			return;
 	}
 	else
 	{
-		_slotWidget = _elementSlotMap.FindRef(_elementType);
-		if (_slotWidget == nullptr)
-			return;
-	}
+		UContainerItemSlot* _slotWidget = nullptr;
+		if (!_elementSlotMap.Contains(_elementType))
+		{
+			_slotWidget = CreateAndRegisterElementSlot(_elementType);
+			if (_slotWidget == nullptr)
+				return;
+		}
+		else
+		{
+			_slotWidget = _elementSlotMap.FindRef(_elementType);
+			if (_slotWidget == nullptr)
+				return;
+		}
 
-	FString _elementName = TEXT("Unknown");
-	if (UEnum* _enum = StaticEnum<E_ELEMENT_TYPE>())
-	{
-		_elementName = _enum->GetNameStringByValue(static_cast<int64>(_elementType));
-	}
+		const FString _elementName = CommonEnums::GetEnum2FString<E_ELEMENT_TYPE>(_elementType);
 
-	_slotWidget->UpdateItemInfo(_elementName, Event->Amount);
+		_slotWidget->UpdateItemInfo(_elementName, Event->Amount);
+	}
+	
+	SortItemSlot();
 }
 
 void UUIPanelContainer::SetSlotIndex(TObjectPtr<UContainerItemSlot> ItemSlot, int32 Index)
