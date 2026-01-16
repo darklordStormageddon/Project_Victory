@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
-#include "TurretBase.generated.h"
+#include "TurretBase_GT.generated.h"
 
 class USceneComponent;
 class UStaticMeshComponent;
@@ -16,13 +16,13 @@ struct FInputActionValue;
 class AProjectile;
 
 UCLASS()
-class TEAMSPACEPROJECT_API ATurretBase : public APawn
+class TEAMSPACEPROJECT_API ATurretBase_GT : public APawn
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this actor's properties
-	ATurretBase();
+	ATurretBase_GT();
 
 protected:
 	virtual void BeginPlay() override;
@@ -55,10 +55,7 @@ private:
 
 	//머즐 컴포넌트
 	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<USceneComponent> LeftMuzzle = nullptr;
-
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<USceneComponent> RightMuzzle = nullptr;
+	TObjectPtr<USceneComponent> MainMuzzle = nullptr;
 
 	// 카메라 컴포넌트
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
@@ -105,29 +102,29 @@ private:
 	float CameraPitchFollowRatio = 1.0f;  // 1.0 = 완전 추적, 0.5 = 절반만, 0.0 = 추적 안함
 
 	UPROPERTY(EditAnywhere, Category = "Turret|Camera")
-	bool bSmoothCameraFollow = false;  // 부드러운 추적 활성화
+	bool bSmoothCameraFollow = false;
 
 	UPROPERTY(EditAnywhere, Category = "Turret|Camera", meta = (EditCondition = "bSmoothCameraFollow"))
-	float CameraPitchFollowSpeed = 10.0f;  // 카메라 추적 속도
+	float CameraPitchFollowSpeed = 10.0f; 
 
 	UPROPERTY(EditAnywhere, Category = "Turret|Camera", meta = (EditCondition = "bSmoothCameraFollow"))
 	float CameraYawFollowSpeed = 15.0f;
 
-	// 기본 발사 간격
+	// 기본 발사 간격(공격속도)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Fire", meta = (AllowPrivateAccess = "true"))
-	float BaseFireRate = 0.2f; 
+	float BaseFireRate = 0.2f;
 	// 발사 속도 배율 (업그레이드용)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Fire", meta = (AllowPrivateAccess = "true"))
-	float FireRateMultiplier = 1.0f; 
+	float FireRateMultiplier = 1.0f;
 	// 발사체 속도 배율
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Fire", meta = (AllowPrivateAccess = "true"))
-	float ProjectileSpeedMultiplier = 1.0f; 
+	float ProjectileSpeedMultiplier = 1.0f;
 	// 데미지 배율
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Fire", meta = (AllowPrivateAccess = "true"))
-	float DamageMultiplier = 1.0f; 
+	float DamageMultiplier = 1.0f;
 	// 발사체 클래스
 	UPROPERTY(EditAnywhere, Category = "Turret|Fire")
-	TSubclassOf<AProjectile> ProjectileClass; 
+	TSubclassOf<AProjectile> ProjectileClass;
 	// 파티클 시스템 (Cascade)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Effects", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UParticleSystem> MuzzleFlashEffect = nullptr;
@@ -136,16 +133,16 @@ private:
 	TObjectPtr<USoundBase> FireSound = nullptr;
 	// 카메라 쉐이크
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Effects", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<UCameraShakeBase> FireCameraShake = nullptr; 
-
+	TSubclassOf<UCameraShakeBase> FireCameraShake = nullptr;
+	// 이펙트 각도
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Effects", meta = (AllowPrivateAccess = "true"))
 	FRotator MuzzleFlashRotationOffset = FRotator(-90.0f, 0.0f, 0.0f);
-
+	// 이펙트 위치
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Effects", meta = (AllowPrivateAccess = "true"))
 	FVector MuzzleFlashLocationOffset = FVector::ZeroVector;
 	// 크기
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Effects", meta = (AllowPrivateAccess = "true"))
-	float MuzzleFlashScale = 1.0f; 
+	float MuzzleFlashScale = 1.0f;
 
 	//내부 변수
 	float TargetYaw = 0.0f;
@@ -161,8 +158,8 @@ private:
 	// Enhanced Input 콜백 함수
 	void Look(const FInputActionValue& Value);
 	void Fire(const FInputActionValue& Value);
-	void StopFire(const FInputActionValue& Value); 
-	void TryFire(); 
+	void StopFire(const FInputActionValue& Value);
+	void TryFire();
 
 	// 헬퍼 함수
 	float GetCurrentFireRate() const { return BaseFireRate / FireRateMultiplier; }
