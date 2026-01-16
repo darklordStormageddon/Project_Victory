@@ -5,6 +5,7 @@
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
+#include "JHS/GameControl/Contant/ConstantLibrary.h"
 
 // Sets default values for this component's properties
 UContainerStateGroup::UContainerStateGroup()
@@ -95,6 +96,38 @@ void UContainerStateGroup::RemoveElement(E_ELEMENT_TYPE ElementType, int32 Amoun
 	_event->ElementType = ElementType;
 	_event->Amount = _amount;
 	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangeElementData>(_event);
+}
+
+void UContainerStateGroup::LoadElementDataTable()
+{
+	TMap<E_ELEMENT_TYPE, FElementData> _elementDataMap;
+
+	TObjectPtr<UDataTable> _elementDataTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ConstantLibrary::Resource.DataTable.ELEMENT_INFO_PATH));
+	if (!_elementDataTable)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to load Room Data Table from path [%s]"), *ConstantLibrary::Resource.DataTable.ELEMENT_INFO_PATH);
+		return;
+	}
+
+	TArray<FName> _rowNames = _elementDataTable->GetRowNames();
+	//for (const FName& RowName : RowNames)
+	//{
+	//	FRoomData* RoomData = _roomDataTable->FindRow<FRoomData>(RowName, TEXT(""));
+	//	if (RoomData)
+	//	{
+	//		OutRoomDataArray.Add(*RoomData);
+	//	}
+	//}
+
+	//// 데이터 테이블이 비어있으면 실패
+	//if (OutRoomDataArray.Num() <= 0)
+	//{
+	//	UE_LOG(LogTemp, Error, TEXT("Room Data Table is empty"));
+	//	return false;
+	//}
+
+	//UE_LOG(LogTemp, Warning, TEXT("Room Data Table loaded successfully. %d rows loaded"), OutRoomDataArray.Num());
+	//return true;
 }
 
 bool UContainerStateGroup::TryGetElementData(E_ELEMENT_TYPE ElementType, FElementData*& OutElementData)

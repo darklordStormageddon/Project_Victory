@@ -88,7 +88,7 @@ void AJHSPlayerBase::FireTurret()
 	}
 
 	float _outFireCoolTime = 0.0f;
-	if (!_turretStateGroup->TryGetTurretFireCoolTime(_turretPosition, &_outFireCoolTime))
+	if (!_turretStateGroup->TryGetTurretFireInterval(_turretPosition, &_outFireCoolTime))
 		return;
 
 	if (_outFireCoolTime > 0.0f)

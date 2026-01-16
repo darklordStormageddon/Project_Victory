@@ -42,5 +42,7 @@ public:
 	void RemoveElement(E_ELEMENT_TYPE ElementType, int32 Amount);
 
 private:
+	void LoadElementDataTable();
+
 	bool TryGetElementData(E_ELEMENT_TYPE ElementType, FElementData*& OutElementData);
 };
