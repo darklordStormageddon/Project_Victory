@@ -36,12 +36,18 @@ struct FSpawnEnemyInfo
 
 	UPROPERTY(EditDefaultsOnly, Category = "Info")
 	float Value;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float MinSize;
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float MaxSize;
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UEnemyManagerComponent : public UActorComponent
 {
 	GENERATED_BODY()
+
 protected:
 	AActor* _owner = nullptr;
 
@@ -53,16 +59,11 @@ protected:
 	// 소환 될 공간 반지름
 	AJHSGameMode* _gameMode;
 	ASpaceStation* _spaceStation;
+
 	float _spaceRadius;
 
 	// 적 소환 가능 여부
 	FTimerHandle SpawnHandle;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
-	float minSize = 0.1f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
-	float maxSize = 1.5f;
 
 	//Garbage
 	float SpawnedValue;

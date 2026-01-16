@@ -38,7 +38,7 @@ void UEnemyManagerComponent::SpawnEnemy(TSubclassOf<AEnemyBase> Enemy, FSpawnEne
 
 	if (SpawnedEnemy)
 	{
-		SpawnedEnemy->_spawnedInfo.Size = FMath::RandRange(minSize, maxSize);
+		SpawnedEnemy->_spawnedInfo.Size = FMath::RandRange(_enemyInfo.MinSize, _enemyInfo.MaxSize);
 
 		SpawnedEnemy->_spawnedInfo.Max_HP = _enemyInfo.Max_HP;
 		SpawnedEnemy->_spawnedInfo.Current_HP = _enemyInfo.Current_HP;

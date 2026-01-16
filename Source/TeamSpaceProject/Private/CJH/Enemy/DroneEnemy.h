@@ -70,7 +70,7 @@ private:
 
 	// 공전 시작/접근 관련
 	UPROPERTY(EditDefaultsOnly, Category = "Chase")
-	float ApproachBuffer = 200.0f;
+	float ApproachSpare = 50.0f;
 
 	bool bOrbiting = false;
 
@@ -117,6 +117,9 @@ private:
 	void ChaseMove(float DeltaTime);
 
 	void LookTarget(float DeltaTime);
+	void GoToTarget(FVector CurrentLoc, FVector ApproachPoint, float DeltaTime);
+	void EnterOrbit(const FVector& TargetLoc);
+	void OrbitAroundTarget(const FVector& TargetLoc, float DeltaTime);
 
 	void Fire();
 	void CheckChaseDistance();
