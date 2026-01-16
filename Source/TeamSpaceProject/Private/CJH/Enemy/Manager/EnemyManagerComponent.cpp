@@ -19,7 +19,14 @@ void UEnemyManagerComponent::BeginPlay()
 
 	_owner = GetOwner();
 
+	if (!_owner)
+		return;
+
 	_gameMode = Cast<AJHSGameMode>(GetWorld()->GetAuthGameMode());
+
+	if (!_gameMode)
+		return;
+
 	_spaceRadius = _gameMode->GetSpaceRadius();
 	_spaceStation = _gameMode->GetSpaceStation();	
 }
