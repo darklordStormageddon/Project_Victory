@@ -17,5 +17,5 @@ void UPlayerInfoRow::InitializeRaw(int32 PlayerNumber)
 
 void UPlayerInfoRow::UpdatePlayerRadiationDose(FMaxCurrentData RadiationValue)
 {
-	UUIBase::SetProgressBarUI(RadiationValue.CurrentValue, RadiationValue.MaxValue, PROG_RadiationDose, nullptr);
+	UUIBase::SetProgressBarUI(RadiationValue.CurrentValue, RadiationValue.MaxValue, PROG_RadiationDose, nullptr, false);
 }

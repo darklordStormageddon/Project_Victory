@@ -107,3 +107,28 @@ public:
 	FMaxCurrentData Ammo;
 };
 #pragma endregion Turret
+
+#pragma region Container
+UCLASS(BlueprintType)
+class UEventOnChangeElementData : public UCommonEventBase
+{
+	GENERATED_BODY()
+
+public:
+UEventOnChangeElementData(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{}
+
+	UEventOnChangeElementData(E_ELEMENT_TYPE ElementType, int32 Amount, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+		, ElementType(ElementType)
+		, Amount(Amount)
+	{}
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
+	E_ELEMENT_TYPE ElementType;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
+	int32 Amount;
+};
+#pragma endregion Container

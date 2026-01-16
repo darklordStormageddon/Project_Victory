@@ -21,8 +21,7 @@ public:
 private:
 	TObjectPtr<AJHSGameState> _gameState = nullptr;
 
-private:
-	FTimerHandle _turretFireTimerHandle;
+
 
 protected:
 	// Called when the game starts or when spawned
@@ -35,6 +34,17 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+
+	// Text Code
+private:
+	FTimerHandle _timerHandle;
+
+	int32 _elementIndex = -1;
+
+	bool _isAddMode = true;
+
 private:
 	void FireTurret();
+
+	void AddElement();
 };

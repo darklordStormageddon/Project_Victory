@@ -38,13 +38,13 @@ struct FSpaceShipState
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceShipData")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FSpaceShipData Shield;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceShipData")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FSpaceShipData HP;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceShipData")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FSpaceShipData Fuel;
 };
 #pragma endregion SpaceShip
@@ -82,14 +82,17 @@ struct FAmmoData
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AmmoData")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	E_AMMO_TYPE AmmoType;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AmmoData")
-	int32 ReloadMount;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 ReloadCapacity;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AmmoData")
-	float _ammoDamage;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float AmmoDamage;
+
+	UPROPERTY()
+	int32 AmmoStockpile;
 };
 
 UENUM(BlueprintType)
@@ -122,3 +125,55 @@ public:
 	float FireCoolTime = 1.0f;
 };
 #pragma endregion Turret
+
+#pragma region Container
+UENUM(BlueprintType)
+enum class E_ELEMENT_TYPE : uint8
+{
+	// 알루미늄, 철, 티타늄, 니켈, 구리, 실리콘, 금, 리튬, 탄소섬유
+	Aluminum = 0 UMETA(DisplayName = "Aluminum"),
+	Iron UMETA(DisplayName = "Iron"),
+	Titanium UMETA(DisplayName = "Titanium"),
+	Nickel UMETA(DisplayName = "Nickel"),
+	Copper UMETA(DisplayName = "Copper"),
+	Silicon UMETA(DisplayName = "Silicon"),
+	Gold UMETA(DisplayName = "Gold"),
+	Lithium UMETA(DisplayName = "Lithium"),
+	CarbonFiber UMETA(DisplayName = "CarbonFiber"),
+};
+
+USTRUCT(BlueprintType)
+struct FElementData
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	E_ELEMENT_TYPE ElementType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 ValueOfElement;
+
+	UPROPERTY()
+	int32 Amount;
+};
+
+USTRUCT(BlueprintType)
+struct FContainerState
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 Money;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 MaxElementStockpile;
+
+	UPROPERTY()
+	TMap<E_ELEMENT_TYPE, FElementData> ElementDataMap;
+
+	UPROPERTY()
+	TMap<E_AMMO_TYPE, FAmmoData> AmmoDataMap;
+};
+#pragma endregion Container

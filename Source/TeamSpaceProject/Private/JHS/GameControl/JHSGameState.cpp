@@ -6,6 +6,7 @@
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/PlayerStateGroup.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
+#include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/UI/UIManager.h"
 #include "JHS/UI/UIBase.h"
@@ -26,6 +27,8 @@ AJHSGameState::AJHSGameState()
 		_ammoData.AmmoType = (E_AMMO_TYPE)i;
 		_initAmmoDataArray.Add(_ammoData);
 	}
+
+	_containerStateGroup = CreateDefaultSubobject<UContainerStateGroup>(TEXT("ContainerStateGroup"));
 }
 
 void AJHSGameState::BeginPlay()
@@ -52,6 +55,8 @@ void AJHSGameState::InitializeGameState(TArray<FPlayerStateData> PlayerStateArra
 	
 	_turretStateGroup->InitializeTurretState(this, _initAmmoDataArray);
 
+	_containerStateGroup->InitializeContainerState(this, _initContainerState);
+
 	UUIManager* _outUIManager = nullptr;
 	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
 		return;
@@ -66,6 +71,8 @@ void AJHSGameState::SendCurrentDataEvent()
 	_playerStateGroup->UpdatePlayerState();
 
 	_turretStateGroup->UpdateTurretState();
+
+	_containerStateGroup->UpdateContainerState();
 }
 
 TObjectPtr<UEventManager> AJHSGameState::GetEventManager()
