@@ -53,9 +53,9 @@ void UTurretStateGroup::InitializeTurretState(TObjectPtr<AJHSGameState> GameStat
 	_testMainTurretData.IsMainTurret = true;
 	_testMainTurretData.TurretPosition = E_TURRET_POSITION::Main;
 	_testMainTurretData.AmmoType = E_AMMO_TYPE::Bullet;
-	_testMainTurretData.Ammo.MaxValue = 1000;
-	_testMainTurretData.Ammo.CurrentValue = 1000;
-	_testMainTurretData.FireCoolTime = 0.01f;
+	_testMainTurretData.Ammo.MaxValue = 20;
+	_testMainTurretData.Ammo.CurrentValue = 20;
+	_testMainTurretData.FireCoolTime = 1.0f;
 	TryEquipTurret(_testMainTurretData);
 
 	FTurretData _testLeftTurretData;
