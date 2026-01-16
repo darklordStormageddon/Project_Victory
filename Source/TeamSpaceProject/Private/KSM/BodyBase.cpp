@@ -39,12 +39,18 @@ void ABodyBase::Broadcast_Body_Detachment()
 	OnDetached.Broadcast();
 }
 
-void ABodyBase::Damage_Body_Implementation(float Damage)
+void ABodyBase::Damage_Body(float Damage, FVector Location)
 {
 	if(!bCanDamage)
 		return;
 	if (HealthComp)
 	{
+		Spawn_Location = Location;
 		HealthComp->TakeDamage(Damage);
 	}
+}
+
+void ABodyBase::Set_Spawn_Finished(int index)
+{
+	Containings[index].bSpawn_Finished = true;
 }

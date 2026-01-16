@@ -12,6 +12,29 @@ class ABodyBase;
 class AAttachment_Base;
 class AConnector_Base;
 
+USTRUCT(BlueprintType)
+struct FElem_Set
+{
+	GENERATED_BODY()
+
+	// --- ¸â¹ö º¯¼ö ---
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TSubclassOf<AActor> Name;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	int Num;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	bool bSpawn_Finished;
+
+	FElem_Set()
+		: Name(nullptr)
+		, Num(0)
+		, bSpawn_Finished(false)
+	{
+	}
+};
+
 UCLASS()
 class ASatellite_Base : public APawn
 {
@@ -34,6 +57,8 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Chaos")
 	void Trigger_Destruction();
+
+public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chaos")
 	TArray<TSubclassOf<APanelBase>> PanelTypes;

@@ -39,12 +39,18 @@ void APanelBase::Broadcast_Panel_Detachment()
 	OnDetached.Broadcast();
 }
 
-void APanelBase::Damage_Panel_Implementation(float Damage)
+void APanelBase::Damage_Panel(float Damage, FVector Location)
 {
 	if (!bCanDamage)
 		return;
 	if (HealthComponent)
 	{
+		Spawn_Location = Location;
 		HealthComponent->TakeDamage(Damage);
 	}
+}
+
+void APanelBase::Set_Spawn_Finished(int index)
+{
+	Containings[index].bSpawn_Finished = true;
 }

@@ -39,16 +39,20 @@ void AAttachment_Base::Broadcast_Attachment_Detachment()
 	OnDetached.Broadcast();
 }
 
-void AAttachment_Base::Damage_Attachment_Implementation(float Damage)
+void AAttachment_Base::Damage_Attachment(float Damage, FVector Location)
 {
 	if(!bCanDamage)
 		return;
 
 	if (HealthComp)
 	{
+		Spawn_Location = Location;
 		HealthComp->TakeDamage(Damage);
 	}
 }
 
-
+void AAttachment_Base::Set_Spawn_Finished(int index)
+{
+	Containings[index].bSpawn_Finished = true;
+}
 

@@ -35,6 +35,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Root")
 	ASatellite_Base* Attached_Satellite;
 
-	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Health")
+	UFUNCTION(BlueprintCallable, Category = "Health")
 	void Damage_Connector(float Damage);
 };

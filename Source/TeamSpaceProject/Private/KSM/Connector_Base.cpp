@@ -34,7 +34,7 @@ void AConnector_Base::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 }
 
-void AConnector_Base::Damage_Connector_Implementation(float Damage)
+void AConnector_Base::Damage_Connector(float Damage)
 {
 	if (HealthComp)
 	{

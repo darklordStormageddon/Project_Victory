@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "KSM/Satellite_Base.h"
 #include "PanelBase.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPanelDetached);
@@ -42,10 +43,19 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Health")
 	bool bCanDamage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chaos")
+	FVector Spawn_Location;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Elements")
+	TArray<FElem_Set> Containings;
+
 public:
 	UFUNCTION(BlueprintCallable, Category = "Chaos")
 	void Broadcast_Panel_Detachment();
 
-	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Health")
-	void Damage_Panel(float Damage);
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	void Damage_Panel(float Damage, FVector Location);
+
+	UFUNCTION(BlueprintCallable)
+	void Set_Spawn_Finished(int index);
 };
