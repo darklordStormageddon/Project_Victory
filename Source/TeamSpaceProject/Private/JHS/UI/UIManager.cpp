@@ -192,7 +192,7 @@ UUIBase* UUIManager::InstantiateUI(E_UI_TYPE UIType)
 
 FString UUIManager::GetUIPath(E_UI_TYPE UIType) const
 {
-	FString _basePath = ConstantLibrary::Resource.UI.UI_BLUEPRINT_BASE_PATH;
+	FString _basePath = ConstantLibrary::Resource.UI.BLUEPRINT_BASE_PATH;
 	FString _folderPath = TEXT("");
 	FString _uiName = TEXT("");
 

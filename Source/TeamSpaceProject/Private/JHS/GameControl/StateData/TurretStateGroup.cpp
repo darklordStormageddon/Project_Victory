@@ -5,6 +5,7 @@
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
+#include "JHS/GameControl/Contant/ConstantLibrary.h"
 
 // Sets default values for this component's properties
 UTurretStateGroup::UTurretStateGroup()
@@ -46,7 +47,7 @@ void UTurretStateGroup::InitializeTurretState(TObjectPtr<AJHSGameState> GameStat
 	}
 
 	// TODO : 터렛 데이터 테이블 캐싱
-	// TODO : 주 터렛 추가 및 초기화
+	// //LoadTurretDataTable();
 
 	// Test 터렛
 	FTurretData _testMainTurretData;
@@ -122,6 +123,23 @@ bool UTurretStateGroup::TryReloadTurret(E_TURRET_POSITION TurretPosition)
 
 	ChangeTurretAmmo(_outTurretData, _ammoData->ReloadCapacity);
 	return true;
+}
+
+void UTurretStateGroup::LoadTurretDataTable()
+{
+	_turretDataMap.Empty();
+
+	TObjectPtr<UDataTable> _turretDataTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ConstantLibrary::Resource.DataTable.TURRET_INFO_PATH));
+
+	// 로드 실패 처리
+	if (!_turretDataTable)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to load Room Data Table from path [%s]"), *ConstantLibrary::Resource.DataTable.TURRET_INFO_PATH);
+		return;
+	}
+
+	// 데이터 테이블에서 모든 행 가져오기
+	TArray<FName> _rowNames = _turretDataTable->GetRowNames();
 }
 
 bool UTurretStateGroup::TryEquipTurret(FTurretData TurretData)

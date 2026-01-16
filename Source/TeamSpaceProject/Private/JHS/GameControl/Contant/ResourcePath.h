@@ -6,6 +6,72 @@
 #include "ResourcePath.generated.h"
 
 USTRUCT(BlueprintType)
+struct FResourceDataTable
+{
+	GENERATED_BODY()
+
+public:
+	FResourceDataTable()
+		: TURRET_INFO_PATH(TEXT("/Game/Main/PS_YSH/"))
+		, ELEMENT_INFO_PATH(TEXT("/Game/Main/PS_KSM/"))
+	{
+	}
+
+	UPROPERTY()
+	FString TURRET_INFO_PATH;
+
+	UPROPERTY()
+	FString ELEMENT_INFO_PATH;
+};
+
+USTRUCT(BlueprintType)
+struct FResourceUI
+{
+	GENERATED_BODY()
+
+public:
+	FResourceUI()
+		: BLUEPRINT_BASE_PATH(TEXT("/Game/Main/PS_JHS/Blueprint/"))
+		, UI_PANEL_FOLDER(TEXT("UI/Panel/"))
+		, UI_POPUP_FOLDER(TEXT("UI/Popup/Common/"))
+		, UI_SYSTEM_FOLDER(TEXT("UI/System/"))
+		, UI_WIDGET_HEADER(TEXT("WBP_"))
+	{}
+
+	// UI Blueprint
+	UPROPERTY()
+	FString BLUEPRINT_BASE_PATH;
+
+	UPROPERTY()
+	FString UI_PANEL_FOLDER;
+
+	UPROPERTY()
+	FString UI_POPUP_FOLDER;
+
+	UPROPERTY()
+	FString UI_SYSTEM_FOLDER;
+
+	UPROPERTY()
+	FString UI_WIDGET_HEADER;
+};
+
+USTRUCT(BlueprintType)
+struct FResourceImage
+{
+	GENERATED_BODY()
+
+public:
+	FResourceImage()
+		: INTERACT_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/Interact/"))
+	{
+	}
+
+	// UI Blueprint
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|Image")
+	FString INTERACT_FOLDER_PATH;
+};
+
+USTRUCT(BlueprintType)
 struct FResourceSpaceObject
 {
 	GENERATED_BODY()
@@ -17,7 +83,8 @@ public:
 		, SPACE_RADER_HEADER(TEXT("BP_SR"))
 		, DRIVE_RADER_FOLDER(TEXT("DriveRader/"))
 		, DRIVE_RADER_HEADER(TEXT("BP_DR"))
-	{}
+	{
+	}
 
 	// Rader Mesh
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|SpaceObject")
@@ -36,63 +103,14 @@ public:
 	FString DRIVE_RADER_HEADER;
 };
 
-USTRUCT(BlueprintType)
-struct FResourceUI
-{
-	GENERATED_BODY()
-
-public:
-	FResourceUI()
-		: UI_BLUEPRINT_BASE_PATH(TEXT("/Game/Main/PS_JHS/Blueprint/"))
-		, UI_PANEL_FOLDER(TEXT("UI/Panel/"))
-		, UI_POPUP_FOLDER(TEXT("UI/Popup/Common/"))
-		, UI_SYSTEM_FOLDER(TEXT("UI/System/"))
-		, UI_WIDGET_HEADER(TEXT("WBP_"))
-	{}
-
-	// UI Blueprint
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|UI")
-	FString UI_BLUEPRINT_BASE_PATH;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|UI")
-	FString UI_PANEL_FOLDER;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|UI")
-	FString UI_POPUP_FOLDER;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|UI")
-	FString UI_SYSTEM_FOLDER;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|UI")
-	FString UI_WIDGET_HEADER;
-};
-
-USTRUCT(BlueprintType)
-struct FResourceImage
-{
-	GENERATED_BODY()
-
-public:
-	FResourceImage()
-		: IMAGE_INTERACT_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/Interact/"))
-	{
-	}
-
-	// UI Blueprint
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|Image")
-	FString IMAGE_INTERACT_FOLDER_PATH;
-};
-
-/**
- * 
- */
 class ResourcePath
 {
 public:
 	ResourcePath();
 	~ResourcePath();
 
-	FResourceSpaceObject SpaceObject;
+	FResourceDataTable DataTable;
 	FResourceUI UI;
 	FResourceImage Image;
+	FResourceSpaceObject SpaceObject;
 };

@@ -48,6 +48,8 @@ public:
 	bool TryReloadTurret(E_TURRET_POSITION TurretPosition);
 
 private:
+	void LoadTurretDataTable();
+
 	bool TryEquipTurret(FTurretData TurretData);
 
 	bool TryGetTurretData(E_TURRET_POSITION TurretPosition, FTurretData*& OutTurretData);
