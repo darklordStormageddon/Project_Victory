@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "JHS/GameControl/StateData/GameStateStructs.h"
 #include "TurretBase_GT.generated.h"
 
 class USceneComponent;
@@ -14,6 +15,7 @@ class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
 class AProjectile;
+class AJHSGameState;
 
 UCLASS()
 class TEAMSPACEPROJECT_API ATurretBase_GT : public APawn
@@ -33,6 +35,10 @@ protected:
 public:
 	void AddYawInput(float YawInputDegPerSec, float DeltaTime);
 	void AddPitchInput(float PitchInputDegPerSec, float DeltaTime);
+
+	// 터렛 포지션 설정 (Main, Left, Right 중 하나)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Position")
+	E_TURRET_POSITION TurretPosition = E_TURRET_POSITION::Main;
 
 private:
 	UPROPERTY(VisibleAnywhere)
@@ -105,14 +111,11 @@ private:
 	bool bSmoothCameraFollow = false;
 
 	UPROPERTY(EditAnywhere, Category = "Turret|Camera", meta = (EditCondition = "bSmoothCameraFollow"))
-	float CameraPitchFollowSpeed = 10.0f; 
+	float CameraPitchFollowSpeed = 10.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Turret|Camera", meta = (EditCondition = "bSmoothCameraFollow"))
 	float CameraYawFollowSpeed = 15.0f;
 
-	// 기본 발사 간격(공격속도)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Fire", meta = (AllowPrivateAccess = "true"))
-	float BaseFireRate = 0.2f;
 	// 발사 속도 배율 (업그레이드용)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Fire", meta = (AllowPrivateAccess = "true"))
 	float FireRateMultiplier = 1.0f;
@@ -155,12 +158,12 @@ private:
 	bool bIsFiring = false;
 	float TimeSinceLastFire = 0.0f;
 
+	// GameState 캐싱
+	TObjectPtr<AJHSGameState> _cachedGameState = nullptr;
+
 	// Enhanced Input 콜백 함수
 	void Look(const FInputActionValue& Value);
 	void Fire(const FInputActionValue& Value);
 	void StopFire(const FInputActionValue& Value);
 	void TryFire();
-
-	// 헬퍼 함수
-	float GetCurrentFireRate() const { return BaseFireRate / FireRateMultiplier; }
 };

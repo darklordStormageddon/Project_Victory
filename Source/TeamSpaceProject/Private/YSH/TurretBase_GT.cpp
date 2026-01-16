@@ -6,6 +6,8 @@
 
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/UI/UIManager.h"
+#include "JHS/GameControl/StateData/TurretStateGroup.h"
 
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -58,7 +60,7 @@ ATurretBase_GT::ATurretBase_GT()
 
 	SpringArm->bUsePawnControlRotation = false;
 	SpringArm->bInheritPitch = false;
-	SpringArm->bInheritYaw = false; // Yaw 수동 조작
+	SpringArm->bInheritYaw = false;
 	SpringArm->bInheritRoll = false;
 
 	SpringArm->bEnableCameraLag = true;
@@ -78,6 +80,17 @@ void ATurretBase_GT::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// GameState 캐싱
+	AJHSGameState* TempGameState = nullptr;
+	if (UStaticFunctionLibrary::TryGetGameState(TempGameState))
+	{
+		_cachedGameState = TempGameState;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("ATurretBase_GT: Failed to get GameState"));
+	}
+
 	// 마우스 입력을 위한 설정
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (PC)
@@ -91,11 +104,11 @@ void ATurretBase_GT::BeginPlay()
 			if (TurretMappingContext)
 			{
 				Subsystem->AddMappingContext(TurretMappingContext, MappingPriority);
-				UE_LOG(LogTemp, Warning, TEXT("TurretBase: Turret Mapping Context added with priority %d"), MappingPriority);
+				UE_LOG(LogTemp, Warning, TEXT("TurretBase_GT: Turret Mapping Context added with priority %d"), MappingPriority);
 			}
 			else
 			{
-				UE_LOG(LogTemp, Error, TEXT("TurretBase: TurretMappingContext is not set!"));
+				UE_LOG(LogTemp, Error, TEXT("TurretBase_GT: TurretMappingContext is not set!"));
 			}
 		}
 	}
@@ -117,6 +130,15 @@ void ATurretBase_GT::BeginPlay()
 	{
 		TargetPitchRoll = PitchPivot->GetRelativeRotation().Roll;
 	}
+
+	//UI 연동 테스트 Pawn 스위칭 연동 후 삭제
+	UUIManager* TempUIManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetUIManager(TempUIManager))
+	{
+		return;
+	}
+
+	TempUIManager->OpenUI(E_UI_TYPE::UIPanelTurretSeat);
 }
 
 void ATurretBase_GT::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -129,7 +151,7 @@ void ATurretBase_GT::EndPlay(const EEndPlayReason::Type EndPlayReason)
 			if (TurretMappingContext)
 			{
 				Subsystem->RemoveMappingContext(TurretMappingContext);
-				UE_LOG(LogTemp, Warning, TEXT("TurretBase: Turret Mapping Context removed"));
+				UE_LOG(LogTemp, Warning, TEXT("TurretBase_GT: Turret Mapping Context removed"));
 			}
 		}
 	}
@@ -210,16 +232,24 @@ void ATurretBase_GT::Tick(float DeltaTime)
 		SpringArm->SetRelativeRotation(CurrentSpringArmRotation);
 	}
 
-	// 연속 발사 로직
-	if (bIsFiring)
+	// 연속 발사 로직 - GameState 기반으로 수정
+	if (bIsFiring && _cachedGameState)
 	{
 		TimeSinceLastFire += DeltaTime;
 
-		float CurrentFireRate = GetCurrentFireRate();
-		if (TimeSinceLastFire >= CurrentFireRate)
+		float CurrentFireCoolTime = 0.0f;
+		UTurretStateGroup* TurretStateGroup = _cachedGameState->GetTurretStateGroup();
+
+		if (TurretStateGroup && TurretStateGroup->TryGetTurretFireCoolTime(TurretPosition, &CurrentFireCoolTime))
 		{
-			TryFire();
-			TimeSinceLastFire -= CurrentFireRate; // 정확한 타이밍을 위해 -= 사용
+			// FireRateMultiplier 적용
+			float AdjustedFireCoolTime = CurrentFireCoolTime / FireRateMultiplier;
+
+			if (TimeSinceLastFire >= AdjustedFireCoolTime)
+			{
+				TryFire();
+				TimeSinceLastFire -= AdjustedFireCoolTime;
+			}
 		}
 	}
 }
@@ -308,7 +338,6 @@ void ATurretBase_GT::Fire(const FInputActionValue& Value)
 		bIsFiring = true;
 		TryFire(); // 첫 발사는 즉시
 		TimeSinceLastFire = 0.0f;
-		UE_LOG(LogTemp, Warning, TEXT("Fire!"));
 	}
 }
 
@@ -320,13 +349,28 @@ void ATurretBase_GT::StopFire(const FInputActionValue& Value)
 
 void ATurretBase_GT::TryFire()
 {
+	UTurretStateGroup* TurretStateGroup = _cachedGameState->GetTurretStateGroup();
+	if (!TurretStateGroup)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ATurretBase_GT::TryFire - TurretStateGroup is null"));
+		return;
+	}
+
+	// TryFireTurret으로 탄약 소비 및 발사 가능 여부 확인
+	if (!TurretStateGroup->TryFireTurret(TurretPosition))
+	{
+		// 발사 실패 (탄약 부족 등)
+		return;
+	}
+
+	// 발사 성공 - 실제 발사 로직 실행
 	if (MainMuzzle && ProjectileClass)
 	{
 		// 기본 위치와 회전
 		FVector MuzzleLocation = MainMuzzle->GetComponentLocation();
 		FRotator MuzzleRotation = MainMuzzle->GetComponentRotation();
 
-		//이펙트 회전위치 계산
+		// ↓↓↓ 이펙트용 회전 및 위치 계산 ↓↓↓
 		FRotator EffectRotation = MuzzleRotation + MuzzleFlashRotationOffset;
 		FVector EffectLocation = MuzzleLocation + MuzzleRotation.RotateVector(MuzzleFlashLocationOffset);
 
@@ -338,15 +382,15 @@ void ATurretBase_GT::TryFire()
 
 		bIsLeftMuzzleNext = !bIsLeftMuzzleNext;
 
-		// Cascade 이펙트
+		// Cascade 이펙트 (보정된 회전 사용)
 		if (MuzzleFlashEffect)
 		{
 			UParticleSystemComponent* PSC = UGameplayStatics::SpawnEmitterAtLocation(
 				GetWorld(),
 				MuzzleFlashEffect,
-				EffectLocation,           
-				EffectRotation,           
-				FVector(MuzzleFlashScale),
+				EffectLocation,           // ← 오프셋 적용된 위치
+				EffectRotation,           // ← 보정된 회전 (90도 조정)
+				FVector(MuzzleFlashScale), // ← 크기
 				true,
 				EPSCPoolMethod::AutoRelease,
 				true
