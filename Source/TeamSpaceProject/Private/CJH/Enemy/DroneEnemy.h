@@ -53,24 +53,12 @@ private:
 	// 내부 상태: 좌우 방향(sign, ±1)
 	float ChaseCurveSign = 1.0f;
 
-	// 드론이 타겟과 유지해야 할 거리
-	UPROPERTY(EditDefaultsOnly, Category = "Chase", meta = (ClampMin = "0.0"))
-	float MaintainDistance = 600.0f;
-
-	// MaintainDistance에 대한 허용 오차
-	UPROPERTY(EditDefaultsOnly, Category = "Chase", meta = (ClampMin = "0.0"))
-	float MaintainTolerance = 50.0f;
-
 	// 추격 시작 거리(Detail에서 조정 가능)
 	UPROPERTY(EditDefaultsOnly, Category = "Drone", meta = (ClampMin = "100.0", ClampMax = "10000.0"))
 	float ChaseDistance = 2000.0f;
 
 	// 자전축 벡터
 	FVector RotationAxis;
-
-	// 공전 시작/접근 관련
-	UPROPERTY(EditDefaultsOnly, Category = "Chase")
-	float ApproachSpare = 50.0f;
 
 	bool bOrbiting = false;
 
@@ -87,7 +75,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Chase")
 	float DirReverseProbability = 0.25f;
 
-	// --- Tilt (궤도 기울기) 관련 ---
 	// 컴포넌트가 아닌 개별 드론이 tilt 각도/축을 가짐
 	float TiltAngleCurrent = 0.0f;          // 도 단위
 	float TiltAngleTarget = 0.0f;           // 도 단위
@@ -108,25 +95,24 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Chase|Tilt")
 	float TiltOscFrequency = 0.2f;          // Hz
 
-public:
-	UPROPERTY(BlueprintReadWrite, Category = "Target")
-	AActor* Target = nullptr;
+	float LoseTargetTime = 0.0f; 
+	UPROPERTY(EditDefaultsOnly, Category = "Chase|Target")
+	float LoseTargetDelay = 1.2f;
 
 private:
 	void Move(float DeltaTime);
 	void ChaseMove(float DeltaTime);
 
 	void LookTarget(float DeltaTime);
-	void GoToTarget(FVector CurrentLoc, FVector ApproachPoint, float DeltaTime);
-	void EnterOrbit(const FVector& TargetLoc);
-	void OrbitAroundTarget(const FVector& TargetLoc, float DeltaTime);
+	void GoToTarget(FVector CurrentLoc, FVector TargetLoc, FVector ApproachPoint, float DeltaTime);
+	void EnterOrbit();
+	void OrbitAroundTarget(const FVector& ApproachPoint, float DeltaTime);
 
 	void Fire();
 	void CheckChaseDistance();
 	void ApplySpin(float DeltaTime);
-	void EnableFiring() {
-		CanFire = true;
-	}
+
+	void EnableFiring() { CanFire = true; }
 
 protected:
 	ADroneEnemy();
@@ -135,7 +121,7 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 public:
-	void GetOwnerGarbage(AActor* _owner);
+	void GetOwnerGarbage(AActor* _droneowner) { _owner = _droneowner; }
 	bool IsChasing() { return bIsChasing; }
 
 	// 자전축 세터

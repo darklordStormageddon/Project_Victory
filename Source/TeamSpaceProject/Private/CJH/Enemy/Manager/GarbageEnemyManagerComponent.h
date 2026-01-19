@@ -19,8 +19,8 @@ class UGarbageEnemyManagerComponent : public UEnemyManagerComponent
 
 protected:
 	// 적 정보 맵
-	UPROPERTY(EditDefaultsOnly, Category = "EnemyInfo")
-	TMap<TSubclassOf<AEnemyBase>, FSpawnEnemyInfo> _EnemyInfoMap;
+	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
+	TArray<TSubclassOf<AEnemyBase>> _Enemy;
 
 	// 공전 반경 범위(컴포넌트 시작 시 랜덤으로 선택되어 모든 자식이 공유)
 	UPROPERTY(EditDefaultsOnly, Category = "Orbit", meta = (ClampMin = "100.0", ClampMax = "5000.0"))
@@ -80,8 +80,8 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void SpawnInMap(FVector SpawnLocation, FRotator SpawnRotation, TMap<TSubclassOf<AEnemyBase>, FSpawnEnemyInfo> _spawnInfo);
-	virtual void SpawnEnemy(TSubclassOf<AEnemyBase> Enemy, FSpawnEnemyInfo _enemyInfo, FVector SpawnLocation, FRotator SpawnRotator) override;
+	void SpawnInMap(FVector SpawnLocation, FRotator SpawnRotation, TArray<TSubclassOf<AEnemyBase>> _spawn_enemy);
+	void SpawnEnemy(TSubclassOf<AEnemyBase> Enemy, FVector SpawnLocation, FRotator SpawnRotator);
 
 	// 드론(또는 Junior) 속성 설정 (spawn 이후)
 	void SetDroneProperties(AEnemyBase* Drone);

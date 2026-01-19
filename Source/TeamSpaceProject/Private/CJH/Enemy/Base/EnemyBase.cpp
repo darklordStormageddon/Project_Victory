@@ -16,16 +16,6 @@ AEnemyBase::AEnemyBase()
 void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
-
-	FTimerHandle DelayHandle;
-
-	GetWorld()->GetTimerManager().SetTimer(
-		DelayHandle,
-		this,
-		&AEnemyBase::SetInfo,
-		0.01f, 
-		false
-	);
 }
 
 // Called every frame
@@ -34,20 +24,8 @@ void AEnemyBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AEnemyBase::SetInfo()
-{
-	// 적 크기 구조체에 따라 크기 설정
-	FVector NewScale = FVector(_spawnedInfo.Size, _spawnedInfo.Size, _spawnedInfo.Size);
 
-	SetActorScale3D(NewScale);
 
-	// 적 크기에 비례하여 능력치 증감
-	_spawnedInfo.Max_HP *= _spawnedInfo.Size;
-	_spawnedInfo.Attack_Damage *= _spawnedInfo.Size;
-	_spawnedInfo.Value *= _spawnedInfo.Size;
-
-	_spawnedInfo.Current_HP = _spawnedInfo.Max_HP;
-}
 // 플레이어와의 거리 체크
 bool AEnemyBase::DistanceCheck(float _condition)
 {

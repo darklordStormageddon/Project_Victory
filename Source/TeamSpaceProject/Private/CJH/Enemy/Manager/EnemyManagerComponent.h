@@ -12,36 +12,6 @@ class AEnemyBase;
 class AGarbageEnemyBase;
 class ASpawnedEnemyBase;
 
-USTRUCT(BlueprintType)
-
-struct FSpawnEnemyInfo
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Max_HP;
-
-	float Current_HP;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Attack_Damage;
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Attack_Range;
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Detection_Range;
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Attack_Speed;
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Move_Speed;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Value;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float MinSize;
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float MaxSize;
-};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UEnemyManagerComponent : public UActorComponent
@@ -74,8 +44,6 @@ protected:
 	// 적 소환 함수
 	void SpawnSetting();
 	void GarbageSpawnSetting();
-
-	virtual void SpawnEnemy(TSubclassOf<AEnemyBase> Enemy, FSpawnEnemyInfo _enemyInfo, FVector SpawnLocation, FRotator SpawnRotator);
 
 public:	
 	// Sets default values for this component's properties
