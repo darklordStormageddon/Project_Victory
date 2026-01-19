@@ -81,7 +81,9 @@ void ADroneEnemy::Tick(float DeltaTime)
 	{
 		// 추격 대상 없으면 기본 오비트 행동
 		FollowOrbitTarget(DeltaTime);
+		ApplySpin(DeltaTime);
 	}
+
 }
 
 void ADroneEnemy::ChaseMove(float DeltaTime)
