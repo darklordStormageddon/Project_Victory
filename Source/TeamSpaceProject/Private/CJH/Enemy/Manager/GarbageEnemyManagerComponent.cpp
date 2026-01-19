@@ -73,45 +73,37 @@ void UGarbageEnemyManagerComponent::GarbageSpawnSetting()
 	float _spawnNum = FMath::RandRange(_minSpawn, _maxSpawn);
 
 	for (int i = 0; i < _spawnNum; i++)
-		SpawnInMap(CenterLocation, SpawnRotation, _EnemyInfoMap);
+		SpawnInMap(CenterLocation, SpawnRotation, _Enemy);
 }
 
-void UGarbageEnemyManagerComponent::SpawnInMap(FVector SpawnLocation, FRotator SpawnRotation, TMap<TSubclassOf<AEnemyBase>, FSpawnEnemyInfo> _spawn_info)
+void UGarbageEnemyManagerComponent::SpawnInMap(FVector SpawnLocation, FRotator SpawnRotation, TArray<TSubclassOf<AEnemyBase>> _spawn_enemy)
 {
-	if (_spawn_info.Num() == 0) return;
+	if (_spawn_enemy.Num() == 0)
+		return;
 
-	float SpawnEnemyNum = FMath::RandRange(0, _spawn_info.Num() - 1);
+	float SpawnEnemyNum = FMath::RandRange(0, _spawn_enemy.Num() - 1);
 
-	int Index = 0;
-
-	for (auto& Elem : _spawn_info)
-	{
-		if (Index == SpawnEnemyNum)
-		{
-			if (!Elem.Key)
-				return;
-
-			SpawnEnemy(Elem.Key, Elem.Value, SpawnLocation, SpawnRotation);
-			return;
-		}
-		Index++;
-	}
+	SpawnEnemy(_spawn_enemy[SpawnEnemyNum], SpawnLocation, SpawnRotation);
 }
 
 void UGarbageEnemyManagerComponent::SpawnEnemy(
 	TSubclassOf<AEnemyBase> Enemy,
-	FSpawnEnemyInfo _enemyInfo,
 	FVector SpawnLocation,
 	FRotator SpawnRotator)
 {
-	Super::SpawnEnemy(Enemy, _enemyInfo, SpawnLocation, SpawnRotator);
+	SpawnedEnemy = GetWorld()->SpawnActor<AEnemyBase>(Enemy, SpawnLocation, SpawnRotator);
 
-	// 스폰된 적이 Garbage 타입이면 Junior 맵에 추가
 	if (SpawnedEnemy)
 	{
 		AGarbageEnemyBase* Garbage = Cast<AGarbageEnemyBase>(SpawnedEnemy);
 		if (Garbage)
 		{
+			_spawnedEnemies.Add(Garbage);
+
+			Garbage->SetTargetShip(_spaceShip);
+			Garbage->OwnerGET(_owner);
+			Garbage->ComponentGET(this);
+
 			// 초기 target 자리 채우기 (MakeOrbitStructure가 다음 Tick에서 덮어씀)
 			FVector Center = GetCenterLocation();
 			FRotator R = FRotator(OrbitPitch, 0.0f, 0.0f); // 모든 자식이 공유하는 피치 사용 (초기자리)
@@ -120,7 +112,7 @@ void UGarbageEnemyManagerComponent::SpawnEnemy(
 			JuniorEnemies.Add(Garbage, Target);
 
 			// 드론 속성 설정(자전축 등 기존 로직 유지)
-			SetDroneProperties(SpawnedEnemy);
+			SetDroneProperties(Garbage);
 		}
 	}
 }

@@ -17,15 +17,32 @@ struct FEnemyInfo
 {
 	GENERATED_BODY()
 
-	float Size;
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
+	float MinSize;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
+	float MaxSize;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	float Max_HP;
 	float Current_HP;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	float Attack_Damage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	float Attack_Speed;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	float Attack_Range;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	float Detection_Range;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	float Move_Speed;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	float Value;
 };
 
@@ -47,10 +64,17 @@ protected:
 	UActorComponent* _ownerComponent;
 
 	AActor* _spaceShip;
-	AActor* Target = nullptr;
+
+
 
 public:
+	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	FEnemyInfo _spawnedInfo;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Target")
+	AActor* Target = nullptr;
+
+	float Size;
 
 private:
 	void SetInfo();

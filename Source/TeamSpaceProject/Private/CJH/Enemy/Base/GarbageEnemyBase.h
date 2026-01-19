@@ -33,6 +33,7 @@ protected:
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	void SetInfo();
 
 public:
 	// 외부에서 호출: 컴포넌트가 계산한 월드 좌표 목표를 설정

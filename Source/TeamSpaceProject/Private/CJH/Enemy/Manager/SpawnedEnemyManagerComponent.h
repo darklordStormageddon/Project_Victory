@@ -10,6 +10,37 @@ class AJHSGameMode;
 class ASpaceStation;
 class AEnemyBase;
 
+USTRUCT(BlueprintType)
+
+struct FSpawnEnemyInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float Max_HP;
+
+	float Current_HP;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float Attack_Damage;
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float Attack_Range;
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float Detection_Range;
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float Attack_Speed;
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float Move_Speed;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float Value;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float MinSize;
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float MaxSize;
+};
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class USpawnedEnemyManagerComponent : public UEnemyManagerComponent
 {
@@ -32,10 +63,9 @@ protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	
 	void SpawnInMap(FVector SpawnLocation, FRotator SpawnRotation, TMap<TSubclassOf<AEnemyBase>, FSpawnEnemyInfo> _spawnInfo);
-	virtual void SpawnEnemy(TSubclassOf<AEnemyBase> Enemy, FSpawnEnemyInfo _enemyInfo, FVector SpawnLocation, FRotator SpawnRotator) override;
+	void SpawnEnemy(TSubclassOf<AEnemyBase> Enemy, FSpawnEnemyInfo _enemyInfo, FVector SpawnLocation, FRotator SpawnRotator);
 
 	void SetCanSpawnTrue() {
 		CanSpawn = true;
 	}
-
 };

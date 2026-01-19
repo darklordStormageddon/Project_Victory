@@ -13,5 +13,9 @@ UCLASS()
 class ASpawnedEnemyBase : public AEnemyBase
 {
 	GENERATED_BODY()
-	
+
+protected:
+	virtual void BeginPlay() override;
+
+	void SetInfo();
 };
