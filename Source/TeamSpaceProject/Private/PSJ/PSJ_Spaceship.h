@@ -11,6 +11,7 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 class APSJ_Character;
+class APSJ_ShipCockpit;
 
 UCLASS()
 class TEAMSPACEPROJECT_API APSJ_Spaceship : public APawn
@@ -96,4 +97,9 @@ public:
 
 	UFUNCTION()
 	void OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	// [추가] 현재 연결된 조종석 (내릴 때 UI 끄기용)
+	UPROPERTY(VisibleInstanceOnly, Category = "Connection")
+	APSJ_ShipCockpit* LinkedCockpit;
+
 };
