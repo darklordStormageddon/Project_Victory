@@ -32,7 +32,7 @@ protected:
 	// 속도 등은 _spawnedInfo.Move_Speed 사용
 
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
+
 	void SetInfo();
 
 public:
