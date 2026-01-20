@@ -2,6 +2,9 @@
 
 
 #include "KSM/Collectable_base.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/ContainerStateGroup.h"
 
 // Sets default values
 ACollectable_base::ACollectable_base()
@@ -17,6 +20,9 @@ ACollectable_base::ACollectable_base()
 void ACollectable_base::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+		return;
 	
 }
 
@@ -25,5 +31,13 @@ void ACollectable_base::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void ACollectable_base::Add_Elem_To_GameState(E_ELEMENT_TYPE type, int32 amount)
+{
+	if (!_outGameState)
+		return;
+
+	_outGameState->GetContainerStateGroup()->AddElement(type, amount);
 }
 

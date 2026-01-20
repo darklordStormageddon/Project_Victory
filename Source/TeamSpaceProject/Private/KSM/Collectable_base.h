@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "Collectable_base.generated.h"
 
+class AJHSGameState;
+
 UCLASS()
 class ACollectable_base : public AActor
 {
@@ -22,6 +24,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* Mesh;
 
+	AJHSGameState* _outGameState = nullptr;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -29,6 +33,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
 	UMaterialInterface* OverlayMaterial;
 
+	//디스플레이용 + 데이터테이블 행 이름
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ore")
 	FString Ore_Type;
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ore")
+	UDataTable* Ore_Datatable;
+
+public:
+
+	UFUNCTION(BlueprintCallable, Category = "Collect")
+	void Add_Elem_To_GameState(E_ELEMENT_TYPE type, int32 amount);
 };
