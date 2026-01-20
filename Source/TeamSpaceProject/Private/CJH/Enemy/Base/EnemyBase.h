@@ -12,6 +12,9 @@
 
 #include "EnemyBase.generated.h"
 
+class UEnemyManagerComponent;
+class USpaceObjectComponent;
+
 USTRUCT()
 struct FEnemyInfo
 {
@@ -50,22 +53,25 @@ UCLASS()
 class AEnemyBase : public AActor
 {
 	GENERATED_BODY()
-private:
-	float delayTime;
-
 protected:
+	UPROPERTY(EditDefaultsOnly, Category = "SpaceObject")
+	USpaceObjectComponent* SpaceObjectComp;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	UParticleSystem* FireParticle;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	UParticleSystemComponent* FireComponent;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Garbage")
+	TSubclassOf<AActor> EnemyGarbage;
+
 	AActor* _owner;
 	UActorComponent* _ownerComponent;
 
 	AActor* _spaceShip;
 
-
+	float delayTime;
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Fire")
@@ -74,10 +80,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Target")
 	AActor* Target = nullptr;
 
-	float Size;
+	UEnemyManagerComponent* EnemyComponent;
 
-private:
-	void SetInfo();
+	float Size;
 
 public:	
 	// Sets default values for this actor's properties
@@ -88,6 +93,11 @@ protected:
 	virtual void BeginPlay() override;
 	bool DistanceCheck(float _condition);
 
+	void SetInfo();
+	void EnemyDeath();
+	void SpaceObject_Remove();
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 public:
 	virtual void Tick(float DeltaTime) override;
 	void SetTargetShip(TSubclassOf<AActor> Target);
@@ -95,4 +105,13 @@ public:
 public:
 	void OwnerGET(AActor* _getOwner) { _owner = _getOwner; }
 	void ComponentGET(UActorComponent* _getOwner) { _ownerComponent = _getOwner; }
+
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "Debug")
+	bool MinusDebug = false;
+
+	bool DelayBool = true;
+	float DelayTime;
+
+	void MinusHp();
 };

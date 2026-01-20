@@ -68,4 +68,8 @@ protected:
 	void SetCanSpawnTrue() {
 		CanSpawn = true;
 	}
+
+public:
+	virtual void RemoveEnemies(AEnemyBase* _removeEnemy) override;
+
 };

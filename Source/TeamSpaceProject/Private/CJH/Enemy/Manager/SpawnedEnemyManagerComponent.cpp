@@ -89,3 +89,6 @@ void USpawnedEnemyManagerComponent::SpawnEnemy(TSubclassOf<AEnemyBase> Enemy, FS
 		SpawnedEnemy->ComponentGET(this);
 	}
 }
+
+void USpawnedEnemyManagerComponent::RemoveEnemies(AEnemyBase* _removeEnemy)
+{ }

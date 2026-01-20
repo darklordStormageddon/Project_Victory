@@ -5,7 +5,7 @@
 
 AGarbageEnemyBase::AGarbageEnemyBase()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 }
 
 void AGarbageEnemyBase::BeginPlay()
@@ -47,12 +47,6 @@ void AGarbageEnemyBase::SetInfo()
 
 	_spawnedInfo.Current_HP = _spawnedInfo.Max_HP;
 }
-
-void AGarbageEnemyBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
-
 
 void AGarbageEnemyBase::FollowOrbitTarget(float DeltaTime)
 {

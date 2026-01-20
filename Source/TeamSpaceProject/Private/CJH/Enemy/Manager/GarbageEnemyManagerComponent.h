@@ -18,9 +18,12 @@ class UGarbageEnemyManagerComponent : public UEnemyManagerComponent
 	GENERATED_BODY()
 
 protected:
+
+	TArray<AGarbageEnemyBase*> GarbageEnemies;
+
 	// 적 정보 맵
 	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
-	TArray<TSubclassOf<AEnemyBase>> _Enemy;
+	TArray<TSubclassOf<AGarbageEnemyBase>> _Enemy;
 
 	// 공전 반경 범위(컴포넌트 시작 시 랜덤으로 선택되어 모든 자식이 공유)
 	UPROPERTY(EditDefaultsOnly, Category = "Orbit", meta = (ClampMin = "100.0", ClampMax = "5000.0"))
@@ -70,30 +73,46 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Debug")
 	float _debugRadius = 100.0f;
+
+	FQuat TiltQuat;
+	float AngleStep;
+
+	int Num;
+
 protected:
 	// Sets default values for this component's properties
 	UGarbageEnemyManagerComponent();
 
 	void GarbageSpawnSetting();
 
+	void OrbitSet();
+
 	// Called when the game starts
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void SpawnInMap(FVector SpawnLocation, FRotator SpawnRotation, TArray<TSubclassOf<AEnemyBase>> _spawn_enemy);
-	void SpawnEnemy(TSubclassOf<AEnemyBase> Enemy, FVector SpawnLocation, FRotator SpawnRotator);
+	void SpawnInMap(FVector SpawnLocation, FRotator SpawnRotation, TArray<TSubclassOf<AGarbageEnemyBase>> _spawn_enemy);
+	void SpawnEnemy(TSubclassOf<AGarbageEnemyBase> Enemy, FVector SpawnLocation, FRotator SpawnRotator);
+
 
 	// 드론(또는 Junior) 속성 설정 (spawn 이후)
 	void SetDroneProperties(AEnemyBase* Drone);
 
 	// Garbage 중심을 기준으로 Junior의 목표 위치 계산 및 할당
-	void MakeOrbitStructure(float DeltaTime);
-
-	// 유효하지 않은 엔트리 정리
-	void CleanupJuniorMaps();
+	void BuildOrbitStructure();
+	void TurnOrbit(float DeltaTime);
 
 	// Garbage 중심 좌표 얻기(Owner 기준)
-	FVector GetCenterLocation() const;
+	FVector GetCenterLocation()
+	{
+			if (_owner)
+				return _owner->GetActorLocation();
+			if (GetOwner())
+				return GetOwner()->GetActorLocation();
+
+			return
+				FVector::ZeroVector;
+	};
 
 	// 디버그 그리기
 	void DebugVector();
@@ -103,5 +122,5 @@ protected:
 	}
 
 public:
-	// Called every frame
+	virtual void RemoveEnemies(AEnemyBase* _removeEnemy) override;
 };
