@@ -1,4 +1,5 @@
 #include "PSJ_Spaceship.h"
+#include "PSJ_ShipCockpit.h"
 #include "PSJ_Character.h"
 #include "Components/SphereComponent.h"
 #include "Camera/CameraComponent.h"
@@ -171,7 +172,14 @@ void APSJ_Spaceship::DisembarkCharacter()
 
 	FTimerDelegate TimerDel;
 	TimerDel.BindUObject(this, &APSJ_Spaceship::EnableCollisionWithPassenger, ExitingChar);
-	GetWorld()->GetTimerManager().SetTimer(CollisionResetTimerHandle, TimerDel, 2.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(CollisionResetTimerHandle, TimerDel, 0.5f, false);
+
+	// [추가] 연결된 조종석이 있다면 "상호작용 종료(UI 끄기)" 호출
+	if (LinkedCockpit)
+	{
+		LinkedCockpit->OnInteractExit();
+		LinkedCockpit = nullptr; // 연결 해제
+	}
 
 	CurrentPilot = nullptr;
 }
