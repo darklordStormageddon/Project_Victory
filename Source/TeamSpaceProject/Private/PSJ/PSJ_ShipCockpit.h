@@ -1,9 +1,10 @@
-
+#pragma once
 
 #include "CoreMinimal.h"
 #include "JHS/Interact/InteractableActorBase.h" // 팀원의 베이스 클래스 헤더
 #include "PSJ_ShipCockpit.generated.h"
 
+class UUIBase;
 class APSJ_Spaceship;
 
 UCLASS()
@@ -16,11 +17,11 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Link")
     APSJ_Spaceship* TargetSpaceship;
 
-    virtual void OnInteractExit() override;
+    virtual void OnInteractExit(TObjectPtr<UUIBase> OpenedUI) override;
 
 protected:
     // InteractableActorBase의 가상 함수 오버라이드
-    virtual void OnInteractEnter() override;
+    virtual void OnInteractEnter(TObjectPtr<UUIBase> OpenedUI) override;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "InteractableActorBase|Pawn")
     TObjectPtr<APawn> _taskPawn;

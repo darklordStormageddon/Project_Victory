@@ -177,7 +177,7 @@ void APSJ_Spaceship::DisembarkCharacter()
 	// [추가] 연결된 조종석이 있다면 "상호작용 종료(UI 끄기)" 호출
 	if (LinkedCockpit)
 	{
-		LinkedCockpit->OnInteractExit();
+		LinkedCockpit->OnInteractExit(nullptr);
 		LinkedCockpit = nullptr; // 연결 해제
 	}
 

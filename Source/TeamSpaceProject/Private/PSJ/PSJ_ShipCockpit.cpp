@@ -4,11 +4,12 @@
 #include "PSJ_Character.h" 
 #include "PSJ_Spaceship.h"
 #include "GameFramework/PlayerController.h"
+#include "JHS/UI/UIBase.h"
 
-void APSJ_ShipCockpit::OnInteractEnter()
+void APSJ_ShipCockpit::OnInteractEnter(TObjectPtr<UUIBase> OpenedUI)
 {
     // 1. [팀원 코드] 부모 로직 실행 (UI 띄우기 등)
-    Super::OnInteractEnter();
+    Super::OnInteractEnter(OpenedUI);
 
     // 2. 우주선 연결 확인
     if (TargetSpaceship)
@@ -37,10 +38,10 @@ void APSJ_ShipCockpit::OnInteractEnter()
     }
 }
 
-void APSJ_ShipCockpit::OnInteractExit()
+void APSJ_ShipCockpit::OnInteractExit(TObjectPtr<UUIBase> OpenedUI)
 {
     // 1. [팀원 코드] 부모 로직 실행 (UI 숨기기 등)
-    Super::OnInteractExit();
+    Super::OnInteractExit(OpenedUI);
     
     UE_LOG(LogTemp, Log, TEXT("Cockpit: Interact Exit (UI Reset)"));
 }
