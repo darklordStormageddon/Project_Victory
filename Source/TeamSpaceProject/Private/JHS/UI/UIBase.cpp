@@ -16,9 +16,9 @@ UUIBase::UUIBase(const FObjectInitializer& ObjectInitializer)
 {
 }
 
-bool UUIBase::Initialize()
+void UUIBase::NativeOnInitialized()
 {
-	return Super::Initialize();
+	Super::NativeOnInitialized();
 }
 
 void UUIBase::NativeConstruct()

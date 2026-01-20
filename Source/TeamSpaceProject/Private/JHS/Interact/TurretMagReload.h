@@ -16,8 +16,10 @@ class ATurretMagReload : public AInteractableActorBase
 	GENERATED_BODY()
 
 private:
+	UPROPERTY()
 	TObjectPtr<UTurretStateGroup> _turretStateGroup = nullptr;
 
+	UPROPERTY()
 	TObjectPtr<UUIPanelTurretMagReload> _uiTurretMagReload = nullptr;
 
 protected:

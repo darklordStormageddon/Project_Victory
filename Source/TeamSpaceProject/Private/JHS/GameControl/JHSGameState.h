@@ -23,6 +23,7 @@ public:
 	AJHSGameState();
 
 private:
+	UPROPERTY()
 	TObjectPtr<UEventManager> _cachedEventManager = nullptr;
 	
 protected:
@@ -47,15 +48,15 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|TurretStateGroup")
 	TObjectPtr<UTurretStateGroup> _turretStateGroup = nullptr;
 
-	UPROPERTY(EditAnywhere, Category = "GameState|TurretStateGroup")
-	TArray<FAmmoData> _initAmmoDataArray;
-
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|ContainerStateGroup")
 	TObjectPtr<UContainerStateGroup> _containerStateGroup = nullptr;
 
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|ContainerStateGroup")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameState|ContainerStateGroup")
 	FContainerState _initContainerState;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameState|ContainerStateGroup")
+	TArray<FAmmoData> _initAmmoDataArray;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Test")

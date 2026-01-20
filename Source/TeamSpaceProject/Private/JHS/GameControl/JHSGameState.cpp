@@ -53,9 +53,9 @@ void AJHSGameState::InitializeGameState(TArray<FPlayerStateData> PlayerStateArra
 
 	_playerStateGroup->InitializePlayerState(this, PlayerStateArray, _maxPlayerRadiation);
 	
-	_turretStateGroup->InitializeTurretState(this, _initAmmoDataArray);
+	_turretStateGroup->InitializeTurretState(this);
 
-	_containerStateGroup->InitializeContainerState(this, _initContainerState);
+	_containerStateGroup->InitializeContainerState(this, _initContainerState, _initAmmoDataArray);
 
 	UUIManager* _outUIManager = nullptr;
 	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))

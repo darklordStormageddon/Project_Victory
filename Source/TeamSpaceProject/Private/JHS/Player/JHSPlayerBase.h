@@ -19,6 +19,7 @@ public:
 	AJHSPlayerBase();
 
 private:
+	UPROPERTY()
 	TObjectPtr<AJHSGameState> _gameState = nullptr;
 
 

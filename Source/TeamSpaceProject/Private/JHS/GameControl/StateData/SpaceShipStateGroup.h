@@ -20,6 +20,7 @@ public:
 	USpaceShipStateGroup();
 
 private:
+	UPROPERTY()
 	TObjectPtr<AJHSGameState> _gameState = nullptr;
 
 protected:

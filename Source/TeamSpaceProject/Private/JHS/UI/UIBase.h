@@ -21,6 +21,7 @@ public:
 	UUIBase(const FObjectInitializer& ObjectInitializer);
 
 private:
+	UPROPERTY()
 	TObjectPtr<UEventManager> _cachedEventManager = nullptr;
 
 	bool _isInitialized = false;
@@ -28,7 +29,7 @@ private:
 	bool _isActive = false;
 
 protected:
-	virtual bool Initialize() override;
+	virtual void NativeOnInitialized() override;
 
 	virtual void NativeConstruct() override;
 

@@ -27,14 +27,18 @@ public:
 	UInteractableComponent();
 
 private:
+	UPROPERTY()
 	TObjectPtr<USphereComponent> _collisionComponent = nullptr;
 
+	UPROPERTY()
 	TObjectPtr<UInteracterComponent> _interacter = nullptr;
 
 	bool _isInteract = false;
 
+	UPROPERTY()
 	TObjectPtr<UInteracterComponent> _InterruptInteracter = nullptr;
 
+	UPROPERTY()
 	TObjectPtr<UUIManager> _uiManager = nullptr;
 
 protected:

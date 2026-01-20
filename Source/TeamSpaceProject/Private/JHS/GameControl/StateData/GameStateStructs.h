@@ -95,6 +95,9 @@ public:
 
 	UPROPERTY()
 	int32 AmmoStockpile;
+
+	UPROPERTY()
+	UTexture2D* AmmoImage = nullptr;
 };
 
 UENUM(BlueprintType)
@@ -154,6 +157,8 @@ enum class E_ELEMENT_TYPE : uint8
 	Gold UMETA(DisplayName = "Gold"),
 	Lithium UMETA(DisplayName = "Lithium"),
 	CarbonFiber UMETA(DisplayName = "CarbonFiber"),
+
+	NONE UMETA(DisplayName = "NONE"),
 };
 
 USTRUCT(BlueprintType)
@@ -170,6 +175,9 @@ public:
 
 	UPROPERTY()
 	int32 Amount;
+
+	UPROPERTY()
+	UTexture2D* ElementImage = nullptr;
 };
 
 USTRUCT(BlueprintType)

@@ -46,15 +46,17 @@ public:
 	static FString GetEnum2FString(EnumType InEnum)
 	{
 		static_assert(TIsEnum<EnumType>::Value, "EnumType must be an enum.");
-
+	
 		FString _enumName = TEXT("Unknown");
 		if (UEnum* _enum = StaticEnum<EnumType>())
 		{
 			_enumName = _enum->GetNameStringByValue(static_cast<int64>(InEnum));
 		}
-
+	
 		return _enumName;
 	}
 
 	static bool TryGetAmmoType(FString InEnumName, E_AMMO_TYPE& OutAmmoType);
+
+	static bool TryGetElementType(FString InEnumName, E_ELEMENT_TYPE& OutElementType);
 };

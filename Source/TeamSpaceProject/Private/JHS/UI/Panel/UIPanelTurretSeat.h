@@ -12,9 +12,8 @@
 
 #include "UIPanelTurretSeat.generated.h"
 
-/**
- * 
- */
+class UContainerStateGroup;
+
 UCLASS()
 class UUIPanelTurretSeat : public UUIBase
 {
@@ -23,7 +22,8 @@ class UUIPanelTurretSeat : public UUIBase
 private:
 	FDelegateHandle _eventHandleOnChangeTurret;
 
-	TMap<E_AMMO_TYPE, TObjectPtr<UTexture2D>> _ammoTypeTextureMap;
+	UPROPERTY()
+	TObjectPtr<UContainerStateGroup> _containerStateGroup = nullptr;
 
 #pragma region Main Turret
 	UPROPERTY(meta = (BindWidget))
@@ -66,7 +66,7 @@ protected:
 	FLinearColor _leftAmmoColorZero = FColor::Red;
 
 protected:
-	virtual bool Initialize() override;
+	virtual void NativeOnInitialized() override;
 
 	void RegisterEvent() override;
 
@@ -77,6 +77,4 @@ public:
 
 private:
 	TObjectPtr<UMaterialInstanceDynamic> GetMainTurretMaterial();
-
-	void LoadAmmoTypeTexture();
 };

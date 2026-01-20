@@ -47,15 +47,15 @@ void AJHSPlayerBase::BeginPlay()
 	/*UTurretStateGroup* _turretStateGroup = _gameState->GetTurretStateGroup();
 	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet);
 	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Left, E_AMMO_TYPE::Bullet);
-	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Right, E_AMMO_TYPE::Cannon);*/
+	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Right, E_AMMO_TYPE::Cannon);
 
-	/*UUIManager* _outUIManager = nullptr;
+	UUIManager* _outUIManager = nullptr;
 	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
-		return;*/
+		return;
 
-	//_outUIManager->OpenUI(E_UI_TYPE::UIPanelTurretSeat);
-
-	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::FireTurret, 3.0f, false);
+	_outUIManager->OpenUI(E_UI_TYPE::UIPanelTurretSeat);
+	
+	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::FireTurret, 3.0f, false);*/
 }
 
 // Called every frame

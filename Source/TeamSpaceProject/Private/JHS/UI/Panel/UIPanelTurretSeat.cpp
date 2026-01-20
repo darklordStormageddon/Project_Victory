@@ -3,15 +3,19 @@
 
 #include "JHS/UI/Panel/UIPanelTurretSeat.h"
 #include "JHS/Event/EventManager.h"
-#include "JHS/GameControl/Contant/ConstantLibrary.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/ContainerStateGroup.h"
 
-bool UUIPanelTurretSeat::Initialize()
+void UUIPanelTurretSeat::NativeOnInitialized()
 {
-    if (!Super::Initialize())
-        return false;
+    Super::NativeOnInitialized();
 
-    LoadAmmoTypeTexture();
-    return true;
+    AJHSGameState* _outGameState = nullptr;
+    if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+        return;
+    
+    _containerStateGroup = _outGameState->GetContainerStateGroup();
 }
 
 void UUIPanelTurretSeat::RegisterEvent()
@@ -52,7 +56,11 @@ void UUIPanelTurretSeat::OnChangeTurret(UEventOnChangeTurretState* Event)
         return;
     }
 
-    TObjectPtr<UTexture2D> _texture = _ammoTypeTextureMap.FindRef(_turretData.AmmoType);
+    FAmmoData* _outAmmoData = nullptr;
+    if (!_containerStateGroup->TryGetAmmoData(_turretData.AmmoType, _outAmmoData))
+        return;
+    
+    TObjectPtr<UTexture2D> _texture = _outAmmoData->AmmoImage;
     if (_turretState.TurretPosition == E_TURRET_POSITION::Left)
     {
         IMG_LeftTurret->SetBrushFromTexture(_texture);
@@ -81,21 +89,4 @@ TObjectPtr<UMaterialInstanceDynamic> UUIPanelTurretSeat::GetMainTurretMaterial()
     }
 
     return _mainAmmoMID;
-}
-
-void UUIPanelTurretSeat::LoadAmmoTypeTexture()
-{
-    for (int32 i = 0; i < (int32)E_AMMO_TYPE::NONE; i++)
-    {
-        E_AMMO_TYPE _ammoType = (E_AMMO_TYPE)i;
-        FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_AMMO_TYPE>(_ammoType);
-        FString _texturePath = ConstantLibrary::Resource.Image.AMMO_FOLDER_PATH + _fileName + "." + _fileName;
-        TObjectPtr<UTexture2D> _texture = LoadObject<UTexture2D>(nullptr, *_texturePath);
-        if (_texture == nullptr)
-        {
-            UE_LOG(LogTemp, Error, TEXT("UIPanelTurretSeat: Texture is not found from [%s]"), *_texturePath);
-        }
-
-        _ammoTypeTextureMap.Add(_ammoType, _texture);
-    }
 }

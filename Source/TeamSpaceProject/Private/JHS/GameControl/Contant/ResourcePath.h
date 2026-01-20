@@ -14,8 +14,7 @@ public:
 	FResourceDataTable()
 		: TURRET_INFO_PATH(TEXT("/Game/Main/PS_YSH/Data/DT_TurretDataTable.DT_TurretDataTable"))
 		, ELEMENT_INFO_PATH(TEXT("/Game/Main/PS_KSM/"))
-	{
-	}
+	{}
 
 	UPROPERTY()
 	FString TURRET_INFO_PATH;
@@ -64,9 +63,9 @@ public:
 	FResourceImage()
 		: TEXTURE_HEADER(TEXT("Tex_"))
 		, INTERACT_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/Interact/"))
+		, ELEMENT_FOLDER_PATH(TEXT("/Game/Main/PS_KSM/"))
 		, AMMO_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/AmmoType/"))
-	{
-	}
+	{}
 
 	UPROPERTY()
 	FString TEXTURE_HEADER;;
@@ -75,8 +74,10 @@ public:
 	FString INTERACT_FOLDER_PATH;
 
 	UPROPERTY()
-	FString AMMO_FOLDER_PATH;
+	FString ELEMENT_FOLDER_PATH;
 
+	UPROPERTY()
+	FString AMMO_FOLDER_PATH;
 };
 
 USTRUCT(BlueprintType)

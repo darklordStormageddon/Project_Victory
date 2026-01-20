@@ -20,8 +20,10 @@ public:
 	UPlayerStateGroup();
 
 private:
+	UPROPERTY()
 	TObjectPtr<AJHSGameState> _gameState = nullptr;
 
+	UPROPERTY()
 	TMap<int32, FPlayerStateData> _playerStateMap;
 
 public:
