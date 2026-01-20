@@ -27,9 +27,6 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	// === [BP 컴포넌트 참조용 포인터] ===
-	// C++에서 생성하지 않고, BP에 있는 것을 찾아와서 담을 변수들입니다.
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Components")
 	UPrimitiveComponent* ShipRootComponent;
 
@@ -42,7 +39,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Components")
 	UArrowComponent* ExitPoint;
 
-	// === [입력 액션] ===
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputMappingContext* ShipMappingContext;
 
@@ -67,7 +63,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* IA_Interact;
 
-	// === [설정값] ===
 	UPROPERTY(EditAnywhere, Category = "Ship Stats")
 	float ThrustSpeed = 5000.0f;
 
@@ -83,7 +78,6 @@ protected:
 public:
 	void SetPilot(APSJ_Character* NewPilot);
 
-	// === [조작 함수] ===
 	void Input_ThrustForward(const FInputActionValue& Value);
 	void Input_ThrustBackward(const FInputActionValue& Value);
 	void Input_MoveAxes(const FInputActionValue& Value);
