@@ -4,6 +4,7 @@
 #include "JHS/Interact/InteractableComponent.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/UI/UIManager.h"
+#include "JHS/UI/UIBase.h"
 #include "JHS/Interact/InteracterComponent.h"
 
 // Sets default values for this component's properties
@@ -153,18 +154,20 @@ void UInteractableComponent::ChangeInteractState(bool IsInteract)
 	_isInteract = IsInteract;
 	if (_isInteract)
 	{
+		UUIBase* _openedUI = nullptr;
 		if (_interactUIType != E_UI_TYPE::NONE)
 		{
-			_uiManager->OpenUI(_interactUIType);
+			_openedUI = _uiManager->OpenUI(_interactUIType);
 		}
-		OnInteractEnterAction.Broadcast();
+		OnInteractEnterAction.Broadcast(_openedUI);
 	}
 	else
 	{
-		OnInteractExitAction.Broadcast();
+		UUIBase* _closedUI = nullptr;
 		if (_interactUIType != E_UI_TYPE::NONE)
 		{
-			_uiManager->CloseUI(_interactUIType);
+			_closedUI = _uiManager->CloseUI(_interactUIType);
 		}
+		OnInteractExitAction.Broadcast(_closedUI);
 	}
 }

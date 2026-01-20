@@ -3,12 +3,12 @@
 
 #include "JHS/Interact/InteractableChairExample.h"
 
-void AInteractableChairExample::OnInteractEnter()
+void AInteractableChairExample::OnInteractEnter(TObjectPtr<UUIBase> OpenedUI)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Interact enter"));
 }
 
-void AInteractableChairExample::OnInteractExit()
+void AInteractableChairExample::OnInteractExit(TObjectPtr<UUIBase> ClosedUI)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Interact exit"));
 }

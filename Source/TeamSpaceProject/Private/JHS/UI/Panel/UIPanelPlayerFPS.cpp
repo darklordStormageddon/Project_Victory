@@ -25,9 +25,9 @@ void UUIPanelPlayerFPS::ChangeInteractable(E_INTERACT_TYPE InteractType)
 	}
 
 	TObjectPtr<UTexture2D> _texture = nullptr;
-	if (_interacTextureMap.Contains(InteractType))
+	if (_interactTextureMap.Contains(InteractType))
 	{
-		_texture = _interacTextureMap.FindRef(InteractType);
+		_texture = _interactTextureMap.FindRef(InteractType);
 	}
 	else
 	{
@@ -41,7 +41,7 @@ void UUIPanelPlayerFPS::ChangeInteractable(E_INTERACT_TYPE InteractType)
 			return;
 		}
 
-		_interacTextureMap.Add(InteractType, _texture);
+		_interactTextureMap.Add(InteractType, _texture);
 	}
 
 	IMG_Interact->SetBrushFromTexture(_texture);

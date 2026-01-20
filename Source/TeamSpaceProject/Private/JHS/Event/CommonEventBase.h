@@ -66,45 +66,22 @@ public:
 
 #pragma region Turret
 UCLASS(BlueprintType)
-class UEventOnChangeTurretData : public UCommonEventBase
+class UEventOnChangeTurretState : public UCommonEventBase
 {
 	GENERATED_BODY()
 	
 public:
-	UEventOnChangeTurretData(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+	UEventOnChangeTurretState(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
 	{}
 
-	UEventOnChangeTurretData(FTurretData TurretData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+	UEventOnChangeTurretState(FTurretState TurretState, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
-		, TurretData(TurretData)
+		, TurretState(TurretState)
 	{}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|TurretData")
-	FTurretData TurretData;
-};
-
-UCLASS(BlueprintType)
-class UEventOnChangeTurretAmmo : public UCommonEventBase
-{
-	GENERATED_BODY()
-
-public:
-	UEventOnChangeTurretAmmo(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
-		: Super(ObjectInitializer)
-	{}
-
-	UEventOnChangeTurretAmmo(E_TURRET_POSITION TurretPosition, FMaxCurrentData Ammo, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
-		: Super(ObjectInitializer)
-		, TurretPosition(TurretPosition)
-		, Ammo(Ammo)
-	{}
-
-	UPROPERTY(BlueprintReadOnly, Category = "Event|TurretAmmo")
-	E_TURRET_POSITION TurretPosition;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Event|TurretAmmo")
-	FMaxCurrentData Ammo;
+	FTurretState TurretState;
 };
 #pragma endregion Turret
 

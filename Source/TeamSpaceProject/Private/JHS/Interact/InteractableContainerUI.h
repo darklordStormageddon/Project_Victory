@@ -6,6 +6,8 @@
 #include "JHS/Interact/InteractableActorBase.h"
 #include "InteractableContainerUI.generated.h"
 
+class UUIBase;
+
 /**
  * 
  */
@@ -15,7 +17,7 @@ class AInteractableContainerUI : public AInteractableActorBase
 	GENERATED_BODY()
 	
 protected:
-	void OnInteractEnter() override;
+	void OnInteractEnter(TObjectPtr<UUIBase> OpenedUI) override;
 
-	void OnInteractExit() override;
+	void OnInteractExit(TObjectPtr<UUIBase> ClosedUI) override;
 };

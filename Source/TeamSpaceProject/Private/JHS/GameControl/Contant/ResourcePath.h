@@ -62,13 +62,21 @@ struct FResourceImage
 
 public:
 	FResourceImage()
-		: INTERACT_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/Interact/"))
+		: TEXTURE_HEADER(TEXT("Tex_"))
+		, INTERACT_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/Interact/"))
+		, AMMO_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/AmmoType/"))
 	{
 	}
 
-	// UI Blueprint
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|Image")
+	UPROPERTY()
+	FString TEXTURE_HEADER;;
+
+	UPROPERTY()
 	FString INTERACT_FOLDER_PATH;
+
+	UPROPERTY()
+	FString AMMO_FOLDER_PATH;
+
 };
 
 USTRUCT(BlueprintType)

@@ -73,12 +73,12 @@ UUIBase* UUIManager::OpenUI(E_UI_TYPE UIType)
 	return _ui;
 }
 
-void UUIManager::CloseUI(E_UI_TYPE UIType)
+UUIBase* UUIManager::CloseUI(E_UI_TYPE UIType)
 {
 	if (!_loadedUIDict.Contains(UIType))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UUIManager: UI [%d] is not loaded"), (int32)UIType);
-		return;
+		return nullptr;
 	}
 
 	UUIBase* _ui = _loadedUIDict[UIType];
@@ -104,6 +104,8 @@ void UUIManager::CloseUI(E_UI_TYPE UIType)
 	{
 		_openedUIStack.Push(_tempStack[i]);
 	}*/
+
+	return _ui;
 }
 
 void UUIManager::CloseAllUI()
@@ -218,47 +220,7 @@ FString UUIManager::GetUIPath(E_UI_TYPE UIType) const
 	UEnum* _enum = FindObject<UEnum>(nullptr, TEXT("/Script/TeamSpaceProject.E_UI_TYPE"), true);
 	if (_enum != nullptr)
 	{
-		FString _enumName = _enum->GetNameStringByValue((int64)UIType);
-		_uiName = ConstantLibrary::Resource.UI.UI_WIDGET_HEADER + _enumName;
-	}
-	else
-	{
-		// Fallback: 직접 이름 매핑
-		FString _widgetName = TEXT("");
-		switch (UIType)
-		{
-		case E_UI_TYPE::UIPanelPlayerFPS:
-			_widgetName = TEXT("UIPanelPlayerFPS");
-			break;
-
-		case E_UI_TYPE::UIPanelDriveSeat:
-			_widgetName = TEXT("UIPanelDriveSeat");
-			break;
-
-		case E_UI_TYPE::UIPanelCollectSeat:
-			_widgetName = TEXT("UIPanelCollectSeat");
-			break;
-
-		case E_UI_TYPE::UIPanelTurretSeat:
-			_widgetName = TEXT("UIPanelTurretSeat");
-			break;
-
-		case E_UI_TYPE::UIPopupCommon:
-			_widgetName = TEXT("UIPopupCommon");
-			break;
-
-		case E_UI_TYPE::UIPanelContainer:
-			_widgetName = TEXT("UIPanelContainer");
-			break;
-
-		case E_UI_TYPE::UISystemSetting:
-			_widgetName = TEXT("UISystemSetting");
-			break;
-
-		default:
-			return TEXT("");
-		}
-
+		FString _widgetName = CommonEnums::GetEnum2FString<E_UI_TYPE>(UIType);
 		_uiName = ConstantLibrary::Resource.UI.UI_WIDGET_HEADER + _widgetName;
 	}
 

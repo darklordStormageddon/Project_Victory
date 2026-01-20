@@ -13,6 +13,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "JHS/SpaceObject/DriveSeatRader.h"
 
+#include "JHS/UI/UIManager.h"
+
 // Sets default values
 AJHSPlayerBase::AJHSPlayerBase()
 {
@@ -42,7 +44,18 @@ void AJHSPlayerBase::BeginPlay()
 	_gameState = _outGameState;
 	_gameState->GetSpaceShipStateGroup()->RepairSpaceShip();
 
-	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::AddElement, 3.0f, false);
+	/*UTurretStateGroup* _turretStateGroup = _gameState->GetTurretStateGroup();
+	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet);
+	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Left, E_AMMO_TYPE::Bullet);
+	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Right, E_AMMO_TYPE::Cannon);*/
+
+	/*UUIManager* _outUIManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
+		return;*/
+
+	//_outUIManager->OpenUI(E_UI_TYPE::UIPanelTurretSeat);
+
+	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::FireTurret, 3.0f, false);
 }
 
 // Called every frame
@@ -80,7 +93,7 @@ void AJHSPlayerBase::FireTurret()
 	if (_turretStateGroup == nullptr)
 		return;
 
-	E_TURRET_POSITION _turretPosition = E_TURRET_POSITION::Left;
+	E_TURRET_POSITION _turretPosition = E_TURRET_POSITION::Right;
 
 	if (!_turretStateGroup->TryFireTurret(_turretPosition))
 	{

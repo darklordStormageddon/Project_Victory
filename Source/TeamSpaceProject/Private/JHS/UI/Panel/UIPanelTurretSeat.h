@@ -4,12 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "JHS/UI/UIBase.h"
-#include "Delegates/Delegate.h"
+#include "JHS/Event/CommonEventBase.h"
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Materials/MaterialInstanceDynamic.h"
-#include "JHS/Event/CommonEventBase.h"
 
 #include "UIPanelTurretSeat.generated.h"
 
@@ -23,7 +22,8 @@ class UUIPanelTurretSeat : public UUIBase
 
 private:
 	FDelegateHandle _eventHandleOnChangeTurret;
-	FDelegateHandle _eventHandleOnChangeTurretAmmo;
+
+	TMap<E_AMMO_TYPE, TObjectPtr<UTexture2D>> _ammoTypeTextureMap;
 
 #pragma region Main Turret
 	UPROPERTY(meta = (BindWidget))
@@ -66,15 +66,17 @@ protected:
 	FLinearColor _leftAmmoColorZero = FColor::Red;
 
 protected:
+	virtual bool Initialize() override;
+
 	void RegisterEvent() override;
 
 	void UnregisterEvent() override;
 
 public:
-	void OnChangeTurret(UEventOnChangeTurretData* Event);
-
-	void OnChangeTurretAmmo(UEventOnChangeTurretAmmo* Event);
+	void OnChangeTurret(UEventOnChangeTurretState* Event);
 
 private:
 	TObjectPtr<UMaterialInstanceDynamic> GetMainTurretMaterial();
+
+	void LoadAmmoTypeTexture();
 };

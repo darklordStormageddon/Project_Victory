@@ -16,6 +16,7 @@ enum class E_UI_TYPE : uint8
 	UIPanelDriveSeat UMETA(DisplayName = "UIPanelDriveSeat"),
 	UIPanelCollectSeat UMETA(DisplayName = "UIPanelCollectSeat"),
 	UIPanelTurretSeat UMETA(DisplayName = "UIPanelTurretSeat"),
+	UIPanelTurretMagReload UMETA(DisplayName = "UIPanelTurretMagReload"),
 	UIPanelContainer UMETA(DisplayName = "UIPanelContainer"),
 
 	// Popup

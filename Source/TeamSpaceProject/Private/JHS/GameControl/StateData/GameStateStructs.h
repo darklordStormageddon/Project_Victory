@@ -70,12 +70,12 @@ public:
 #pragma region Turret
 UENUM(BlueprintType)
 enum class E_AMMO_TYPE : uint8
-{
-	NONE = 255 UMETA(DisplayName = "NONE"),
-	
+{	
 	Bullet = 0 UMETA(DisplayName = "Bullet"),
 	Cannon UMETA(DisplayName = "Cannon"),
 	Missile UMETA(DisplayName = "Missile"),
+
+	NONE UMETA(DisplayName = "NONE"),
 };
 
 USTRUCT(BlueprintType)
@@ -103,6 +103,8 @@ enum class E_TURRET_POSITION : uint8
 	Main = 0 UMETA(DisplayName = "Main"),
 	Left UMETA(DisplayName = "Left"),
 	Right UMETA(DisplayName = "Right"),
+
+	END UMETA(DisplayName = "END"),
 };
 
 USTRUCT(BlueprintType)
@@ -112,9 +114,6 @@ struct FTurretData
 
 public:
 	UPROPERTY()
-	E_TURRET_POSITION TurretPosition;
-
-	UPROPERTY()
 	E_AMMO_TYPE AmmoType;
 
 	UPROPERTY()
@@ -122,6 +121,22 @@ public:
 
 	UPROPERTY()
 	float FireInterval = 1.0f;
+};
+
+USTRUCT(BlueprintType)
+struct FTurretState
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY()
+	E_TURRET_POSITION TurretPosition;
+
+	UPROPERTY()
+	bool _isEquipped = false;
+
+	UPROPERTY()
+	FTurretData TurretData;
 };
 #pragma endregion Turret
 

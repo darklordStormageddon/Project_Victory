@@ -15,7 +15,7 @@ class UUIPanelPlayerFPS : public UUIBase
 	GENERATED_BODY()
 
 private:
-	TMap<E_INTERACT_TYPE, TObjectPtr<UTexture2D>> _interacTextureMap;
+	TMap<E_INTERACT_TYPE, TObjectPtr<UTexture2D>> _interactTextureMap;
 
 private:
 	UPROPERTY(meta = (BindWidget))

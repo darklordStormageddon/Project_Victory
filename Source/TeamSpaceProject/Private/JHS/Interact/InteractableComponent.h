@@ -13,8 +13,8 @@
 class UInteracterComponent;
 class UUIManager;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractEnterAction);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractExitAction);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractEnterAction, UUIBase*, OpenedUI);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractExitAction, UUIBase*, ClosedUI);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractInterruptAction);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )

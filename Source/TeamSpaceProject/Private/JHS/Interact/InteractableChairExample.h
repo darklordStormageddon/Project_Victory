@@ -17,7 +17,7 @@ class AInteractableChairExample : public AInteractableActorBase
 
 
 protected:
-	void OnInteractEnter() override;
-	
-	void OnInteractExit() override;
+	void OnInteractEnter(TObjectPtr<UUIBase> OpenedUI) override;
+
+	void OnInteractExit(TObjectPtr<UUIBase> ClosedUI) override;
 };

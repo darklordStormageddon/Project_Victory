@@ -23,13 +23,13 @@ private:
 	TObjectPtr<UInteractableComponent> _uiInteracterable = nullptr;
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ChairBase|Debug")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interactable|Debug")
 	bool _isDebugDraw;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ChairBase|UIInteractable")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interactable|ActorBase")
 	float _interactRadius = 100.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ChairBase|UIInteractable")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interactable|ActorBase")
 	E_UI_TYPE _interatUIType;
 
 protected:
@@ -42,14 +42,14 @@ public:
 
 private:
 	UFUNCTION()
-	void InteractEnter();
+	void InteractEnter(UUIBase* OpenedUI);
 
 	UFUNCTION()
-	void InteractExit();
+	void InteractExit(UUIBase* ClosedUI);
 
 protected:
-	virtual void OnInteractEnter() { }
+	virtual void OnInteractEnter(TObjectPtr<UUIBase> OpenedUI) { }
 	
-	virtual void OnInteractExit() { }
+	virtual void OnInteractExit(TObjectPtr<UUIBase> ClosedUI) { }
 
 };

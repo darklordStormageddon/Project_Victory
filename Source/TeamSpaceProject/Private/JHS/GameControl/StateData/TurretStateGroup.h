@@ -28,7 +28,7 @@ private:
 
 	TMap<E_AMMO_TYPE, FAmmoData> _ammoDataMap;
 
-	TMap<E_TURRET_POSITION, FTurretData> _equipTurretMap;
+	TMap<E_TURRET_POSITION, FTurretState> _equipTurretMap;
 
 	const int32 CONSUME_AMMO = -1;
 
@@ -58,9 +58,13 @@ private:
 
 	int32 GetTurretKey(bool IsMainTurret, E_AMMO_TYPE AmmoType);
 
-	bool TryGetEquipedTurret(E_TURRET_POSITION TurretPosition, FTurretData*& OutTurretData);
+	bool TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutAmmoData);
 
 	bool TryGetTurretData(bool IsMainTurret, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData);
 
-	void ChangeTurretAmmo(FTurretData* TurretData, int32 ChangeValue);
+	bool TryGetEquipedTurret(E_TURRET_POSITION TurretPosition, FTurretState*& OutTurretState);
+
+	void ChangeTurretAmmo(FTurretState* TurretState, int32 ChangeValue);
+
+	void ExecuteTurretEvent(FTurretState* TurretState);
 };
