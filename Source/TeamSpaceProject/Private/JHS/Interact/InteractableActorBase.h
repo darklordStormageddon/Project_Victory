@@ -20,6 +20,7 @@ public:
 	AInteractableActorBase();
 
 private:
+	UPROPERTY()
 	TObjectPtr<UInteractableComponent> _uiInteracterable = nullptr;
 
 protected:

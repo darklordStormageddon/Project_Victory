@@ -3,6 +3,7 @@
 
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
 #include "JHS/GameControl/Contant/ConstantLibrary.h"
@@ -38,15 +39,9 @@ void UTurretStateGroup::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 	// ...
 }
 
-void UTurretStateGroup::InitializeTurretState(TObjectPtr<AJHSGameState> GameState, TArray<FAmmoData> AmmoDataArray)
+void UTurretStateGroup::InitializeTurretState(TObjectPtr<AJHSGameState> GameState)
 {
 	_gameState = GameState;
-
-	_ammoDataMap.Empty();
-	for (FAmmoData _ammoData : AmmoDataArray)
-	{
-		_ammoDataMap.Add(_ammoData.AmmoType, _ammoData);
-	}
 
 	_equipTurretMap.Empty();
 	for (int32 i = 0; i < (int32)E_TURRET_POSITION::END; i++)
@@ -148,11 +143,8 @@ bool UTurretStateGroup::TryReloadTurret(E_TURRET_POSITION TurretPosition)
 		return false;
 
 	FAmmoData* _outAmmoData = nullptr;
-	if (!TryGetAmmoData(_outTurretState->TurretData.AmmoType, _outAmmoData))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Not found ammo data. AmmoType: %d"), (int32)_outTurretState->TurretData.AmmoType);
+	if (!_gameState->GetContainerStateGroup()->TryGetAmmoData(_outTurretState->TurretData.AmmoType, _outAmmoData))
 		return false;
-	}
 
 	ChangeTurretAmmo(_outTurretState, _outAmmoData->ReloadCapacity);
 	return true;
@@ -170,9 +162,9 @@ void UTurretStateGroup::LoadTurretDataTable()
 	}
 
 	TArray<FName> _rowNames = _turretDataTable->GetRowNames();
-	for (const FName& RowName : _rowNames)
+	for (const FName& _rowName : _rowNames)
 	{
-		FTurretInitState* _turrerInfo = _turretDataTable->FindRow<FTurretInitState>(RowName, TEXT(""));
+		FTurretInitState* _turrerInfo = _turretDataTable->FindRow<FTurretInitState>(_rowName, TEXT(""));
 		if (_turrerInfo)
 		{
 			E_AMMO_TYPE _outAmmoType = E_AMMO_TYPE::NONE;
@@ -189,29 +181,12 @@ void UTurretStateGroup::LoadTurretDataTable()
 		}
 	}
 
-	// 데이터 테이블이 비어있으면 실패
-	if (_turretDataMap.Num() <= 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Turret Data Table is empty"));
-		return;
-	}
-
 	UE_LOG(LogTemp, Warning, TEXT("Turret Data Table loaded successfully. %d rows loaded"), _turretDataMap.Num());
-	return;
 }
 
 int32 UTurretStateGroup::GetTurretKey(bool IsMainTurret, E_AMMO_TYPE AmmoType)
 {
 	return ((int32)IsMainTurret + 1) * HUNDRED + (int32)AmmoType;
-}
-
-bool UTurretStateGroup::TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutAmmoData)
-{
-	if (!_ammoDataMap.Contains(AmmoType))
-		return false;
-
-	OutAmmoData = _ammoDataMap.Find(AmmoType);
-	return OutAmmoData != nullptr;
 }
 
 bool UTurretStateGroup::TryGetTurretData(bool IsMainTurret, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData)

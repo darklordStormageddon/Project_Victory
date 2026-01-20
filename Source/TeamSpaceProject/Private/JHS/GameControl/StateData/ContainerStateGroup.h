@@ -20,8 +20,10 @@ public:
 	UContainerStateGroup();
 
 private:
+	UPROPERTY()
 	TObjectPtr<AJHSGameState> _gameState = nullptr;
 
+	UPROPERTY()
 	FContainerState _containerState;
 
 protected:
@@ -33,16 +35,18 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	void InitializeContainerState(TObjectPtr<AJHSGameState> GameState, FContainerState InitContainerState);
+	void InitializeContainerState(TObjectPtr<AJHSGameState> GameState, FContainerState InitContainerState, TArray<FAmmoData> AmmoDataArray);
 
 	void UpdateContainerState();
 
 	void AddElement(E_ELEMENT_TYPE ElementType, int32 Amount);
 
 	void RemoveElement(E_ELEMENT_TYPE ElementType, int32 Amount);
+	
+	bool TryGetElementData(E_ELEMENT_TYPE ElementType, FElementData*& OutElementData);
+
+	bool TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutAmmoData);
 
 private:
-	void LoadElementDataTable();
-
-	bool TryGetElementData(E_ELEMENT_TYPE ElementType, FElementData*& OutElementData);
+	void LoadResource();
 };

@@ -24,8 +24,10 @@ public:
 private:
 	const E_UI_TYPE _playerUI = E_UI_TYPE::UIPanelPlayerFPS;
 
+	UPROPERTY()
 	TObjectPtr<UUIPanelPlayerFPS> _uiPanelPlayer = nullptr;
 
+	UPROPERTY()
 	TObjectPtr<UInteractableComponent> _interactable = nullptr;
 
 protected:
