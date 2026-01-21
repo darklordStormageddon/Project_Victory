@@ -113,6 +113,16 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Turret|Fire")
 	float MuzzleFlashScale = 1.0f;
 
+	// === 탄 퍼짐(Spread) 설정 ===
+	UPROPERTY(EditAnywhere, Category = "Turret|Fire|Spread", meta = (ClampMin = "0.0", ClampMax = "45.0"))
+	float SpreadConeAngle = 2.0f;  // 원뿔의 각도 (도 단위), 0이면 정확한 조준
+
+	UPROPERTY(EditAnywhere, Category = "Turret|Fire|Spread")
+	bool bEnableSpread = true;  // 탄 퍼짐 활성화 여부
+
+	UPROPERTY(EditAnywhere, Category = "Turret|Fire|Spread")
+	bool bShowSpreadDebug = false;  // 탄 퍼짐 디버그 시각화
+
 	float TimeSinceLastFire = 0.0f;
 	bool bIsLeftMuzzleNext = true;
 
@@ -126,4 +136,7 @@ private:
 	bool IsTargetInRange() const;
 	bool IsTargetInLineOfSight() const;
 	void DrawDebugVisualization();
+
+	// 랜덤 스프레드 계산 헬퍼 함수
+	FRotator GetSpreadRotation(const FRotator& BaseRotation) const;
 };
