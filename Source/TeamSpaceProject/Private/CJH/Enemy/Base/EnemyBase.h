@@ -59,10 +59,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Particle")
 	UParticleSystem* FireParticle;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Particle")
 	UParticleSystem* DeathParticle;
-	UPROPERTY(EditDefaultsOnly, Category = "Particle")
-	UParticleSystem* StrikeParticle;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	UParticleSystemComponent* FireComponent;

@@ -55,8 +55,6 @@ void UAS_ConnectionComponent::HaveChild()
 	TArray<USceneComponent*> Children;
 	GetChildrenComponents(false, Children); // false = 직계만
 
-	UE_LOG(LogTemp,Warning, TEXT("My Name: %s"), *GetName());
-
 	for (USceneComponent* Child : Children)
 	{
 		if (!Child)

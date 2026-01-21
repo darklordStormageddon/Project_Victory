@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 
+#include "Kismet/GameplayStatics.h"
 #include "Components/SphereComponent.h"
 
 #include "Bullet.generated.h"
@@ -29,6 +30,9 @@ private:
 	FVector Direction;
 	UPROPERTY(VisibleAnywhere, Category = "Collision")
 	USphereComponent* Collision;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Particle")
+	UParticleSystem* HitParticle;
 
 private:
 	void MoveToTarget(float DeltaTime);
