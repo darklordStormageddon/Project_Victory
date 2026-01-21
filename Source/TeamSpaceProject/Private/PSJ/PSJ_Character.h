@@ -51,7 +51,15 @@ protected:
 	AActor* LastFloorActor = nullptr;
 	FVector CurrentFloorNormal = FVector::UpVector;
 	float DefaultMeshZ = 0.0f;
+
+	// [추가] 거리 기반 댐핑 계산을 위한 변수
+	float LastFloorDistance = 0.0f;
+
 	void UpdateMagBoots(float DeltaTime);
+
+
+
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* MoveAction;

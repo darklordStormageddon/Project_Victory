@@ -207,6 +207,22 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		bIsMagBootsActive = false;
 		LastFloorActor = nullptr;
 	}
+	if (bIsMagBootsActive && GetCharacterMovement())
+	{
+		// 플레이어의 이동 입력(WASD)이 거의 없는지 확인 (멈춰있는 상태)
+		FVector InputVector = GetCharacterMovement()->GetLastInputVector();
+
+		if (InputVector.IsNearlyZero(0.01f))
+		{
+			FVector CurrentVel = GetCharacterMovement()->Velocity;
+
+			// 바닥(Normal) 방향의 속도 성분만 추출 (튀어오르는 힘은 유지하고 미끄러짐만 제거)
+			FVector VerticalVel = CurrentFloorNormal * FVector::DotProduct(CurrentVel, CurrentFloorNormal);
+
+			// 캐릭터의 속도를 수직 성분으로만 강제 설정
+			GetCharacterMovement()->Velocity = VerticalVel;
+		}
+	}
 }
 
 void APSJ_Character::Move(const FInputActionValue& Value)
