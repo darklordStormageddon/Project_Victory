@@ -66,6 +66,16 @@ void ABullet::OnBulletOverlap(
 	if (!OtherActor || OtherActor == _owner || !_owner)
 		return;
 
+	if (!HitParticle)
+		return;
+
+	UGameplayStatics::SpawnEmitterAtLocation(
+		GetWorld(),
+		HitParticle,
+		SweepResult.ImpactPoint,
+		SweepResult.ImpactNormal.Rotation()
+	);
+
 	if (UHealthComponent* Health = OtherActor->FindComponentByClass<UHealthComponent>())
 		Health->TakeDamage(Damage);
 

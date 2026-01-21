@@ -76,6 +76,15 @@ void AEnemyBase::EnemyDeath()
 {
 	Murdered = true;
 
+	if (DeathParticle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			DeathParticle,
+			GetActorTransform()
+		);
+	}
+	
 	this -> Destroy();
 }
 
