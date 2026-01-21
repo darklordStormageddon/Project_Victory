@@ -14,7 +14,10 @@ struct FTurretInitState : public FTableRowBase
     GENERATED_BODY()
 
 public:
-    FTurretInitState() : bIsMainTurret(0), AmmoType("Bullet"), InitMaxMag(100), InitFireInterval(0.1f) {}
+    FTurretInitState() :TurretName("TurretName"), bIsMainTurret(0), AmmoType("Bullet"), InitMaxMag(100), InitFireInterval(0.1f) {}
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FString TurretName;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bIsMainTurret;
