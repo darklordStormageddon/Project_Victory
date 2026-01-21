@@ -4,7 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+
+#include "Components/SphereComponent.h"
+
 #include "Bullet.generated.h"
+
 
 UCLASS()
 class ABullet : public AActor
@@ -12,6 +16,10 @@ class ABullet : public AActor
 	GENERATED_BODY()
 
 private:
+	AActor* _owner;
+
+	float Damage;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Bullet")
 	float Speed = 1000.0f;
 
@@ -19,6 +27,8 @@ private:
 	float BulletLifeTime = 5.0f;
 
 	FVector Direction;
+	UPROPERTY(VisibleAnywhere, Category = "Collision")
+	USphereComponent* Collision;
 
 private:
 	void MoveToTarget(float DeltaTime);
@@ -31,9 +41,21 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UFUNCTION()
+	void OnBulletOverlap(
+		UPrimitiveComponent* OverlappedComp,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult
+	);
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	void GetTarget(FVector _TargetLocation);
+	void GetTarget(FVector _TargetDirection) { Direction = _TargetDirection; }
+	void SetOwner(AActor* _getOwner) { _owner = _getOwner; }
+	void SetDamage(float _getDamage) { Damage = _getDamage; }
 };

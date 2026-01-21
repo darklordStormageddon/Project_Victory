@@ -36,3 +36,9 @@ void UEnemyManagerComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 }
+
+void UEnemyManagerComponent::DeleteAllEnemy()
+{
+	_spawnedEnemies.Empty();
+	_spawnedEnemies.Shrink();
+}

@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 
-
 #include "Particles/ParticleSystemComponent.h"
 
 #include "Kismet/GameplayStatics.h"
@@ -14,6 +13,7 @@
 
 class UEnemyManagerComponent;
 class USpaceObjectComponent;
+class UHealthComponent;
 
 USTRUCT()
 struct FEnemyInfo
@@ -57,8 +57,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SpaceObject")
 	USpaceObjectComponent* SpaceObjectComp;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Fire")
+	UPROPERTY(EditDefaultsOnly, Category = "Particle")
 	UParticleSystem* FireParticle;
+	UPROPERTY(EditDefaultsOnly, Category = "Particle")
+	UParticleSystem* DeathParticle;
+	UPROPERTY(EditDefaultsOnly, Category = "Particle")
+	UParticleSystem* StrikeParticle;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	UParticleSystemComponent* FireComponent;
@@ -71,6 +75,8 @@ protected:
 
 	AActor* _spaceShip;
 
+	bool Murdered = false;
+
 	float delayTime;
 
 public:
@@ -81,6 +87,9 @@ public:
 	AActor* Target = nullptr;
 
 	UEnemyManagerComponent* EnemyComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
+	UHealthComponent* HealthComp;
 
 	float Size;
 
@@ -94,6 +103,8 @@ protected:
 	bool DistanceCheck(float _condition);
 
 	void SetInfo();
+
+	UFUNCTION()
 	void EnemyDeath();
 	void SpaceObject_Remove();
 

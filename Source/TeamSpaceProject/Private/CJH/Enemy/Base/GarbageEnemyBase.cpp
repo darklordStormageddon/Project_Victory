@@ -3,6 +3,8 @@
 
 #include "CJH/Enemy/Base/GarbageEnemyBase.h"
 
+#include "KSM/HealthComponent.h"
+
 AGarbageEnemyBase::AGarbageEnemyBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -45,7 +47,7 @@ void AGarbageEnemyBase::SetInfo()
 	_spawnedInfo.Attack_Damage *= Size;
 	_spawnedInfo.Value *= Size;
 
-	_spawnedInfo.Current_HP = _spawnedInfo.Max_HP;
+	HealthComp->SetCurrentHP(_spawnedInfo.Max_HP);
 }
 
 void AGarbageEnemyBase::FollowOrbitTarget(float DeltaTime)

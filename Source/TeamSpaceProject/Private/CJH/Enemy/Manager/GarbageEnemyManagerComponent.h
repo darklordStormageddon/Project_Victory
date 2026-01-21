@@ -123,4 +123,5 @@ protected:
 
 public:
 	virtual void RemoveEnemies(AEnemyBase* _removeEnemy) override;
+	virtual void DeleteAllEnemy() override;
 };

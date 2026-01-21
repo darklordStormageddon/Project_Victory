@@ -31,6 +31,9 @@ void UGarbageEnemyManagerComponent::BeginPlay()
 	Super::BeginPlay();
 
 	GarbageSpawnSetting();
+
+	//FTimerHandle Delete;
+	//GetWorld()->GetTimerManager().SetTimer(Delete, this, &UGarbageEnemyManagerComponent::DeleteAllEnemy, 3.f);
 }
 
 void UGarbageEnemyManagerComponent::GarbageSpawnSetting()
@@ -150,7 +153,8 @@ void UGarbageEnemyManagerComponent::TickComponent(float DeltaTime, ELevelTick Ti
 	if (candebug && _debug)
 		DebugVector();
 
-	TurnOrbit(DeltaTime);
+	if (GarbageEnemies.Num() != 0 && JuniorEnemies.Num() != 0)
+		TurnOrbit(DeltaTime);
 }
 
 void UGarbageEnemyManagerComponent::TurnOrbit(float DeltaTime)
@@ -232,4 +236,23 @@ void UGarbageEnemyManagerComponent::RemoveEnemies(AEnemyBase* _removeEnemy)
 		JuniorEnemies.Remove(GarbageEnemy);
 	}
 	BuildOrbitStructure();
+}
+
+void UGarbageEnemyManagerComponent::DeleteAllEnemy()
+{
+	Super::DeleteAllEnemy();
+
+	for (AEnemyBase* SpawnEnemy : GarbageEnemies)
+	{
+		if (!IsValid(SpawnEnemy))
+			return;
+
+		SpawnEnemy->Destroy();
+	}
+
+	JuniorEnemies.Empty();
+	JuniorEnemies.Shrink();
+
+	GarbageEnemies.Empty();
+	GarbageEnemies.Shrink();
 }

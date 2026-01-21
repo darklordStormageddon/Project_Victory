@@ -22,6 +22,11 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 		UAsteroidComponent* AsteroidComponent;
+
+
+	UPROPERTY(EditAnywhere, Category = "Speed")
+	TSubclassOf<AActor> TestSpaceShip;
+
 public:
 	ATestCharacter();
 
