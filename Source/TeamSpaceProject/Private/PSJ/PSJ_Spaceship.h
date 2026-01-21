@@ -40,6 +40,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Components")
 	UArrowComponent* ExitPoint;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Components")
+	UArrowComponent* RidePoint;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputMappingContext* ShipMappingContext;
 
@@ -101,5 +104,7 @@ public:
 	// [추가] 현재 연결된 조종석 (내릴 때 UI 끄기용)
 	UPROPERTY(VisibleInstanceOnly, Category = "Connection")
 	APSJ_ShipCockpit* LinkedCockpit;
+
+
 
 };

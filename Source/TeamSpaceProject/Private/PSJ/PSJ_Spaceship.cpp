@@ -44,6 +44,15 @@ void APSJ_Spaceship::BeginPlay()
 	{
 		UE_LOG(LogTemp, Error, TEXT("Error: ExitPoint (Arrow) not found in BP!"));
 	}
+	// [추가] 이름에 'Ride'가 들어간 ArrowComponent를 찾아 RidePoint로 지정
+	for (UArrowComponent* Arrow : Arrows)
+	{
+		if (Arrow->GetName().Contains(TEXT("Ride")))
+		{
+			RidePoint = Arrow;
+			break;
+		}
+	}
 
 	PilotSphere = FindComponentByClass<USphereComponent>();
 	if (PilotSphere)
@@ -92,6 +101,21 @@ void APSJ_Spaceship::SetPilot(APSJ_Character* NewPilot)
 				{
 					Subsystem->AddMappingContext(ShipMappingContext, 0);
 				}
+			}
+		}
+
+		// [추가] RidePoint가 있다면 캐릭터를 해당 위치에 강력하게 고정
+		if (RidePoint)
+		{
+			// 물리 충돌 방지 및 위치 고정
+			CurrentPilot->SetActorEnableCollision(false);
+			CurrentPilot->AttachToComponent(RidePoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+			// 탑승 중 캐릭터가 움직이지 않도록 이동 컴포넌트 비활성화
+			if (auto* CMC = CurrentPilot->GetCharacterMovement())
+			{
+				CMC->StopMovementImmediately();
+				CMC->DisableMovement();
 			}
 		}
 	}
