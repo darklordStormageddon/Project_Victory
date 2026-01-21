@@ -71,13 +71,27 @@ void UTurretStateGroup::InitializeTurretState(TObjectPtr<AJHSGameState> GameStat
 
 void UTurretStateGroup::UpdateTurretState()
 {
-	/*for (auto& _turretState : _turretStandMap)
+	for (auto& _turretStand : _turretStandMap)
 	{
-		ExecuteTurretEvent(&_turretState.Value);
-	}*/
+		E_TURRET_POSITION _turretPosition = _turretStand.Value->GetTurretPosition();
+		E_AMMO_TYPE _ammoType = _turretStand.Value->GetAmmoType();
+		if (_ammoType == E_AMMO_TYPE::NONE)
+			continue;
+
+		FTurretData* _outTurretData = nullptr;
+		if (!TryGetTurretData(_turretPosition, _ammoType, _outTurretData))
+			continue;
+
+		ExecuteTurretEvent(_turretPosition, *_outTurretData);
+	}
 }
 
-bool UTurretStateGroup::TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType)
+void UTurretStateGroup::SetInfiniteMagMode(bool IsInfiniteMagMode)
+{
+	_isInfiniteMagMode = IsInfiniteMagMode;
+}
+
+bool UTurretStateGroup::TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, TObjectPtr<AActor> Turret)
 {
 	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
 	if (!TryGetTurretStand(TurretPosition, _outTurretStand))
@@ -87,27 +101,30 @@ bool UTurretStateGroup::TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_
 	if (!TryGetTurretData(TurretPosition, AmmoType, _outTurretData))
 		return false;
 
-	// 터렛 BP 클래스 로드
-	FString _fileName = _outTurretData->TurretBPName;
-	FString _turretBPPath = ConstantLibrary::Resource.TurretBP.TURRET_BP_FOLDER_PATH + _fileName + "." + _fileName + "_C";
-	TSubclassOf<AActor> _turretClass = LoadClass<AActor>(nullptr, *_turretBPPath);
-	if (_turretClass == nullptr)
+	if (Turret == nullptr)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to load turret BP class: %s"), *_turretBPPath);
-		return false;
-	}
+		// 터렛 BP 클래스 로드
+		FString _fileName = _outTurretData->TurretBPName;
+		FString _turretBPPath = ConstantLibrary::Resource.TurretBP.TURRET_BP_FOLDER_PATH + _fileName + "." + _fileName + "_C";
+		TSubclassOf<AActor> _turretClass = LoadClass<AActor>(nullptr, *_turretBPPath);
+		if (_turretClass == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to load turret BP class: %s"), *_turretBPPath);
+			return false;
+		}
 
-	// 터렛 액터 스폰
-	FActorSpawnParameters _spawnParams;
-	_spawnParams.Owner = _outTurretStand;
-	TObjectPtr<AActor> _spawnedTurret = GetWorld()->SpawnActor<AActor>(_turretClass, _outTurretStand->GetActorTransform(), _spawnParams);
-	if (_spawnedTurret == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to spawn turret: %s"), *_turretBPPath);
-		return false;
+		// 터렛 액터 스폰
+		FActorSpawnParameters _spawnParams;
+		_spawnParams.Owner = _outTurretStand;
+		Turret = GetWorld()->SpawnActor<AActor>(_turretClass, _outTurretStand->GetActorTransform(), _spawnParams);
+		if (Turret == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to spawn turret: %s"), *_turretBPPath);
+			return false;
+		}
 	}
 	
-	return _outTurretStand->TryEquipTurret(_spawnedTurret, AmmoType);
+	return _outTurretStand->TryEquipTurret(Turret, AmmoType);
 }
 
 bool UTurretStateGroup::TryGetTurretFireInterval(E_TURRET_POSITION TurretPosition, float* OutFireCoolTime)
@@ -143,7 +160,13 @@ bool UTurretStateGroup::TryFireTurret(E_TURRET_POSITION TurretPosition)
 		return false;
 
 	if (_outTurretData->Mag.CurrentValue <= 0)
-		return false;
+	{
+		if (!_isInfiniteMagMode)
+			return false;
+
+		if (!TryReloadTurret(TurretPosition))
+			return false;
+	}
 
 	ChangeTurretAmmo(TurretPosition, _equipedAmmoType, CONSUME_AMMO);
 	return true;
@@ -174,7 +197,7 @@ void UTurretStateGroup::LoadTurretDataTable()
 	TObjectPtr<UDataTable> _turretDataTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ConstantLibrary::Resource.DataTable.TURRET_INFO_PATH));
 	if (!_turretDataTable)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to load Room Data Table from path [%s]"), *ConstantLibrary::Resource.DataTable.TURRET_INFO_PATH);
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to load Room Data Table from path [%s]"), *ConstantLibrary::Resource.DataTable.TURRET_INFO_PATH);
 		return;
 	}
 
@@ -222,7 +245,7 @@ bool UTurretStateGroup::TryGetTurretStand(E_TURRET_POSITION TurretPosition, TObj
 {
 	if (!_turretStandMap.Contains(TurretPosition))
 	{
-		UE_LOG(LogTemp, Error, TEXT("Not initialized turret state. TurretPosition: %d"), (int32)TurretPosition);
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Not initialized turret state. TurretPosition: %d"), (int32)TurretPosition);
 		return false;
 	}
 

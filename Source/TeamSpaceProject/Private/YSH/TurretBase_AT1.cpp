@@ -48,7 +48,7 @@ void ATurretBase_AT1::BeginPlay()
 		// TurretStateGroupÀÇ TryEquipTurret »ç¿ë
 		if (_cachedGameState->GetTurretStateGroup())
 		{
-			_cachedGameState->GetTurretStateGroup()->TryEquipTurret(E_TURRET_POSITION::Left, E_AMMO_TYPE::Missile);
+			_cachedGameState->GetTurretStateGroup()->TryEquipTurret(E_TURRET_POSITION::Left, E_AMMO_TYPE::Missile, this);
 		}
 	}
 	else

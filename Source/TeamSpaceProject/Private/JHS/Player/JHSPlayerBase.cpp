@@ -43,18 +43,19 @@ void AJHSPlayerBase::BeginPlay()
 
 	_gameState = _outGameState;
 
-	/*UTurretStateGroup* _turretStateGroup = _gameState->GetTurretStateGroup();
-	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet);
-	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Left, E_AMMO_TYPE::Bullet);
-	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Right, E_AMMO_TYPE::Cannon);
+	UTurretStateGroup* _turretStateGroup = _gameState->GetTurretStateGroup();
+	_turretStateGroup->SetInfiniteMagMode(true);
+	/*_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet, nullptr);
+	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Left, E_AMMO_TYPE::Bullet, nullptr);
+	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Right, E_AMMO_TYPE::Cannon, nullptr);*/
 
-	UUIManager* _outUIManager = nullptr;
+	/*UUIManager* _outUIManager = nullptr;
 	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
 		return;
 
-	_outUIManager->OpenUI(E_UI_TYPE::UIPanelTurretSeat);
+	_outUIManager->OpenUI(E_UI_TYPE::UIPanelTurretSeat);*/
 	
-	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::FireTurret, 3.0f, false);*/
+	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::FireTurret, 3.0f, false);
 }
 
 // Called every frame
@@ -67,7 +68,7 @@ void AJHSPlayerBase::Tick(float DeltaTime)
 
 	/*_gameState->GetSpaceShipStateGroup()->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::Shield, 0.001f);
 	_gameState->GetSpaceShipStateGroup()->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, 0.01f);
-	_gameState->GetSpaceShipStateGroup()->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::Fuel, 0.05f);*/
+	_gameState->GetSpaceShipStateGroup()->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::Fuel, 0.05f);
 
 	/*for (int i = 0; i < _gameState->GetPlayerStateGroup()->GetPlayerCount(); i++)
 	{
@@ -92,12 +93,9 @@ void AJHSPlayerBase::FireTurret()
 	if (_turretStateGroup == nullptr)
 		return;
 
-	E_TURRET_POSITION _turretPosition = E_TURRET_POSITION::Right;
+	E_TURRET_POSITION _turretPosition = E_TURRET_POSITION::Main;
 
-	if (!_turretStateGroup->TryFireTurret(_turretPosition))
-	{
-		_turretStateGroup->TryReloadTurret(_turretPosition);
-	}
+	_turretStateGroup->TryFireTurret(_turretPosition);
 
 	float _outFireCoolTime = 0.0f;
 	if (!_turretStateGroup->TryGetTurretFireInterval(_turretPosition, &_outFireCoolTime))

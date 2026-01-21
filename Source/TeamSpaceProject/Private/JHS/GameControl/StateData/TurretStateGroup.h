@@ -34,6 +34,8 @@ private:
 
 	const int32 CONSUME_AMMO = -1;
 
+	bool _isInfiniteMagMode = false;
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -47,7 +49,9 @@ public:
 
 	void UpdateTurretState();
 
-	bool TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType);
+	void SetInfiniteMagMode(bool IsInfiniteMagMode);
+
+	bool TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, TObjectPtr<AActor> Turret);
 
 	bool TryGetTurretFireInterval(E_TURRET_POSITION TurretPosition, float* OutFireCoolTime);
 
@@ -56,6 +60,8 @@ public:
 	bool TryReloadTurret(E_TURRET_POSITION TurretPosition);
 
 private:
+	void SetTurretStand();
+
 	void LoadTurretDataTable();
 
 	int32 GetTurretKey(bool IsMainTurret, E_AMMO_TYPE AmmoType);

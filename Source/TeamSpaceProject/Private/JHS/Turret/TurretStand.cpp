@@ -55,10 +55,7 @@ bool ATurretStand::TryEquipTurret(TObjectPtr<AActor> Turret, E_AMMO_TYPE AmmoTyp
 E_AMMO_TYPE ATurretStand::GetAmmoType()
 {
 	if (_turret == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("TurretStand: Turret not equipped at [%s]"), *CommonEnums::GetEnum2FString<E_TURRET_POSITION>(_turretPosition));
 		return E_AMMO_TYPE::NONE;
-	}
 
 	return _ammoType;
 }

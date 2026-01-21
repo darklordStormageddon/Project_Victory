@@ -20,17 +20,17 @@ public:
 	ATurretStand();
 
 private:
-	UPROPERTY(VisibleAnywhere, Category = "TurretStand")
+	UPROPERTY()
 	TObjectPtr<UTurretStateGroup> _turretManager = nullptr;
 
-	UPROPERTY(VisibleAnywhere, Category = "TurretStand")
+	UPROPERTY()
 	TObjectPtr<AActor> _turret = nullptr;
 
-	UPROPERTY(VisibleAnywhere, Category = "TurretStand")
+	UPROPERTY()
 	E_AMMO_TYPE _ammoType;
 
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TurretStand")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "TurretStand")
 	E_TURRET_POSITION _turretPosition;
 
 public:
