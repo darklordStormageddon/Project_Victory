@@ -10,6 +10,7 @@ class USphereComponent;
 class UStaticMeshComponent;
 class UProjectileMovementComponent;
 class UParticleSystem;
+class UNiagaraSystem;
 class USoundBase;
 
 UCLASS()
@@ -95,6 +96,9 @@ protected:
 	UParticleSystem* HitEffect;
 
 	UPROPERTY(EditAnywhere, Category = "Projectile|Effects")
+	UNiagaraSystem* HitEffectNiagara;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile|Effects")
 	USoundBase* HitSound;
 
 	UPROPERTY(EditAnywhere, Category = "Projectile|Effects")
@@ -105,10 +109,20 @@ protected:
 
 	// === 가속 이펙트 ===
 	UPROPERTY(EditAnywhere, Category = "Projectile|Effects")
-	UParticleSystem* BoostEffect;  // 급가속 시 재생할 이펙트
+	UNiagaraSystem* BoostEffectNiagara;  
 
 	UPROPERTY(EditAnywhere, Category = "Projectile|Effects")
-	USoundBase* BoostSound;  // 급가속 시 재생할 사운드
+	USoundBase* BoostSound;
+
+	// 부스트 이펙트 위치/회전/스케일 오프셋
+	UPROPERTY(EditAnywhere, Category = "Projectile|Effects|Boost")
+	FVector BoostEffectLocationOffset = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile|Effects|Boost")
+	FRotator BoostEffectRotationOffset = FRotator::ZeroRotator;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile|Effects|Boost")
+	FVector BoostEffectScale = FVector(1.0f);
 
 	// === 디버그 ===
 	UPROPERTY(EditAnywhere, Category = "Projectile|Debug")

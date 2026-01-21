@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "YSH/Projectile.h"
 #include "Components/SphereComponent.h"
@@ -6,24 +6,26 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "DrawDebugHelpers.h"
 
 AProjectile::AProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// Ãæµ¹ ÄÄÆ÷³ÍÆ® »ı¼º
+	// ì¶©ëŒ ì»´í¬ë„ŒíŠ¸ ìƒì„±
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
 	CollisionComponent->InitSphereRadius(15.0f);
 	CollisionComponent->SetCollisionProfileName(TEXT("Projectile"));
 	RootComponent = CollisionComponent;
 
-	// ¸Ş½Ã ÄÄÆ÷³ÍÆ® »ı¼º
+	// ë©”ì‹œ ì»´í¬ë„ŒíŠ¸ ìƒì„±
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetupAttachment(CollisionComponent);
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	// ¹ß»çÃ¼ ÀÌµ¿ ÄÄÆ÷³ÍÆ® »ı¼º
+	// ë°œì‚¬ì²´ ì´ë™ ì»´í¬ë„ŒíŠ¸ ìƒì„±
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->UpdatedComponent = CollisionComponent;
 	ProjectileMovement->InitialSpeed = InitialSpeed;
@@ -31,10 +33,10 @@ AProjectile::AProjectile()
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
 
-	// ±âº»ÀûÀ¸·Î À¯µµ ºñÈ°¼ºÈ­ (Áö¿¬ ÈÄ È°¼ºÈ­)
+	// ê¸°ë³¸ì ìœ¼ë¡œ ìœ ë„ ë¹„í™œì„±í™” (ì§€ì—° í›„ í™œì„±í™”)
 	ProjectileMovement->bIsHomingProjectile = false;
 
-	// »ıÁ¸ ÁÖ±â ¼³Á¤
+	// ìƒì¡´ ì£¼ê¸° ì„¤ì •
 	InitialLifeSpan = LifeSpan;
 }
 
@@ -42,13 +44,13 @@ void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Ãæµ¹ ÀÌº¥Æ® ¹ÙÀÎµù
+	// ì¶©ëŒ ì´ë²¤íŠ¸ ë°”ì¸ë”©
 	if (CollisionComponent)
 	{
 		CollisionComponent->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
 	}
 
-	// Áö¿¬ °¡¼ÓÀÌ È°¼ºÈ­µÈ °æ¿ì ÃÊ±â ¼Óµµ¸¦ ´À¸®°Ô ¼³Á¤
+	// ì§€ì—° ê°€ì†ì´ í™œì„±í™”ëœ ê²½ìš° ì´ˆê¸° ì†ë„ë¥¼ ëŠë¦¬ê²Œ ì„¤ì •
 	if (bEnableDelayedAcceleration && ProjectileMovement)
 	{
 		ProjectileMovement->InitialSpeed = LaunchSpeed;
@@ -66,16 +68,16 @@ void AProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// TimeAlive¸¦ Ç×»ó Áõ°¡ (°¡¼Ó°ú À¯µµ ¸ğµÎ ÀÌ °ªÀ» »ç¿ë)
+	// TimeAliveë¥¼ í•­ìƒ ì¦ê°€ (ê°€ì†ê³¼ ìœ ë„ ëª¨ë‘ ì´ ê°’ì„ ì‚¬ìš©)
 	TimeAlive += DeltaTime;
 
-	// Áö¿¬ °¡¼Ó Ã³¸®
+	// ì§€ì—° ê°€ì† ì²˜ë¦¬
 	if (bEnableDelayedAcceleration)
 	{
 		UpdateAcceleration(DeltaTime);
 	}
 
-	// Áö¿¬ À¯µµ Ã³¸®
+	// ì§€ì—° ìœ ë„ ì²˜ë¦¬
 	if (bEnableDelayedHoming)
 	{
 		UpdateHoming(DeltaTime);
@@ -97,40 +99,57 @@ void AProjectile::UpdateAcceleration(float DeltaTime)
 	if (!ProjectileMovement || bHasBoosted)
 		return;
 
-	// TimeAlive += DeltaTime; // ÀÌ ÁÙ »èÁ¦ (Tick¿¡¼­ ÀÌ¹Ì Áõ°¡)
-
-	// Áö¿¬ ½Ã°£ °æ°ú ÈÄ ±Ş°¡¼Ó ½ÃÀÛ
+	// ì§€ì—° ì‹œê°„ ê²½ê³¼ í›„ ê¸‰ê°€ì† ì‹œì‘
 	if (TimeAlive >= AccelerationDelay)
 	{
 		float CurrentSpeed = ProjectileMovement->Velocity.Size();
 
-		// ¸ñÇ¥ ¼Óµµ¿¡ µµ´ŞÇÏÁö ¾Ê¾Ò´Ù¸é °¡¼Ó
+		// ëª©í‘œ ì†ë„ì— ë„ë‹¬í•˜ì§€ ì•Šì•˜ë‹¤ë©´ ê°€ì†
 		if (CurrentSpeed < BoostSpeed)
 		{
-			// ±Ş°¡¼Ó ½ÃÀÛ ½Ã ÇÑ ¹ø¸¸ ÀÌÆåÆ®/»ç¿îµå Àç»ı
+			// ê¸‰ê°€ì† ì‹œì‘ ì‹œ í•œ ë²ˆë§Œ ì´í™íŠ¸/ì‚¬ìš´ë“œ ì¬ìƒ
 			if (!bHasBoosted)
 			{
 				bHasBoosted = true;
 
-				// ºÎ½ºÆ® ÀÌÆåÆ® »ı¼º
-				if (BoostEffect)
+				// ===== Niagara ë¶€ìŠ¤íŠ¸ ì´í™íŠ¸ ìƒì„± (ìš°ì„ ìˆœìœ„ 1) =====
+				if (BoostEffectNiagara)
 				{
-					UGameplayStatics::SpawnEmitterAttached(
-						BoostEffect,
-						RootComponent,
+					UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAttached(
+						BoostEffectNiagara,
+						MeshComponent ? MeshComponent : RootComponent,
 						NAME_None,
-						FVector::ZeroVector,
-						FRotator::ZeroRotator,
+						BoostEffectLocationOffset,      // Location
+						BoostEffectRotationOffset,      // Rotation
+						BoostEffectScale,               // Scale (FVector)
 						EAttachLocation::KeepRelativeOffset,
-						true,
-						EPSCPoolMethod::AutoRelease
+						true,                           // bAutoDestroy
+						ENCPoolMethod::AutoRelease,     // PoolingMethod
+						true,                           // bAutoActivate
+						true                            // bPreCullCheck
 					);
+
+					if (NiagaraComp)
+					{
+						UE_LOG(LogTemp, Warning, TEXT("âœ“ Boost Niagara Effect Spawned! Offset: %s, Rotation: %s"),
+							*BoostEffectLocationOffset.ToString(),
+							*BoostEffectRotationOffset.ToString());
+					}
+					else
+					{
+						UE_LOG(LogTemp, Error, TEXT("âœ— Failed to spawn Boost Niagara Effect!"));
+					}
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("âš  No Boost Effect assigned (Neither Niagara nor Cascade)"));
 				}
 
-				// ºÎ½ºÆ® »ç¿îµå Àç»ı
+				// ë¶€ìŠ¤íŠ¸ ì‚¬ìš´ë“œ ì¬ìƒ
 				if (BoostSound)
 				{
 					UGameplayStatics::PlaySoundAtLocation(this, BoostSound, GetActorLocation());
+					UE_LOG(LogTemp, Warning, TEXT("âœ“ Boost Sound Played!"));
 				}
 
 				if (bShowDebugAcceleration)
@@ -139,16 +158,20 @@ void AProjectile::UpdateAcceleration(float DeltaTime)
 				}
 			}
 
-			// °¡¼Óµµ Àû¿ë
+			// ê°€ì†ë„ ì ìš©
 			float NewSpeed = FMath::FInterpConstantTo(CurrentSpeed, BoostSpeed, DeltaTime, AccelerationRate);
 			ProjectileMovement->Velocity = ProjectileMovement->Velocity.GetSafeNormal() * NewSpeed;
 
-			// µğ¹ö±× ½Ã°¢È­
+			// ë””ë²„ê·¸ ì‹œê°í™”
 			if (bShowDebugAcceleration)
 			{
 				FVector Start = GetActorLocation();
 				FVector End = Start + ProjectileMovement->Velocity.GetSafeNormal() * 200.0f;
 				DrawDebugLine(GetWorld(), Start, End, FColor::Orange, false, -1.0f, 0, 3.0f);
+
+				// ë¶€ìŠ¤íŠ¸ ì´í™íŠ¸ ìœ„ì¹˜ ë””ë²„ê·¸
+				FVector BoostEffectWorldLocation = Start + GetActorRotation().RotateVector(BoostEffectLocationOffset);
+				DrawDebugSphere(GetWorld(), BoostEffectWorldLocation, 10.0f, 8, FColor::Cyan, false, -1.0f, 0, 2.0f);
 
 				DrawDebugString(
 					GetWorld(),
@@ -164,7 +187,7 @@ void AProjectile::UpdateAcceleration(float DeltaTime)
 	}
 	else if (bShowDebugAcceleration)
 	{
-		// °¡¼Ó Àü ´ë±â ½Ã°£ ½Ã°¢È­
+		// ê°€ì† ì „ ëŒ€ê¸° ì‹œê°„ ì‹œê°í™”
 		DrawDebugString(
 			GetWorld(),
 			GetActorLocation() + FVector(0, 0, 50),
@@ -182,10 +205,10 @@ void AProjectile::UpdateHoming(float DeltaTime)
 	if (!ProjectileMovement || !HomingTarget)
 		return;
 
-	// Áö¿¬ ½Ã°£ÀÌ °æ°úÇß´ÂÁö È®ÀÎ
+	// ì§€ì—° ì‹œê°„ì´ ê²½ê³¼í–ˆëŠ”ì§€ í™•ì¸
 	if (TimeAlive < HomingDelay)
 	{
-		// À¯µµ Àü ´ë±â ½Ã°£ µğ¹ö±× ½Ã°¢È­
+		// ìœ ë„ ì „ ëŒ€ê¸° ì‹œê°„ ë””ë²„ê·¸ ì‹œê°í™”
 		if (bShowDebugHoming)
 		{
 			DrawDebugString(
@@ -201,14 +224,14 @@ void AProjectile::UpdateHoming(float DeltaTime)
 		return;
 	}
 
-	// À¯µµ È°¼ºÈ­ ½ÃÁ¡ ÀÌÆåÆ® (ÇÑ ¹ø¸¸)
+	// ìœ ë„ í™œì„±í™” ì‹œì  ì´í™íŠ¸ (í•œ ë²ˆë§Œ)
 	if (!bHomingActivated)
 	{
 		bHomingActivated = true;
 
 		if (bUseHomingAcceleration)
 		{
-			// Ä¿½ºÅÒ À¯µµ »ç¿ë
+			// ì»¤ìŠ¤í…€ ìœ ë„ ì‚¬ìš©
 			if (bShowDebugHoming)
 			{
 				UE_LOG(LogTemp, Warning, TEXT("Projectile homing activated (Custom)!"));
@@ -216,7 +239,7 @@ void AProjectile::UpdateHoming(float DeltaTime)
 		}
 		else
 		{
-			// UProjectileMovementComponentÀÇ ±âº» À¯µµ »ç¿ë
+			// UProjectileMovementComponentì˜ ê¸°ë³¸ ìœ ë„ ì‚¬ìš©
 			ProjectileMovement->bIsHomingProjectile = true;
 			ProjectileMovement->HomingAccelerationMagnitude = HomingAcceleration;
 
@@ -236,42 +259,42 @@ void AProjectile::UpdateHoming(float DeltaTime)
 		}
 	}
 
-	// Ä¿½ºÅÒ À¯µµ ·ÎÁ÷
+	// ì»¤ìŠ¤í…€ ìœ ë„ ë¡œì§
 	if (bUseHomingAcceleration && HomingTarget)
 	{
 		FVector CurrentLocation = GetActorLocation();
 		FVector TargetLocation = HomingTarget->GetActorLocation();
 		FVector ToTarget = (TargetLocation - CurrentLocation).GetSafeNormal();
 
-		// ÇöÀç ¼Óµµ ¹æÇâ
+		// í˜„ì¬ ì†ë„ ë°©í–¥
 		FVector CurrentVelocity = ProjectileMovement->Velocity;
 		float CurrentSpeed = CurrentVelocity.Size();
 		FVector CurrentDirection = CurrentVelocity.GetSafeNormal();
 
-		// ¸ñÇ¥ ¹æÇâÀ¸·Î È¸Àü (±Ş°İÇÏ°Ô ÈÖ¾îÁöµµ·Ï)
+		// ëª©í‘œ ë°©í–¥ìœ¼ë¡œ íšŒì „ (ê¸‰ê²©í•˜ê²Œ íœ˜ì–´ì§€ë„ë¡)
 		FVector NewDirection = FMath::VInterpConstantTo(
 			CurrentDirection,
 			ToTarget,
 			DeltaTime,
-			FMath::DegreesToRadians(HomingTurnSpeed)  // È¸Àü ¼Óµµ
+			FMath::DegreesToRadians(HomingTurnSpeed)
 		);
 
-		// »õ·Î¿î ¼Óµµ ¼³Á¤ (¹æÇâ º¯°æ + °¡¼Ó)
+		// ìƒˆë¡œìš´ ì†ë„ ì„¤ì • (ë°©í–¥ ë³€ê²½ + ê°€ì†)
 		float NewSpeed = FMath::Min(CurrentSpeed + HomingAcceleration * DeltaTime, ProjectileMovement->MaxSpeed);
 		ProjectileMovement->Velocity = NewDirection * NewSpeed;
 
-		// µğ¹ö±× ½Ã°¢È­
+		// ë””ë²„ê·¸ ì‹œê°í™”
 		if (bShowDebugHoming)
 		{
 			FVector Start = CurrentLocation;
 
-			// Å¸°Ù±îÁöÀÇ ¶óÀÎ
+			// íƒ€ê²Ÿê¹Œì§€ì˜ ë¼ì¸
 			DrawDebugLine(GetWorld(), Start, TargetLocation, FColor::Red, false, -1.0f, 0, 2.0f);
 
-			// ÇöÀç ÀÌµ¿ ¹æÇâ
+			// í˜„ì¬ ì´ë™ ë°©í–¥
 			DrawDebugLine(GetWorld(), Start, Start + NewDirection * 300.0f, FColor::Green, false, -1.0f, 0, 3.0f);
 
-			// Å¸°Ù À§Ä¡ Ç¥½Ã
+			// íƒ€ê²Ÿ ìœ„ì¹˜ í‘œì‹œ
 			DrawDebugSphere(GetWorld(), TargetLocation, 30.0f, 8, FColor::Red, false, -1.0f, 0, 2.0f);
 
 			DrawDebugString(
@@ -289,17 +312,17 @@ void AProjectile::UpdateHoming(float DeltaTime)
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
-	// ÀÚ½ÅÀÌ³ª ¹ß»çÇÑ Actor´Â ¹«½Ã
+	// ìì‹ ì´ë‚˜ ë°œì‚¬í•œ ActorëŠ” ë¬´ì‹œ
 	if (!OtherActor || OtherActor == this || OtherActor == GetOwner())
 	{
 		return;
 	}
 
-	// ÀûÁß À§Ä¡¿Í ¹ı¼± º¤ÅÍ °è»ê
+	// ì ì¤‘ ìœ„ì¹˜ì™€ ë²•ì„  ë²¡í„° ê³„ì‚°
 	FVector HitLocation = Hit.ImpactPoint;
 	FRotator HitRotation = Hit.ImpactNormal.Rotation();
 
-	// µğ¹ö±× ½Ã°¢È­
+	// ë””ë²„ê·¸ ì‹œê°í™”
 	if (bShowDebugHit)
 	{
 		DrawDebugSphere(GetWorld(), HitLocation, 50.0f, 12, FColor::Red, false, 2.0f, 0, 3.0f);
@@ -308,19 +331,19 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 		UE_LOG(LogTemp, Warning, TEXT("Projectile hit: %s at location: %s"), *OtherActor->GetName(), *HitLocation.ToString());
 	}
 
-	// µ¥¹ÌÁö Àû¿ë
+	// ë°ë¯¸ì§€ ì ìš©
 	UGameplayStatics::ApplyDamage(OtherActor, Damage, GetInstigatorController(), this, UDamageType::StaticClass());
 
-	// ÀûÁß ÀÌÆåÆ® »ı¼º
+	// ì ì¤‘ ì´í™íŠ¸ ìƒì„±
 	SpawnHitEffect(HitLocation, HitRotation);
 
-	// ¹ß»çÃ¼ Áï½Ã ÆÄ±«
+	// ë°œì‚¬ì²´ ì¦‰ì‹œ íŒŒê´´
 	Destroy();
 }
 
 void AProjectile::SpawnHitEffect(const FVector& HitLocation, const FRotator& HitRotation)
 {
-	// ÆÄÆ¼Å¬ ÀÌÆåÆ® »ı¼º
+	// íŒŒí‹°í´ ì´í™íŠ¸ ìƒì„±
 	if (HitEffect)
 	{
 		UParticleSystemComponent* PSC = UGameplayStatics::SpawnEmitterAtLocation(
@@ -341,7 +364,7 @@ void AProjectile::SpawnHitEffect(const FVector& HitLocation, const FRotator& Hit
 		}
 	}
 
-	// »ç¿îµå Àç»ı
+	// ì‚¬ìš´ë“œ ì¬ìƒ
 	if (HitSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, HitSound, HitLocation);
