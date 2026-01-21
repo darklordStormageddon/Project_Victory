@@ -13,6 +13,7 @@ class UParticleSystem;
 class UNiagaraSystem;
 class UNiagaraComponent;
 class USoundBase;
+class UHealthComponent;
 
 UCLASS()
 class AProjectile : public AActor

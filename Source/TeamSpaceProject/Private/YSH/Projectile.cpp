@@ -1,6 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "YSH/Projectile.h"
+#include "KSM/HealthComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -336,11 +337,21 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 		DrawDebugSphere(GetWorld(), HitLocation, 50.0f, 12, FColor::Red, false, 2.0f, 0, 3.0f);
 		DrawDebugDirectionalArrow(GetWorld(), HitLocation, HitLocation + Hit.ImpactNormal * 100.0f, 25.0f, FColor::Green, false, 2.0f, 0, 3.0f);
 
-		/*UE_LOG(LogTemp, Warning, TEXT("Projectile hit: %s at location: %s"), *OtherActor->GetName(), *HitLocation.ToString());*/
+		UE_LOG(LogTemp, Warning, TEXT("Projectile hit: %s at location: %s"), *OtherActor->GetName(), *HitLocation.ToString());
 	}
 
-	// 데미지 적용
-	UGameplayStatics::ApplyDamage(OtherActor, Damage, GetInstigatorController(), this, UDamageType::StaticClass());
+	// ===== HealthComponent를 사용한 데미지 적용 (Bullet 로직 적용) =====
+	if (UHealthComponent* HealthComp = OtherActor->FindComponentByClass<UHealthComponent>())
+	{
+		HealthComp->TakeDamage(Damage);
+		UE_LOG(LogTemp, Log, TEXT("Projectile dealt %.1f damage to %s via HealthComponent"), Damage, *OtherActor->GetName());
+	}
+	// ===== 기존 UGameplayStatics::ApplyDamage 방식 (백업) =====
+	else
+	{
+		UGameplayStatics::ApplyDamage(OtherActor, Damage, GetInstigatorController(), this, UDamageType::StaticClass());
+		UE_LOG(LogTemp, Log, TEXT("Projectile dealt %.1f damage to %s via UGameplayStatics"), Damage, *OtherActor->GetName());
+	}
 
 	// 부스트 이펙트 정리 (적중 이펙트 생성 전)
 	CleanupBoostEffect();
