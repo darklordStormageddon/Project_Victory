@@ -53,7 +53,7 @@ void ATurretBase_AT1::BeginPlay()
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("ATurretBase_AT1: Failed to get GameState"));
+		//UE_LOG(LogTemp, Error, TEXT("ATurretBase_AT1: Failed to get GameState"));
 	}
 }
 
@@ -190,7 +190,7 @@ void ATurretBase_AT1::TryAutoFire()
 	UTurretStateGroup* TurretStateGroup = _cachedGameState->GetTurretStateGroup();
 	if (!TurretStateGroup)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ATurretBase_AT1::TryAutoFire - TurretStateGroup is null"));
+		//UE_LOG(LogTemp, Error, TEXT("ATurretBase_AT1::TryAutoFire - TurretStateGroup is null"));
 		return;
 	}
 
@@ -231,7 +231,7 @@ void ATurretBase_AT1::TryAutoFire()
 			// 지연 유도를 위해 타겟 설정
 			Projectile->SetHomingTarget(CurrentTarget);
 
-			UE_LOG(LogTemp, Warning, TEXT("ATurretBase_AT1: Projectile fired at target %s"), *CurrentTarget->GetName());
+			//UE_LOG(LogTemp, Warning, TEXT("ATurretBase_AT1: Projectile fired at target %s"), *CurrentTarget->GetName());
 		}
 
 		// 스프레드 디버그 시각화

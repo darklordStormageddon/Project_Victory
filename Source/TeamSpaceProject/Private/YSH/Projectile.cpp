@@ -59,9 +59,17 @@ void AProjectile::BeginPlay()
 
 		if (bShowDebugAcceleration)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Projectile launched with slow speed: %.2f"), LaunchSpeed);
+			//UE_LOG(LogTemp, Warning, TEXT("Projectile launched with slow speed: %.2f"), LaunchSpeed);
 		}
 	}
+}
+
+void AProjectile::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// 부스트 이펙트 정리
+	CleanupBoostEffect();
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AProjectile::Tick(float DeltaTime)
@@ -90,7 +98,7 @@ void AProjectile::SetHomingTarget(AActor* Target)
 
 	if (bShowDebugHoming)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Projectile homing target set: %s"), Target ? *Target->GetName() : TEXT("None"));
+		//UE_LOG(LogTemp, Warning, TEXT("Projectile homing target set: %s"), Target ? *Target->GetName() : TEXT("None"));
 	}
 }
 
@@ -115,7 +123,7 @@ void AProjectile::UpdateAcceleration(float DeltaTime)
 				// ===== Niagara 부스트 이펙트 생성 (우선순위 1) =====
 				if (BoostEffectNiagara)
 				{
-					UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAttached(
+					ActiveBoostEffect = UNiagaraFunctionLibrary::SpawnSystemAttached(
 						BoostEffectNiagara,
 						MeshComponent ? MeshComponent : RootComponent,
 						NAME_None,
@@ -123,38 +131,38 @@ void AProjectile::UpdateAcceleration(float DeltaTime)
 						BoostEffectRotationOffset,      // Rotation
 						BoostEffectScale,               // Scale (FVector)
 						EAttachLocation::KeepRelativeOffset,
-						true,                           // bAutoDestroy
-						ENCPoolMethod::AutoRelease,     // PoolingMethod
+						false,                          // bAutoDestroy = false (수동 관리)
+						ENCPoolMethod::None,            // PoolingMethod = None
 						true,                           // bAutoActivate
 						true                            // bPreCullCheck
 					);
 
-					if (NiagaraComp)
+					if (ActiveBoostEffect)
 					{
-						UE_LOG(LogTemp, Warning, TEXT("✓ Boost Niagara Effect Spawned! Offset: %s, Rotation: %s"),
+						/*UE_LOG(LogTemp, Warning, TEXT("✓ Boost Niagara Effect Spawned! Offset: %s, Rotation: %s"),
 							*BoostEffectLocationOffset.ToString(),
-							*BoostEffectRotationOffset.ToString());
+							*BoostEffectRotationOffset.ToString());*/
 					}
 					else
 					{
-						UE_LOG(LogTemp, Error, TEXT("✗ Failed to spawn Boost Niagara Effect!"));
+						//UE_LOG(LogTemp, Error, TEXT("✗ Failed to spawn Boost Niagara Effect!"));
 					}
 				}
 				else
 				{
-					UE_LOG(LogTemp, Warning, TEXT("⚠ No Boost Effect assigned (Neither Niagara nor Cascade)"));
+					//UE_LOG(LogTemp, Warning, TEXT("⚠ No Boost Effect assigned (Neither Niagara nor Cascade)"));
 				}
 
 				// 부스트 사운드 재생
 				if (BoostSound)
 				{
-					UGameplayStatics::PlaySoundAtLocation(this, BoostSound, GetActorLocation());
-					UE_LOG(LogTemp, Warning, TEXT("✓ Boost Sound Played!"));
+					/*UGameplayStatics::PlaySoundAtLocation(this, BoostSound, GetActorLocation());
+					UE_LOG(LogTemp, Warning, TEXT("✓ Boost Sound Played!"));*/
 				}
 
 				if (bShowDebugAcceleration)
 				{
-					UE_LOG(LogTemp, Warning, TEXT("Projectile boost activated! Accelerating from %.2f to %.2f"), CurrentSpeed, BoostSpeed);
+					/*UE_LOG(LogTemp, Warning, TEXT("Projectile boost activated! Accelerating from %.2f to %.2f"), CurrentSpeed, BoostSpeed);*/
 				}
 			}
 
@@ -208,19 +216,6 @@ void AProjectile::UpdateHoming(float DeltaTime)
 	// 지연 시간이 경과했는지 확인
 	if (TimeAlive < HomingDelay)
 	{
-		// 유도 전 대기 시간 디버그 시각화
-		if (bShowDebugHoming)
-		{
-			DrawDebugString(
-				GetWorld(),
-				GetActorLocation() + FVector(0, 0, 80),
-				FString::Printf(TEXT("Homing Wait: %.2fs"), HomingDelay - TimeAlive),
-				nullptr,
-				FColor::Magenta,
-				0.0f,
-				true
-			);
-		}
 		return;
 	}
 
@@ -234,7 +229,7 @@ void AProjectile::UpdateHoming(float DeltaTime)
 			// 커스텀 유도 사용
 			if (bShowDebugHoming)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Projectile homing activated (Custom)!"));
+				//UE_LOG(LogTemp, Warning, TEXT("Projectile homing activated (Custom)!"));
 			}
 		}
 		else
@@ -254,7 +249,7 @@ void AProjectile::UpdateHoming(float DeltaTime)
 
 			if (bShowDebugHoming)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Projectile homing activated (Built-in)!"));
+				//UE_LOG(LogTemp, Warning, TEXT("Projectile homing activated (Built-in)!"));
 			}
 		}
 	}
@@ -310,6 +305,19 @@ void AProjectile::UpdateHoming(float DeltaTime)
 	}
 }
 
+void AProjectile::CleanupBoostEffect()
+{
+	if (ActiveBoostEffect && ActiveBoostEffect->IsValidLowLevel())
+	{
+		// 이펙트 즉시 비활성화 및 파괴
+		ActiveBoostEffect->Deactivate();
+		ActiveBoostEffect->DestroyComponent();
+		ActiveBoostEffect = nullptr;
+
+		//UE_LOG(LogTemp, Log, TEXT("✓ Boost effect cleaned up"));
+	}
+}
+
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
 	// 자신이나 발사한 Actor는 무시
@@ -328,11 +336,14 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 		DrawDebugSphere(GetWorld(), HitLocation, 50.0f, 12, FColor::Red, false, 2.0f, 0, 3.0f);
 		DrawDebugDirectionalArrow(GetWorld(), HitLocation, HitLocation + Hit.ImpactNormal * 100.0f, 25.0f, FColor::Green, false, 2.0f, 0, 3.0f);
 
-		UE_LOG(LogTemp, Warning, TEXT("Projectile hit: %s at location: %s"), *OtherActor->GetName(), *HitLocation.ToString());
+		/*UE_LOG(LogTemp, Warning, TEXT("Projectile hit: %s at location: %s"), *OtherActor->GetName(), *HitLocation.ToString());*/
 	}
 
 	// 데미지 적용
 	UGameplayStatics::ApplyDamage(OtherActor, Damage, GetInstigatorController(), this, UDamageType::StaticClass());
+
+	// 부스트 이펙트 정리 (적중 이펙트 생성 전)
+	CleanupBoostEffect();
 
 	// 적중 이펙트 생성
 	SpawnHitEffect(HitLocation, HitRotation);
@@ -359,7 +370,7 @@ void AProjectile::SpawnHitEffect(const FVector& HitLocation, const FRotator& Hit
 
 		if (PSC)
 		{
-			PSC->bAutoDestroy = true;
+			PSC->bAutoDestroy = false;
 			PSC->SecondsBeforeInactive = 0.0f;
 		}
 	}

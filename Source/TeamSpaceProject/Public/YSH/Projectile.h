@@ -11,6 +11,7 @@ class UStaticMeshComponent;
 class UProjectileMovementComponent;
 class UParticleSystem;
 class UNiagaraSystem;
+class UNiagaraComponent;
 class USoundBase;
 
 UCLASS()
@@ -23,6 +24,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
 	virtual void Tick(float DeltaTime) override;
@@ -138,6 +140,7 @@ private:
 	void SpawnHitEffect(const FVector& HitLocation, const FRotator& HitRotation);
 	void UpdateAcceleration(float DeltaTime);
 	void UpdateHoming(float DeltaTime);
+	void CleanupBoostEffect();
 
 	// 내부 상태 변수
 	float TimeAlive = 0.0f;
@@ -147,4 +150,8 @@ private:
 	// 타겟 참조
 	UPROPERTY()
 	AActor* HomingTarget = nullptr;
+
+	// 부스트 이펙트 컴포넌트 참조
+	UPROPERTY()
+	UNiagaraComponent* ActiveBoostEffect = nullptr;
 };
