@@ -33,6 +33,8 @@ enum class E_INTERACT_TYPE : uint8
 	Idle = 0 UMETA(DisplayName = "Idle"),
 	Seat UMETA(DisplayName = "Seat"),
 	DumpThrow UMETA(DisplayName = "DumpThrow"),
+
+	NONE UMETA(DisplayName = "NONE"),
 };
 
 class CommonEnums
@@ -56,7 +58,9 @@ public:
 		return _enumName;
 	}
 
-	static bool TryGetAmmoType(FString InEnumName, E_AMMO_TYPE& OutAmmoType);
+	static bool TryGetInteractType(FString InEnumName, E_INTERACT_TYPE& OutInteractType);
 
 	static bool TryGetElementType(FString InEnumName, E_ELEMENT_TYPE& OutElementType);
+
+	static bool TryGetAmmoType(FString InEnumName, E_AMMO_TYPE& OutAmmoType);
 };

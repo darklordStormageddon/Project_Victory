@@ -20,8 +20,8 @@ void UUIPanelTurretSeat::NativeOnInitialized()
 
 void UUIPanelTurretSeat::RegisterEvent()
 {
-    _eventHandleOnChangeTurret = GetEventManager()->AddListener<UEventOnChangeTurretState>(
-        [this](UEventOnChangeTurretState* Event)
+    _eventHandleOnChangeTurret = GetEventManager()->AddListener<UEventOnChangeTurretData>(
+        [this](UEventOnChangeTurretData* Event)
         {
             OnChangeTurret(Event);
         }
@@ -32,19 +32,19 @@ void UUIPanelTurretSeat::UnregisterEvent()
 {
 	if (_eventHandleOnChangeTurret.IsValid())
     {
-        GetEventManager()->DelListener<UEventOnChangeTurretState>(_eventHandleOnChangeTurret);
+        GetEventManager()->DelListener<UEventOnChangeTurretData>(_eventHandleOnChangeTurret);
         _eventHandleOnChangeTurret.Reset();
     }
 }
 
-void UUIPanelTurretSeat::OnChangeTurret(UEventOnChangeTurretState* Event)
+void UUIPanelTurretSeat::OnChangeTurret(UEventOnChangeTurretData* Event)
 {
     if (Event == nullptr)
         return;
 
-    FTurretState _turretState = Event->TurretState;
-    FTurretData _turretData = _turretState.TurretData;
-    if (_turretState.TurretPosition == E_TURRET_POSITION::Main)
+    E_TURRET_POSITION _turretPosition = Event->TurretPosition;
+    FTurretData _turretData = Event->TurretData;
+    if (_turretPosition == E_TURRET_POSITION::Main)
     {
         const float _progress = FMath::Clamp(_turretData.Mag.CurrentValue / _turretData.Mag.MaxValue, 0.f, 1.f);
         GetMainTurretMaterial()->SetScalarParameterValue(TEXT("Progress"), _progress);
@@ -61,7 +61,7 @@ void UUIPanelTurretSeat::OnChangeTurret(UEventOnChangeTurretState* Event)
         return;
     
     TObjectPtr<UTexture2D> _texture = _outAmmoData->AmmoImage;
-    if (_turretState.TurretPosition == E_TURRET_POSITION::Left)
+    if (_turretPosition == E_TURRET_POSITION::Left)
     {
         IMG_LeftTurret->SetBrushFromTexture(_texture);
         SetProgressBarUI(_turretData.Mag.CurrentValue, _turretData.Mag.MaxValue, PROG_LeftTurretAmmo, TXT_LeftTurretAmmo, true);

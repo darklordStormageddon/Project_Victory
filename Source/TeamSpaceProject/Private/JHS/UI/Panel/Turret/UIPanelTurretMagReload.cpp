@@ -7,8 +7,8 @@
 
 void UUIPanelTurretMagReload::RegisterEvent()
 {
-    _eventHandleOnChangeTurret = GetEventManager()->AddListener<UEventOnChangeTurretState>(
-        [this](UEventOnChangeTurretState* Event)
+    _eventHandleOnChangeTurret = GetEventManager()->AddListener<UEventOnChangeTurretData>(
+        [this](UEventOnChangeTurretData* Event)
         {
             OnChangeTurret(Event);
         }
@@ -19,21 +19,22 @@ void UUIPanelTurretMagReload::UnregisterEvent()
 {
     if (_eventHandleOnChangeTurret.IsValid())
     {
-        GetEventManager()->DelListener<UEventOnChangeTurretState>(_eventHandleOnChangeTurret);
+        GetEventManager()->DelListener<UEventOnChangeTurretData>(_eventHandleOnChangeTurret);
         _eventHandleOnChangeTurret.Reset();
     }
 }
 
-void UUIPanelTurretMagReload::OnChangeTurret(UEventOnChangeTurretState* Event)
+void UUIPanelTurretMagReload::OnChangeTurret(UEventOnChangeTurretData* Event)
 {
     if (Event == nullptr)
         return;
     
-    FTurretState _turretState = Event->TurretState;
-    if (_turretState.TurretPosition != _turretPosition)
+    E_TURRET_POSITION _eventTurretPosition = Event->TurretPosition;
+    if (_eventTurretPosition != _turretPosition)
         return;
 
-    SetProgressBarUI(_turretState.TurretData.Mag.CurrentValue, _turretState.TurretData.Mag.MaxValue, PROG_TurretMag, TXT_TurretMag, false);
+    FTurretData _turretData = Event->TurretData;
+    SetProgressBarUI(_turretData.Mag.CurrentValue, _turretData.Mag.MaxValue, PROG_TurretMag, TXT_TurretMag, false);
 }
 
 void UUIPanelTurretMagReload::Initialize(E_TURRET_POSITION TurretPosition)

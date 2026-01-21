@@ -9,6 +9,7 @@
 #include "TurretStateGroup.generated.h"
 
 class AJHSGameState;
+class ATurretStand;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UTurretStateGroup : public UActorComponent
@@ -26,10 +27,10 @@ private:
 	TObjectPtr<AJHSGameState> _gameState = nullptr;
 
 	UPROPERTY()
-	TMap<int32, FTurretData> _turretDataMap;
+	TMap<E_TURRET_POSITION, TObjectPtr<ATurretStand>> _turretStandMap;
 
 	UPROPERTY()
-	TMap<E_TURRET_POSITION, FTurretState> _equipTurretMap;
+	TMap<int32, FTurretData> _turretDataMap;
 
 	const int32 CONSUME_AMMO = -1;
 
@@ -59,11 +60,11 @@ private:
 
 	int32 GetTurretKey(bool IsMainTurret, E_AMMO_TYPE AmmoType);
 
-	bool TryGetTurretData(bool IsMainTurret, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData);
+	bool TryGetTurretData(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData);
 
-	bool TryGetEquipedTurret(E_TURRET_POSITION TurretPosition, FTurretState*& OutTurretState);
+	bool TryGetTurretStand(E_TURRET_POSITION TurretPosition, TObjectPtr<ATurretStand>& OutTurretStand);
 
-	void ChangeTurretAmmo(FTurretState* TurretState, int32 ChangeValue);
+	void ChangeTurretAmmo(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, int32 ChangeValue);
 
-	void ExecuteTurretEvent(FTurretState* TurretState);
+	void ExecuteTurretEvent(E_TURRET_POSITION TurretPosition, FTurretData TurretData);
 };

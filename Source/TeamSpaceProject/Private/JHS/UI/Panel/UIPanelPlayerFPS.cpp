@@ -31,9 +31,8 @@ void UUIPanelPlayerFPS::ChangeInteractable(E_INTERACT_TYPE InteractType)
 	}
 	else
 	{
-		//												  /Game/Main/PS_JHS/Resource/Images/Interact/Idle.uasset
-		// C:/Users/jhsro/source/repos/Unreal/TeamSpace/Content/Main/PS_JHS/Resource/Images/Interact/Idle.uasset
-		FString _texturePath = ConstantLibrary::Resource.Image.INTERACT_FOLDER_PATH + CommonEnums::GetEnum2FString(InteractType) + "." + CommonEnums::GetEnum2FString(InteractType);
+		FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_INTERACT_TYPE>(InteractType);
+		FString _texturePath = ConstantLibrary::Resource.Image.INTERACT_FOLDER_PATH + _fileName + "." + _fileName;
 		_texture = LoadObject<UTexture2D>(nullptr, *_texturePath);
 		if (_texture == nullptr)
 		{

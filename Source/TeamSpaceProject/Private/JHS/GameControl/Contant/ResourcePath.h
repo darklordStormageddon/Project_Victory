@@ -112,6 +112,20 @@ public:
 	FString DRIVE_RADER_HEADER;
 };
 
+USTRUCT(BlueprintType)
+struct FResourceTurret
+{
+	GENERATED_BODY()
+
+public:
+	FResourceTurret()
+		: TURRET_BP_FOLDER_PATH(TEXT("/Game/Main/PS_YSH/"))
+	{}
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|Turret")
+	FString TURRET_BP_FOLDER_PATH;
+};
+
 class ResourcePath
 {
 public:
@@ -122,4 +136,5 @@ public:
 	FResourceUI UI;
 	FResourceImage Image;
 	FResourceSpaceObject SpaceObject;
+	FResourceTurret TurretBP;
 };
