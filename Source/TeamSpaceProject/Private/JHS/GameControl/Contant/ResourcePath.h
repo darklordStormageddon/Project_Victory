@@ -119,7 +119,7 @@ struct FResourceTurret
 
 public:
 	FResourceTurret()
-		: TURRET_BP_FOLDER_PATH(TEXT("/Game/Main/PS_YSH/"))
+		: TURRET_BP_FOLDER_PATH(TEXT("/Game/Main/PS_YSH/BP/Turret/"))
 	{}
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Constance|Resource|Turret")
