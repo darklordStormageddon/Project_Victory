@@ -13,19 +13,23 @@
 #include "CJH/Enemy/Manager/GarbageEnemyManagerComponent.h"
 #include "CJH/Enemy/Manager/SpawnedEnemyManagerComponent.h"
 
+#include "KSM/HealthComponent.h"
+
 // Sets default values
 AEnemyBase::AEnemyBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	FireComponent = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("FireComp"));
 	SpaceObjectComp = CreateDefaultSubobject<USpaceObjectComponent>(TEXT("SpaceObjectComponent"));
+	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
 // Called when the game starts or when spawned
 void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
-	_spawnedInfo.Current_HP = _spawnedInfo.Max_HP;
+
+	HealthComp -> OnDeath.AddDynamic(this, &AEnemyBase::EnemyDeath);
 }
 
 // Called every frame
@@ -36,9 +40,6 @@ void AEnemyBase::Tick(float DeltaTime)
 	if(MinusDebug)
 		if (DelayBool)
 			MinusHp();
-
-	if (_spawnedInfo.Current_HP <= 0)
-		EnemyDeath();
 }
 
 void AEnemyBase::MinusHp()
@@ -47,7 +48,7 @@ void AEnemyBase::MinusHp()
 
 	FTimerHandle MinusHandle;
 
-	_spawnedInfo.Current_HP -= 20.f;
+	HealthComp->CurrentHealth -= 20.f;
 
 	GetWorld()->GetTimerManager().SetTimer(MinusHandle, [this]() {DelayBool = true; }, 1.0f, false);
 }
@@ -73,6 +74,8 @@ void AEnemyBase::SetTargetShip(TSubclassOf<AActor> Targetenemy)
 
 void AEnemyBase::EnemyDeath()
 {
+	Murdered = true;
+
 	this -> Destroy();
 }
 
@@ -91,7 +94,7 @@ void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	Super::EndPlay(EndPlayReason);
 
-	if(EnemyGarbage)
+	if(EnemyGarbage && Murdered)
 		GetWorld()->SpawnActor<AActor>(EnemyGarbage, this->GetActorTransform());
 }
 

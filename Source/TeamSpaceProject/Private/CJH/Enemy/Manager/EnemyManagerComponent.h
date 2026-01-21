@@ -39,7 +39,8 @@ protected:
 	float SpawnedValue;
 
 	AEnemyBase* SpawnedEnemy;
-		
+	
+
 protected:
 	// 적 소환 함수
 	void SpawnSetting();
@@ -58,5 +59,6 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	virtual void RemoveEnemies(AEnemyBase* _removeEnemy) {};
-		
+
+	virtual void DeleteAllEnemy();
 };

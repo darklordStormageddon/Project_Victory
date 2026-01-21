@@ -6,14 +6,16 @@
 #include "Components/ActorComponent.h"
 #include "HealthComponent.generated.h"
 
+class USpaceShipStateGroup;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeath);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChanged, float, NewHealth);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChanged, float, Damage);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDamaged, float, Damage);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UHealthComponent : public UActorComponent
 {
 	GENERATED_BODY()
-
 public:	
 	// Sets default values for this component's properties
 	UHealthComponent();
@@ -21,6 +23,7 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
 
 public:	
 	// Called every frame
@@ -36,9 +39,15 @@ public:
 	FOnHealthChanged OnHealthChanged;
 
 	UPROPERTY(BlueprintAssignable)
+	FOnDamaged OnDamaged;
+
+	UPROPERTY(BlueprintAssignable)
 	FOnDeath OnDeath;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void TakeDamage(float Amount);
+
+	void SetCurrentHP(float Max_HP);
+
 };

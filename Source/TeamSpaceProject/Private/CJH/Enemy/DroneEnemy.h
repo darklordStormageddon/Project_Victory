@@ -103,7 +103,7 @@ private:
 	void Move(float DeltaTime);
 	void ChaseMove(float DeltaTime);
 
-	void LookTarget(float DeltaTime);
+	void LookTarget();
 	void GoToTarget(FVector CurrentLoc, FVector TargetLoc, FVector ApproachPoint, float DeltaTime);
 	void EnterOrbit();
 	void OrbitAroundTarget(const FVector& ApproachPoint, float DeltaTime);

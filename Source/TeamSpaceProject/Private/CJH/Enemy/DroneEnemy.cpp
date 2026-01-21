@@ -70,8 +70,10 @@ void ADroneEnemy::Tick(float DeltaTime)
 		// 이동 로직
 		ChaseMove(DeltaTime);
 
+		FTimerHandle LookHandle;
+
 		// 타겟 바라보기
-		LookTarget(DeltaTime);
+		GetWorld()->GetTimerManager().SetTimer(LookHandle, this, &ADroneEnemy::LookTarget, 1.f);
 
 		// 공격 사거리 내면 바로 발사
 		if (DistanceCheck(_spawnedInfo.Attack_Range))
@@ -363,7 +365,7 @@ void ADroneEnemy::OrbitAroundTarget(const FVector& ApproachPoint, float DeltaTim
 	SetActorLocation(ApproachPoint + RotatedOffset, true);
 }
 
-void ADroneEnemy::LookTarget(float DeltaTime)
+void ADroneEnemy::LookTarget()
 {
 	if (!Target) return;
 
@@ -385,7 +387,7 @@ void ADroneEnemy::LookTarget(float DeltaTime)
 	FRotator NewRot = FMath::RInterpTo(
 		CurrentRot,
 		TargetRot,
-		DeltaTime,
+		GetWorld()->GetDeltaSeconds(),
 		2.5f
 	);
 
@@ -430,7 +432,10 @@ void ADroneEnemy::Fire()
 	if (SpawnedBullet)
 	{
 		FVector LaunchDirection = Target->GetActorLocation() - this->GetActorLocation();
+
 		SpawnedBullet->GetTarget(LaunchDirection.GetSafeNormal());
+		SpawnedBullet->SetOwner(this);
+		SpawnedBullet->SetDamage(_spawnedInfo.Attack_Damage);
 	}
 
 	CanFire = false;

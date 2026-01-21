@@ -3,18 +3,37 @@
 
 #include "CJH/Enemy/Weapon/Bullet.h"
 
+#include "KSM/HealthComponent.h"
+
 // Sets default values
 ABullet::ABullet()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
+	RootComponent = Collision;
+
+	Collision->InitSphereRadius(5.f);
+	Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	Collision->SetGenerateOverlapEvents(true);
+
+	// 기본은 전부 무시
+	Collision->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+	// 맞출 대상만 Overlap
+	Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	Collision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
 }
 
 // Called when the game starts or when spawned
 void ABullet::BeginPlay()
 {
 	Super::BeginPlay();
+
+	Collision->OnComponentBeginOverlap.AddDynamic(
+		this,
+		&ABullet::OnBulletOverlap
+	);
 }
 
 // Called every frame
@@ -35,11 +54,22 @@ void ABullet::MoveToTarget(float DeltaTime)
 	SetActorLocation(GetActorLocation() + Direction * Speed * DeltaTime, true);
 }
 
-void ABullet::GetTarget(FVector _TargetDirection)
+void ABullet::OnBulletOverlap(
+	UPrimitiveComponent* OverlappedComp,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult
+)
 {
-	Direction = _TargetDirection;
+	if (!OtherActor || OtherActor == _owner || !_owner)
+		return;
+
+	if (UHealthComponent* Health = OtherActor->FindComponentByClass<UHealthComponent>())
+		Health->TakeDamage(Damage);
+
+	Destroy(); // 맞으면 사라짐
 }
-
-
 
 

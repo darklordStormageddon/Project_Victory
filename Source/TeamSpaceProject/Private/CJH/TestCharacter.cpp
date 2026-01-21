@@ -16,6 +16,7 @@ void ATestCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	GetWorld()->SpawnActor<AActor>(TestSpaceShip, GetActorTransform());
 }
 
 // Called every frame
