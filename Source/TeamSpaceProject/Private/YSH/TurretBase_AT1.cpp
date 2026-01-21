@@ -158,6 +158,33 @@ void ATurretBase_AT1::RotateTowardsTarget(float DeltaTime)
 	PitchPivot->SetRelativeRotation(CurrentPitchRotation);
 }
 
+FRotator ATurretBase_AT1::GetSpreadRotation(const FRotator& BaseRotation) const
+{
+	if (!bEnableSpread || SpreadConeAngle <= 0.0f)
+	{
+		return BaseRotation;
+	}
+
+	// 원뿔 내부의 랜덤 포인트 생성
+	// 1. 랜덤 각도 (0 ~ 360도)
+	float RandomAngle = FMath::FRandRange(0.0f, 360.0f);
+
+	// 2. 원뿔 반경 내의 랜덤 거리 (0 ~ SpreadConeAngle)
+	// 균등 분포를 위해 제곱근 사용
+	float RandomRadius = FMath::Sqrt(FMath::FRand()) * SpreadConeAngle;
+
+	// 3. 극좌표를 직교좌표로 변환하여 Pitch/Yaw 오프셋 계산
+	float OffsetPitch = RandomRadius * FMath::Cos(FMath::DegreesToRadians(RandomAngle));
+	float OffsetYaw = RandomRadius * FMath::Sin(FMath::DegreesToRadians(RandomAngle));
+
+	// 4. 기본 회전에 오프셋 추가
+	FRotator SpreadRotation = BaseRotation;
+	SpreadRotation.Pitch += OffsetPitch;
+	SpreadRotation.Yaw += OffsetYaw;
+
+	return SpreadRotation;
+}
+
 void ATurretBase_AT1::TryAutoFire()
 {
 	UTurretStateGroup* TurretStateGroup = _cachedGameState->GetTurretStateGroup();
@@ -179,11 +206,14 @@ void ATurretBase_AT1::TryAutoFire()
 		FVector MuzzleLocation = MainMuzzle->GetComponentLocation();
 		FRotator MuzzleRotation = MainMuzzle->GetComponentRotation();
 
+		// 스프레드 적용된 발사 각도 계산
+		FRotator FinalRotation = GetSpreadRotation(MuzzleRotation);
+
 		// 이펙트 위치 및 회전 계산
 		FRotator EffectRotation = MuzzleRotation + MuzzleFlashRotationOffset;
 		FVector EffectLocation = MuzzleLocation + MuzzleRotation.RotateVector(MuzzleFlashLocationOffset);
 
-		// 투사체 생성
+		// 투사체 생성 (스프레드가 적용된 회전 사용)
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 		SpawnParams.Instigator = GetInstigator();
@@ -191,29 +221,49 @@ void ATurretBase_AT1::TryAutoFire()
 		AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(
 			ProjectileClass,
 			MuzzleLocation,
-			MuzzleRotation,
+			FinalRotation,  // 스프레드가 적용된 회전 사용
 			SpawnParams
 		);
 
-		// 투사체에 타겟 설정 (추적 기능)
+		// 투사체에 타겟 설정
 		if (Projectile)
 		{
-			// Projectile에 타겟 설정 - HomingTargetComponent 사용
-			UProjectileMovementComponent* ProjectileMovement = Projectile->FindComponentByClass<UProjectileMovementComponent>();
-			if (ProjectileMovement)
-			{
-				ProjectileMovement->bIsHomingProjectile = true;
-				ProjectileMovement->HomingAccelerationMagnitude = 5000.0f; // 추적 가속도
-
-				// 타겟의 루트 컴포넌트를 추적 대상으로 설정
-				USceneComponent* TargetComponent = CurrentTarget->GetRootComponent();
-				if (TargetComponent)
-				{
-					ProjectileMovement->HomingTargetComponent = TargetComponent;
-				}
-			}
+			// 지연 유도를 위해 타겟 설정
+			Projectile->SetHomingTarget(CurrentTarget);
 
 			UE_LOG(LogTemp, Warning, TEXT("ATurretBase_AT1: Projectile fired at target %s"), *CurrentTarget->GetName());
+		}
+
+		// 스프레드 디버그 시각화
+		if (bShowSpreadDebug && bEnableSpread)
+		{
+			// 발사 방향 라인
+			DrawDebugLine(
+				GetWorld(),
+				MuzzleLocation,
+				MuzzleLocation + FinalRotation.Vector() * 1000.0f,
+				FColor::Orange,
+				false,
+				0.5f,
+				0,
+				2.0f
+			);
+
+			// 원뿔 시각화
+			DrawDebugCone(
+				GetWorld(),
+				MuzzleLocation,
+				MuzzleRotation.Vector(),
+				500.0f,
+				FMath::DegreesToRadians(SpreadConeAngle),
+				FMath::DegreesToRadians(SpreadConeAngle),
+				12,
+				FColor::Yellow,
+				false,
+				0.5f,
+				0,
+				1.0f
+			);
 		}
 
 		bIsLeftMuzzleNext = !bIsLeftMuzzleNext;
