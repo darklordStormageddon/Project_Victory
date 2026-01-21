@@ -73,7 +73,7 @@ protected:
 	void UnregisterEvent() override;
 
 public:
-	void OnChangeTurret(UEventOnChangeTurretState* Event);
+	void OnChangeTurret(UEventOnChangeTurretData* Event);
 
 private:
 	TObjectPtr<UMaterialInstanceDynamic> GetMainTurretMaterial();

@@ -35,7 +35,7 @@ protected:
 	void UnregisterEvent() override;
 
 public:
-	void OnChangeTurret(UEventOnChangeTurretState* Event);
+	void OnChangeTurret(UEventOnChangeTurretData* Event);
 
 	void Initialize(E_TURRET_POSITION TurretPosition);
 };

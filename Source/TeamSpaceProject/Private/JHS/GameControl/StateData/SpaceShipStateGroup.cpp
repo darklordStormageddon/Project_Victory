@@ -44,6 +44,8 @@ void USpaceShipStateGroup::InitializeSpaceShipState(TObjectPtr<AJHSGameState> Ga
 	_spaceShipState.Shield.Values = InitSpaceShipState.Shield.Values;
 	_spaceShipState.HP.Values = InitSpaceShipState.HP.Values;
 	_spaceShipState.Fuel.Values = InitSpaceShipState.Fuel.Values;
+
+	RepairSpaceShip();
 }
 
 void USpaceShipStateGroup::UpdateSpaceShipState()

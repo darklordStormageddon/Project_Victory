@@ -117,6 +117,9 @@ struct FTurretData
 
 public:
 	UPROPERTY()
+	FString TurretBPName;
+
+	UPROPERTY()
 	E_AMMO_TYPE AmmoType;
 
 	UPROPERTY()
@@ -124,22 +127,6 @@ public:
 
 	UPROPERTY()
 	float FireInterval = 1.0f;
-};
-
-USTRUCT(BlueprintType)
-struct FTurretState
-{
-	GENERATED_BODY()
-
-public:
-	UPROPERTY()
-	E_TURRET_POSITION TurretPosition;
-
-	UPROPERTY()
-	bool _isEquipped = false;
-
-	UPROPERTY()
-	FTurretData TurretData;
 };
 #pragma endregion Turret
 

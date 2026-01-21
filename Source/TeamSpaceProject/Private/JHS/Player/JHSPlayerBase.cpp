@@ -42,7 +42,6 @@ void AJHSPlayerBase::BeginPlay()
 		return;
 
 	_gameState = _outGameState;
-	_gameState->GetSpaceShipStateGroup()->RepairSpaceShip();
 
 	/*UTurretStateGroup* _turretStateGroup = _gameState->GetTurretStateGroup();
 	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet);

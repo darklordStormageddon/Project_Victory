@@ -66,22 +66,26 @@ public:
 
 #pragma region Turret
 UCLASS(BlueprintType)
-class UEventOnChangeTurretState : public UCommonEventBase
+class UEventOnChangeTurretData : public UCommonEventBase
 {
 	GENERATED_BODY()
 	
 public:
-	UEventOnChangeTurretState(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+	UEventOnChangeTurretData(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
 	{}
 
-	UEventOnChangeTurretState(FTurretState TurretState, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+	UEventOnChangeTurretData(E_TURRET_POSITION TurretPosition, FTurretData TurretData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
-		, TurretState(TurretState)
+		, TurretPosition(TurretPosition)
+		, TurretData(TurretData)
 	{}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|TurretData")
-	FTurretState TurretState;
+	E_TURRET_POSITION TurretPosition;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|TurretData")
+	FTurretData TurretData;
 };
 #pragma endregion Turret
 
