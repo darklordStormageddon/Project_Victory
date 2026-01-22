@@ -38,16 +38,9 @@ void AGarbageEnemyBase::SetInfo()
 	Size = FMath::RandRange(_spawnedInfo.MinSize, _spawnedInfo.MaxSize);
 
 	// 적 크기 구조체에 따라 크기 설정
-	FVector NewScale = FVector(Size, Size, Size);
+	NewScale = FVector(Size, Size, Size);
 
-	SetActorScale3D(NewScale);
-
-	// 적 크기에 비례하여 능력치 증감
-	_spawnedInfo.Max_HP *= Size;
-	_spawnedInfo.Attack_Damage *= Size;
-	_spawnedInfo.Value *= Size;
-
-	HealthComp->SetCurrentHP(_spawnedInfo.Max_HP);
+	Super::SetInfo();
 }
 
 void AGarbageEnemyBase::FollowOrbitTarget(float DeltaTime)

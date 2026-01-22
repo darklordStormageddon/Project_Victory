@@ -47,7 +47,7 @@ protected:
 
 	UFUNCTION()
 	void OnBulletOverlap(
-		UPrimitiveComponent* OverlappedComp,
+		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex,
