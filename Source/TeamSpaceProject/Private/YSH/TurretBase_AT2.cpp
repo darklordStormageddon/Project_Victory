@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "YSH/TurretBase_AT1.h"
+#include "YSH/TurretBase_AT2.h"
 #include "YSH/Projectile.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
@@ -12,8 +12,10 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
-ATurretBase_AT1::ATurretBase_AT1()
+// Sets default values
+ATurretBase_AT2::ATurretBase_AT2()
 {
+	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
@@ -35,7 +37,8 @@ ATurretBase_AT1::ATurretBase_AT1()
 	MainMuzzle->SetupAttachment(BarrelMesh);
 }
 
-void ATurretBase_AT1::BeginPlay()
+// Called when the game starts or when spawned
+void ATurretBase_AT2::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -48,16 +51,17 @@ void ATurretBase_AT1::BeginPlay()
 		// TurretStateGroup의 TryEquipTurret 사용
 		if (_cachedGameState->GetTurretStateGroup())
 		{
-			_cachedGameState->GetTurretStateGroup()->TryEquipTurret(E_TURRET_POSITION::Left, E_AMMO_TYPE::Missile, this);
+			_cachedGameState->GetTurretStateGroup()->TryEquipTurret(E_TURRET_POSITION::Right, E_AMMO_TYPE::Bullet, this);
 		}
 	}
 	else
 	{
-		//UE_LOG(LogTemp, Error, TEXT("ATurretBase_AT1: Failed to get GameState"));
+		//UE_LOG(LogTemp, Error, TEXT("ATurretBase_AT2: Failed to get GameState"));
 	}
 }
 
-void ATurretBase_AT1::Tick(float DeltaTime)
+// Called every frame
+void ATurretBase_AT2::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
@@ -92,7 +96,14 @@ void ATurretBase_AT1::Tick(float DeltaTime)
 	}
 }
 
-void ATurretBase_AT1::FindAndTrackTarget(float DeltaTime)
+// Called to bind functionality to input
+void ATurretBase_AT2::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	// 자동 포탑이므로 입력 바인딩 불필요
+}
+
+void ATurretBase_AT2::FindAndTrackTarget(float DeltaTime)
 {
 	// 현재 타겟이 유효한지 확인 (파괴되었거나 범위를 벗어났는지)
 	if (CurrentTarget)
@@ -134,14 +145,14 @@ void ATurretBase_AT1::FindAndTrackTarget(float DeltaTime)
 
 			if (bShowDebugRange)
 			{
-				//UE_LOG(LogTemp, Warning, TEXT("ATurretBase_AT1: New target acquired: %s (Distance: %.1f)"), 
-				//	*CurrentTarget->GetName(), ClosestDistance);
+				UE_LOG(LogTemp, Warning, TEXT("ATurretBase_AT2: New target acquired: %s (Distance: %.1f)"),
+					*CurrentTarget->GetName(), ClosestDistance);
 			}
 		}
 	}
 }
 
-void ATurretBase_AT1::RotateTowardsTarget(float DeltaTime)
+void ATurretBase_AT2::RotateTowardsTarget(float DeltaTime)
 {
 	if (!CurrentTarget || !YawPivot || !PitchPivot)
 		return;
@@ -176,39 +187,12 @@ void ATurretBase_AT1::RotateTowardsTarget(float DeltaTime)
 	PitchPivot->SetRelativeRotation(CurrentPitchRotation);
 }
 
-FRotator ATurretBase_AT1::GetSpreadRotation(const FRotator& BaseRotation) const
-{
-	if (!bEnableSpread || SpreadConeAngle <= 0.0f)
-	{
-		return BaseRotation;
-	}
-
-	// 원뿔 내부의 랜덤 포인트 생성
-	// 1. 랜덤 각도 (0 ~ 360도)
-	float RandomAngle = FMath::FRandRange(0.0f, 360.0f);
-
-	// 2. 원뿔 반경 내의 랜덤 거리 (0 ~ SpreadConeAngle)
-	// 균등 분포를 위해 제곱근 사용
-	float RandomRadius = FMath::Sqrt(FMath::FRand()) * SpreadConeAngle;
-
-	// 3. 극좌표를 직교좌표로 변환하여 Pitch/Yaw 오프셋 계산
-	float OffsetPitch = RandomRadius * FMath::Cos(FMath::DegreesToRadians(RandomAngle));
-	float OffsetYaw = RandomRadius * FMath::Sin(FMath::DegreesToRadians(RandomAngle));
-
-	// 4. 기본 회전에 오프셋 추가
-	FRotator SpreadRotation = BaseRotation;
-	SpreadRotation.Pitch += OffsetPitch;
-	SpreadRotation.Yaw += OffsetYaw;
-
-	return SpreadRotation;
-}
-
-void ATurretBase_AT1::TryAutoFire()
+void ATurretBase_AT2::TryAutoFire()
 {
 	UTurretStateGroup* TurretStateGroup = _cachedGameState->GetTurretStateGroup();
 	if (!TurretStateGroup)
 	{
-		//UE_LOG(LogTemp, Error, TEXT("ATurretBase_AT1::TryAutoFire - TurretStateGroup is null"));
+		//UE_LOG(LogTemp, Error, TEXT("ATurretBase_AT2::TryAutoFire - TurretStateGroup is null"));
 		return;
 	}
 
@@ -222,16 +206,18 @@ void ATurretBase_AT1::TryAutoFire()
 	if (MainMuzzle && ProjectileClass && CurrentTarget)
 	{
 		FVector MuzzleLocation = MainMuzzle->GetComponentLocation();
+
+		// 타겟 방향으로 발사 각도 계산
+		FVector TargetLocation = CurrentTarget->GetActorLocation();
+		FVector Direction = (TargetLocation - MuzzleLocation).GetSafeNormal();
+		FRotator FireRotation = Direction.Rotation();
+
+		// 이펙트는 머즐 기준 회전 사용
 		FRotator MuzzleRotation = MainMuzzle->GetComponentRotation();
-
-		// 스프레드 적용된 발사 각도 계산
-		FRotator FinalRotation = GetSpreadRotation(MuzzleRotation);
-
-		// 이펙트 위치 및 회전 계산
 		FRotator EffectRotation = MuzzleRotation + MuzzleFlashRotationOffset;
 		FVector EffectLocation = MuzzleLocation + MuzzleRotation.RotateVector(MuzzleFlashLocationOffset);
 
-		// 투사체 생성 (스프레드가 적용된 회전 사용)
+		// 투사체 생성 - 타겟 방향으로 발사
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 		SpawnParams.Instigator = GetInstigator();
@@ -239,50 +225,11 @@ void ATurretBase_AT1::TryAutoFire()
 		AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(
 			ProjectileClass,
 			MuzzleLocation,
-			FinalRotation,  // 스프레드가 적용된 회전 사용
+			FireRotation,  // 타겟 방향으로 발사!
 			SpawnParams
 		);
 
-		// 투사체에 타겟 설정
-		if (Projectile)
-		{
-			// 지연 유도를 위해 타겟 설정
-			Projectile->SetHomingTarget(CurrentTarget);
-
-			//UE_LOG(LogTemp, Warning, TEXT("ATurretBase_AT1: Projectile fired at target %s"), *CurrentTarget->GetName());
-		}
-
-		// 스프레드 디버그 시각화
-		if (bShowSpreadDebug && bEnableSpread)
-		{
-			// 발사 방향 라인
-			DrawDebugLine(
-				GetWorld(),
-				MuzzleLocation,
-				MuzzleLocation + FinalRotation.Vector() * 1000.0f,
-				FColor::Orange,
-				false,
-				0.5f,
-				0,
-				2.0f
-			);
-
-			// 원뿔 시각화
-			DrawDebugCone(
-				GetWorld(),
-				MuzzleLocation,
-				MuzzleRotation.Vector(),
-				500.0f,
-				FMath::DegreesToRadians(SpreadConeAngle),
-				FMath::DegreesToRadians(SpreadConeAngle),
-				12,
-				FColor::Yellow,
-				false,
-				0.5f,
-				0,
-				1.0f
-			);
-		}
+		
 
 		bIsLeftMuzzleNext = !bIsLeftMuzzleNext;
 
@@ -325,7 +272,7 @@ void ATurretBase_AT1::TryAutoFire()
 	}
 }
 
-bool ATurretBase_AT1::IsTargetInRange() const
+bool ATurretBase_AT2::IsTargetInRange() const
 {
 	// 타겟이 null이거나 유효하지 않으면 false
 	if (!CurrentTarget || !IsValid(CurrentTarget) || CurrentTarget->IsPendingKillPending())
@@ -335,7 +282,7 @@ bool ATurretBase_AT1::IsTargetInRange() const
 	return Distance <= DetectionRange;
 }
 
-bool ATurretBase_AT1::IsTargetInLineOfSight() const
+bool ATurretBase_AT2::IsTargetInLineOfSight() const
 {
 	// 타겟이 null이거나 유효하지 않으면 false
 	if (!CurrentTarget || !IsValid(CurrentTarget) || CurrentTarget->IsPendingKillPending())
@@ -353,7 +300,7 @@ bool ATurretBase_AT1::IsTargetInLineOfSight() const
 	return !HitResult.bBlockingHit || HitResult.GetActor() == CurrentTarget;
 }
 
-void ATurretBase_AT1::DrawDebugVisualization()
+void ATurretBase_AT2::DrawDebugVisualization()
 {
 	if (!bShowDebugRange)
 		return;
@@ -436,23 +383,12 @@ void ATurretBase_AT1::DrawDebugVisualization()
 	}
 }
 
-void ATurretBase_AT1::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	// 자동 포탑이므로 입력 바인딩 불필요
-}
-
-void ATurretBase_AT1::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	Super::EndPlay(EndPlayReason);
-}
-
-void ATurretBase_AT1::AddYawInput(float YawInputDegPerSec, float DeltaTime)
+void ATurretBase_AT2::AddYawInput(float YawInputDegPerSec, float DeltaTime)
 {
 	// 필요시 외부 제어용
 }
 
-void ATurretBase_AT1::AddPitchInput(float PitchInputDegPerSec, float DeltaTime)
+void ATurretBase_AT2::AddPitchInput(float PitchInputDegPerSec, float DeltaTime)
 {
 	// 필요시 외부 제어용
 }
