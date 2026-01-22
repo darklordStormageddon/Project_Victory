@@ -28,6 +28,8 @@ struct FEnemyInfo
 
 	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	float Max_HP;
+
+	UPROPERTY()
 	float Current_HP;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Fire")
@@ -54,6 +56,8 @@ class AEnemyBase : public AActor
 {
 	GENERATED_BODY()
 protected:
+	FVector NewScale;
+
 	UPROPERTY(EditDefaultsOnly, Category = "SpaceObject")
 	USpaceObjectComponent* SpaceObjectComp;
 
@@ -99,9 +103,9 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	bool DistanceCheck(float _condition);
+	virtual void SetInfo();
 
-	void SetInfo();
+	bool DistanceCheck(float _condition);
 
 	UFUNCTION()
 	void EnemyDeath();

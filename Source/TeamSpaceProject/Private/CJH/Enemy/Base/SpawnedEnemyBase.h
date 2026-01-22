@@ -17,5 +17,5 @@ class ASpawnedEnemyBase : public AEnemyBase
 protected:
 	virtual void BeginPlay() override;
 
-	void SetInfo();
+	virtual void SetInfo() override;
 };

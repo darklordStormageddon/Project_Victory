@@ -33,7 +33,7 @@ protected:
 
 	virtual void BeginPlay() override;
 
-	void SetInfo();
+	virtual void SetInfo() override;
 
 public:
 	// 외부에서 호출: 컴포넌트가 계산한 월드 좌표 목표를 설정

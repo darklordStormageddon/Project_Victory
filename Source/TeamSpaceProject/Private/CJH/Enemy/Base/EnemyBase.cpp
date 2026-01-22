@@ -32,6 +32,18 @@ void AEnemyBase::BeginPlay()
 	HealthComp -> OnDeath.AddDynamic(this, &AEnemyBase::EnemyDeath);
 }
 
+void AEnemyBase::SetInfo()
+{
+	// 적 크기에 비례하여 능력치 증감
+	SetActorScale3D(this->NewScale);
+
+	_spawnedInfo.Max_HP *= this->Size;
+	_spawnedInfo.Attack_Damage *= this->Size;
+	_spawnedInfo.Value *= this->Size;
+
+	HealthComp->SetCurrentHP(_spawnedInfo.Max_HP);
+}
+
 // Called every frame
 void AEnemyBase::Tick(float DeltaTime)
 {

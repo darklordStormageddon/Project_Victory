@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "CJH/Enemy/Weapon/Bullet.h"
@@ -14,15 +14,15 @@ ABullet::ABullet()
 	RootComponent = Collision;
 
 	Collision->InitSphereRadius(5.f);
-	Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	Collision->SetGenerateOverlapEvents(true);
 
-	// ±âº»Àº ÀüºÎ ¹«½Ã
+	Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	Collision->SetCollisionResponseToAllChannels(ECR_Ignore);
 
-	// ¸ÂÃâ ´ë»ó¸¸ Overlap
 	Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	Collision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
+
+	// â­ í•µì‹¬
+	Collision->SetNotifyRigidBodyCollision(true);
 }
 
 // Called when the game starts or when spawned
@@ -55,7 +55,7 @@ void ABullet::MoveToTarget(float DeltaTime)
 }
 
 void ABullet::OnBulletOverlap(
-	UPrimitiveComponent* OverlappedComp,
+	UPrimitiveComponent* OverlappedComponent,
 	AActor* OtherActor,
 	UPrimitiveComponent* OtherComp,
 	int32 OtherBodyIndex,
@@ -79,7 +79,7 @@ void ABullet::OnBulletOverlap(
 	if (UHealthComponent* Health = OtherActor->FindComponentByClass<UHealthComponent>())
 		Health->TakeDamage(Damage);
 
-	Destroy(); // ¸ÂÀ¸¸é »ç¶óÁü
+	Destroy(); // ë§ìœ¼ë©´ ì‚¬ë¼ì§
 }
 
 
