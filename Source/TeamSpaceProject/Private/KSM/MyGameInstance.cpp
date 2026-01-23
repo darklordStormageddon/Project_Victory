@@ -172,6 +172,8 @@ void UMyGameInstance::OnCreateSessionComplete(FName InSessionName, bool IsSucces
 	UWorld* World = GetWorld();
 	if (!World) return;
 
+	PrintPublicConnectionNum();
+
 	//·¹º§(¸Ê)
 	World->ServerTravel("/Game/Import/Maps/Lobby?listen");
 }
