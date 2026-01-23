@@ -8,13 +8,13 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-
+#include "Net/UnrealNetwork.h"
+#include "Camera/CameraTypes.h" 
 
 APSJ_Character::APSJ_Character()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
-	PrimaryActorTick.TickGroup = TG_PostPhysics;
+	PrimaryActorTick.TickGroup = TG_PostUpdateWork;
 }
 
 void APSJ_Character::BeginPlay()
@@ -26,101 +26,223 @@ void APSJ_Character::BeginPlay()
 	bUseControllerRotationRoll = false;
 
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-	GetCharacterMovement()->BrakingDecelerationFlying = FlyModeBrakingDeceleration;
 	GetCharacterMovement()->MaxFlySpeed = FlyModeMaxSpeed;
-	GetCharacterMovement()->bImpartBaseVelocityX = false;
-	GetCharacterMovement()->bImpartBaseVelocityY = false;
-	GetCharacterMovement()->bImpartBaseVelocityZ = false;
-	GetCharacterMovement()->bImpartBaseAngularVelocity = false;
 
 	FPSCamera = FindComponentByClass<UCameraComponent>();
-	if (!FPSCamera)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Warning: No Camera Component found on Character BP!"));
-	}
-
 	if (GetMesh())
 	{
 		DefaultMeshZ = GetMesh()->GetRelativeLocation().Z;
 	}
+	// [추가] 시작하자마자 앵커링 데이터가 있다면 즉시 적용 (딜레이 방지)
+	// 레벨 로딩 직후나 스폰 직후의 미끄러짐 방지
+	if (ReplicatedRelativeData.BaseActor)
+	{
+		AttachToActor(ReplicatedRelativeData.BaseActor, FAttachmentTransformRules::KeepWorldTransform);
+		GetCharacterMovement()->DisableMovement();
+		GetCharacterMovement()->SetMovementMode(MOVE_Custom);
+		SetReplicateMovement(false); // 즉시 끄기
+	}
+}
 
+void APSJ_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(APSJ_Character, ReplicatedRelativeData);
+}
+
+// [핵심] 하차 후 이동 불가 해결을 위한 상태 초기화
+// 빙의(Possess)되는 순간 모든 이동 제한을 풀고 초기화합니다.
+void APSJ_Character::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// 만약 이미 우주선에 잘 붙어있는 상태라면? -> 리셋 금지! 유지!
+	if (ReplicatedRelativeData.BaseActor && ReplicatedRelativeData.bIsAnchored)
+	{
+		// 안전장치: 확실하게 상태만 다시 강제 (떼지는 않음)
+		AttachToActor(ReplicatedRelativeData.BaseActor, FAttachmentTransformRules::KeepWorldTransform);
+		GetCharacterMovement()->DisableMovement();
+		GetCharacterMovement()->SetMovementMode(MOVE_Custom);
+		SetReplicateMovement(false); // 엔진 간섭 차단 유지
+
+		// 입력값만 초기화
+		CurrentInputVector = FVector2D::ZeroVector;
+	}
+	else
+	{
+		// 붙어있는 게 없다면 그때 초기화 (기존 로직)
+		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		GetCharacterMovement()->Velocity = FVector::ZeroVector;
+		SetReplicateMovement(true);
+
+		ReplicatedRelativeData.BaseActor = nullptr;
+		ReplicatedRelativeData.bIsAnchored = false;
+		CurrentInputVector = FVector2D::ZeroVector;
+	}
 }
 
 void APSJ_Character::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	UpdateMagBoots(DeltaTime);
-}
 
-void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	// 조종 중인지 확인 (조종 중이면 캐릭터 로직 정지)
+	if (Controller && IsLocallyControlled())
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		if (CurrentSpaceship)
 		{
-			Subsystem->ClearAllMappings();
-			if (DefaultMappingContext)
-			{
-				Subsystem->AddMappingContext(DefaultMappingContext, 0);
-			}
+			// PossessedBy가 정상 작동했다면 여기 로직은 사실상 패스됨
 		}
 	}
 
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	// 1. 앵커링(부착) 관리
+	AActor* ParentActor = GetAttachParentActor();
+	bool bShouldBeAttached = (ReplicatedRelativeData.BaseActor != nullptr);
+
+	// [상태 전환: 부착 시작]
+	if (bShouldBeAttached && ParentActor != ReplicatedRelativeData.BaseActor)
 	{
-		if (MoveAction)
-			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APSJ_Character::Move);
+		AttachToActor(ReplicatedRelativeData.BaseActor, FAttachmentTransformRules::KeepWorldTransform);
+		GetCharacterMovement()->DisableMovement();
+		GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 
-		if (LookAction)
-			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APSJ_Character::Look);
-
-		if (InteractAction)
-			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APSJ_Character::Interact);
+		// [미끄러짐 해결 핵심] 엔진의 위치 동기화를 끕니다.
+		// 우주선과 함께 움직이는 건 Attach가 담당하고,
+		// 내부 이동 동기화는 우리가 만든 ReplicatedRelativeData가 담당합니다.
+		SetReplicateMovement(false);
 	}
-}
-
-void APSJ_Character::SetCurrentSpaceship(APawn* NewSpaceship)
-{
-	CurrentSpaceship = NewSpaceship;
-}
-
-void APSJ_Character::Interact(const FInputActionValue& Value)
-{
-	if (CurrentSpaceship && Controller)
+	// [상태 전환: 부착 해제]
+	else if (!bShouldBeAttached && ParentActor)
 	{
-		if (APlayerController* PC = Cast<APlayerController>(Controller))
+		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		GetCharacterMovement()->Velocity = FVector::ZeroVector;
+
+		// 우주선 밖에서는 엔진의 기본 동기화를 사용
+		SetReplicateMovement(true);
+	}
+
+	// 2. 이동 로직
+	if (GetAttachParentActor())
+	{
+		// [A] 내가 조종하는 캐릭터 (Autonomous + Server Host)
+		if (IsLocallyControlled())
 		{
-			if (APSJ_Spaceship* TargetShip = Cast<APSJ_Spaceship>(CurrentSpaceship))
+			if (!CurrentInputVector.IsNearlyZero())
 			{
-				TargetShip->SetPilot(this);
+				FVector LocalDir = FVector(CurrentInputVector.Y, CurrentInputVector.X, 0.0f);
+				FVector DesiredMove = LocalDir * FlyModeMaxSpeed * DeltaTime;
 
-				SetActorEnableCollision(false);
+				FHitResult Hit;
+				AddActorLocalOffset(DesiredMove, true, &Hit);
 
-				// SetActorHiddenInGame(true); 
+				if (Hit.IsValidBlockingHit())
+				{
+					// [계단/경사면 오르기]
+					FVector RealStepUp = GetActorUpVector() * 45.0f;
+					FVector SavedLocation = GetActorLocation();
 
-				AttachToActor(TargetShip, FAttachmentTransformRules::KeepWorldTransform);
+					FHitResult StepHit;
+					AddActorWorldOffset(RealStepUp, true, &StepHit); // 들어올리기
 
-				PC->Possess(TargetShip);
-
-				UE_LOG(LogTemp, Warning, TEXT("=== SUCCESS: Boarded Spaceship ==="));
+					if (!StepHit.bBlockingHit)
+					{
+						AddActorLocalOffset(DesiredMove, true, &StepHit); // 전진
+						if (!StepHit.bBlockingHit)
+						{
+							AddActorWorldOffset(-RealStepUp, true, &StepHit); // 내리기
+						}
+						else
+						{
+							SetActorLocation(SavedLocation);
+							FVector SlideVector = FVector::VectorPlaneProject(DesiredMove, Hit.Normal);
+							AddActorLocalOffset(SlideVector, true);
+						}
+					}
+					else
+					{
+						SetActorLocation(SavedLocation);
+						FVector SlideVector = FVector::VectorPlaneProject(DesiredMove, Hit.Normal);
+						AddActorLocalOffset(SlideVector, true);
+					}
+				}
 			}
+
+			// 가짜 속도 주입 (애니메이션용)
+			if (DeltaTime > 0.0f)
+			{
+				FVector TargetVel = CurrentInputVector.IsNearlyZero() ? FVector::ZeroVector : (GetActorForwardVector() * CurrentInputVector.Y + GetActorRightVector() * CurrentInputVector.X) * FlyModeMaxSpeed;
+				GetCharacterMovement()->Velocity = TargetVel;
+			}
+
+			UpdateMagBoots(DeltaTime);
+
+			// [중요] 위치 업데이트 (RPC + 로컬 변수)
+			if (!HasAuthority())
+			{
+				Server_UpdateRelativeTransform(GetRootComponent()->GetRelativeLocation(), GetRootComponent()->GetRelativeRotation());
+			}
+			else
+			{
+				// 서버장인 경우 직접 갱신
+				ReplicatedRelativeData.RelativeLocation = GetRootComponent()->GetRelativeLocation();
+				ReplicatedRelativeData.RelativeRotation = GetRootComponent()->GetRelativeRotation();
+			}
+		}
+		// [B] 남의 캐릭터 (Simulated Proxy)
+		else
+		{
+			// 남의 캐릭터는 서버가 준 좌표로 '즉시' 이동 (보간 제거로 렉 방지)
+			SetActorRelativeLocation(ReplicatedRelativeData.RelativeLocation);
+			SetActorRelativeRotation(ReplicatedRelativeData.RelativeRotation);
+
+			// 필요하다면 여기서 애니메이션용 Velocity 계산 추가 가능
+		}
+	}
+	else
+	{
+		// 부착되지 않았을 때 (공중/우주선 밖)
+		UpdateMagBoots(DeltaTime);
+
+		// 비행 모드 이동
+		if (IsLocallyControlled() && !CurrentInputVector.IsNearlyZero())
+		{
+			FVector WorldDir = GetActorForwardVector() * CurrentInputVector.Y + GetActorRightVector() * CurrentInputVector.X;
+			AddMovementInput(WorldDir);
 		}
 	}
 }
 
 void APSJ_Character::UpdateMagBoots(float DeltaTime)
 {
+	// [중요] 남의 캐릭터는 물리 보정을 하지 않음 (주인이 보낸 위치를 100% 신뢰)
+	// 이것이 미세 떨림과 이중 보정을 막는 핵심입니다.
+	if (!IsLocallyControlled() && GetAttachParentActor())
+	{
+		return;
+	}
 
 	FHitResult FinalHit;
 	bool bFoundValidHit = false;
 	FVector Start = GetActorLocation();
-	FVector End = Start + (-GetActorUpVector() * CheckDistance);
+
+	FVector TraceDir = -GetActorUpVector();
+	if (GetAttachParentActor())
+	{
+		TraceDir = -GetAttachParentActor()->GetActorUpVector();
+	}
+	else if (CurrentSpaceship)
+	{
+		TraceDir = -CurrentSpaceship->GetActorUpVector();
+	}
+
+	FVector End = Start + (TraceDir * CheckDistance);
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
+
 	TArray<FHitResult> HitResults;
-	FCollisionShape SphereShape = FCollisionShape::MakeSphere(MagBootsTraceRadius);
+	FCollisionShape SphereShape = FCollisionShape::MakeSphere(MagBootsTraceRadius * 0.8f);
+
 	bool bHit = GetWorld()->SweepMultiByChannel(HitResults, Start, End, FQuat::Identity, ECC_GameTraceChannel5, SphereShape, Params);
 
 	if (bHit)
@@ -140,134 +262,173 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 			bFoundValidHit = true;
 		}
 	}
-	bIsMagBootsActive = bFoundValidHit;
-	LastFloorActor = bFoundValidHit ? FinalHit.GetActor() : nullptr;
 
-	if (bFoundValidHit)
+	AActor* NewFloorActor = bFoundValidHit ? FinalHit.GetActor() : nullptr;
+
+	// [서버 로직]
+	if (HasAuthority())
 	{
-		UCharacterMovementComponent* CMC = GetCharacterMovement();
-		UPrimitiveComponent* FloorComp = FinalHit.GetComponent();
-
-		if (FloorComp && CMC->GetMovementBase() != FloorComp)
+		bool bUpdateData = IsLocallyControlled();
+		if (!bUpdateData && bFoundValidHit && NewFloorActor)
 		{
-			CMC->SetBase(FloorComp, FinalHit.BoneName);
+			bUpdateData = true;
 		}
 
-		CurrentFloorNormal = FinalHit.ImpactNormal;
-		float HoverOffset = 0.0f;
-		FVector TargetUp = FinalHit.ImpactNormal;
-		bool bIsStairs = false;
-		if (FinalHit.Component.IsValid() && FinalHit.Component->ComponentTags.Contains("Stairs"))
+		if (bUpdateData)
 		{
-			bIsStairs = true;
-			HoverOffset = 15.0f;
-			if (AActor* Ship = FinalHit.GetActor())
+			if (bFoundValidHit && NewFloorActor)
 			{
-				TargetUp = Ship->GetActorUpVector();
+				if (ReplicatedRelativeData.BaseActor != NewFloorActor)
+				{
+					ReplicatedRelativeData.BaseActor = NewFloorActor;
+					ReplicatedRelativeData.bIsAnchored = true;
+				}
+			}
+			else
+			{
+				if (IsLocallyControlled())
+				{
+					ReplicatedRelativeData.BaseActor = nullptr;
+					ReplicatedRelativeData.bIsAnchored = false;
+				}
 			}
 		}
-		FVector CurrentUp = GetActorUpVector();
-		FQuat CurrentRot = GetActorQuat();
-		FQuat DeltaRot = FQuat::FindBetweenNormals(CurrentUp, TargetUp);
-		FQuat TargetRot = DeltaRot * CurrentRot;
-		FQuat NewRot = FMath::QInterpTo(CurrentRot, TargetRot, DeltaTime, AlignSpeed);
-		SetActorRotation(NewRot);
-		float TargetHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-		if (bIsStairs)
+	}
+
+	// [높이 보정]
+	if (bFoundValidHit && NewFloorActor)
+	{
+		LastFloorActor = NewFloorActor;
+		CurrentFloorNormal = NewFloorActor->GetActorUpVector();
+
+		if (GetAttachParentActor())
 		{
-			TargetHeight += 15.0f;
-		}
-		float ActualDistanceToFloor = FinalHit.Distance + MagBootsTraceRadius;
-		float Error = TargetHeight - ActualDistanceToFloor;
-		float VerticalVelocity = FVector::DotProduct(GetVelocity(), TargetUp);
-		float SpringForce = Error * SpringStiffness;
-		float DampingForce = VerticalVelocity * SpringDamping;
-		FVector SuspensionAccel = TargetUp * (SpringForce - DampingForce);
-		GetCharacterMovement()->Velocity += SuspensionAccel * DeltaTime;
-		if (GetMesh())
-		{
-			FVector CurrentRelLoc = GetMesh()->GetRelativeLocation();
-			float TargetMeshZ = DefaultMeshZ - HoverOffset;
-			float NewMeshZ = FMath::FInterpTo(CurrentRelLoc.Z, TargetMeshZ, DeltaTime, 15.0f);
-			GetMesh()->SetRelativeLocation(FVector(CurrentRelLoc.X, CurrentRelLoc.Y, NewMeshZ));
+			float TargetHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+			float ActualDistance = FVector::DotProduct(FinalHit.ImpactPoint - GetActorLocation(), TraceDir);
+			if (ActualDistance <= 0.0f) ActualDistance = FinalHit.Distance + MagBootsTraceRadius;
+
+			float HeightError = ActualDistance - TargetHeight;
+
+			// 떨림 방지 (오차 1.0f)
+			if (FMath::Abs(HeightError) > 1.0f)
+			{
+				float InterpSpeed = (HeightError > 0) ? 20.0f : 50.0f;
+				float MoveZ = FMath::FInterpTo(0.0f, -HeightError, DeltaTime, InterpSpeed);
+				AddActorWorldOffset(TraceDir * -MoveZ, false);
+			}
+
+			FRotator CurrentRelRot = GetRootComponent()->GetRelativeRotation();
+			FRotator TargetRelRot = FRotator(0.0f, CurrentRelRot.Yaw, 0.0f);
+			SetActorRelativeRotation(FMath::RInterpTo(CurrentRelRot, TargetRelRot, DeltaTime, AlignSpeed));
 		}
 	}
-	else
+}
+
+void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
-		if (GetCharacterMovement())
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
-			GetCharacterMovement()->SetBase(nullptr);
+			Subsystem->ClearAllMappings();
+			if (DefaultMappingContext) Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
-		if (GetMesh())
-		{
-			FVector CurrentRelLoc = GetMesh()->GetRelativeLocation();
-			float NewMeshZ = FMath::FInterpTo(CurrentRelLoc.Z, DefaultMeshZ, DeltaTime, 10.0f);
-			GetMesh()->SetRelativeLocation(FVector(CurrentRelLoc.X, CurrentRelLoc.Y, NewMeshZ));
-		}
-		bIsMagBootsActive = false;
-		LastFloorActor = nullptr;
 	}
-	if (bIsMagBootsActive && GetCharacterMovement())
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		// 플레이어의 이동 입력(WASD)이 거의 없는지 확인 (멈춰있는 상태)
-		FVector InputVector = GetCharacterMovement()->GetLastInputVector();
-
-		if (InputVector.IsNearlyZero(0.01f))
+		if (MoveAction)
 		{
-			FVector CurrentVel = GetCharacterMovement()->Velocity;
+			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APSJ_Character::Move);
+			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &APSJ_Character::StopMove);
+		}
+		if (LookAction) EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APSJ_Character::Look);
+		if (InteractAction) EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APSJ_Character::Interact);
+	}
+}
 
-			// 바닥(Normal) 방향의 속도 성분만 추출 (튀어오르는 힘은 유지하고 미끄러짐만 제거)
-			FVector VerticalVel = CurrentFloorNormal * FVector::DotProduct(CurrentVel, CurrentFloorNormal);
+void APSJ_Character::SetCurrentSpaceship(APawn* NewSpaceship)
+{
+	CurrentSpaceship = NewSpaceship;
+}
 
-			// 캐릭터의 속도를 수직 성분으로만 강제 설정
-			GetCharacterMovement()->Velocity = VerticalVel;
+void APSJ_Character::Interact(const FInputActionValue& Value)
+{
+	if (CurrentSpaceship && Controller)
+	{
+		if (APlayerController* PC = Cast<APlayerController>(Controller))
+		{
+			if (APSJ_Spaceship* TargetShip = Cast<APSJ_Spaceship>(CurrentSpaceship))
+			{
+				TargetShip->SetPilot(this);
+
+				if (HasAuthority())
+				{
+					ReplicatedRelativeData.bIsAnchored = false;
+					ReplicatedRelativeData.BaseActor = nullptr;
+				}
+
+				GetCharacterMovement()->DisableMovement();
+				DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+				PC->Possess(TargetShip);
+			}
 		}
 	}
 }
 
 void APSJ_Character::Move(const FInputActionValue& Value)
 {
-	FVector2D MovementVector = Value.Get<FVector2D>();
-	if (Controller != nullptr && FPSCamera != nullptr)
-	{
-		FVector UpVector = GetActorUpVector();
-		FVector CameraForward = FPSCamera->GetForwardVector();
-		FVector RightVector = FVector::CrossProduct(UpVector, CameraForward);
-		if (RightVector.IsNearlyZero())
-		{
-			RightVector = FVector::CrossProduct(UpVector, GetActorForwardVector());
-		}
-		RightVector.Normalize();
-		FVector ForwardVector = FVector::CrossProduct(RightVector, UpVector);
-		ForwardVector.Normalize();
-		if (bIsMagBootsActive)
-		{
-			ForwardVector = FVector::VectorPlaneProject(ForwardVector, CurrentFloorNormal);
-			ForwardVector.Normalize();
-			RightVector = FVector::VectorPlaneProject(RightVector, CurrentFloorNormal);
-			RightVector.Normalize();
-		}
-		FVector StartLine = GetActorLocation();
-		DrawDebugDirectionalArrow(GetWorld(), StartLine, StartLine + (CameraForward * 150.0f), 50.0f, FColor::Blue, false, -1.0f, 0, 5.0f);
-		DrawDebugDirectionalArrow(GetWorld(), StartLine, StartLine + (ForwardVector * 150.0f), 50.0f, FColor::Green, false, -1.0f, 0, 5.0f);
-		DrawDebugDirectionalArrow(GetWorld(), StartLine, StartLine + (UpVector * 100.0f), 30.0f, FColor::Yellow, false, -1.0f, 0, 3.0f);
-		AddMovementInput(ForwardVector, MovementVector.Y);
-		AddMovementInput(RightVector, MovementVector.X);
-	}
+	CurrentInputVector = Value.Get<FVector2D>();
+}
+
+void APSJ_Character::StopMove(const FInputActionValue& Value)
+{
+	CurrentInputVector = FVector2D::ZeroVector;
 }
 
 void APSJ_Character::Look(const FInputActionValue& Value)
 {
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
+
 	if (LookAxisVector.X != 0.0f)
 	{
 		AddActorLocalRotation(FRotator(0.0f, LookAxisVector.X, 0.0f));
 	}
+
 	if (FPSCamera && LookAxisVector.Y != 0.0f)
 	{
 		FRotator CurrentCamRot = FPSCamera->GetRelativeRotation();
 		float NewPitch = CurrentCamRot.Pitch + (LookAxisVector.Y * -1.0f);
 		NewPitch = FMath::Clamp(NewPitch, -80.0f, 80.0f);
 		FPSCamera->SetRelativeRotation(FRotator(NewPitch, 0.0f, 0.0f));
+	}
+}
+
+bool APSJ_Character::Server_UpdateRelativeTransform_Validate(FVector NewRelLoc, FRotator NewRelRot)
+{
+	return true;
+}
+
+void APSJ_Character::Server_UpdateRelativeTransform_Implementation(FVector NewRelLoc, FRotator NewRelRot)
+{
+	ReplicatedRelativeData.RelativeLocation = NewRelLoc;
+	ReplicatedRelativeData.RelativeRotation = NewRelRot;
+
+	if (ReplicatedRelativeData.BaseActor && GetAttachParentActor() == ReplicatedRelativeData.BaseActor)
+	{
+		SetActorRelativeLocation(NewRelLoc);
+		SetActorRelativeRotation(NewRelRot);
+	}
+}
+
+void APSJ_Character::CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult)
+{
+	Super::CalcCamera(DeltaTime, OutResult);
+	if (FPSCamera)
+	{
+		OutResult.Location = FPSCamera->GetComponentLocation();
+		OutResult.Rotation = FPSCamera->GetComponentRotation();
 	}
 }
