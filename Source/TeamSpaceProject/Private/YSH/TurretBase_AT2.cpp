@@ -108,12 +108,18 @@ bool ATurretBase_AT2::IsTargetInHemisphere(AActor* Target) const
 	if (!Target || !bUseHemisphericalDetection)
 		return true;
 
-	float TurretHeight = GetActorLocation().Z;
-	float TargetHeight = Target->GetActorLocation().Z;
-	float HeightDifference = TargetHeight - TurretHeight;
+	FVector TurretLocation = GetActorLocation();
+	FVector TargetLocation = Target->GetActorLocation();
+	FVector ToTarget = TargetLocation - TurretLocation;
 
-	// 타겟이 터렛보다 MinimumTargetHeightOffset 이상 아래에 있으면 감지하지 않음
-	return HeightDifference >= MinimumTargetHeightOffset;
+	// 터렛의 로컬 Up 벡터 (회전 적용)
+	FVector TurretUpVector = GetActorUpVector();
+
+	float DotProduct = FVector::DotProduct(ToTarget.GetSafeNormal(), TurretUpVector);
+
+	float AngleThreshold = FMath::Sin(FMath::DegreesToRadians(MinimumTargetHeightOffset));
+
+	return DotProduct >= AngleThreshold;
 }
 
 void ATurretBase_AT2::FindAndTrackTarget(float DeltaTime)
@@ -337,16 +343,20 @@ void ATurretBase_AT2::DrawDebugVisualization()
 		return;
 
 	FVector TurretLocation = GetActorLocation();
-
-	// 1. 반구형 감지 범위 시각화
 	FColor RangeColor = CurrentTarget ? DebugTargetFoundColor : DebugRangeColor;
 
 	if (bUseHemisphericalDetection)
 	{
-		// 반구 시각화 (상반부만)
+		// 터렛의 회전을 반영한 반구 시각화
+		FVector TurretUpVector = GetActorUpVector();
+
+		// 반구의 중심점
+		FVector HemisphereCenter = TurretLocation;
+
+		// 반구를 원과 호로 시각화
 		DrawDebugSphere(
 			GetWorld(),
-			TurretLocation + FVector(0, 0, MinimumTargetHeightOffset),
+			HemisphereCenter,
 			DetectionRange,
 			32,
 			RangeColor,
@@ -356,23 +366,59 @@ void ATurretBase_AT2::DrawDebugVisualization()
 			2.0f
 		);
 
-		// 최소 높이 평면 표시
+		// 터렛의 Up 방향 표시 (반구의 중심 방향)
+		DrawDebugDirectionalArrow(
+			GetWorld(),
+			TurretLocation,
+			TurretLocation + TurretUpVector * DetectionRange,
+			100.0f,
+			FColor::Blue,
+			false,
+			-1.0f,
+			0,
+			3.0f
+		);
+
+		// 감지 경계면 표시 (최소 각도 threshold)
 		if (MinimumTargetHeightOffset != 0.0f)
 		{
+			float AngleRad = FMath::DegreesToRadians(MinimumTargetHeightOffset);
+			FVector BoundaryOffset = TurretUpVector * (DetectionRange * FMath::Sin(AngleRad));
+			float BoundaryRadius = DetectionRange * FMath::Cos(AngleRad);
+
+			// 경계 평면의 법선 벡터 계산을 위한 직교 벡터
+			FVector RightVector = GetActorRightVector();
+			FVector ForwardVector = GetActorForwardVector();
+
 			DrawDebugCircle(
 				GetWorld(),
-				TurretLocation + FVector(0, 0, MinimumTargetHeightOffset),
-				DetectionRange,
+				TurretLocation + BoundaryOffset,
+				BoundaryRadius,
 				32,
 				FColor::Cyan,
 				false,
 				-1.0f,
 				0,
 				2.0f,
-				FVector(0, 1, 0),
-				FVector(1, 0, 0)
+				RightVector,
+				ForwardVector
 			);
 		}
+
+		// 반구의 경계선 추가 시각화 (적도)
+		DrawDebugCircle(
+			GetWorld(),
+			TurretLocation,
+			DetectionRange,
+			32,
+			FColor::Orange,
+			false,
+			-1.0f,
+			0,
+			2.0f,
+			GetActorRightVector(),
+			GetActorForwardVector()
+		);
 	}
 	else
 	{
