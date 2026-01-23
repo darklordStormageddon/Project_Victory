@@ -66,7 +66,7 @@ void ADroneEnemy::Tick(float DeltaTime)
 	if (!bIsChasing)
 		bOrbiting = false;
 
-	if (bIsChasing && Target && _spaceShip)
+	if (bIsChasing && Target && IsValid(_spaceShip))
 	{
 		LookTarget();
 

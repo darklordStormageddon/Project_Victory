@@ -58,7 +58,7 @@ void ABullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrim
 
 	if (!HitParticle)
 		return;
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherActor->GetName())
+	/*UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherActor->GetName())*/
 
 	UGameplayStatics::SpawnEmitterAtLocation(
 		GetWorld(),
