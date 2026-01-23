@@ -6,6 +6,13 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
+
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
+#include "KSM/HealthComponent.h"
+#include "JHS/UI/UIManager.h"
+
 #include "Components/CapsuleComponent.h"
 
 APSJ_Spaceship::APSJ_Spaceship()
@@ -18,11 +25,37 @@ APSJ_Spaceship::APSJ_Spaceship()
 	PilotCamera = nullptr;
 	PilotSphere = nullptr;
 	ExitPoint = nullptr;
+
+	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
 void APSJ_Spaceship::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (HealthComp)
+	{
+		HealthComp->OnDamaged.AddDynamic(this, &APSJ_Spaceship::OnTakeDamage);
+		HealthComp->OnDeath.AddDynamic(this, &APSJ_Spaceship::OnDeath);
+	}
+
+
+	FTimerHandle TestDelay;
+
+	GetWorld()->GetTimerManager().SetTimer(
+		TestDelay,
+		[this]() {
+			UUIManager* _outUIManager = nullptr;
+
+			if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
+				return;
+
+			_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
+		},
+		1.f,
+		false);
+
+
 
 	{
 		ShipRootComponent = Cast<UPrimitiveComponent>(RootComponent);
@@ -133,6 +166,33 @@ void APSJ_Spaceship::Tick(float DeltaTime)
 			GEngine->AddOnScreenDebugMessage(3, 0.0f, GapColor, GapMsg);
 		}
 	}
+}
+
+
+void APSJ_Spaceship::OnTakeDamage(float Damage)
+{
+	if (GetSpaceShipStateGroup())
+		_spaceShipStateGroup->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, Damage);
+}
+
+void APSJ_Spaceship::OnDeath()
+{
+	this->Destroy();
+}
+
+USpaceShipStateGroup* APSJ_Spaceship::GetSpaceShipStateGroup()
+{
+	if (_spaceShipStateGroup)
+		return _spaceShipStateGroup;
+
+	AJHSGameState* _outGameState = nullptr;
+
+	if (UStaticFunctionLibrary::TryGetGameState(_outGameState))
+	{
+		_spaceShipStateGroup = _outGameState->GetSpaceShipStateGroup();
+	}
+
+	return _spaceShipStateGroup;
 }
 
 
