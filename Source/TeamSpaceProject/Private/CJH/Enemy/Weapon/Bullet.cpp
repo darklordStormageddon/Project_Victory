@@ -30,10 +30,7 @@ void ABullet::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Collision->OnComponentBeginOverlap.AddDynamic(
-		this,
-		&ABullet::OnBulletOverlap
-	);
+	Collision->OnComponentHit.AddDynamic(this, &ABullet::OnHit);
 }
 
 // Called every frame
@@ -54,26 +51,20 @@ void ABullet::MoveToTarget(float DeltaTime)
 	SetActorLocation(GetActorLocation() + Direction * Speed * DeltaTime, true);
 }
 
-void ABullet::OnBulletOverlap(
-	UPrimitiveComponent* OverlappedComponent,
-	AActor* OtherActor,
-	UPrimitiveComponent* OtherComp,
-	int32 OtherBodyIndex,
-	bool bFromSweep,
-	const FHitResult& SweepResult
-)
+void ABullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (!OtherActor || OtherActor == _owner || !_owner)
 		return;
 
 	if (!HitParticle)
 		return;
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherActor->GetName())
 
 	UGameplayStatics::SpawnEmitterAtLocation(
 		GetWorld(),
 		HitParticle,
-		SweepResult.ImpactPoint,
-		SweepResult.ImpactNormal.Rotation()
+		Hit.ImpactPoint,
+		Hit.ImpactNormal.Rotation()
 	);
 
 	if (UHealthComponent* Health = OtherActor->FindComponentByClass<UHealthComponent>())
