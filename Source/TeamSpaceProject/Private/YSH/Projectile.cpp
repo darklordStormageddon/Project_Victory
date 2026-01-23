@@ -105,69 +105,58 @@ void AProjectile::SetHomingTarget(AActor* Target)
 
 void AProjectile::UpdateAcceleration(float DeltaTime)
 {
-	if (!ProjectileMovement || bHasBoosted)
+	if (!ProjectileMovement)
 		return;
 
 	// 지연 시간 경과 후 급가속 시작
 	if (TimeAlive >= AccelerationDelay)
 	{
-		float CurrentSpeed = ProjectileMovement->Velocity.Size();
-
-		// 목표 속도에 도달하지 않았다면 가속
-		if (CurrentSpeed < BoostSpeed)
+		// 부스트 활성화 처리 (속도와 무관하게 한 번만 실행)
+		if (!bHasBoosted)
 		{
-			// 급가속 시작 시 한 번만 이펙트/사운드 재생
-			if (!bHasBoosted)
+			bHasBoosted = true;
+
+			// ===== Niagara 부스트 이펙트 생성 =====
+			if (BoostEffectNiagara)
 			{
-				bHasBoosted = true;
+				ActiveBoostEffect = UNiagaraFunctionLibrary::SpawnSystemAttached(
+					BoostEffectNiagara,
+					MeshComponent ? MeshComponent : RootComponent,
+					NAME_None,
+					BoostEffectLocationOffset,
+					BoostEffectRotationOffset,
+					BoostEffectScale,
+					EAttachLocation::KeepRelativeOffset,
+					false,
+					ENCPoolMethod::None,
+					true,
+					true
+				);
 
-				// ===== Niagara 부스트 이펙트 생성 (우선순위 1) =====
-				if (BoostEffectNiagara)
+				if (ActiveBoostEffect)
 				{
-					ActiveBoostEffect = UNiagaraFunctionLibrary::SpawnSystemAttached(
-						BoostEffectNiagara,
-						MeshComponent ? MeshComponent : RootComponent,
-						NAME_None,
-						BoostEffectLocationOffset,      // Location
-						BoostEffectRotationOffset,      // Rotation
-						BoostEffectScale,               // Scale (FVector)
-						EAttachLocation::KeepRelativeOffset,
-						false,                          // bAutoDestroy = false (수동 관리)
-						ENCPoolMethod::None,            // PoolingMethod = None
-						true,                           // bAutoActivate
-						true                            // bPreCullCheck
-					);
-
-					if (ActiveBoostEffect)
-					{
-						/*UE_LOG(LogTemp, Warning, TEXT("✓ Boost Niagara Effect Spawned! Offset: %s, Rotation: %s"),
-							*BoostEffectLocationOffset.ToString(),
-							*BoostEffectRotationOffset.ToString());*/
-					}
-					else
-					{
-						//UE_LOG(LogTemp, Error, TEXT("✗ Failed to spawn Boost Niagara Effect!"));
-					}
-				}
-				else
-				{
-					//UE_LOG(LogTemp, Warning, TEXT("⚠ No Boost Effect assigned (Neither Niagara nor Cascade)"));
-				}
-
-				// 부스트 사운드 재생
-				if (BoostSound)
-				{
-					/*UGameplayStatics::PlaySoundAtLocation(this, BoostSound, GetActorLocation());
-					UE_LOG(LogTemp, Warning, TEXT("✓ Boost Sound Played!"));*/
-				}
-
-				if (bShowDebugAcceleration)
-				{
-					/*UE_LOG(LogTemp, Warning, TEXT("Projectile boost activated! Accelerating from %.2f to %.2f"), CurrentSpeed, BoostSpeed);*/
+					//UE_LOG(LogTemp, Warning, TEXT("✓ Boost Niagara Effect Spawned!"));
 				}
 			}
 
-			// 가속도 적용
+			// 부스트 사운드 재생
+			if (BoostSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(this, BoostSound, GetActorLocation());
+			}
+
+			if (bShowDebugAcceleration)
+			{
+				float CurrentSpeed = ProjectileMovement->Velocity.Size();
+				//UE_LOG(LogTemp, Warning, TEXT("Projectile boost activated at %.2fs! Speed: %.2f -> %.2f"), 
+				//	TimeAlive, CurrentSpeed, BoostSpeed);
+			}
+		}
+
+		// 가속도 적용 (이미 목표 속도에 도달했어도 계속 실행)
+		float CurrentSpeed = ProjectileMovement->Velocity.Size();
+		if (CurrentSpeed < BoostSpeed)
+		{
 			float NewSpeed = FMath::FInterpConstantTo(CurrentSpeed, BoostSpeed, DeltaTime, AccelerationRate);
 			ProjectileMovement->Velocity = ProjectileMovement->Velocity.GetSafeNormal() * NewSpeed;
 
@@ -178,7 +167,6 @@ void AProjectile::UpdateAcceleration(float DeltaTime)
 				FVector End = Start + ProjectileMovement->Velocity.GetSafeNormal() * 200.0f;
 				DrawDebugLine(GetWorld(), Start, End, FColor::Orange, false, -1.0f, 0, 3.0f);
 
-				// 부스트 이펙트 위치 디버그
 				FVector BoostEffectWorldLocation = Start + GetActorRotation().RotateVector(BoostEffectLocationOffset);
 				DrawDebugSphere(GetWorld(), BoostEffectWorldLocation, 10.0f, 8, FColor::Cyan, false, -1.0f, 0, 2.0f);
 
