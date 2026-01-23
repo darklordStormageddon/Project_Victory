@@ -1,35 +1,38 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "PSJ_ShipCockpit.h"
 #include "PSJ_Character.h" 
 #include "PSJ_Spaceship.h"
 #include "GameFramework/PlayerController.h"
 #include "JHS/UI/UIBase.h"
 
+// [1] 생성자 구현 (이 부분이 없어서 아까 에러가 난 것입니다)
+APSJ_ShipCockpit::APSJ_ShipCockpit()
+{
+    // 틱 활성화
+    PrimaryActorTick.bCanEverTick = true;
+
+    // [핵심 해결책] 
+    // 물리(Physics) 이동이 끝난 '뒤'에 틱을 실행해라!
+    // -> 이 설정 덕분에 BP에서 그리는 디버그 라인도 밀리지 않고 딱 붙어 나옵니다.
+    PrimaryActorTick.TickGroup = TG_PostPhysics;
+}
+
 void APSJ_ShipCockpit::OnInteractEnter(TObjectPtr<UUIBase> OpenedUI)
 {
-    // 1. [팀원 코드] 부모 로직 실행 (UI 띄우기 등)
+    // 1. 부모 로직 실행
     Super::OnInteractEnter(OpenedUI);
 
-    // 2. 우주선 연결 확인
+    // 2. 우주선 연결 및 탑승 처리
     if (TargetSpaceship)
     {
-        // 현재 이 의자와 상호작용한 플레이어를 찾습니다.
-        // (InteractableActorBase에 상호작용 주체(Instigator)를 주는 기능이 없다면,
-        //  일반적으로 PlayerController 0번을 가져와 처리합니다.)
         APawn* PlayerPawn = GetWorld()->GetFirstPlayerController()->GetPawn();
-        
+
         if (APSJ_Character* MyChar = Cast<APSJ_Character>(PlayerPawn))
         {
             UE_LOG(LogTemp, Log, TEXT("Cockpit: Requesting Boarding..."));
 
-            // 3. 우주선에게 "이 캐릭터 태워라" 명령
             TargetSpaceship->SetPilot(MyChar);
-            
-            // 4. 나중에 내릴 때 UI를 끄기 위해, 우주선에게 "내가 너의 조종석이야"라고 알려줌
             TargetSpaceship->LinkedCockpit = this;
 
-            // 5. 컨트롤러 제어권 이양 (캐릭터 -> 우주선)
             if (APlayerController* PC = Cast<APlayerController>(MyChar->GetController()))
             {
                 PC->Possess(TargetSpaceship);
@@ -40,8 +43,11 @@ void APSJ_ShipCockpit::OnInteractEnter(TObjectPtr<UUIBase> OpenedUI)
 
 void APSJ_ShipCockpit::OnInteractExit(TObjectPtr<UUIBase> OpenedUI)
 {
-    // 1. [팀원 코드] 부모 로직 실행 (UI 숨기기 등)
+    // [예외 처리] 탑승 중(=파일럿 있음)이라면 UI 끄기 무시
+    if (TargetSpaceship && TargetSpaceship->GetCurrentPilot())
+    {
+        return;
+    }
+
     Super::OnInteractExit(OpenedUI);
-    
-    UE_LOG(LogTemp, Log, TEXT("Cockpit: Interact Exit (UI Reset)"));
 }

@@ -11,6 +11,9 @@
 APSJ_Spaceship::APSJ_Spaceship()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	PrimaryActorTick.TickGroup = TG_PostPhysics;
+
 	ShipRootComponent = nullptr;
 	PilotCamera = nullptr;
 	PilotSphere = nullptr;
@@ -54,6 +57,30 @@ void APSJ_Spaceship::BeginPlay()
 		}
 	}
 
+	// [추가할 코드 시작] ----------------------------------------------------
+	// 내 컴포넌트들 중에 ChildActorComponent를 모두 찾습니다.
+	TArray<UChildActorComponent*> ChildActors;
+	GetComponents(ChildActors);
+
+	for (UChildActorComponent* ChildComp : ChildActors)
+	{
+		// 자식 액터가 실제로 생성되었는지 확인
+		if (ChildComp && ChildComp->GetChildActor())
+		{
+			// 그 자식 액터가 'APSJ_ShipCockpit' 클래스인지 확인
+			if (APSJ_ShipCockpit* FoundCockpit = Cast<APSJ_ShipCockpit>(ChildComp->GetChildActor()))
+			{
+				// 찾았다! 서로 연결해줍니다.
+				FoundCockpit->TargetSpaceship = this; // 콕핏에게 "내가 대상 우주선이다" 입력
+
+				// (선택사항) 우주선 입장에서도 이 콕핏을 알고 있으면 좋음
+				LinkedCockpit = FoundCockpit;
+
+				UE_LOG(LogTemp, Log, TEXT("Spaceship: Successfully auto-connected to Child Actor Cockpit!"));
+			}
+		}
+	}
+
 	PilotSphere = FindComponentByClass<USphereComponent>();
 	if (PilotSphere)
 	{
@@ -69,7 +96,45 @@ void APSJ_Spaceship::BeginPlay()
 void APSJ_Spaceship::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// [디버그] 속도 및 상태 표시 로직
+	if (GEngine)
+	{
+		// 1. 현재 속도 계산 (언리얼 단위: cm/s)
+		FVector Velocity = GetVelocity();
+		float SpeedCmPerSec = Velocity.Size();
+
+		// 2. 시속으로 변환 (보기 편하게: km/h)
+		// 1 cm/s = 0.036 km/h
+		float SpeedKmh = SpeedCmPerSec * 0.036f;
+
+		// 3. 화면에 출력 (Key: 1 ~ 3 번을 사용하여 줄바꿈 고정)
+
+		// 줄 1: 현재 속도
+		FString SpeedMsg = FString::Printf(TEXT("[Speed] %.2f cm/s  ( %.0f km/h )"), SpeedCmPerSec, SpeedKmh);
+		GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Yellow, SpeedMsg);
+
+		// 줄 2: 현재 위치
+		FString LocMsg = FString::Printf(TEXT("[Location] %s"), *GetActorLocation().ToString());
+		GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor::Cyan, LocMsg);
+
+		// 줄 3: 콕핏과의 거리 오차 (이게 0이 아니면 실제로 밀리고 있는 것임)
+		if (LinkedCockpit)
+		{
+			// 우주선 위치 vs 콕핏 위치 거리 계산
+			// (ChildActor는 부모와 위치가 같거나 고정된 오프셋이어야 함)
+			// 오프셋을 고려하지 않은 단순 거리지만, 이동 중 이 값이 '변한다면' 밀리는 증거가 됨.
+			float DistanceToCockpit = FVector::Dist(GetActorLocation(), LinkedCockpit->GetActorLocation());
+
+			FString GapMsg = FString::Printf(TEXT("[Cockpit Gap] %.2f (Is Lagging?)"), DistanceToCockpit);
+
+			// 거리가 변하면 빨간색, 고정이면 초록색
+			FColor GapColor = (SpeedCmPerSec > 10.0f) ? FColor::Red : FColor::Green;
+			GEngine->AddOnScreenDebugMessage(3, 0.0f, GapColor, GapMsg);
+		}
+	}
 }
+
 
 void APSJ_Spaceship::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -153,56 +218,56 @@ void APSJ_Spaceship::Input_Exit(const FInputActionValue& Value)
 
 void APSJ_Spaceship::DisembarkCharacter()
 {
+	// 1. 안전 검사
 	if (!CurrentPilot) return;
-
-	if (!ExitPoint)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ExitPoint is NULL! Character will verify default location."));
-	}
 
 	APSJ_Character* ExitingChar = CurrentPilot;
 
+	// 2. 컨트롤러 제어권 반환
 	if (AController* ShipController = GetController())
 	{
 		ShipController->Possess(ExitingChar);
 	}
 
+	// 3. 우주선에서 분리
 	ExitingChar->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
 	if (ExitPoint)
 	{
+		// [수정] 보정 공식 삭제! -> ExitPoint의 현재 위치를 그대로 사용합니다.
+		// 테스트하신 큐브처럼 콕핏이 잘 따라온다면 이 좌표가 정확합니다.
 		FVector SpawnLoc = ExitPoint->GetComponentLocation();
 		FRotator SpawnRot = ExitPoint->GetComponentRotation();
 
-		this->MoveIgnoreActorAdd(ExitingChar);
-		ExitingChar->MoveIgnoreActorAdd(this);
-
+		// 위치 이동
 		ExitingChar->SetActorLocationAndRotation(SpawnLoc, SpawnRot, false, nullptr, ETeleportType::TeleportPhysics);
 	}
-
-	if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(ExitingChar->GetRootComponent()))
+	else
 	{
-		RootPrim->SetPhysicsLinearVelocity(FVector::ZeroVector);
-		RootPrim->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-	}
-	if (ExitingChar->GetCharacterMovement())
-	{
-		ExitingChar->GetCharacterMovement()->Velocity = FVector::ZeroVector;
-		ExitingChar->GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		UE_LOG(LogTemp, Error, TEXT("ExitPoint is NULL!"));
 	}
 
+	// 4. 물리 및 이동 상태 초기화
+	if (auto* CMC = ExitingChar->GetCharacterMovement())
+	{
+		// [옵션] 관성 상속 (자연스러운 하차를 위해 속도는 유지)
+		// 만약 캐릭터가 내리자마자 뚝 멈추길 원하시면 아래 줄을 지우고
+		// CMC->Velocity = FVector::ZeroVector; 로 바꾸세요.
+		CMC->Velocity = this->GetVelocity();
+
+		// 공중 상태 설정 (바닥에 닿으면 걸음)
+		CMC->SetMovementMode(MOVE_Falling);
+	}
+
+	// 5. 충돌 켜기
 	ExitingChar->SetActorHiddenInGame(false);
 	ExitingChar->SetActorEnableCollision(true);
 
-	FTimerDelegate TimerDel;
-	TimerDel.BindUObject(this, &APSJ_Spaceship::EnableCollisionWithPassenger, ExitingChar);
-	GetWorld()->GetTimerManager().SetTimer(CollisionResetTimerHandle, TimerDel, 0.5f, false);
-
-	// [추가] 연결된 조종석이 있다면 "상호작용 종료(UI 끄기)" 호출
+	// 6. 정리
 	if (LinkedCockpit)
 	{
 		LinkedCockpit->OnInteractExit(nullptr);
-		LinkedCockpit = nullptr; // 연결 해제
+		LinkedCockpit = nullptr;
 	}
 
 	CurrentPilot = nullptr;
