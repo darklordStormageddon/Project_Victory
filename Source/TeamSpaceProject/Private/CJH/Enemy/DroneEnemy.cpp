@@ -66,10 +66,9 @@ void ADroneEnemy::Tick(float DeltaTime)
 	if (!bIsChasing)
 		bOrbiting = false;
 
-	if (bIsChasing && Target)
+	if (bIsChasing && Target && _spaceShip)
 	{
-		if (InitLook)
-			LookTarget();
+		LookTarget();
 
 		// 이동 로직
 		ChaseMove(DeltaTime);
@@ -367,7 +366,6 @@ void ADroneEnemy::OrbitAroundTarget(const FVector& ApproachPoint, float DeltaTim
 void ADroneEnemy::LookTarget()
 {
 	if (!IsValid(Target)) return;
-	InitLook = false;
 
 	FTimerHandle LookHandle;
 
@@ -394,9 +392,6 @@ void ADroneEnemy::LookTarget()
 	);
 
 	SetActorRotation(NewRot);
-
-	// 타겟 바라보기
-	GetWorld()->GetTimerManager().SetTimer(LookHandle, [this]() {InitLook = true; }, 0.01f, false);
 }
 void ADroneEnemy::Fire()
 {
@@ -462,18 +457,18 @@ void ADroneEnemy::CheckChaseDistance()
 	CanCheck = false;
 
 
-	//if (bIsChasing && !TargetHPCheck())
-	//{
-	//	bIsChasing = false;
-	//	bOrbiting = false;
-	//	Target = nullptr;
-	//	_spaceShip = nullptr;
+	if (bIsChasing && !TargetHPCheck())
+	{
+		bIsChasing = false;
+		bOrbiting = false;
+		Target = nullptr;
+		_spaceShip = nullptr;
 
-	//	return;
-	//}
+		return;
+	}
 
 	// 일정 거리 이내면 추격 시작 (기존 DistanceCheck 사용)
-	if (DistanceCheck(_spawnedInfo.Detection_Range))
+	if (IsValid(_spaceShip) && DistanceCheck(_spawnedInfo.Detection_Range))
 	{
 		LoseTargetTime = 0.0f;
 
