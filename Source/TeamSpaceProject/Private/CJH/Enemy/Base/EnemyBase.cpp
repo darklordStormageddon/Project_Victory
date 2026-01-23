@@ -83,7 +83,7 @@ bool AEnemyBase::TargetHPCheck()
 // 플레이어와의 거리 체크
 bool AEnemyBase::DistanceCheck(float _condition)
 {
-	if (!IsValid(_spaceShip) && _spaceShip)
+	if (!IsValid(_spaceShip))
 		return false;
 
 	float Distance = FVector::Dist(GetActorLocation(), _spaceShip->GetActorLocation());

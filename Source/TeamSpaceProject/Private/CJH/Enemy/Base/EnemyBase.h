@@ -76,6 +76,7 @@ protected:
 	AActor* _owner;
 	UActorComponent* _ownerComponent;
 
+	UPROPERTY()
 	AActor* _spaceShip;
 
 	bool Murdered = false;
@@ -85,7 +86,6 @@ protected:
 	FTimerHandle CanDistanceHandle;
 
 	bool CanCheck = true;
-	bool InitLook = true;
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Fire")
