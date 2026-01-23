@@ -82,6 +82,11 @@ protected:
 
 	float delayTime;
 
+	FTimerHandle CanDistanceHandle;
+
+	bool CanCheck = true;
+	bool InitLook = true;
+
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Fire")
 	FEnemyInfo _spawnedInfo;
@@ -112,6 +117,10 @@ protected:
 	void SpaceObject_Remove();
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	bool TargetHPCheck();
+	void CanCheckDistance() { CanCheck = true; };
+
 public:
 	virtual void Tick(float DeltaTime) override;
 	void SetTargetShip(TSubclassOf<AActor> Target);
