@@ -52,6 +52,7 @@ void AEnemyBase::Tick(float DeltaTime)
 	if(MinusDebug)
 		if (DelayBool)
 			MinusHp();
+
 }
 
 void AEnemyBase::MinusHp()
@@ -65,10 +66,24 @@ void AEnemyBase::MinusHp()
 	GetWorld()->GetTimerManager().SetTimer(MinusHandle, [this]() {DelayBool = true; }, 1.0f, false);
 }
 
+bool AEnemyBase::TargetHPCheck()
+{
+	if (!Target)
+		return false;
+
+	if (UHealthComponent* Health = this->Target->FindComponentByClass<UHealthComponent>())
+	{
+		if (Health->CurrentHealth <= 0)
+			return false;
+
+		return true;
+	}
+	return false;
+}
 // 플레이어와의 거리 체크
 bool AEnemyBase::DistanceCheck(float _condition)
 {
-	if (!_spaceShip)
+	if (!IsValid(_spaceShip) && _spaceShip)
 		return false;
 
 	float Distance = FVector::Dist(GetActorLocation(), _spaceShip->GetActorLocation());
@@ -102,6 +117,8 @@ void AEnemyBase::EnemyDeath()
 
 void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (UWorld* World = GetWorld())
+		World->GetTimerManager().ClearAllTimersForObject(this);
 
 	UGarbageEnemyManagerComponent* GarbageComponent = Cast<UGarbageEnemyManagerComponent>(EnemyComponent);
 	USpawnedEnemyManagerComponent* SpawnedComponent = Cast<USpawnedEnemyManagerComponent>(EnemyComponent);

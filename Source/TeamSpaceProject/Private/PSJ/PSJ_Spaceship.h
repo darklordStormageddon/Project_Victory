@@ -73,6 +73,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Ship Stats")
 	float RotateSpeed = 1.0f;
 
+	// [추가] 현재 조종사를 반환하는 Getter 함수
+	UFUNCTION(BlueprintPure, Category = "Pilot")
+	APSJ_Character* GetCurrentPilot() const { return CurrentPilot; }
+
 protected:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Pilot")
 	APSJ_Character* CurrentPilot = nullptr;
