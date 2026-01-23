@@ -13,6 +13,9 @@ class UInputAction;
 class APSJ_Character;
 class APSJ_ShipCockpit;
 
+class UHealthComponent;
+class USpaceShipStateGroup;
+
 UCLASS()
 class TEAMSPACEPROJECT_API APSJ_Spaceship : public APawn
 {
@@ -83,6 +86,14 @@ protected:
 
 	FTimerHandle CollisionResetTimerHandle;
 
+
+
+	USpaceShipStateGroup* _spaceShipStateGroup = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
+	UHealthComponent* HealthComp;
+
+
 public:
 	void SetPilot(APSJ_Character* NewPilot);
 
@@ -108,6 +119,14 @@ public:
 	// [추가] 현재 연결된 조종석 (내릴 때 UI 끄기용)
 	UPROPERTY(VisibleInstanceOnly, Category = "Connection")
 	APSJ_ShipCockpit* LinkedCockpit;
+
+	UFUNCTION()
+	void OnTakeDamage(float Damage);
+
+	UFUNCTION()
+	void OnDeath();
+
+	USpaceShipStateGroup* GetSpaceShipStateGroup();
 
 
 
