@@ -17,20 +17,6 @@ ATestSpaceShip::ATestSpaceShip()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
-	RootComponent = Collision;
-
-	Collision->InitSphereRadius(5.f);
-	Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	Collision->SetGenerateOverlapEvents(true);
-
-	// 기본은 전부 무시
-	Collision->SetCollisionResponseToAllChannels(ECR_Ignore);
-
-	// 맞출 대상만 Overlap
-	Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-	Collision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
-
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
