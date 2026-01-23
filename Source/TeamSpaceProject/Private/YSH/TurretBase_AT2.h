@@ -75,6 +75,13 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Turret|Auto")
 	TSubclassOf<AActor> TargetActorClass;
 
+	// === 반구형 감지 설정 ===
+	UPROPERTY(EditAnywhere, Category = "Turret|Auto")
+	bool bUseHemisphericalDetection = true;
+
+	UPROPERTY(EditAnywhere, Category = "Turret|Auto")
+	float MinimumTargetHeightOffset = 0.0f;
+
 	AActor* CurrentTarget = nullptr;
 
 	// === 발사 관련 ===
@@ -135,4 +142,7 @@ private:
 	bool IsTargetInRange() const;
 	bool IsTargetInLineOfSight() const;
 	void DrawDebugVisualization();
+
+	// 반구형 감지 체크 헬퍼 함수
+	bool IsTargetInHemisphere(AActor* Target) const;
 };

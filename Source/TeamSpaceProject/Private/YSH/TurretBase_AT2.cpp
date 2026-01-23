@@ -103,14 +103,35 @@ void ATurretBase_AT2::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	// 자동 포탑이므로 입력 바인딩 불필요
 }
 
+bool ATurretBase_AT2::IsTargetInHemisphere(AActor* Target) const
+{
+	if (!Target || !bUseHemisphericalDetection)
+		return true;
+
+	float TurretHeight = GetActorLocation().Z;
+	float TargetHeight = Target->GetActorLocation().Z;
+	float HeightDifference = TargetHeight - TurretHeight;
+
+	// 타겟이 터렛보다 MinimumTargetHeightOffset 이상 아래에 있으면 감지하지 않음
+	return HeightDifference >= MinimumTargetHeightOffset;
+}
+
 void ATurretBase_AT2::FindAndTrackTarget(float DeltaTime)
 {
 	// 현재 타겟이 유효한지 확인 (파괴되었거나 범위를 벗어났는지)
 	if (CurrentTarget)
 	{
-		// 타겟이 파괴되었거나 유효하지 않은 경우
-		if (!IsValid(CurrentTarget) || CurrentTarget->IsPendingKillPending() || !IsTargetInRange())
+		// 타겟이 파괴되었거나 유효하지 않거나 범위를 벗어났거나 반구 밖에 있는 경우
+		if (!IsValid(CurrentTarget) ||
+			CurrentTarget->IsPendingKillPending() ||
+			!IsTargetInRange() ||
+			!IsTargetInHemisphere(CurrentTarget))
 		{
+			if (bShowDebugRange)
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("ATurretBase_AT2: Target lost - %s"), 
+				//	CurrentTarget ? *CurrentTarget->GetName() : TEXT("NULL"));
+			}
 			CurrentTarget = nullptr;
 		}
 	}
@@ -130,6 +151,10 @@ void ATurretBase_AT2::FindAndTrackTarget(float DeltaTime)
 			if (!Actor || !IsValid(Actor) || Actor->IsPendingKillPending())
 				continue;
 
+			// 반구형 감지 체크
+			if (!IsTargetInHemisphere(Actor))
+				continue;
+
 			float Distance = FVector::Dist(GetActorLocation(), Actor->GetActorLocation());
 			if (Distance < ClosestDistance)
 			{
@@ -145,8 +170,8 @@ void ATurretBase_AT2::FindAndTrackTarget(float DeltaTime)
 
 			if (bShowDebugRange)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("ATurretBase_AT2: New target acquired: %s (Distance: %.1f)"),
-					*CurrentTarget->GetName(), ClosestDistance);
+				//UE_LOG(LogTemp, Warning, TEXT("ATurretBase_AT2: New target acquired: %s (Distance: %.1f)"),
+				//	*CurrentTarget->GetName(), ClosestDistance);
 			}
 		}
 	}
@@ -229,11 +254,9 @@ void ATurretBase_AT2::TryAutoFire()
 			SpawnParams
 		);
 
-		
-
 		bIsLeftMuzzleNext = !bIsLeftMuzzleNext;
 
-		// Muzzle Flash 이펙트
+		// Muzzle Flash 이펙트 - AutoRelease로 자동 정리되도록 수정
 		if (MuzzleFlashEffect)
 		{
 			UParticleSystemComponent* PSC = UGameplayStatics::SpawnEmitterAtLocation(
@@ -242,9 +265,9 @@ void ATurretBase_AT2::TryAutoFire()
 				EffectLocation,
 				EffectRotation,
 				FVector(MuzzleFlashScale),
-				true,
+				true,  // bAutoDestroy = true
 				EPSCPoolMethod::AutoRelease,
-				true
+				true   // bAutoActivate = true
 			);
 
 			if (PSC)
@@ -278,8 +301,16 @@ bool ATurretBase_AT2::IsTargetInRange() const
 	if (!CurrentTarget || !IsValid(CurrentTarget) || CurrentTarget->IsPendingKillPending())
 		return false;
 
+	// 거리 체크
 	float Distance = FVector::Dist(GetActorLocation(), CurrentTarget->GetActorLocation());
-	return Distance <= DetectionRange;
+	if (Distance > DetectionRange)
+		return false;
+
+	// 반구형 감지 체크
+	if (!IsTargetInHemisphere(CurrentTarget))
+		return false;
+
+	return true;
 }
 
 bool ATurretBase_AT2::IsTargetInLineOfSight() const
@@ -307,19 +338,57 @@ void ATurretBase_AT2::DrawDebugVisualization()
 
 	FVector TurretLocation = GetActorLocation();
 
-	// 1. 감지 범위 구체 그리기
+	// 1. 반구형 감지 범위 시각화
 	FColor RangeColor = CurrentTarget ? DebugTargetFoundColor : DebugRangeColor;
-	DrawDebugSphere(
-		GetWorld(),
-		TurretLocation,
-		DetectionRange,
-		32,
-		RangeColor,
-		false,
-		-1.0f,
-		0,
-		2.0f
-	);
+
+	if (bUseHemisphericalDetection)
+	{
+		// 반구 시각화 (상반부만)
+		DrawDebugSphere(
+			GetWorld(),
+			TurretLocation + FVector(0, 0, MinimumTargetHeightOffset),
+			DetectionRange,
+			32,
+			RangeColor,
+			false,
+			-1.0f,
+			0,
+			2.0f
+		);
+
+		// 최소 높이 평면 표시
+		if (MinimumTargetHeightOffset != 0.0f)
+		{
+			DrawDebugCircle(
+				GetWorld(),
+				TurretLocation + FVector(0, 0, MinimumTargetHeightOffset),
+				DetectionRange,
+				32,
+				FColor::Cyan,
+				false,
+				-1.0f,
+				0,
+				2.0f,
+				FVector(0, 1, 0),
+				FVector(1, 0, 0)
+			);
+		}
+	}
+	else
+	{
+		// 기존 구형 범위
+		DrawDebugSphere(
+			GetWorld(),
+			TurretLocation,
+			DetectionRange,
+			32,
+			RangeColor,
+			false,
+			-1.0f,
+			0,
+			2.0f
+		);
+	}
 
 	// 2. 타겟이 있을 경우 시야선 그리기
 	if (CurrentTarget && bShowDebugLineOfSight)
@@ -351,11 +420,12 @@ void ATurretBase_AT2::DrawDebugVisualization()
 			2.0f
 		);
 
-		// 타겟 이름 표시
+		// 타겟 이름과 거리 표시
+		float Distance = FVector::Dist(TurretLocation, TargetLocation);
 		DrawDebugString(
 			GetWorld(),
 			TargetLocation + FVector(0, 0, 100),
-			CurrentTarget->GetName(),
+			FString::Printf(TEXT("%s\nDist: %.0f"), *CurrentTarget->GetName(), Distance),
 			nullptr,
 			FColor::White,
 			0.0f,
