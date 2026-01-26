@@ -44,7 +44,7 @@ void UAsteroidComponent::CanSpawn()
 {
 	UWorld* World = GetWorld();
 
-	AActor* Owner = Cast<AActor>(UGameplayStatics::GetActorOfClass(World, TargetShip));
+	AActor* Owner = Cast<AActor>(UGameplayStatics::GetActorOfClass(World, _asteroidInfo.TargetShip));
 	if (!World || !Owner) return;
 
 	ShipSpeed = Owner->GetVelocity();
@@ -54,14 +54,14 @@ void UAsteroidComponent::CanSpawn()
 	FTimerManager& TimerManager = World->GetTimerManager();
 
 	if (!TimerManager.IsTimerActive(SpawnTimerHandle))
-		TimerManager.SetTimer(SpawnTimerHandle, this, &UAsteroidComponent::SpawnAsteroid, FMath::RandRange(MinSpawnDelay, MaxSpawnDelay), true);
+		TimerManager.SetTimer(SpawnTimerHandle, this, &UAsteroidComponent::SpawnAsteroid, FMath::RandRange(_asteroidInfo.MinSpawnDelay, _asteroidInfo.MaxSpawnDelay), true);
 }
 
 void UAsteroidComponent::SpawnAsteroid()
 {
 	UWorld* World = GetWorld();
 	AActor* Owner = GetOwner();
-	AActor* Target = Cast<AActor>(UGameplayStatics::GetActorOfClass(World, TargetShip));
+	AActor* Target = Cast<AActor>(UGameplayStatics::GetActorOfClass(World, _asteroidInfo.TargetShip));
 
 	if (!World || !Owner || !Target) return;
 
@@ -76,22 +76,22 @@ void UAsteroidComponent::SpawnAsteroid()
 	FVector RandomDirection = FMath::VRand();
 	FVector SpawnLocation = InGameMode->GetSpaceStation()->GetActorLocation() + RandomDirection * InGameMode->GetSpaceRadius();
 
-	float Size = FMath::RandRange(MinSize, MaxSize);
-	float Speed = FMath::RandRange(MinSpeed, MaxSpeed);
-	float Health = Size * 100.f;
+	float Size = FMath::RandRange(_asteroidInfo.MinSize, _asteroidInfo.MaxSize);
+	float Speed = FMath::RandRange(_asteroidInfo.MinSpeed, _asteroidInfo.MaxSpeed);
+	float Health = Size * _asteroidInfo.Max_HP;
 
 	// È¸Àü ·£´ý
 	FRotator SpawnRotation = FRotator(FMath::RandRange(0.f, 360.f), FMath::RandRange(0.f, 360.f), FMath::RandRange(0.f, 360.f));
 
-	if (AsteroidClasses.Num() == 0)
+	if (_asteroidInfo.AsteroidClasses.Num() == 0)
 	{
 		bIsSpawning = false;
 		return;
 	}
 
-	int Index = FMath::RandRange(0, AsteroidClasses.Num() - 1);
+	int Index = FMath::RandRange(0, _asteroidInfo.AsteroidClasses.Num() - 1);
 
-	TSubclassOf<AAsteroid> AsteroidClass = AsteroidClasses[Index];
+	TSubclassOf<AAsteroid> AsteroidClass = _asteroidInfo.AsteroidClasses[Index];
 	if (!*AsteroidClass)
 	{
 		bIsSpawning = false;
@@ -108,11 +108,11 @@ void UAsteroidComponent::SpawnAsteroid()
 
 	if (Asteroid) // Check if Meteor is successfully spawned
 	{
-		AAsteroid::FAsteroidInfo Info;
+		FTargetInfo Info;
 		Info.Speed = Speed;
 		Info.Size = Size;
-		Info.Health = Health;
-		Info.Damage = SetDamage(Speed, Size);
+		Info.Max_HP = Health;
+		Info.Attack_Damage = SetDamage(Speed, Size);
 
 		Asteroid->AsteroidComponent = this;
 		Asteroid->SetReplicates(true);
@@ -128,14 +128,14 @@ void UAsteroidComponent::SpawnAsteroid()
 		Asteroid->DestroyDistance = InGameMode->GetSpaceRadius();
 		Asteroids.Add(Asteroid);
 
-		if(debugDraw)
+		if(_asteroidInfo.debugDraw)
 			Asteroid->DebugDrawing();
 	}
 }
 
 float UAsteroidComponent::SetDamage(float Speed, float Size)
 {
-	float Damage = BaseDamage + (Size * Speed / 100.f);//0.3~40 //10.3~50
+	float Damage = _asteroidInfo.BaseDamage + (Size * Speed / 100.f);//0.3~40 //10.3~50
 	return Damage;
 }
 

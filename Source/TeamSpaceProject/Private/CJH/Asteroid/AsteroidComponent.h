@@ -12,16 +12,16 @@
 
 #include "AsteroidComponent.generated.h"
 
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-
-class UAsteroidComponent : public UActorComponent
+USTRUCT()
+struct FSpawnAsteroidInfo
 {
 	GENERATED_BODY()
-private:
-	FTimerHandle SpawnTimerHandle;
 
 	UPROPERTY(EditAnywhere, Category = "Asteroid Spawn")
 	bool debugDraw = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stat")
+	float Max_HP;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float MinSpawnDelay = 0.1f;
@@ -37,7 +37,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float MaxSpeed = 1000.f;
-	
+
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float MinSize;
 
@@ -49,6 +49,15 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	TSubclassOf<AActor> TargetShip;
+};
+
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+
+class UAsteroidComponent : public UActorComponent
+{
+	GENERATED_BODY()
+private:
+	FTimerHandle SpawnTimerHandle;
 
 	AActor* _ownerActor = nullptr;
 
@@ -58,6 +67,10 @@ private:
 
 	UPROPERTY()
 	TArray<AAsteroid*> Asteroids;
+
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	FSpawnAsteroidInfo _asteroidInfo;
 
 private:
 	void CanSpawn();

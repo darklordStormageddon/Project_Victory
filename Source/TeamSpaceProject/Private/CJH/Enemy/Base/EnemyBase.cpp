@@ -13,8 +13,6 @@
 #include "CJH/Enemy/Manager/GarbageEnemyManagerComponent.h"
 #include "CJH/Enemy/Manager/SpawnedEnemyManagerComponent.h"
 
-#include "KSM/HealthComponent.h"
-
 // Sets default values
 AEnemyBase::AEnemyBase()
 {
@@ -37,11 +35,10 @@ void AEnemyBase::SetInfo()
 	// 적 크기에 비례하여 능력치 증감
 	SetActorScale3D(this->NewScale);
 
-	_spawnedInfo.Max_HP *= this->Size;
-	_spawnedInfo.Attack_Damage *= this->Size;
-	_spawnedInfo.Value *= this->Size;
+	_targetInfo.Max_HP *= this->_targetInfo.Size;
+	_targetInfo.Attack_Damage *= this->_targetInfo.Size;
 
-	HealthComp->SetCurrentHP(_spawnedInfo.Max_HP);
+	HealthComp->SetCurrentHP(_targetInfo.Max_HP);
 }
 
 // Called every frame
@@ -144,4 +141,16 @@ void AEnemyBase::SpaceObject_Remove()
 	{
 		_spaceManager->RemoveSpaceObject(SpaceObjectComp);
 	}
+}
+
+void AEnemyBase::SetEnemyInfo(
+	const FTargetInfo& InEnemyInfo,
+	const FEnemyInfo& InSpawnedInfo)
+{
+	_targetInfo = InEnemyInfo;
+	_spawnedInfo = InSpawnedInfo;
+
+	//운석의 크기 설정
+	SetActorScale3D(FVector(_targetInfo.Size));
+
 }

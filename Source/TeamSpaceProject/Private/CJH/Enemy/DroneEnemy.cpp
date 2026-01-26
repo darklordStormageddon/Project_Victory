@@ -110,7 +110,7 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 		FVector BackTarget = TargetLoc + BackDir * OrbitMin;
 
 		// 부드럽게 이동 (프레임 최대 이동량 제한)
-		float Speed = FMath::Max(1.0f, _spawnedInfo.Move_Speed); // 프로젝트 멤버명 확인
+		float Speed = FMath::Max(1.0f, _targetInfo.Speed); // 프로젝트 멤버명 확인
 		FVector ToBack = BackTarget - CurrentLoc;
 		float Dist = ToBack.Size();
 		if (Dist > KINDA_SMALL_NUMBER)
@@ -130,7 +130,7 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 	{
 		// 접근: target 쪽으로 직진
 		FVector Dir = (TargetLoc - CurrentLoc).GetSafeNormal();
-		float Speed = FMath::Max(1.0f, _spawnedInfo.Move_Speed);
+		float Speed = FMath::Max(1.0f, _targetInfo.Speed);
 		float MaxStep = Speed * DeltaTime;
 		AddActorWorldOffset(Dir * MaxStep, true);
 
@@ -206,7 +206,7 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 		if (DistToOrbit > KINDA_SMALL_NUMBER)
 		{
 			FVector MoveDir = ToOrbit / DistToOrbit;
-			float Speed = FMath::Max(1.0f, _spawnedInfo.Move_Speed);
+			float Speed = FMath::Max(1.0f, _targetInfo.Speed);
 			float MaxStep = Speed * DeltaTime;
 			FVector MoveDelta = (DistToOrbit > MaxStep) ? MoveDir * MaxStep : ToOrbit;
 			AddActorWorldOffset(MoveDelta, true);
@@ -218,7 +218,7 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 	// Fallback: 기본 접근
 	{
 		FVector Dir = (TargetLoc - CurrentLoc).GetSafeNormal();
-		float Speed = FMath::Max(1.0f, _spawnedInfo.Move_Speed);
+		float Speed = FMath::Max(1.0f, _targetInfo.Speed);
 		AddActorWorldOffset(Dir * Speed * DeltaTime, true);
 	}
 }
@@ -253,7 +253,7 @@ void ADroneEnemy::GoToTarget(FVector CurrentLoc, FVector TargetLoc, FVector Appr
 	if (DistToGoal > KINDA_SMALL_NUMBER)
 	{
 		FVector Dir = ToGoal / DistToGoal;
-		float Speed = FMath::Max(1.0f, _spawnedInfo.Move_Speed);
+		float Speed = FMath::Max(1.0f, _targetInfo.Speed);
 		float MaxStep = Speed * DeltaTime;
 		FVector Move = (DistToGoal > MaxStep) ? Dir * MaxStep : ToGoal;
 		AddActorWorldOffset(Move, true);
@@ -297,7 +297,7 @@ void ADroneEnemy::OrbitAroundTarget(const FVector& ApproachPoint, float DeltaTim
 		float TargetDist = _spawnedInfo.Attack_Range * 0.75f;
 		FVector DirToTarget = (TargetLoc - CurrentLoc).GetSafeNormal();
 
-		float Speed = _spawnedInfo.Move_Speed * 0.6f; // 공전 중 접근 속도 (느리게)
+		float Speed = _targetInfo.Speed * 0.6f; // 공전 중 접근 속도 (느리게)
 		if (Speed <= 0.0f) Speed = 60.0f;
 
 		FVector MoveDir = DirToTarget;
@@ -436,7 +436,7 @@ void ADroneEnemy::Fire()
 
 		SpawnedBullet->GetTarget(LaunchDirection.GetSafeNormal());
 		SpawnedBullet->SetOwner(this);
-		SpawnedBullet->SetDamage(_spawnedInfo.Attack_Damage);
+		SpawnedBullet->SetDamage(_targetInfo.Attack_Damage);
 	}
 
 	CanFire = false;

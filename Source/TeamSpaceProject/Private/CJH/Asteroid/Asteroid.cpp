@@ -8,6 +8,8 @@
 
 #include "JHS/SpaceObject/SpaceObjectComponent.h"
 #include "JHS/SpaceObject/SpaceObjectManager.h"
+
+
 // Sets default values
 
 AAsteroid::AAsteroid()
@@ -15,6 +17,8 @@ AAsteroid::AAsteroid()
 	PrimaryActorTick.bCanEverTick = true;
 
 	SpaceObjectComp = CreateDefaultSubobject<USpaceObjectComponent>(TEXT("SpaceObjectComponent"));
+
+	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
 // Called when the game starts or when spawned
@@ -23,6 +27,8 @@ void AAsteroid::BeginPlay()
 	Super::BeginPlay();
 
 	SetAsteroidRot();
+
+	HealthComp->OnDeath.AddDynamic(this, &AAsteroid::OnDestroy);
 }
 
 // Called every frame
@@ -41,19 +47,19 @@ void AAsteroid::Tick(float DeltaTime)
 
 	float DestroyDist = FVector::Dist(InGameMode->GetSpaceStation()->GetActorLocation(), GetActorLocation());
 	
-	if (DestroyDist > DestroyDistance - 1)
+	if (DestroyDist > InGameMode->GetSpaceRadius() - 1)
 		Destroy();
 }
 
 void AAsteroid::SetAsteroidInfo(
-	const FAsteroidInfo& InAsteroidInfo,
+	const FTargetInfo& InAsteroidInfo,
 	FVector VSpaceShip,
 	FVector Velocity)
 {
-	AsteroidInfo = InAsteroidInfo;
+	_targetInfo = InAsteroidInfo;
 
 	//운석의 크기 설정
-	SetActorScale3D(FVector(AsteroidInfo.Size));
+	SetActorScale3D(FVector(_targetInfo.Size));
 
 	bool bHasIntercept = CalculateInterceptPoint(
 		GetActorLocation(),
@@ -63,10 +69,15 @@ void AAsteroid::SetAsteroidInfo(
 
 	if (!bHasIntercept)
 		TargetLocation = VSpaceShip;
-
+	
 	// === 방향 계산 ===
 	Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();// 방향 벡터 단위벡터화
-	Direction *= AsteroidInfo.Speed;
+	Direction *= _targetInfo.Speed;
+
+	AJHSGameMode* GameMode = Cast<AJHSGameMode>(GetWorld()->GetAuthGameMode());
+
+	HealthComp->SetCurrentHP(_targetInfo.Max_HP);
+
 
 }
 
@@ -79,7 +90,7 @@ bool AAsteroid::CalculateInterceptPoint(
 	FVector R = ShipPos - AsteroidPos;
 	FVector V = ShipVelocity;
 
-	float a = FVector::DotProduct(V, V) - AsteroidInfo.Speed * AsteroidInfo.Speed;
+	float a = FVector::DotProduct(V, V) - _targetInfo.Speed * _targetInfo.Speed;
 	float b = 2.f * FVector::DotProduct(R, V);
 	float c = FVector::DotProduct(R, R);
 
@@ -154,4 +165,9 @@ void AAsteroid::DebugDrawing()
 		false,
 		5.f
 	);
+}
+
+void AAsteroid::OnDestroy()
+{
+	this->Destroy();
 }

@@ -72,17 +72,20 @@ void USpawnedEnemyManagerComponent::SpawnEnemy(TSubclassOf<AEnemyBase> Enemy, FS
 
 	if (SpawnedEnemy)
 	{
-		SpawnedEnemy->Size = FMath::RandRange(_enemyInfo.MinSize, _enemyInfo.MaxSize);
+		FTargetInfo targetInfo;
+		FEnemyInfo EnemyInfo;
 
-		SpawnedEnemy->_spawnedInfo.Max_HP = _enemyInfo.Max_HP;
-		SpawnedEnemy->_spawnedInfo.Current_HP = _enemyInfo.Current_HP;
-		SpawnedEnemy->_spawnedInfo.Attack_Damage = _enemyInfo.Attack_Damage;
-		SpawnedEnemy->_spawnedInfo.Attack_Speed = _enemyInfo.Attack_Speed;
-		SpawnedEnemy->_spawnedInfo.Attack_Range = _enemyInfo.Attack_Range;
-		SpawnedEnemy->_spawnedInfo.Detection_Range = _enemyInfo.Detection_Range;
-		SpawnedEnemy->_spawnedInfo.Move_Speed = _enemyInfo.Move_Speed;
+		targetInfo.Size = FMath::RandRange(_enemyInfo.MinSize, _enemyInfo.MaxSize);
 
-		SpawnedEnemy->_spawnedInfo.Value = _enemyInfo.Value;
+		targetInfo.Max_HP  = _enemyInfo.Max_HP;
+		targetInfo.Attack_Damage = _enemyInfo.Attack_Damage;
+		targetInfo.Speed = _enemyInfo.Move_Speed;
+
+		EnemyInfo.Attack_Range = _enemyInfo.Attack_Range;
+		EnemyInfo.Detection_Range = _enemyInfo.Detection_Range;
+		EnemyInfo.Attack_Speed = _enemyInfo.Attack_Speed;
+
+		SpawnedEnemy->SetEnemyInfo(targetInfo, EnemyInfo);
 
 		SpawnedEnemy->SetTargetShip(_spaceShip);
 		SpawnedEnemy->OwnerGET(_owner);
