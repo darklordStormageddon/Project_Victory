@@ -2,7 +2,7 @@
 
 
 #include "JHS/UI/Panel/UIPanelPlayerFPS.h"
-#include "JHS/GameControl/Contant/ConstantLibrary.h"
+#include "JHS/GameControl/Constant/ConstantLibrary.h"
 
 void UUIPanelPlayerFPS::NativeConstruct()
 {

@@ -8,7 +8,7 @@
 #include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
-#include "JHS/GameControl/Contant/ConstantLibrary.h"
+#include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "YSH/resource/TurretDataTable.h"
 #include "JHS/GameControl/CommonEnums.h"
 

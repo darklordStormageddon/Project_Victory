@@ -68,7 +68,7 @@ public:
 	{}
 
 	UPROPERTY()
-	FString TEXTURE_HEADER;;
+	FString TEXTURE_HEADER;
 
 	UPROPERTY()
 	FString INTERACT_FOLDER_PATH;
@@ -78,6 +78,29 @@ public:
 
 	UPROPERTY()
 	FString AMMO_FOLDER_PATH;
+};
+
+USTRUCT(BlueprintType)
+struct FResourceMaterial
+{
+	GENERATED_BODY()
+
+public:
+	FResourceMaterial()
+		: MATERIAL_HEADER(TEXT("MT_"))
+		, MATERIAL_FORDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Materials/"))
+		, CIRCLE_PROGRESS_BAR(TEXT("CircleProgressBar"))
+	{
+	}
+
+	UPROPERTY()
+	FString MATERIAL_HEADER;
+
+	UPROPERTY()
+	FString MATERIAL_FORDER_PATH;
+
+	UPROPERTY()
+	FString CIRCLE_PROGRESS_BAR;
 };
 
 USTRUCT(BlueprintType)
@@ -135,6 +158,7 @@ public:
 	FResourceDataTable DataTable;
 	FResourceUI UI;
 	FResourceImage Image;
+	FResourceMaterial Material;
 	FResourceSpaceObject SpaceObject;
 	FResourceTurret TurretBP;
 };

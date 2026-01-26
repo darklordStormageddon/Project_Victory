@@ -3,7 +3,7 @@
 
 #include "JHS/UI/UIManager.h"
 #include "JHS/UI/UIBase.h"
-#include "JHS/GameControl/Contant/ConstantLibrary.h"
+#include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "Engine/Engine.h"
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"

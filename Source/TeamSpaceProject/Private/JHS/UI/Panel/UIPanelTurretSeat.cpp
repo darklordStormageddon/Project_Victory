@@ -2,10 +2,14 @@
 
 
 #include "JHS/UI/Panel/UIPanelTurretSeat.h"
-#include "JHS/Event/EventManager.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/Event/EventManager.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/UI/Material/CircleProgressBar.h"
 #include "JHS/GameControl/StateData/ContainerStateGroup.h"
+#include "Components/Image.h"
+#include "Components/ProgressBar.h"
+#include "Components/TextBlock.h"
 
 void UUIPanelTurretSeat::NativeOnInitialized()
 {
@@ -16,6 +20,13 @@ void UUIPanelTurretSeat::NativeOnInitialized()
         return;
     
     _containerStateGroup = _outGameState->GetContainerStateGroup();
+
+    // CircleProgressBar 초기화
+    _circleProgressBar = NewObject<UCircleProgressBar>(this);
+    if (_circleProgressBar && IMG_LeftAmmo)
+    {
+        _circleProgressBar->InitializeCircleProgressBar(this, IMG_LeftAmmo, _initTexture, _isClockWise);
+    }
 }
 
 void UUIPanelTurretSeat::RegisterEvent()
@@ -46,11 +57,14 @@ void UUIPanelTurretSeat::OnChangeTurret(UEventOnChangeTurretData* Event)
     FTurretData _turretData = Event->TurretData;
     if (_turretPosition == E_TURRET_POSITION::Main)
     {
-        const float _progress = FMath::Clamp(_turretData.Mag.CurrentValue / _turretData.Mag.MaxValue, 0.f, 1.f);
-        GetMainTurretMaterial()->SetScalarParameterValue(TEXT("Progress"), _progress);
+        if (_circleProgressBar)
+        {
+            const float _progress = FMath::Clamp(_turretData.Mag.CurrentValue / _turretData.Mag.MaxValue, 0.f, 1.f);
+            _circleProgressBar->SetProgress(_progress);
 
-        FLinearColor _lerpColor = FMath::Lerp(_leftAmmoColorZero, _leftAmmoColorMax, _progress);
-        GetMainTurretMaterial()->SetVectorParameterValue(TEXT("Tint"), _lerpColor);
+            FLinearColor _lerpColor = FMath::Lerp(_leftAmmoColorZero, _leftAmmoColorMax, _progress);
+            _circleProgressBar->SetTint(_lerpColor);
+        }
 
         TXT_LeftAmmo->SetText(FText::FromString(FString::Printf(TEXT("%d"), (int32)_turretData.Mag.CurrentValue)));
         return;
@@ -71,22 +85,4 @@ void UUIPanelTurretSeat::OnChangeTurret(UEventOnChangeTurretData* Event)
         IMG_RightTurret->SetBrushFromTexture(_texture);
         SetProgressBarUI(_turretData.Mag.CurrentValue, _turretData.Mag.MaxValue, PROG_RightTurretAmmo, TXT_RightTurretAmmo, true);
     }
-}
-
-TObjectPtr<UMaterialInstanceDynamic> UUIPanelTurretSeat::GetMainTurretMaterial()
-{
-    if (_mainAmmoMID == nullptr)
-    {
-        UMaterialInterface* _baseMat = Cast<UMaterialInterface>(IMG_LeftAmmo->GetBrush().GetResourceObject());
-        if (!_baseMat)
-        {
-            UE_LOG(LogTemp, Error, TEXT("UIPanelTurretSeat: Material is not found"));
-            return nullptr;
-        }
-    
-        _mainAmmoMID = UMaterialInstanceDynamic::Create(_baseMat, this);
-        IMG_LeftAmmo->SetBrushFromMaterial(_mainAmmoMID);
-    }
-
-    return _mainAmmoMID;
 }

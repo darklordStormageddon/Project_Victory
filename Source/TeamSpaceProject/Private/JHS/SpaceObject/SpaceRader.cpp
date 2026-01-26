@@ -2,7 +2,7 @@
 
 
 #include "JHS/SpaceObject/SpaceRader.h"
-#include "JHS/GameControl/Contant/ConstantLibrary.h"
+#include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameMode.h"
 #include "UObject/ConstructorHelpers.h"

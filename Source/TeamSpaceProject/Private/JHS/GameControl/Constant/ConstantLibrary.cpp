@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "JHS/GameControl/Contant/ConstantLibrary.h"
+#include "JHS/GameControl/Constant/ConstantLibrary.h"
 
 ResourcePath ConstantLibrary::Resource;

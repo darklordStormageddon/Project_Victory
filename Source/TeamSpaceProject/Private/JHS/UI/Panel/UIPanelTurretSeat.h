@@ -5,14 +5,14 @@
 #include "CoreMinimal.h"
 #include "JHS/UI/UIBase.h"
 #include "JHS/Event/CommonEventBase.h"
-#include "Components/Image.h"
-#include "Components/ProgressBar.h"
-#include "Components/TextBlock.h"
-#include "Materials/MaterialInstanceDynamic.h"
 
 #include "UIPanelTurretSeat.generated.h"
 
+class UImage;
+class UProgressBar;
+class UTextBlock;
 class UContainerStateGroup;
+class UCircleProgressBar;
 
 UCLASS()
 class UUIPanelTurretSeat : public UUIBase
@@ -20,8 +20,7 @@ class UUIPanelTurretSeat : public UUIBase
 	GENERATED_BODY()
 
 private:
-	FDelegateHandle _eventHandleOnChangeTurret;
-
+	// 직렬화
 	UPROPERTY()
 	TObjectPtr<UContainerStateGroup> _containerStateGroup = nullptr;
 
@@ -33,7 +32,7 @@ private:
 	UTextBlock* TXT_LeftAmmo;
 
 	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> _mainAmmoMID;
+	TObjectPtr<UCircleProgressBar> _circleProgressBar = nullptr;
 #pragma endregion Main Turret
 
 #pragma region Left Turret
@@ -58,7 +57,15 @@ private:
 	UTextBlock* TXT_RightTurretAmmo;
 #pragma endregion Right Turret
 
+	FDelegateHandle _eventHandleOnChangeTurret;
+
 protected:
+	UPROPERTY(EditDefaultsOnly, Category = "TurretSeat|Generator")
+	TObjectPtr<UTexture2D> _initTexture = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "TurretSeat|Generator")
+	bool _isClockWise = true;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "TurretSeat")
 	FLinearColor _leftAmmoColorMax = FColor::Yellow;
 
@@ -74,7 +81,4 @@ protected:
 
 public:
 	void OnChangeTurret(UEventOnChangeTurretData* Event);
-
-private:
-	TObjectPtr<UMaterialInstanceDynamic> GetMainTurretMaterial();
 };
