@@ -19,7 +19,7 @@ void ASpawnedEnemyBase::BeginPlay()
 void ASpawnedEnemyBase::SetInfo()
 {
 	// 적 크기 구조체에 따라 크기 설정
-	NewScale = FVector(Size, Size, Size);
+	NewScale = FVector(_targetInfo.Size, _targetInfo.Size, _targetInfo.Size);
 
 	SetActorScale3D(NewScale);
 

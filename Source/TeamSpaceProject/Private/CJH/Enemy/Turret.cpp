@@ -38,7 +38,7 @@ void ATurret::BeginPlay()
 void ATurret::SetDirection()
 {
 	MoveDirection = (_spaceShip->GetActorLocation() - this->GetActorLocation()).GetSafeNormal();
-	MoveDirection *= _spawnedInfo.Move_Speed;
+	MoveDirection *= _targetInfo.Speed;
 
 	RotationDirection = FRotator(
 		FMath::RandRange(-1.f, 1.f), 
@@ -65,7 +65,7 @@ void ATurret::Tick(float DeltaTime)
 
 void ATurret::Move(float DeltaTime)
 {
-	AddActorWorldOffset(_spawnedInfo.Move_Speed * MoveDirection * DeltaTime, true);
+	AddActorWorldOffset(_targetInfo.Speed * MoveDirection * DeltaTime, true);
 
 	AddActorWorldRotation(RotateSpeed * RotationDirection * DeltaTime);
 }

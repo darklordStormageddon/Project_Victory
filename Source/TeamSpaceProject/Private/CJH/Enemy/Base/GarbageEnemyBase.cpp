@@ -35,10 +35,10 @@ void AGarbageEnemyBase::BeginPlay()
 
 void AGarbageEnemyBase::SetInfo()
 {
-	Size = FMath::RandRange(_spawnedInfo.MinSize, _spawnedInfo.MaxSize);
+	_targetInfo.Size = FMath::RandRange(_spawnedInfo.MinSize, _spawnedInfo.MaxSize);
 
 	// 적 크기 구조체에 따라 크기 설정
-	NewScale = FVector(Size, Size, Size);
+	NewScale = FVector(_targetInfo.Size, _targetInfo.Size, _targetInfo.Size);
 
 	Super::SetInfo();
 }

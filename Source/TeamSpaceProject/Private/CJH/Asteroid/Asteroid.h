@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "CJH/TargetBase.h"
 #include "Asteroid.generated.h"
 
 class UAsteroidComponent;
@@ -11,21 +11,19 @@ class USpaceObjectComponent;
 
 UCLASS()
 
-class AAsteroid : public AActor
+class AAsteroid : public ATargetBase
 {
 	GENERATED_BODY()
 private:
 	float MoveDistance;
-	
-public:
-	typedef struct FAsteroidInfo
-	{
-		float Speed;
-		float Size;
-		float Health;
-		float Damage;
-	} FAsteroidInfo;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Stat")
+	float MinSize;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stat")
+	float MaxSize;
+
+public:
 	UPROPERTY()
 	UAsteroidComponent* AsteroidComponent;
 
@@ -34,8 +32,6 @@ public:
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "SpaceObject")
 	USpaceObjectComponent* SpaceObjectComp;
-
-	FAsteroidInfo AsteroidInfo;
 
 	FVector Direction;
 
@@ -50,6 +46,10 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Info")
 	float ShockConstant = 0.01f;//충격량 보정 상수
+
+protected:
+	UFUNCTION()
+	void OnDestroy();
 
 private:
 	void MoveAsteroid(float DeltaTime);
@@ -80,7 +80,7 @@ public:
 	void DebugDrawing();
 
 	void SetAsteroidInfo(
-		const FAsteroidInfo& InAsteroidInfo,
+		const FTargetInfo& InAsteroidInfo,
 		FVector VSpaceShip,
 		FVector Velocity);
 };

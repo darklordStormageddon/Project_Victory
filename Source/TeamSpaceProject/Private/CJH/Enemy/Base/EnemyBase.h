@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "CJH/TargetBase.h"
 
 #include "Particles/ParticleSystemComponent.h"
 
@@ -13,46 +13,30 @@
 
 class UEnemyManagerComponent;
 class USpaceObjectComponent;
-class UHealthComponent;
 
 USTRUCT()
 struct FEnemyInfo
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditDefaultsOnly, Category = "Fire")
+	UPROPERTY(EditDefaultsOnly, Category = "Stat")
 	float MinSize;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Fire")
+	UPROPERTY(EditDefaultsOnly, Category = "Stat")
 	float MaxSize;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Fire")
-	float Max_HP;
-
-	UPROPERTY()
-	float Current_HP;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Fire")
-	float Attack_Damage;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Fire")
+	UPROPERTY(EditDefaultsOnly, Category = "Stat")
 	float Attack_Speed;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Fire")
+	UPROPERTY(EditDefaultsOnly, Category = "Stat")
 	float Attack_Range;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Fire")
+	UPROPERTY(EditDefaultsOnly, Category = "Stat")
 	float Detection_Range;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Fire")
-	float Move_Speed;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Fire")
-	float Value;
 };
 
 UCLASS()
-class AEnemyBase : public AActor
+class AEnemyBase : public ATargetBase
 {
 	GENERATED_BODY()
 protected:
@@ -96,11 +80,6 @@ public:
 
 	UEnemyManagerComponent* EnemyComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
-	UHealthComponent* HealthComp;
-
-	float Size;
-
 public:	
 	// Sets default values for this actor's properties
 	AEnemyBase();
@@ -124,6 +103,9 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 	void SetTargetShip(TSubclassOf<AActor> Target);
+	void SetEnemyInfo(
+		const FTargetInfo& InEnemyInfo,
+		const FEnemyInfo& InSpawnedInfo);
 
 public:
 	void OwnerGET(AActor* _getOwner) { _owner = _getOwner; }
