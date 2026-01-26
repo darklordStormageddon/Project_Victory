@@ -56,7 +56,9 @@ void UMyGameInstance::Host(FString ServerName)
 		auto AlreadyExsistingSession = SessionInterface->GetNamedSession(SESSION_NAME);
 		if (AlreadyExsistingSession)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("%s is already exsist. re-createSession."), *SESSION_NAME.ToString());
+			UE_LOG(LogTemp, Warning, TEXT("%s already exists. Destroying and recreating session."), *SESSION_NAME.ToString());
+			// 비동기 콜백에서만 CreateSession() 호출되도록 변경
+			bIsHostingAfterDestroy = true;
 			SessionInterface->DestroySession(SESSION_NAME);
 		}
 		else
@@ -93,47 +95,6 @@ void UMyGameInstance::CreateSession()
 	}
 }
 
-void UMyGameInstance::PrintPublicConnectionNum()
-{
-	if (SessionInterface.IsValid())
-	{
-		FNamedOnlineSession* Session = SessionInterface->GetNamedSession(SESSION_NAME);
-		if (Session)
-		{
-			UE_LOG(LogTemp, Error, TEXT("=== HOST Session Info ==="));
-			UE_LOG(LogTemp, Error, TEXT("NumPublicConnections: %d"),
-				Session->SessionSettings.NumPublicConnections);
-			UE_LOG(LogTemp, Error, TEXT("NumOpenPublicConnections: %d"),
-				Session->NumOpenPublicConnections);
-			UE_LOG(LogTemp, Error, TEXT("NumPrivateConnections: %d"),
-				Session->SessionSettings.NumPrivateConnections);
-			UE_LOG(LogTemp, Error, TEXT("NumOpenPrivateConnections: %d"),
-				Session->NumOpenPrivateConnections);
-			UE_LOG(LogTemp, Error, TEXT("RegisteredPlayers: %d"),
-				Session->RegisteredPlayers.Num());
-
-			// 등록된 플레이어 목록 출력
-			for (const FUniqueNetIdRef& PlayerId : Session->RegisteredPlayers)
-			{
-				UE_LOG(LogTemp, Error, TEXT("Registered Player: %s"),
-					*PlayerId->ToString());
-			}
-		}
-
-		UNetDriver* NetDriver = GetWorld()->GetNetDriver();
-		if (NetDriver && NetDriver->IsServer())
-		{
-			UE_LOG(LogTemp, Log, TEXT("NetDriver is active and listening."));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("NetDriver not initialized or not a server."));
-		}
-	}
-
-	return;
-}
-
 void UMyGameInstance::RefreshServerList()
 {
 	SessionSearch = MakeShareable(new FOnlineSessionSearch());
@@ -149,13 +110,65 @@ void UMyGameInstance::RefreshServerList()
 
 void UMyGameInstance::Join(int Index)
 {
-	if (!SessionInterface.IsValid()) return;
-	if (!SessionSearch.IsValid()) return;
+	if (!SessionInterface.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Join Failed: SessionInterface is invalid"));
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Join Failed: SessionInterface is invalid"));
+		return;
+	}
 
-	if (SessionSearch->SearchResults.Num() > (int32)Index)
-		SessionInterface->JoinSession(0, SESSION_NAME, SessionSearch->SearchResults[Index]);
-	else
-		UE_LOG(LogTemp, Warning, TEXT("Empty Session"));
+	if (!SessionSearch.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Join Failed: SessionSearch is invalid"));
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Join Failed: SessionSearch is invalid"));
+		return;
+	}
+
+	if (SessionSearch->SearchResults.Num() <= Index)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Join Failed: Invalid Index %d (Total: %d)"), Index, SessionSearch->SearchResults.Num());
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Join Failed: Invalid Index %d"), Index));
+		return;
+	}
+
+	// Join 전에 기존 세션 파괴
+	auto ExistingSession = SessionInterface->GetNamedSession(SESSION_NAME);
+	if (ExistingSession)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Destroying existing session before joining"));
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Destroying existing session..."));
+
+		// 델리게이트 바인딩 - Join을 위한 파괴 완료 처리
+		FOnDestroySessionCompleteDelegate DestroyDelegate;
+		DestroyDelegate.BindLambda([this, Index](FName SessionName, bool bWasSuccessful)
+			{
+				if (bWasSuccessful)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Session destroyed successfully, now joining..."));
+					if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Session destroyed, joining..."));
+
+					// 세션 파괴 후 Join 재시도
+					if (SessionSearch.IsValid() && SessionSearch->SearchResults.Num() > Index)
+					{
+						SessionInterface->JoinSession(0, SESSION_NAME, SessionSearch->SearchResults[Index]);
+					}
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("Failed to destroy existing session"));
+					if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Failed to destroy session"));
+				}
+			});
+
+		SessionInterface->OnDestroySessionCompleteDelegates.Add(DestroyDelegate);
+		SessionInterface->DestroySession(SESSION_NAME);
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Attempting to join session at index %d"), Index);
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("Joining session %d..."), Index));
+
+	SessionInterface->JoinSession(0, SESSION_NAME, SessionSearch->SearchResults[Index]);
 }
 
 void UMyGameInstance::OnCreateSessionComplete(FName InSessionName, bool IsSuccess)
@@ -163,6 +176,7 @@ void UMyGameInstance::OnCreateSessionComplete(FName InSessionName, bool IsSucces
 	if (!IsSuccess)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Could not Createsession"));
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Failed to create session"));
 		return;
 	}
 
@@ -172,7 +186,8 @@ void UMyGameInstance::OnCreateSessionComplete(FName InSessionName, bool IsSucces
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	PrintPublicConnectionNum();
+	UE_LOG(LogTemp, Warning, TEXT("Session created successfully, traveling to Lobby"));
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Session created! Traveling..."));
 
 	//레벨(맵)
 	World->ServerTravel("/Game/Import/Maps/Lobby?listen");
@@ -187,8 +202,11 @@ void UMyGameInstance::StartSession()
 
 void UMyGameInstance::OnDestroySessionComplete(FName InSessionName, bool IsSuccess)
 {
-	if (IsSuccess == true)
+	if (IsSuccess == true && bIsHostingAfterDestroy)
+	{
+		bIsHostingAfterDestroy = false;
 		CreateSession();
+	}
 }
 
 void UMyGameInstance::OnFindSessionComplete(bool IsSuccess)
@@ -197,6 +215,9 @@ void UMyGameInstance::OnFindSessionComplete(bool IsSuccess)
 	{
 		ServerNames.Empty();
 		int temp_index = 0;
+
+		UE_LOG(LogTemp, Warning, TEXT("Found %d sessions"), SessionSearch->SearchResults.Num());
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("Found %d sessions"), SessionSearch->SearchResults.Num()));
 
 		for (const FOnlineSessionSearchResult& SearchResult : SessionSearch->SearchResults)
 		{
@@ -214,6 +235,7 @@ void UMyGameInstance::OnFindSessionComplete(bool IsSuccess)
 			SearchResult.Session.SessionSettings.Get(FName("Password"), ServerData.Password);
 			SearchResult.Session.SessionSettings.Get(FName("SessionName"), ServerData.Name);
 			SearchResult.Session.SessionSettings.Get(FName("Public"), ServerData.Accessibility);
+			ServerData.SearchResultIndex = temp_index;
 
 			temp_index++;
 			ServerNames.Add(ServerData);
@@ -222,27 +244,73 @@ void UMyGameInstance::OnFindSessionComplete(bool IsSuccess)
 		UE_LOG(LogTemp, Warning, TEXT("Finished Finding Session"));
 		OnSessionListUpdated.Broadcast();
 	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to find sessions"));
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Failed to find sessions"));
+	}
 }
 
 void UMyGameInstance::OnJoinSessionComplete(FName InSessionName, EOnJoinSessionCompleteResult::Type InResult)
 {
-	if (SessionInterface.IsValid() == false) return;
+	UE_LOG(LogTemp, Warning, TEXT("OnJoinSessionComplete called with result: %d"), (int32)InResult);
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Join Result: %d"), (int32)InResult));
 
-	FString Address;//해당 방의 아이피주소
-	if (!SessionInterface->GetResolvedConnectString(InSessionName, Address))
+	if (SessionInterface.IsValid() == false)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Could not convert IP Address"));
+		UE_LOG(LogTemp, Error, TEXT("SessionInterface is invalid"));
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("SessionInterface is invalid"));
 		return;
 	}
 
+	if (InResult != EOnJoinSessionCompleteResult::Success)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to join session. Result: %d"), (int32)InResult);
+
+		FString ErrorMsg = TEXT("Join Failed: ");
+		switch (InResult)
+		{
+		case EOnJoinSessionCompleteResult::SessionIsFull:
+			ErrorMsg += TEXT("Session is full");
+			break;
+		case EOnJoinSessionCompleteResult::SessionDoesNotExist:
+			ErrorMsg += TEXT("Session does not exist");
+			break;
+		case EOnJoinSessionCompleteResult::CouldNotRetrieveAddress:
+			ErrorMsg += TEXT("Could not retrieve address");
+			break;
+		case EOnJoinSessionCompleteResult::AlreadyInSession:
+			ErrorMsg += TEXT("Already in session");
+			break;
+		case EOnJoinSessionCompleteResult::UnknownError:
+			ErrorMsg += TEXT("Unknown error");
+			break;
+		}
+
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, ErrorMsg);
+		return;
+	}
+
+	FString Address;
+	if (!SessionInterface->GetResolvedConnectString(InSessionName, Address))
+		return;
+
+	UE_LOG(LogTemp, Warning, TEXT("Joining session at: %s"), *Address);
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Traveling to: %s"), *Address));
+
 	UEngine* Engine = GetEngine();
-	if (!Engine) return;
+	if (!Engine)
+		return;
 
 	APlayerController* PC = GetFirstLocalPlayerController();
-	if (PC == nullptr) return;
+	if (PC == nullptr)
+		return;
+
 	PC->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 }
 
 void UMyGameInstance::OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString)
 {
+	UE_LOG(LogTemp, Error, TEXT("Network Failure - Type: %d, Error: %s"), (int32)FailureType, *ErrorString);
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Network Error: %s"), *ErrorString));
 }
