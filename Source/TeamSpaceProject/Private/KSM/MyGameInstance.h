@@ -13,7 +13,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSessionListUpdated);
 
 class UMyGameInstanceSubsystem;
 /**
- * 
+ *
  */
 
 USTRUCT(BlueprintType)
@@ -44,43 +44,44 @@ public:
 UCLASS()
 class UMyGameInstance : public UGameInstance
 {
-	GENERATED_BODY()
-	
+    GENERATED_BODY()
+
 public:
     virtual void Init() override;
 
 public:
 
-	//방생성
-	UFUNCTION(BlueprintCallable, Exec)
-	void Host(FString ServerName);
+    //방생성
+    UFUNCTION(BlueprintCallable, Exec)
+    void Host(FString ServerName);
 
-	UFUNCTION(BlueprintCallable, Exec)
-	void Join(int Index);
+    UFUNCTION(BlueprintCallable, Exec)
+    void Join(int Index);
 
-	UFUNCTION(BlueprintCallable, Exec)
-	void RefreshServerList();
+    UFUNCTION(BlueprintCallable, Exec)
+    void RefreshServerList();
 
-	UFUNCTION(BlueprintCallable, Exec)
-	void StartSession();
+    UFUNCTION(BlueprintCallable, Exec)
+    void StartSession();
 
 private:
-	void OnCreateSessionComplete(FName InSessionName, bool IsSuccess);
-	void OnDestroySessionComplete(FName InSessionName, bool IsSuccess);
-	void OnFindSessionComplete(bool IsSuccess);
-	void OnJoinSessionComplete(FName InSessionName, EOnJoinSessionCompleteResult::Type InResult);
-	void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
-	void CreateSession();
+    void OnCreateSessionComplete(FName InSessionName, bool IsSuccess);
+    void OnDestroySessionComplete(FName InSessionName, bool IsSuccess);
+    void OnFindSessionComplete(bool IsSuccess);
+    void OnJoinSessionComplete(FName InSessionName, EOnJoinSessionCompleteResult::Type InResult);
+    void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
+    void CreateSession();
 
-	FString GameUniqueTag;
+    FString GameUniqueTag;
     IOnlineSessionPtr SessionInterface; //세션 생성할때 쓰는 인터페이스
     TSharedPtr<FOnlineSessionSearch> SessionSearch;
+    bool bIsHostingAfterDestroy = false;
 
 public:
     UPROPERTY(BlueprintReadWrite)
     FString Password;
 
-	UPROPERTY(BlueprintReadWrite)
+    UPROPERTY(BlueprintReadWrite)
     bool bIsGameStarted;
 
     //게임 접근성
@@ -100,7 +101,4 @@ public:
     UPROPERTY(BlueprintReadOnly)
     TArray<FServerData> ServerNames;
 
-    //디버그용 함수
-    UFUNCTION(BlueprintCallable)
-    void PrintPublicConnectionNum();
 };
