@@ -432,3 +432,28 @@ void APSJ_Character::CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutRes
 		OutResult.Rotation = FPSCamera->GetComponentRotation();
 	}
 }
+
+// [추가] RPC 구현부
+bool APSJ_Character::Server_RequestBoarding_Validate(APSJ_Spaceship* ShipToBoard)
+{
+	// 여기서 거리 체크 등을 추가로 할 수 있음
+	return true;
+}
+
+void APSJ_Character::Server_RequestBoarding_Implementation(APSJ_Spaceship* ShipToBoard)
+{
+	if (!ShipToBoard) return;
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		// 1. 우주선 내부 변수 설정 (물리 고정 등)
+		ShipToBoard->SetPilot(this);
+
+		// 2. 서버 권한으로 빙의 실행
+		PC->Possess(ShipToBoard);
+
+		// [핵심 추가] 빙의가 끝났으니, 해당 우주선(이제 내꺼)에게 
+		// "클라이언트 세팅(입력, UI)을 진행해라"라고 명령
+		ShipToBoard->Client_BoardingSuccess();
+	}
+}

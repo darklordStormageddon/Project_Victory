@@ -30,13 +30,11 @@ void APSJ_ShipCockpit::OnInteractEnter(TObjectPtr<UUIBase> OpenedUI)
         {
             UE_LOG(LogTemp, Log, TEXT("Cockpit: Requesting Boarding..."));
 
-            TargetSpaceship->SetPilot(MyChar);
             TargetSpaceship->LinkedCockpit = this;
 
-            if (APlayerController* PC = Cast<APlayerController>(MyChar->GetController()))
-            {
-                PC->Possess(TargetSpaceship);
-            }
+            // [변경 핵심] 직접 Possess 하지 않고 캐릭터의 서버 RPC 함수를 호출
+            MyChar->Server_RequestBoarding(TargetSpaceship);
+
         }
     }
 }

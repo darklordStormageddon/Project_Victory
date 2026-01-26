@@ -105,6 +105,18 @@ public:
 	void Input_Roll(const FInputActionValue& Value);
 	void Input_Exit(const FInputActionValue& Value);
 
+	// [추가] 탑승 성공 시 클라이언트에게 설정(입력, UI)을 지시하는 RPC
+	UFUNCTION(Client, Reliable)
+	void Client_BoardingSuccess();
+
+	// [추가] 하차 성공 시 클라이언트 설정을 정리하는 RPC
+	UFUNCTION(Client, Reliable)
+	void Client_DisembarkSuccess();
+
+	// [추가] 서버에 하차를 요청하는 RPC 함수
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestDisembark();
+
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	void DisembarkCharacter();
 

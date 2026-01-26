@@ -217,34 +217,57 @@ void APSJ_Spaceship::SetPilot(APSJ_Character* NewPilot)
 	CurrentPilot = NewPilot;
 	if (CurrentPilot)
 	{
-		if (APlayerController* PC = Cast<APlayerController>(CurrentPilot->GetController()))
-		{
-			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
-			{
-				Subsystem->ClearAllMappings();
-				if (ShipMappingContext)
-				{
-					Subsystem->AddMappingContext(ShipMappingContext, 0);
-				}
-			}
-		}
 
-		// [추가] RidePoint가 있다면 캐릭터를 해당 위치에 강력하게 고정
+
+			// [유지] 물리 고정 로직은 서버에서 해야 하므로 유지
 		if (RidePoint)
 		{
-			// 물리 충돌 방지 및 위치 고정
 			CurrentPilot->SetActorEnableCollision(false);
 			CurrentPilot->AttachToComponent(RidePoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-
-			// 탑승 중 캐릭터가 움직이지 않도록 이동 컴포넌트 비활성화
 			if (auto* CMC = CurrentPilot->GetCharacterMovement())
 			{
-				CMC->StopMovementImmediately();
-				CMC->DisableMovement();
+					CMC->StopMovementImmediately();
+					CMC->DisableMovement();
 			}
 		}
 	}
 }
+
+// 2. Client RPC 구현: 입력과 UI는 "당사자 컴퓨터(Client)"에서 처리
+void APSJ_Spaceship::Client_BoardingSuccess_Implementation()
+{
+	// A. 입력 매핑 컨텍스트 추가
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+		{
+			Subsystem->ClearAllMappings(); // 캐릭터 조작 키 제거
+			if (ShipMappingContext)
+			{
+				Subsystem->AddMappingContext(ShipMappingContext, 0); // 우주선 조작 키 추가
+			}
+		}
+	}
+
+	// B. UI 열기 (클라이언트 본인 화면에 뜸)
+	UUIManager* _outUIManager = nullptr;
+	if (UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
+	{
+		_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat); // 콕핏 UI 열기
+	}
+}
+
+// 3. Client RPC 구현: 하차 시 정리
+void APSJ_Spaceship::Client_DisembarkSuccess_Implementation()
+{
+	// UI 닫기 등 필요한 정리 작업 수행
+	// 예: UIManager->CloseUI(...) 
+
+	// 입력 매핑은 캐릭터로 빙의(Possess)될 때 캐릭터 클래스에서 
+	// 다시 SetupPlayerInputComponent가 호출되므로 여기서 굳이 안 빼도 되지만,
+	// 확실하게 하려면 ClearAllMappings를 해줘도 좋습니다.
+}
+
 
 void APSJ_Spaceship::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -273,6 +296,19 @@ void APSJ_Spaceship::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* O
 
 void APSJ_Spaceship::Input_Exit(const FInputActionValue& Value)
 {
+	// [변경] 클라이언트든 서버든 무조건 서버 RPC를 호출하여 처리
+	Server_RequestDisembark();
+}
+
+// [추가] 하차 요청 RPC 구현
+bool APSJ_Spaceship::Server_RequestDisembark_Validate()
+{
+	return true;
+}
+
+void APSJ_Spaceship::Server_RequestDisembark_Implementation()
+{
+	// 서버에서 실제 하차 로직 수행
 	DisembarkCharacter();
 }
 
@@ -286,6 +322,9 @@ void APSJ_Spaceship::DisembarkCharacter()
 	// 2. 컨트롤러 제어권 반환
 	if (AController* ShipController = GetController())
 	{
+		// 내리기 직전에 클라이언트 정리 RPC 호출
+		Client_DisembarkSuccess();
+
 		ShipController->Possess(ExitingChar);
 	}
 

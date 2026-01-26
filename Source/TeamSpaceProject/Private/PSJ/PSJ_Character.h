@@ -60,6 +60,10 @@ public:
 	APawn* CurrentSpaceship = nullptr;
 	void SetCurrentSpaceship(APawn* NewSpaceship);
 
+	// [추가] 서버에 탑승을 요청하는 RPC 함수
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestBoarding(APSJ_Spaceship* ShipToBoard);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* InteractAction;
