@@ -19,6 +19,9 @@ class UUIPanelTurretSeat : public UUIBase
 {
 	GENERATED_BODY()
 
+public:
+	UUIPanelTurretSeat(const FObjectInitializer& ObjectInitializer);
+
 private:
 	// 직렬화
 	UPROPERTY()
@@ -31,7 +34,7 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* TXT_LeftAmmo;
 
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, Category = "TurretSeat|Component")
 	TObjectPtr<UCircleProgressBar> _circleProgressBar = nullptr;
 #pragma endregion Main Turret
 
@@ -73,6 +76,8 @@ protected:
 	FLinearColor _leftAmmoColorZero = FColor::Red;
 
 protected:
+	virtual void NativePreConstruct() override;
+
 	virtual void NativeOnInitialized() override;
 
 	void RegisterEvent() override;

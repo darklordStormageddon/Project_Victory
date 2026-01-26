@@ -53,7 +53,8 @@ void AJHSPlayerBase::BeginPlay()
 	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
 		return;
 
-	_outUIManager->OpenUI(E_UI_TYPE::UIPanelTurretSeat);*/
+	_outUIManager->OpenUI(E_UI_TYPE::UIPanelCollectSeat);*/
+
 	
 	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::FireTurret, 3.0f, false);
 }

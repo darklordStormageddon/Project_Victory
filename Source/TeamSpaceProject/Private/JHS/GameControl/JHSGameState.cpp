@@ -5,6 +5,7 @@
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/PlayerStateGroup.h"
+#include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/Event/EventManager.h"
@@ -20,6 +21,10 @@ AJHSGameState::AJHSGameState()
 
 	_playerStateGroup = CreateDefaultSubobject<UPlayerStateGroup>(TEXT("PlayerStateGroup"));
 
+	_collectStateGroup = CreateDefaultSubobject<UCollectStateGroup>(TEXT("CollectStateGroup"));
+
+	_containerStateGroup = CreateDefaultSubobject<UContainerStateGroup>(TEXT("ContainerStateGroup"));
+
 	_turretStateGroup = CreateDefaultSubobject<UTurretStateGroup>(TEXT("TurretStateGroup"));
 	for (int32 i = 0; i < ((int32)E_AMMO_TYPE::Missile + 1); i++)
 	{
@@ -27,8 +32,6 @@ AJHSGameState::AJHSGameState()
 		_ammoData.AmmoType = (E_AMMO_TYPE)i;
 		_initAmmoDataArray.Add(_ammoData);
 	}
-
-	_containerStateGroup = CreateDefaultSubobject<UContainerStateGroup>(TEXT("ContainerStateGroup"));
 }
 
 void AJHSGameState::BeginPlay()
@@ -52,10 +55,12 @@ void AJHSGameState::InitializeGameState(TArray<FPlayerStateData> PlayerStateArra
 	_spaceShipStateGroup->InitializeSpaceShipState(this, _initSpaceShipState);
 
 	_playerStateGroup->InitializePlayerState(this, PlayerStateArray, _maxPlayerRadiation);
-	
-	_turretStateGroup->InitializeTurretState(this);
+
+	_collectStateGroup->InitializeCollectState(this);
 
 	_containerStateGroup->InitializeContainerState(this, _initContainerState, _initAmmoDataArray);
+	
+	_turretStateGroup->InitializeTurretState(this);
 
 	UUIManager* _outUIManager = nullptr;
 	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
@@ -70,9 +75,11 @@ void AJHSGameState::SendCurrentDataEvent()
 
 	_playerStateGroup->UpdatePlayerState();
 
-	_turretStateGroup->UpdateTurretState();
+	_collectStateGroup->UpdateCollectState();
 
 	_containerStateGroup->UpdateContainerState();
+
+	_turretStateGroup->UpdateTurretState();
 }
 
 TObjectPtr<UEventManager> AJHSGameState::GetEventManager()

@@ -11,6 +11,25 @@
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 
+UUIPanelTurretSeat::UUIPanelTurretSeat(const FObjectInitializer& ObjectInitializer)
+    : Super(ObjectInitializer)
+{
+    // CircleProgressBar 컴포넌트 생성 (에디터에서 보이도록)
+    _circleProgressBar = CreateDefaultSubobject<UCircleProgressBar>(TEXT("CircleProgressBar"));
+}
+
+void UUIPanelTurretSeat::NativePreConstruct()
+{
+    Super::NativePreConstruct();
+
+    // 에디터 미리보기를 위한 CircleProgressBar 초기화
+    // EditDefaultsOnly 값이 로드된 후, BindWidget이 바인딩된 후 실행됨
+    if (_circleProgressBar && IMG_LeftAmmo)
+    {
+        _circleProgressBar->InitializeCircleProgressBar(this, IMG_LeftAmmo, _initTexture, _isClockWise);
+    }
+}
+
 void UUIPanelTurretSeat::NativeOnInitialized()
 {
     Super::NativeOnInitialized();
@@ -20,13 +39,6 @@ void UUIPanelTurretSeat::NativeOnInitialized()
         return;
     
     _containerStateGroup = _outGameState->GetContainerStateGroup();
-
-    // CircleProgressBar 초기화
-    _circleProgressBar = NewObject<UCircleProgressBar>(this);
-    if (_circleProgressBar && IMG_LeftAmmo)
-    {
-        _circleProgressBar->InitializeCircleProgressBar(this, IMG_LeftAmmo, _initTexture, _isClockWise);
-    }
 }
 
 void UUIPanelTurretSeat::RegisterEvent()

@@ -14,6 +14,9 @@ UCLASS()
 class UCollectToolDurability : public UUserWidget
 {
 	GENERATED_BODY()
+
+public:
+	UCollectToolDurability(const FObjectInitializer& ObjectInitializer);
 	
 private:
 	UPROPERTY(meta = (BindWidget))
@@ -24,13 +27,18 @@ private:
 
 	FDelegateHandle _eventHandleOnChangeTurret;
 
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, Category = "CollectTool|Component")
 	TObjectPtr<UCircleProgressBar> _circleProgressBar = nullptr;
 
 protected:
-	UPROPERTY(EditDefaultsOnly, Category = "TurretSeat|Generator")
+	UPROPERTY(EditDefaultsOnly, Category = "CollectTool|Generator")
 	TObjectPtr<UTexture2D> _initTexture = nullptr;
 
 protected:
+	virtual void NativePreConstruct() override;
+
 	virtual void NativeOnInitialized() override;
+
+public:
+	void SetDurabilityProgress(float Progress);
 };
