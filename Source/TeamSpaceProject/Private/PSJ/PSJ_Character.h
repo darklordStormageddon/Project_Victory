@@ -5,7 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
-#include "Net/UnrealNetwork.h" // 리플리케이션 필수 헤더
+#include "Net/UnrealNetwork.h" 
+#include "Engine/NetSerialization.h" // [추가] 이것이 있어야 NetQuantize100 사용 가능
 #include "PSJ_Character.generated.h"
 
 class UCameraComponent;
@@ -13,6 +14,7 @@ class UInputAction;
 class UInputComponent;
 class UInputMappingContext;
 class APawn;
+class APSJ_Spaceship; // [★수정★] 이 줄이 빠져 있었습니다! 꼭 넣어야 합니다.
 
 // [필수 구조체] 상대 좌표 동기화용 데이터
 USTRUCT()
@@ -47,12 +49,15 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	// [추가] 컨트롤러가 빙의할 때 상태 리셋을 위한 함수
+
+	void Client_RestoreInput();
+
 	virtual void PossessedBy(AController* NewController) override;
-	// [추가됨] 화면 떨림 방지를 위한 카메라 보정 함수
 	virtual void CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult) override;
 
-	// [추가됨] 리플리케이션 설정 함수
+	void ForceClearAnchoring();
+	void Client_ForceCleanupImmediate();
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
@@ -60,14 +65,26 @@ public:
 	APawn* CurrentSpaceship = nullptr;
 	void SetCurrentSpaceship(APawn* NewSpaceship);
 
-	// [추가] 서버에 탑승을 요청하는 RPC 함수
+	// [중요] 위에서 class APSJ_Spaceship; 을 선언했기 때문에 이제 에러가 나지 않습니다.
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RequestBoarding(APSJ_Spaceship* ShipToBoard);
+
+	// [신규] 타이머를 통해 호출될 최종 입력 복구 함수
+	void Client_LateInputRestore();
+
+	// [추가] 하차 시 서버/클라 양쪽에서 변수를 세팅할 함수
+	void SetBaseActorData(AActor* NewBase);
+
+	// [신규] 하차 시 강제로 입력을 활성화하는 함수
+	void ForceInputRecovery();
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* InteractAction;
 	void Interact(const FInputActionValue& Value);
+
+	// [추가] 클라이언트 전용: "서버가 날 조종하라고 보낸 컨트롤러가 도착했다!" 라는 검증 함수
+	virtual void OnRep_Controller() override;
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "Mag Boots")
@@ -82,21 +99,16 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Movement Stats")
 	float FlyModeMaxSpeed = 600.0f;
 
-	// [추가됨] WASD 입력을 저장할 변수 (Tick에서 사용)
 	FVector2D CurrentInputVector = FVector2D::ZeroVector;
 
-	// [추가됨] 서버와 동기화할 상대 좌표 데이터
 	UPROPERTY(Replicated)
 	FRelativeSpaceData ReplicatedRelativeData;
 
-	// 바닥 감지 및 로컬 보정 함수
 	void UpdateMagBoots(float DeltaTime);
 
-	// [추가됨] 서버로 상대 위치를 업데이트하는 RPC 함수
 	UFUNCTION(Server, Unreliable, WithValidation)
 	void Server_UpdateRelativeTransform(FVector NewRelLoc, FRotator NewRelRot);
 
-	// 기존 변수들 (유지)
 	FVector CurrentFloorNormal = FVector::UpVector;
 	UPROPERTY(Transient)
 	AActor* LastFloorActor = nullptr;
