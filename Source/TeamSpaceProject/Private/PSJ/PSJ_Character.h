@@ -14,7 +14,7 @@ class UInputAction;
 class UInputComponent;
 class UInputMappingContext;
 class APawn;
-class APSJ_Spaceship; // [★수정★] 이 줄이 빠져 있었습니다! 꼭 넣어야 합니다.
+class APSJ_Spaceship; 
 
 // [필수 구조체] 상대 좌표 동기화용 데이터
 USTRUCT()
@@ -59,6 +59,8 @@ public:
 	void Client_ForceCleanupImmediate();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
