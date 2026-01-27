@@ -12,8 +12,8 @@ class UEventManager;
 class USpaceShipStateGroup;
 class UPlayerStateGroup;
 class UCollectStateGroup;
-class UTurretStateGroup;
 class UContainerStateGroup;
+class UTurretStateGroup;
 
 UCLASS()
 class AJHSGameState : public AGameState

@@ -44,8 +44,12 @@ private:
 
 	bool _isAddMode = true;
 
+	int32 _toolIndex = -1;
+
 private:
 	void FireTurret();
 
 	void AddElement();
+
+	void UseCollectTool();
 };

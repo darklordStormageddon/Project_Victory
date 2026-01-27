@@ -66,8 +66,6 @@ public:
 	bool TryReloadTurret(E_TURRET_POSITION TurretPosition);
 
 private:
-	void SetTurretStand();
-
 	void LoadTurretDataTable();
 
 	int32 GetTurretKey(bool IsMainTurret, E_AMMO_TYPE AmmoType);

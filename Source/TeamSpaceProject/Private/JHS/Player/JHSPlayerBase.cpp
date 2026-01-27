@@ -7,8 +7,9 @@
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/PlayerStateGroup.h"
-#include "JHS/GameControl/StateData/TurretStateGroup.h"
+#include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "JHS/GameControl/StateData/ContainerStateGroup.h"
+#include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
 #include "Kismet/GameplayStatics.h"
 #include "JHS/SpaceObject/DriveSeatRader.h"
@@ -45,7 +46,7 @@ void AJHSPlayerBase::BeginPlay()
 
 	UTurretStateGroup* _turretStateGroup = _gameState->GetTurretStateGroup();
 	_turretStateGroup->SetInfiniteMagMode(true);
-	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet, nullptr);
+	//_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet, nullptr);
 	//_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Left, E_AMMO_TYPE::Bullet, nullptr);
 	//_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Right, E_AMMO_TYPE::Cannon, nullptr);*/
 
@@ -56,7 +57,7 @@ void AJHSPlayerBase::BeginPlay()
 	_outUIManager->OpenUI(E_UI_TYPE::UIPanelCollectSeat);*/
 
 	
-	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::FireTurret, 3.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::UseCollectTool, 3.0f, false);
 }
 
 // Called every frame
@@ -117,7 +118,6 @@ void AJHSPlayerBase::AddElement()
 	if (_containerStateGroup == nullptr)
 		return;
 
-
 	_elementIndex++;
 	int32 _lastIndex = (int32)E_ELEMENT_TYPE::CarbonFiber;
 	if (_elementIndex >= _lastIndex)
@@ -136,4 +136,24 @@ void AJHSPlayerBase::AddElement()
 	}
 
 	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::AddElement, 1.0f, false);
+}
+
+void AJHSPlayerBase::UseCollectTool()
+{
+	if (_gameState == nullptr)
+		return;
+
+	UCollectStateGroup* _collectStateGroup = _gameState->GetCollectStateGroup();
+
+	_toolIndex++;
+	int32 _lastIndex = (int32)E_COLLECT_TOOL_TYPE::NONE;
+	if (_toolIndex >= _lastIndex)
+	{
+		_toolIndex %= _lastIndex;
+	}
+
+	float _outToolDamage = 0.0f;
+	_collectStateGroup->TryUseTool((E_COLLECT_TOOL_TYPE)_toolIndex, _outToolDamage);
+
+	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::UseCollectTool, 1.0f, false);
 }

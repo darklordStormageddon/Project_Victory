@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "JHS/UI/Panel/UIPanelTurretSeat.h"
+#include "JHS/UI/Panel/Turret/UIPanelTurretSeat.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/GameControl/JHSGameState.h"

@@ -3,6 +3,7 @@
 
 #include "JHS/UI/Panel/Container/ContainerItemSlot.h"
 #include "Components/SizeBox.h"
+#include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Components/UniformGridSlot.h"
 
@@ -16,8 +17,13 @@ void UContainerItemSlot::InitializeSlot(float slotSizeWidth, float slotSizeHeigh
 	}
 }
 
-void UContainerItemSlot::UpdateItemInfo(FString ItemName, int32 Amount)
+void UContainerItemSlot::UpdateItemInfo(TObjectPtr<UTexture2D> Image, FString ItemName, int32 Amount)
 {
+	if (IMG_ItemIcon != nullptr)
+	{
+		IMG_ItemIcon->SetBrushFromSoftTexture(Image);
+	}
+
 	if (TXT_ItemName != nullptr)
 	{
 		TXT_ItemName->SetText(FText::FromString(ItemName));

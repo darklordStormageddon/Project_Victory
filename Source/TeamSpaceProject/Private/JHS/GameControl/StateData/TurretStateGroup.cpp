@@ -2,15 +2,15 @@
 
 
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
-#include "Kismet/GameplayStatics.h"
-#include "JHS/Turret/TurretStand.h"
 #include "JHS/GameControl/JHSGameState.h"
-#include "JHS/GameControl/StateData/ContainerStateGroup.h"
-#include "JHS/Event/EventManager.h"
-#include "JHS/Event/CommonEventBase.h"
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "YSH/resource/TurretDataTable.h"
+#include "JHS/Event/CommonEventBase.h"
+#include "JHS/Event/EventManager.h"
 #include "JHS/GameControl/CommonEnums.h"
+#include "JHS/GameControl/StateData/ContainerStateGroup.h"
+#include "Kismet/GameplayStatics.h"
+#include "JHS/Turret/TurretStand.h"
 #include "PSJ/PSJ_ShipCockpit.h"
 
 // Sets default values for this component's properties
@@ -133,7 +133,9 @@ bool UTurretStateGroup::TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_
 	bool _isEquiped = _outTurretStand->TryEquipTurret(Turret, AmmoType);
 	if (_isEquiped)
 	{
-		_turretChair->SetTargetPawn(Cast<APawn>(Turret));
+		APawn* _pawn = Cast<APawn>(Turret);
+		UE_LOG(LogTemp, Warning, TEXT("Turret Name: %s"), *_pawn->GetName());
+		//_turretChair->SetTargetPawn();
 	}
 	return _isEquiped;
 }
@@ -208,7 +210,7 @@ void UTurretStateGroup::LoadTurretDataTable()
 	TObjectPtr<UDataTable> _turretDataTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ConstantLibrary::Resource.DataTable.TURRET_INFO_PATH));
 	if (!_turretDataTable)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to load Room Data Table from path [%s]"), *ConstantLibrary::Resource.DataTable.TURRET_INFO_PATH);
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to load Turret Data Table from path [%s]"), *ConstantLibrary::Resource.DataTable.TURRET_INFO_PATH);
 		return;
 	}
 

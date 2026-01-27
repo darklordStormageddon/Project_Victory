@@ -40,5 +40,5 @@ public:
 public:
 	void InitializeSlot(float slotSizeWidth, float slotSizeHeight);
 
-	void UpdateItemInfo(FString ItemName, int32 Amount);
+	void UpdateItemInfo(TObjectPtr<UTexture2D> Image, FString ItemName, int32 Amount);
 };

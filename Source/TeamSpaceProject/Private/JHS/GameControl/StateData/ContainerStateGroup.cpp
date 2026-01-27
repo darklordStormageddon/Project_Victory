@@ -3,9 +3,10 @@
 
 #include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/GameControl/JHSGameState.h"
-#include "JHS/Event/EventManager.h"
-#include "JHS/Event/CommonEventBase.h"
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
+#include "KSM/DataTable/ElementDataTable.h"
+#include "JHS/Event/CommonEventBase.h"
+#include "JHS/Event/EventManager.h"
 #include "JHS/GameControl/CommonEnums.h"
 
 // Sets default values for this component's properties
@@ -42,6 +43,7 @@ void UContainerStateGroup::InitializeContainerState(TObjectPtr<AJHSGameState> Ga
 	_gameState = GameState;
 
 	_containerState = InitContainerState;
+	_containerState.AmmoDataMap.Empty();
 	for (auto _ammoData : AmmoDataArray)
 	{
 		_containerState.AmmoDataMap.Add(_ammoData.AmmoType, _ammoData);
@@ -67,7 +69,7 @@ void UContainerStateGroup::AddElement(E_ELEMENT_TYPE ElementType, int32 Amount)
 	{
 		FElementData _newElementData;
 		_newElementData.ElementType = ElementType;
-		_newElementData.ValueOfElement = 0;
+		_newElementData.Price = 0;
 		_newElementData.Amount = Amount;
 		_containerState.ElementDataMap.Add(_newElementData.ElementType, _newElementData);
 		_elementData = _containerState.ElementDataMap.Find(ElementType);
@@ -78,8 +80,7 @@ void UContainerStateGroup::AddElement(E_ELEMENT_TYPE ElementType, int32 Amount)
 	}
 
 	UEventOnChangeElementData* _event = NewObject<UEventOnChangeElementData>(this);
-	_event->ElementType = ElementType;
-	_event->Amount = _elementData->Amount;
+	_event->ElementData = *_elementData;
 	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangeElementData>(_event);
 }
 
@@ -93,13 +94,11 @@ void UContainerStateGroup::RemoveElement(E_ELEMENT_TYPE ElementType, int32 Amoun
 	int32 _amount = _elementData->Amount;
 	if (_elementData->Amount <= 0)
 	{
-		_containerState.ElementDataMap.Remove(ElementType);
 		_amount = 0;
 	}
 
 	UEventOnChangeElementData* _event = NewObject<UEventOnChangeElementData>(this);
-	_event->ElementType = ElementType;
-	_event->Amount = _amount;
+	_event->ElementData = *_elementData;
 	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangeElementData>(_event);
 }
 
@@ -129,51 +128,42 @@ bool UContainerStateGroup::TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutA
 
 void UContainerStateGroup::LoadResource()
 {
-	bool _isReadyElementData = false;
 	// Element
-	if (_isReadyElementData)
+	_containerState.ElementDataMap.Empty();
+
+	TObjectPtr<UDataTable> _elementDataTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ConstantLibrary::Resource.DataTable.ELEMENT_INFO_PATH));
+	if (!_elementDataTable)
 	{
-		TMap<E_ELEMENT_TYPE, FElementData> _elementDataMap;
+		UE_LOG(LogTemp, Error, TEXT("Failed to load Element Data Table from path [%s]"), *ConstantLibrary::Resource.DataTable.ELEMENT_INFO_PATH);
+		return;
+	}
 
-		TObjectPtr<UDataTable> _elementDataTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ConstantLibrary::Resource.DataTable.ELEMENT_INFO_PATH));
-		if (!_elementDataTable)
+	TArray<FName> _rowNames = _elementDataTable->GetRowNames();
+	for (const FName& _rowName : _rowNames)
+	{
+		FElementProperty* _turrerInfo = _elementDataTable->FindRow<FElementProperty>(_rowName, TEXT(""));
+		if (_turrerInfo)
 		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to load Room Data Table from path [%s]"), *ConstantLibrary::Resource.DataTable.ELEMENT_INFO_PATH);
-			return;
-		}
+			FElementData _newElementData;
+			_newElementData.ElementType = _turrerInfo->ElementType;
+			_newElementData.Price = _turrerInfo->Price;
+			_newElementData.Amount = 0;
 
-		TArray<FName> _rowNames = _elementDataTable->GetRowNames();
-		for (const FName& _rowName : _rowNames)
-		{
-			//FTurretInitState* _turrerInfo = _turretDataTable->FindRow<FTurretInitState>(_rowName, TEXT(""));
-			if (_isReadyElementData) //_turrerInfo)
+			// Texture
+			FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_ELEMENT_TYPE>(_newElementData.ElementType);
+			FString _texturePath = ConstantLibrary::Resource.Image.ELEMENT_FOLDER_PATH + _fileName + "." + _fileName;
+			UTexture2D* _loadedTexture = LoadObject<UTexture2D>(nullptr, *_texturePath);
+			if (_loadedTexture != nullptr)
 			{
-				E_ELEMENT_TYPE _outElementType = E_ELEMENT_TYPE::NONE;
-				if (!CommonEnums::TryGetElementType("", _outElementType))
-					return;
-
-				FElementData _newElementData;
-				_newElementData.ElementType = _outElementType;
-				_newElementData.ValueOfElement = 0;
-				_newElementData.Amount = 0;
-				// Texture
-				FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_ELEMENT_TYPE>(_newElementData.ElementType);
-				FString _texturePath = ConstantLibrary::Resource.Image.AMMO_FOLDER_PATH + _fileName + "." + _fileName;
-				UTexture2D* _loadedTexture = LoadObject<UTexture2D>(nullptr, *_texturePath);
-				if (_loadedTexture != nullptr)
-				{
-					_newElementData.ElementImage = _loadedTexture;
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("UContainerStateGroup: Failed to load element texture: %s"), *_texturePath);
-				}
-
-				_containerState.ElementDataMap.Add(_newElementData.ElementType, _newElementData);
+				_newElementData.ElementImage = _loadedTexture;
 			}
-		}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("UContainerStateGroup: Failed to load element texture: %s"), *_texturePath);
+			}
 
-		UE_LOG(LogTemp, Warning, TEXT("Turret Data Table loaded successfully. %d rows loaded"), _containerState.ElementDataMap.Num());
+			_containerState.ElementDataMap.Add(_newElementData.ElementType, _newElementData);
+		}
 	}
 
 	// Ammo

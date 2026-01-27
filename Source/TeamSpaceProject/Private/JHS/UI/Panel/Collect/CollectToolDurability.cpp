@@ -26,7 +26,8 @@ void UCollectToolDurability::NativeOnInitialized()
     Super::NativeOnInitialized();
 }
 
-void UCollectToolDurability::SetDurabilityProgress(float Progress)
+void UCollectToolDurability::SetDurabilityProgress(float Progress, TObjectPtr<UTexture2D> ToolImage)
 {
     _circleProgressBar->SetProgress(Progress);
+    IMG_Icon->SetBrushFromSoftTexture(ToolImage);
 }

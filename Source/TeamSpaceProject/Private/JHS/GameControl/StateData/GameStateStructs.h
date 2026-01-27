@@ -67,10 +67,43 @@ public:
 };
 #pragma endregion Player
 
+#pragma region Collect
+UENUM(BlueprintType)
+enum class E_COLLECT_TOOL_TYPE : uint8
+{
+	Vacuum = 0 UMETA(DisplayName = "Vacuum"),
+	Laser UMETA(DisplayName = "Laser"),
+	Drill UMETA(DisplayName = "Drill"),
+
+	NONE UMETA(DisplayName = "NONE"),
+}; 
+
+USTRUCT(BlueprintType)
+struct FCollectToolData
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY()
+	E_COLLECT_TOOL_TYPE CollectToolType;
+
+	// 내구도
+	UPROPERTY()
+	FMaxCurrentData Durability;
+
+	// 작업 속도
+	UPROPERTY()
+	float ToolDamage;
+
+	UPROPERTY()
+	UTexture2D* CollectToolImage = nullptr;
+};
+#pragma endregion Collect
+
 #pragma region Turret
 UENUM(BlueprintType)
 enum class E_AMMO_TYPE : uint8
-{	
+{
 	Bullet = 0 UMETA(DisplayName = "Bullet"),
 	Cannon UMETA(DisplayName = "Cannon"),
 	Missile UMETA(DisplayName = "Missile"),
@@ -154,11 +187,11 @@ struct FElementData
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY()
 	E_ELEMENT_TYPE ElementType;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 ValueOfElement;
+	UPROPERTY()
+	int32 Price;
 
 	UPROPERTY()
 	int32 Amount;
