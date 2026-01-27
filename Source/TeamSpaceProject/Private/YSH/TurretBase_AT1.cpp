@@ -226,6 +226,20 @@ FRotator ATurretBase_AT1::GetSpreadRotation(const FRotator& BaseRotation) const
 	return SpreadRotation;
 }
 
+void ATurretBase_AT1::InvalidateCurrentTarget(AActor* DestroyedTarget)
+{
+	// 파괴된 적이 현재 타겟인 경우 타겟 초기화
+	if (CurrentTarget == DestroyedTarget)
+	{
+		CurrentTarget = nullptr;
+
+		if (bShowDebugRange)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("ATurretBase_AT1: Target destroyed, searching for new target"));
+		}
+	}
+}
+
 void ATurretBase_AT1::TryAutoFire()
 {
 	UTurretStateGroup* TurretStateGroup = _cachedGameState->GetTurretStateGroup();
@@ -271,6 +285,9 @@ void ATurretBase_AT1::TryAutoFire()
 		{
 			// 지연 유도를 위해 타겟 설정
 			Projectile->SetHomingTarget(CurrentTarget);
+
+			// 터렛 참조 설정 (적 처치 시 알림용)
+			Projectile->SetOwningTurret(this);
 
 			//UE_LOG(LogTemp, Warning, TEXT("ATurretBase_AT1: Projectile fired at target %s"), *CurrentTarget->GetName());
 		}
