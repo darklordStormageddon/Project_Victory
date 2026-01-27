@@ -1,6 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "YSH/Projectile.h"
+#include "YSH/TurretBase_AT1.h"
 #include "KSM/HealthComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -307,6 +308,11 @@ void AProjectile::CleanupBoostEffect()
 	}
 }
 
+void AProjectile::SetOwningTurret(AActor* Turret)
+{
+	OwningTurret = Turret;
+}
+
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
 	// 자신이나 발사한 Actor는 무시
@@ -328,17 +334,35 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 		UE_LOG(LogTemp, Warning, TEXT("Projectile hit: %s at location: %s"), *OtherActor->GetName(), *HitLocation.ToString());
 	}
 
+	bool bTargetKilled = false;
+
 	// ===== HealthComponent를 사용한 데미지 적용 (Bullet 로직 적용) =====
 	if (UHealthComponent* HealthComp = OtherActor->FindComponentByClass<UHealthComponent>())
 	{
 		HealthComp->TakeDamage(Damage);
 		UE_LOG(LogTemp, Log, TEXT("Projectile dealt %.1f damage to %s via HealthComponent"), Damage, *OtherActor->GetName());
+
+		// 체력이 0 이하인지 확인
+		if (HealthComp->CurrentHealth <= 0.0f)
+		{
+			bTargetKilled = true;
+			UE_LOG(LogTemp, Warning, TEXT("Projectile killed target: %s"), *OtherActor->GetName());
+		}
 	}
 	// ===== 기존 UGameplayStatics::ApplyDamage 방식 (백업) =====
 	else
 	{
 		UGameplayStatics::ApplyDamage(OtherActor, Damage, GetInstigatorController(), this, UDamageType::StaticClass());
 		UE_LOG(LogTemp, Log, TEXT("Projectile dealt %.1f damage to %s via UGameplayStatics"), Damage, *OtherActor->GetName());
+	}
+
+	// 적을 처치한 경우 터렛에게 알림
+	if (bTargetKilled && OwningTurret.IsValid())
+	{
+		if (ATurretBase_AT1* Turret = Cast<ATurretBase_AT1>(OwningTurret.Get()))
+		{
+			Turret->InvalidateCurrentTarget(OtherActor);
+		}
 	}
 
 	// 부스트 이펙트 정리 (적중 이펙트 생성 전)

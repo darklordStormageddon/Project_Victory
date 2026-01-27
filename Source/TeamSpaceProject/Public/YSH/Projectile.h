@@ -38,6 +38,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SetHomingTarget(AActor* Target);
 
+	// 터렛 참조 설정 함수
+	UFUNCTION(BlueprintCallable, Category = "Projectile")
+	void SetOwningTurret(AActor* Turret);
+
 protected:
 	// === 컴포넌트 ===
 	UPROPERTY(VisibleAnywhere, Category = "Components")
@@ -155,4 +159,8 @@ private:
 	// 부스트 이펙트 컴포넌트 참조
 	UPROPERTY()
 	UNiagaraComponent* ActiveBoostEffect = nullptr;
+
+	// 발사한 터렛에 대한 약한 참조
+	UPROPERTY()
+	TWeakObjectPtr<AActor> OwningTurret;
 };
