@@ -37,6 +37,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	UHealthComponent* HealthComp;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Debug")
+	bool DebugRevive;
+	UPROPERTY(EditDefaultsOnly, Category = "Debug")
+	float RiviveTime = 3.f;
+
 public:	
 	// Sets default values for this actor's properties
 	ATargetBase();

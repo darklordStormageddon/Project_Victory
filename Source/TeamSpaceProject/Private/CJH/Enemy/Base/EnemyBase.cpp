@@ -108,8 +108,20 @@ void AEnemyBase::EnemyDeath()
 			GetActorTransform()
 		);
 	}
-	
-	this -> Destroy();
+
+	if (DebugRevive)
+	{
+		FTimerHandle DebugReviveHandle;
+		GetWorld()->GetTimerManager().SetTimer(
+			DebugReviveHandle, 
+			[this](){
+				HealthComp->CurrentHealth = HealthComp->MaxHealth;
+			},
+			RiviveTime,
+			false);
+	}
+	else
+		this -> Destroy();
 }
 
 void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
