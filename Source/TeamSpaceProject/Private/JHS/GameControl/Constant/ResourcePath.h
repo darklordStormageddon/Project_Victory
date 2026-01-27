@@ -13,7 +13,8 @@ struct FResourceDataTable
 public:
 	FResourceDataTable()
 		: TURRET_INFO_PATH(TEXT("/Game/Main/PS_YSH/Data/DT_TurretDataTable.DT_TurretDataTable"))
-		, ELEMENT_INFO_PATH(TEXT("/Game/Main/PS_KSM/"))
+		, ELEMENT_INFO_PATH(TEXT("/Game/Main/PS_KSM/..."))
+		, COLLECT_TOOL_PATH(TEXT("/Game/Main/PS_KSM/..."))
 	{}
 
 	UPROPERTY()
@@ -21,6 +22,9 @@ public:
 
 	UPROPERTY()
 	FString ELEMENT_INFO_PATH;
+
+	UPROPERTY()
+	FString COLLECT_TOOL_PATH;
 };
 
 USTRUCT(BlueprintType)
@@ -64,11 +68,12 @@ public:
 		: TEXTURE_HEADER(TEXT("Tex_"))
 		, INTERACT_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/Interact/"))
 		, ELEMENT_FOLDER_PATH(TEXT("/Game/Main/PS_KSM/"))
+		, COLLECT_FOLDER_PATH(TEXT("/Game/Main/PS-KSM/"))
 		, AMMO_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/AmmoType/"))
 	{}
 
 	UPROPERTY()
-	FString TEXTURE_HEADER;;
+	FString TEXTURE_HEADER;
 
 	UPROPERTY()
 	FString INTERACT_FOLDER_PATH;
@@ -77,7 +82,33 @@ public:
 	FString ELEMENT_FOLDER_PATH;
 
 	UPROPERTY()
+	FString COLLECT_FOLDER_PATH;
+
+	UPROPERTY()
 	FString AMMO_FOLDER_PATH;
+};
+
+USTRUCT(BlueprintType)
+struct FResourceMaterial
+{
+	GENERATED_BODY()
+
+public:
+	FResourceMaterial()
+		: MATERIAL_HEADER(TEXT("MT_"))
+		, MATERIAL_FORDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Materials/"))
+		, CIRCLE_PROGRESS_BAR(TEXT("CircleProgressBar"))
+	{
+	}
+
+	UPROPERTY()
+	FString MATERIAL_HEADER;
+
+	UPROPERTY()
+	FString MATERIAL_FORDER_PATH;
+
+	UPROPERTY()
+	FString CIRCLE_PROGRESS_BAR;
 };
 
 USTRUCT(BlueprintType)
@@ -135,6 +166,7 @@ public:
 	FResourceDataTable DataTable;
 	FResourceUI UI;
 	FResourceImage Image;
+	FResourceMaterial Material;
 	FResourceSpaceObject SpaceObject;
 	FResourceTurret TurretBP;
 };

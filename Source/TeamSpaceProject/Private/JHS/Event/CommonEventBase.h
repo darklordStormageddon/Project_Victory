@@ -89,6 +89,26 @@ public:
 };
 #pragma endregion Turret
 
+#pragma region Collect
+UCLASS(BlueprintType)
+class UEventOnCollectToolDurability : public UCommonEventBase
+{
+	GENERATED_BODY()
+
+public:
+	UEventOnCollectToolDurability(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{
+	}
+
+	/*UEventOnCollectToolDurability(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{
+	}*/
+};
+#pragma endregion Collect
+
+
 #pragma region Container
 UCLASS(BlueprintType)
 class UEventOnChangeElementData : public UCommonEventBase

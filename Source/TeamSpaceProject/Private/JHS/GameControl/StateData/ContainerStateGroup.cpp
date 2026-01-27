@@ -5,7 +5,7 @@
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
-#include "JHS/GameControl/Contant/ConstantLibrary.h"
+#include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "JHS/GameControl/CommonEnums.h"
 
 // Sets default values for this component's properties

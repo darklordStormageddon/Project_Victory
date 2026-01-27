@@ -11,6 +11,7 @@
 class UEventManager;
 class USpaceShipStateGroup;
 class UPlayerStateGroup;
+class UCollectStateGroup;
 class UTurretStateGroup;
 class UContainerStateGroup;
 
@@ -45,8 +46,8 @@ protected:
 	float _maxPlayerRadiation = 100.0f;
 
 protected:
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|TurretStateGroup")
-	TObjectPtr<UTurretStateGroup> _turretStateGroup = nullptr;
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|CollectStateGroup")
+	TObjectPtr<UCollectStateGroup> _collectStateGroup = nullptr;
 
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|ContainerStateGroup")
@@ -59,6 +60,10 @@ protected:
 	TArray<FAmmoData> _initAmmoDataArray;
 
 protected:
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|TurretStateGroup")
+	TObjectPtr<UTurretStateGroup> _turretStateGroup = nullptr;
+
+protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Test")
 	int32 _testPlayerCount = 4;
 
@@ -67,9 +72,11 @@ public:
 
 	TObjectPtr<UPlayerStateGroup> GetPlayerStateGroup() { return _playerStateGroup; }
 
-	TObjectPtr<UTurretStateGroup> GetTurretStateGroup() { return _turretStateGroup; }
+	TObjectPtr<UCollectStateGroup> GetCollectStateGroup() { return _collectStateGroup; }
 
 	TObjectPtr<UContainerStateGroup> GetContainerStateGroup() { return _containerStateGroup; }
+
+	TObjectPtr<UTurretStateGroup> GetTurretStateGroup() { return _turretStateGroup; }
 
 protected:
 	virtual void BeginPlay() override;

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "JHS/GameControl/Contant/ResourcePath.h"
+#include "JHS/GameControl/Constant/ResourcePath.h"
 
 class ConstantLibrary
 {

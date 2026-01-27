@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "JHS/GameControl/Contant/ResourcePath.h"
+#include "JHS/GameControl/Constant/ResourcePath.h"
 
 ResourcePath::ResourcePath()
 {

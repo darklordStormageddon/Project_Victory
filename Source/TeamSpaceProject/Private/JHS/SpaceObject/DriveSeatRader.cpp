@@ -2,7 +2,7 @@
 
 
 #include "JHS/SpaceObject/DriveSeatRader.h"
-#include "JHS/GameControl/Contant/ConstantLibrary.h"
+#include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 
 // Sets default values
