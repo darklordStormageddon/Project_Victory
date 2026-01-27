@@ -14,7 +14,7 @@ struct FElementProperty : public FTableRowBase
     GENERATED_BODY()
 
 public:
-    FElementProperty() :ElementType(E_ELEMENT_TYPE::Aluminum), Value(0.0f), ImageName("DefaultImage") {}
+    FElementProperty() :ElementType(E_ELEMENT_TYPE::Aluminum), Price(0.0f) {}
 
     //원소 종류
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -22,11 +22,7 @@ public:
 
     //가격
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float Value;
-
-    //Tex뒤에 올 이름
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FString ImageName;
+    float Price;
 };
 
 UCLASS()

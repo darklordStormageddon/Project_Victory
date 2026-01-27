@@ -101,10 +101,14 @@ public:
 	{
 	}
 
-	/*UEventOnCollectToolDurability(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+	UEventOnCollectToolDurability(FCollectToolData CollectToolData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
+		, CollectToolData(CollectToolData)
 	{
-	}*/
+	}
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|Collect")
+	FCollectToolData CollectToolData;
 };
 #pragma endregion Collect
 
@@ -120,16 +124,12 @@ UEventOnChangeElementData(const FObjectInitializer& ObjectInitializer = FObjectI
 		: Super(ObjectInitializer)
 	{}
 
-	UEventOnChangeElementData(E_ELEMENT_TYPE ElementType, int32 Amount, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+	UEventOnChangeElementData(FElementData ElementData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
-		, ElementType(ElementType)
-		, Amount(Amount)
+		, ElementData(ElementData)
 	{}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
-	E_ELEMENT_TYPE ElementType;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
-	int32 Amount;
+	FElementData ElementData;
 };
 #pragma endregion Container

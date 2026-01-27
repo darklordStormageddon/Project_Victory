@@ -55,13 +55,13 @@ void UUIPanelContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 	if (Event == nullptr || UG_Items == nullptr)
 		return;
 
-	const E_ELEMENT_TYPE _elementType = Event->ElementType;
-	const bool _isRemove = Event->Amount <= 0;
+	const FElementData _elementData = Event->ElementData;
+	const bool _isRemove = _elementData.Amount <= 0;
 
 	if (_isRemove)
 	{
 		TObjectPtr<UContainerItemSlot> _removeSlot = nullptr;
-		if (_elementSlotMap.RemoveAndCopyValue(_elementType, _removeSlot))
+		if (_elementSlotMap.RemoveAndCopyValue(_elementData.ElementType, _removeSlot))
 		{
 			if (_removeSlot != nullptr)
 			{
@@ -77,22 +77,20 @@ void UUIPanelContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 	else
 	{
 		UContainerItemSlot* _slotWidget = nullptr;
-		if (!_elementSlotMap.Contains(_elementType))
+		if (!_elementSlotMap.Contains(_elementData.ElementType))
 		{
-			_slotWidget = CreateAndRegisterElementSlot(_elementType);
-			if (_slotWidget == nullptr)
-				return;
+			_slotWidget = CreateAndRegisterElementSlot(_elementData.ElementType);
 		}
 		else
 		{
-			_slotWidget = _elementSlotMap.FindRef(_elementType);
-			if (_slotWidget == nullptr)
-				return;
+			_slotWidget = _elementSlotMap.FindRef(_elementData.ElementType);
 		}
 
-		const FString _elementName = CommonEnums::GetEnum2FString<E_ELEMENT_TYPE>(_elementType);
+		if (_slotWidget == nullptr)
+			return;
 
-		_slotWidget->UpdateItemInfo(_elementName, Event->Amount);
+		const FString _elementName = CommonEnums::GetEnum2FString<E_ELEMENT_TYPE>(_elementData.ElementType);
+		_slotWidget->UpdateItemInfo(_elementData.ElementImage, _elementName, _elementData.Amount);
 	}
 	
 	SortItemSlot();

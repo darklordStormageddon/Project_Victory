@@ -40,5 +40,5 @@ protected:
 	virtual void NativeOnInitialized() override;
 
 public:
-	void SetDurabilityProgress(float Progress);
+	void SetDurabilityProgress(float Progress, TObjectPtr<UTexture2D> ToolImage);
 };

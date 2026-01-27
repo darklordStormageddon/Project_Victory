@@ -2,44 +2,15 @@
 
 
 #include "JHS/UI/Panel/Collect/UIPanelCollectSeat.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/Event/EventManager.h"
 #include "JHS/UI/Panel/Collect/CollectToolDurability.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Spacer.h"
 
-void UUIPanelCollectSeat::OnOpen()
-{
-	InitializeCollectSeat(_toolCount);
-
-	// 모든 Tool 위젯의 진행도를 랜덤으로 설정
-	for (TObjectPtr<UCollectToolDurability> _toolWidget : _toolDurabilityWidgets)
-	{
-		if (_toolWidget)
-		{
-			float _randomProgress = FMath::RandRange(0.0f, 1.0f);
-			_toolWidget->SetDurabilityProgress(_randomProgress);
-			UE_LOG(LogTemp, Warning, TEXT("UUIPanelCollectSeat: random %.2f for tool widget"), _randomProgress);
-		}
-	}
-}
-
-void UUIPanelCollectSeat::OnClose()
-{
-
-}
-
-void UUIPanelCollectSeat::RegisterEvent()
-{
-
-}
-
-void UUIPanelCollectSeat::UnregisterEvent()
-{
-
-}
-
-void UUIPanelCollectSeat::InitializeCollectSeat(int32 ToolCount)
+void UUIPanelCollectSeat::NativeOnInitialized()
 {
 	ClearDynamicWidgets();
 
@@ -67,83 +38,50 @@ void UUIPanelCollectSeat::InitializeCollectSeat(int32 ToolCount)
 			_rightSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 		}
 	}
+}
 
-	// WBP_CollectToolDurability의 위젯 클래스 가져오기 (블루프린트 클래스일 수 있음)
-	UClass* _widgetClass = WBP_CollectToolDurability->GetClass();
-	if (!_widgetClass)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UUIPanelCollectSeat: Failed to get widget class from WBP_CollectToolDurability"));
-		return;
-	}
+void UUIPanelCollectSeat::OnOpen()
+{
+	//UE_LOG(LogTemp, Warning, TEXT("Count %d"), _toolDurabilityItemMap.Num());
+}
 
-	// PlayerController 가져오기 (CreateWidget에 필요)
-	APlayerController* _playerController = GetOwningPlayer();
-	if (!_playerController)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UUIPanelCollectSeat: Failed to get PlayerController"));
-		return;
-	}
+void UUIPanelCollectSeat::OnClose()
+{
 
-	// Spacer_Left 인덱스 찾기
-	int32 _spacerLeftIndex = HorizontalBox->GetChildIndex(Spacer_Left);
-	
-	if (_spacerLeftIndex == -1)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UUIPanelCollectSeat: Spacer_Left not found"));
-		return;
-	}
+}
 
-	// Spacer_Right를 일시적으로 제거 (Tool들을 추가한 후 마지막에 다시 추가하기 위함)
-	if (Spacer_Right && Spacer_Right->GetParent())
-	{
-		HorizontalBox->RemoveChild(Spacer_Right);
-	}
+void UUIPanelCollectSeat::RegisterEvent()
+{
+	_eventHandleOnChangeDurability = GetEventManager()->AddListener<UEventOnCollectToolDurability>(
+        [this](UEventOnCollectToolDurability* Event)
+        {
+			OnChangeDurability(Event);
+        }
+    );
+}
 
-	// Spacer_Left 다음 위치부터 위젯 추가
-	for (int32 _i = 0; _i < ToolCount; ++_i)
-	{
-		UCollectToolDurability* _toolWidget = CreateWidget<UCollectToolDurability>(_playerController, _widgetClass);
-		if (!_toolWidget)
-		{
-			UE_LOG(LogTemp, Error, TEXT("UUIPanelCollectSeat: Failed to create widget %d"), _i);
-			continue;
-		}
-
-		// Visibility 확인 및 설정
-		_toolWidget->SetVisibility(ESlateVisibility::Visible);
-
-		// Spacer_Left 다음에 추가 (인덱스는 1부터 시작)
-		UPanelSlot* _panelSlot = HorizontalBox->InsertChildAt(_spacerLeftIndex + 1 + _i, _toolWidget);
-		UHorizontalBoxSlot* _slot = Cast<UHorizontalBoxSlot>(_panelSlot);
-		if (_slot)
-		{
-			// 슬롯 크기를 Auto로 설정
-			_slot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
-			_slot->SetPadding(FMargin(5.0f, 0.0f, 5.0f, 0.0f));
-			_slot->SetHorizontalAlignment(HAlign_Fill);
-			_slot->SetVerticalAlignment(VAlign_Fill);
-		}
-
-		_toolDurabilityWidgets.Add(_toolWidget);
-	}
-
-	// 모든 Tool 위젯 추가 후, Spacer_Right를 마지막에 다시 추가
-	if (Spacer_Right)
-	{
-		UHorizontalBoxSlot* _rightSlot = HorizontalBox->AddChildToHorizontalBox(Spacer_Right);
-		if (_rightSlot)
-		{
-			_rightSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-		}
-		
-		int32 _finalRightIndex = HorizontalBox->GetChildIndex(Spacer_Right);
-	}
+void UUIPanelCollectSeat::UnregisterEvent()
+{
+	if (_eventHandleOnChangeDurability.IsValid())
+    {
+        GetEventManager()->DelListener<UEventOnChangeTurretData>(_eventHandleOnChangeDurability);
+		_eventHandleOnChangeDurability.Reset();
+    }
 }
 
 void UUIPanelCollectSeat::OnChangeDurability(UEventOnCollectToolDurability* Event)
 {
 	if (Event == nullptr)
 		return;
+
+	FCollectToolData _collectToolData = Event->CollectToolData;
+	TObjectPtr<UCollectToolDurability> _collectToolItem = GetCollectToolItem(_collectToolData.CollectToolType);
+	float _progress = FMath::Clamp(_collectToolData.Durability.CurrentValue / _collectToolData.Durability.MaxValue, 0.f, 1.f);
+	if (_collectToolData.CollectToolType == E_COLLECT_TOOL_TYPE::Vacuum)
+	{
+		_progress = 0.0f;
+	}
+	_collectToolItem->SetDurabilityProgress(_progress, _collectToolData.CollectToolImage);
 }
 
 void UUIPanelCollectSeat::ClearDynamicWidgets()
@@ -164,5 +102,71 @@ void UUIPanelCollectSeat::ClearDynamicWidgets()
 		HorizontalBox->RemoveChildAt(_i);
 	}
 
-	_toolDurabilityWidgets.Empty();
+	_toolDurabilityItemMap.Empty();
+}
+
+TObjectPtr<UCollectToolDurability> UUIPanelCollectSeat::GetCollectToolItem(E_COLLECT_TOOL_TYPE CollectToolType)
+{
+	if (_toolDurabilityItemMap.Contains(CollectToolType))
+		return _toolDurabilityItemMap.FindRef(CollectToolType);
+
+	// WBP_CollectToolDurability의 위젯 클래스 가져오기 (블루프린트 클래스일 수 있음)
+	UClass* _widgetClass = WBP_CollectToolDurability->GetClass();
+	if (!_widgetClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UUIPanelCollectSeat: Failed to get widget class from WBP_CollectToolDurability"));
+		return nullptr;
+	}
+
+	// PlayerController 가져오기 (CreateWidget에 필요)
+	APlayerController* _playerController = GetOwningPlayer();
+	if (!_playerController)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UUIPanelCollectSeat: Failed to get PlayerController"));
+		return nullptr;
+	}
+
+	UCollectToolDurability* _toolWidget = CreateWidget<UCollectToolDurability>(_playerController, _widgetClass);
+	if (!_toolWidget)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UUIPanelCollectSeat: Failed to create widget"));
+		return nullptr;
+	}
+	
+	_toolWidget->SetVisibility(ESlateVisibility::Visible);
+
+	// Spacer_Right를 일시적으로 제거 (Tool들을 추가한 후 마지막에 다시 추가하기 위함)
+	if (Spacer_Right && Spacer_Right->GetParent())
+	{
+		HorizontalBox->RemoveChild(Spacer_Right);
+	}
+
+	// 마지막에 인텍스에 추가
+	int32 _spacerLeftIndex = HorizontalBox->GetChildIndex(Spacer_Left);
+	UPanelSlot* _panelSlot = HorizontalBox->InsertChildAt(_spacerLeftIndex + 1 + _toolDurabilityItemMap.Num(), _toolWidget);
+	UHorizontalBoxSlot* _slot = Cast<UHorizontalBoxSlot>(_panelSlot);
+	if (_slot)
+	{
+		// 슬롯 크기를 Auto로 설정
+		_slot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
+		_slot->SetPadding(FMargin(5.0f, 0.0f, 5.0f, 0.0f));
+		_slot->SetHorizontalAlignment(HAlign_Fill);
+		_slot->SetVerticalAlignment(VAlign_Fill);
+	}
+
+	_toolDurabilityItemMap.Add(CollectToolType, _toolWidget);
+
+	// 모든 Tool 위젯 추가 후, Spacer_Right를 마지막에 다시 추가
+	if (Spacer_Right)
+	{
+		UHorizontalBoxSlot* _rightSlot = HorizontalBox->AddChildToHorizontalBox(Spacer_Right);
+		if (_rightSlot)
+		{
+			_rightSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+		}
+
+		int32 _finalRightIndex = HorizontalBox->GetChildIndex(Spacer_Right);
+	}
+
+	return _toolWidget;
 }

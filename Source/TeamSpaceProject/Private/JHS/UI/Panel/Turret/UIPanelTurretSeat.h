@@ -23,7 +23,8 @@ public:
 	UUIPanelTurretSeat(const FObjectInitializer& ObjectInitializer);
 
 private:
-	// 직렬화
+	FDelegateHandle _eventHandleOnChangeTurret;
+
 	UPROPERTY()
 	TObjectPtr<UContainerStateGroup> _containerStateGroup = nullptr;
 
@@ -59,8 +60,6 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* TXT_RightTurretAmmo;
 #pragma endregion Right Turret
-
-	FDelegateHandle _eventHandleOnChangeTurret;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "TurretSeat|Generator")
