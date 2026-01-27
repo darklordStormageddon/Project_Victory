@@ -33,14 +33,14 @@ void APSJ_Character::BeginPlay()
 	{
 		DefaultMeshZ = GetMesh()->GetRelativeLocation().Z;
 	}
-	// [추가] 시작하자마자 앵커링 데이터가 있다면 즉시 적용 (딜레이 방지)
-	// 레벨 로딩 직후나 스폰 직후의 미끄러짐 방지
+
+	// [추가] 앵커링 데이터 즉시 적용
 	if (ReplicatedRelativeData.BaseActor)
 	{
 		AttachToActor(ReplicatedRelativeData.BaseActor, FAttachmentTransformRules::KeepWorldTransform);
 		GetCharacterMovement()->DisableMovement();
-		GetCharacterMovement()->SetMovementMode(MOVE_Custom);
-		SetReplicateMovement(false); // 즉시 끄기
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		SetReplicateMovement(false);
 	}
 }
 
@@ -50,27 +50,22 @@ void APSJ_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(APSJ_Character, ReplicatedRelativeData);
 }
 
-// [핵심] 하차 후 이동 불가 해결을 위한 상태 초기화
-// 빙의(Possess)되는 순간 모든 이동 제한을 풀고 초기화합니다.
 void APSJ_Character::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	// 만약 이미 우주선에 잘 붙어있는 상태라면? -> 리셋 금지! 유지!
+	// 이미 우주선에 붙어있는 상태라면 리셋 금지
 	if (ReplicatedRelativeData.BaseActor && ReplicatedRelativeData.bIsAnchored)
 	{
-		// 안전장치: 확실하게 상태만 다시 강제 (떼지는 않음)
 		AttachToActor(ReplicatedRelativeData.BaseActor, FAttachmentTransformRules::KeepWorldTransform);
 		GetCharacterMovement()->DisableMovement();
 		GetCharacterMovement()->SetMovementMode(MOVE_Custom);
-		SetReplicateMovement(false); // 엔진 간섭 차단 유지
+		SetReplicateMovement(false);
 
-		// 입력값만 초기화
 		CurrentInputVector = FVector2D::ZeroVector;
 	}
 	else
 	{
-		// 붙어있는 게 없다면 그때 초기화 (기존 로직)
 		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 		GetCharacterMovement()->Velocity = FVector::ZeroVector;
@@ -86,46 +81,50 @@ void APSJ_Character::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// 조종 중인지 확인 (조종 중이면 캐릭터 로직 정지)
-	if (Controller && IsLocallyControlled())
+	if (IsLocallyControlled())
 	{
-		if (CurrentSpaceship)
+		FString DebugMsg = FString::Printf(TEXT("Controller: %s | InputMode: %s"),
+			Controller ? *Controller->GetName() : TEXT("NULL"),
+			(DefaultMappingContext) ? TEXT("Context Valid") : TEXT("Context Null"));
+
+		GEngine->AddOnScreenDebugMessage(10, 0.0f, FColor::Cyan, DebugMsg);
+
+		if (CurrentInputVector.IsNearlyZero() == false)
 		{
-			// PossessedBy가 정상 작동했다면 여기 로직은 사실상 패스됨
+			GEngine->AddOnScreenDebugMessage(11, 0.0f, FColor::Green, TEXT("KEYBOARD INPUT DETECTED"));
 		}
 	}
 
-	// 1. 앵커링(부착) 관리
+	// 조종 중이면 로직 패스
+	if (Controller && IsLocallyControlled() && CurrentSpaceship)
+	{
+		// ...
+	}
+
+	// 1. 앵커링 관리
 	AActor* ParentActor = GetAttachParentActor();
 	bool bShouldBeAttached = (ReplicatedRelativeData.BaseActor != nullptr);
 
-	// [상태 전환: 부착 시작]
 	if (bShouldBeAttached && ParentActor != ReplicatedRelativeData.BaseActor)
 	{
 		AttachToActor(ReplicatedRelativeData.BaseActor, FAttachmentTransformRules::KeepWorldTransform);
 		GetCharacterMovement()->DisableMovement();
 		GetCharacterMovement()->SetMovementMode(MOVE_Custom);
-
-		// [미끄러짐 해결 핵심] 엔진의 위치 동기화를 끕니다.
-		// 우주선과 함께 움직이는 건 Attach가 담당하고,
-		// 내부 이동 동기화는 우리가 만든 ReplicatedRelativeData가 담당합니다.
 		SetReplicateMovement(false);
 	}
-	// [상태 전환: 부착 해제]
 	else if (!bShouldBeAttached && ParentActor)
 	{
 		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 		GetCharacterMovement()->Velocity = FVector::ZeroVector;
-
-		// 우주선 밖에서는 엔진의 기본 동기화를 사용
 		SetReplicateMovement(true);
 	}
 
 	// 2. 이동 로직
 	if (GetAttachParentActor())
 	{
-		// [A] 내가 조종하는 캐릭터 (Autonomous + Server Host)
+		// [수정] 클라이언트뿐만 아니라 서버도 이동 로직에 관여하도록 변경 가능하나, 
+		// 일단 클라이언트 예측 이동을 우선시합니다.
 		if (IsLocallyControlled())
 		{
 			if (!CurrentInputVector.IsNearlyZero())
@@ -133,42 +132,20 @@ void APSJ_Character::Tick(float DeltaTime)
 				FVector LocalDir = FVector(CurrentInputVector.Y, CurrentInputVector.X, 0.0f);
 				FVector DesiredMove = LocalDir * FlyModeMaxSpeed * DeltaTime;
 
-				FHitResult Hit;
-				AddActorLocalOffset(DesiredMove, true, &Hit);
+				// [★핵심 해결책★] bSweep(충돌검사)를 false로 변경
+				// 바닥이나 우주선 벽에 닿아있을 때 물리 엔진이 이동을 막는 현상(Stuck)을 방지합니다.
+				AddActorLocalOffset(DesiredMove, false);
 
+				// Sweep을 껐으므로 복잡한 StepUp/Slide 로직은 주석 처리하거나 건너뜁니다.
+				// 자석 부츠(UpdateMagBoots)가 높이를 맞춰주므로 바닥을 뚫지 않습니다.
+				/*
 				if (Hit.IsValidBlockingHit())
 				{
-					// [계단/경사면 오르기]
-					FVector RealStepUp = GetActorUpVector() * 45.0f;
-					FVector SavedLocation = GetActorLocation();
-
-					FHitResult StepHit;
-					AddActorWorldOffset(RealStepUp, true, &StepHit); // 들어올리기
-
-					if (!StepHit.bBlockingHit)
-					{
-						AddActorLocalOffset(DesiredMove, true, &StepHit); // 전진
-						if (!StepHit.bBlockingHit)
-						{
-							AddActorWorldOffset(-RealStepUp, true, &StepHit); // 내리기
-						}
-						else
-						{
-							SetActorLocation(SavedLocation);
-							FVector SlideVector = FVector::VectorPlaneProject(DesiredMove, Hit.Normal);
-							AddActorLocalOffset(SlideVector, true);
-						}
-					}
-					else
-					{
-						SetActorLocation(SavedLocation);
-						FVector SlideVector = FVector::VectorPlaneProject(DesiredMove, Hit.Normal);
-						AddActorLocalOffset(SlideVector, true);
-					}
+					// ... (기존 충돌 처리 로직 생략) ...
 				}
+				*/
 			}
 
-			// 가짜 속도 주입 (애니메이션용)
 			if (DeltaTime > 0.0f)
 			{
 				FVector TargetVel = CurrentInputVector.IsNearlyZero() ? FVector::ZeroVector : (GetActorForwardVector() * CurrentInputVector.Y + GetActorRightVector() * CurrentInputVector.X) * FlyModeMaxSpeed;
@@ -177,34 +154,27 @@ void APSJ_Character::Tick(float DeltaTime)
 
 			UpdateMagBoots(DeltaTime);
 
-			// [중요] 위치 업데이트 (RPC + 로컬 변수)
 			if (!HasAuthority())
 			{
 				Server_UpdateRelativeTransform(GetRootComponent()->GetRelativeLocation(), GetRootComponent()->GetRelativeRotation());
 			}
 			else
 			{
-				// 서버장인 경우 직접 갱신
 				ReplicatedRelativeData.RelativeLocation = GetRootComponent()->GetRelativeLocation();
 				ReplicatedRelativeData.RelativeRotation = GetRootComponent()->GetRelativeRotation();
 			}
 		}
-		// [B] 남의 캐릭터 (Simulated Proxy)
 		else
 		{
-			// 남의 캐릭터는 서버가 준 좌표로 '즉시' 이동 (보간 제거로 렉 방지)
+			// 시뮬레이티드 프록시(다른 클라)는 서버에서 받은 상대 좌표를 적용
 			SetActorRelativeLocation(ReplicatedRelativeData.RelativeLocation);
 			SetActorRelativeRotation(ReplicatedRelativeData.RelativeRotation);
-
-			// 필요하다면 여기서 애니메이션용 Velocity 계산 추가 가능
 		}
 	}
 	else
 	{
-		// 부착되지 않았을 때 (공중/우주선 밖)
 		UpdateMagBoots(DeltaTime);
 
-		// 비행 모드 이동
 		if (IsLocallyControlled() && !CurrentInputVector.IsNearlyZero())
 		{
 			FVector WorldDir = GetActorForwardVector() * CurrentInputVector.Y + GetActorRightVector() * CurrentInputVector.X;
@@ -213,19 +183,65 @@ void APSJ_Character::Tick(float DeltaTime)
 	}
 }
 
+// [신규] 변수 세팅 함수
+void APSJ_Character::SetBaseActorData(AActor* NewBase)
+{
+	ReplicatedRelativeData.BaseActor = NewBase;
+	ReplicatedRelativeData.bIsAnchored = (NewBase != nullptr);
+
+	// 입력 벡터는 초기화하되, 이동 기능 자체는 끄지 않음
+	CurrentInputVector = FVector2D::ZeroVector;
+}
+
+// [신규] 입력 강제 복구 함수 (핵심 해결책)
+void APSJ_Character::ForceInputRecovery()
+{
+	// 내 컴퓨터의 0번 컨트롤러(플레이어)를 찾음
+	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	{
+		// 1. 입력 시스템(Enhanced Input) 가져오기
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+		{
+			// 기존 매핑(우주선 키 등) 제거하고 내 키(WASD) 추가
+			Subsystem->ClearAllMappings();
+			if (DefaultMappingContext)
+			{
+				Subsystem->AddMappingContext(DefaultMappingContext, 0);
+			}
+		}
+
+		// 2. [중요] 엔진에게 "이 컨트롤러의 입력을 이 액터가 받겠다"고 선언
+		// 내부적으로 InputComponent를 생성하고 컨트롤러 스택에 푸시합니다.
+		EnableInput(PC);
+
+		// 3. [중요] 키 바인딩(Jump, Move 등) 연결
+		if (InputComponent)
+		{
+			SetupPlayerInputComponent(InputComponent);
+		}
+
+		// 4. 입력 모드 강제 설정 (UI 닫기 포함)
+		PC->SetInputMode(FInputModeGameOnly());
+		PC->bShowMouseCursor = false;
+
+		UE_LOG(LogTemp, Warning, TEXT("[Debug] ForceInputRecovery: Input Forced & Context Added!"));
+	}
+}
+
 void APSJ_Character::UpdateMagBoots(float DeltaTime)
 {
-	// [중요] 남의 캐릭터는 물리 보정을 하지 않음 (주인이 보낸 위치를 100% 신뢰)
-	// 이것이 미세 떨림과 이중 보정을 막는 핵심입니다.
+	// 1. 타인(Simulated Proxy)이면서 이미 서버에 의해 붙어있는 상태라면 연산 최적화를 위해 패스
 	if (!IsLocallyControlled() && GetAttachParentActor())
 	{
 		return;
 	}
 
+	// 2. 바닥 감지를 위한 레이캐스트(Sweep) 준비
 	FHitResult FinalHit;
 	bool bFoundValidHit = false;
 	FVector Start = GetActorLocation();
 
+	// 발바닥 방향 결정 (붙어있으면 부모 기준, 아니면 내 기준, 우주선 근처면 우주선 기준)
 	FVector TraceDir = -GetActorUpVector();
 	if (GetAttachParentActor())
 	{
@@ -243,10 +259,12 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 	TArray<FHitResult> HitResults;
 	FCollisionShape SphereShape = FCollisionShape::MakeSphere(MagBootsTraceRadius * 0.8f);
 
+	// 3. 바닥 감지 실행
 	bool bHit = GetWorld()->SweepMultiByChannel(HitResults, Start, End, FQuat::Identity, ECC_GameTraceChannel5, SphereShape, Params);
 
 	if (bHit)
 	{
+		// 우선순위 결정: 기존에 밟고 있던 바닥이 감지되면 그걸 유지
 		for (const FHitResult& Result : HitResults)
 		{
 			if (LastFloorActor && Result.GetActor() == LastFloorActor)
@@ -256,6 +274,7 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 				break;
 			}
 		}
+		// 없으면 첫 번째 감지된 바닥 선택
 		if (!bFoundValidHit && HitResults.Num() > 0)
 		{
 			FinalHit = HitResults[0];
@@ -263,39 +282,35 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		}
 	}
 
+	// 4. [핵심 수정] 데이터 갱신 (서버 OR 클라이언트 본인)
+	// 클라이언트도 스스로 판단하여 BaseActor를 세팅하게 함으로써 텔레포트 현상 방지
+	bool bCanUpdateData = HasAuthority() || IsLocallyControlled();
+
 	AActor* NewFloorActor = bFoundValidHit ? FinalHit.GetActor() : nullptr;
 
-	// [서버 로직]
-	if (HasAuthority())
+	if (bCanUpdateData)
 	{
-		bool bUpdateData = IsLocallyControlled();
-		if (!bUpdateData && bFoundValidHit && NewFloorActor)
+		if (NewFloorActor)
 		{
-			bUpdateData = true;
-		}
-
-		if (bUpdateData)
-		{
-			if (bFoundValidHit && NewFloorActor)
+			// 바닥 갱신 (즉시 Attach 유도)
+			if (ReplicatedRelativeData.BaseActor != NewFloorActor)
 			{
-				if (ReplicatedRelativeData.BaseActor != NewFloorActor)
-				{
-					ReplicatedRelativeData.BaseActor = NewFloorActor;
-					ReplicatedRelativeData.bIsAnchored = true;
-				}
+				ReplicatedRelativeData.BaseActor = NewFloorActor;
+				ReplicatedRelativeData.bIsAnchored = true;
 			}
-			else
+		}
+		else
+		{
+			// 바닥 놓침
+			if (IsLocallyControlled() || HasAuthority())
 			{
-				if (IsLocallyControlled())
-				{
-					ReplicatedRelativeData.BaseActor = nullptr;
-					ReplicatedRelativeData.bIsAnchored = false;
-				}
+				ReplicatedRelativeData.BaseActor = nullptr;
+				ReplicatedRelativeData.bIsAnchored = false;
 			}
 		}
 	}
 
-	// [높이 보정]
+	// 5. 물리적 위치/회전 보정
 	if (bFoundValidHit && NewFloorActor)
 	{
 		LastFloorActor = NewFloorActor;
@@ -303,13 +318,14 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 
 		if (GetAttachParentActor())
 		{
+			// 높이 보정
 			float TargetHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 			float ActualDistance = FVector::DotProduct(FinalHit.ImpactPoint - GetActorLocation(), TraceDir);
+
 			if (ActualDistance <= 0.0f) ActualDistance = FinalHit.Distance + MagBootsTraceRadius;
 
 			float HeightError = ActualDistance - TargetHeight;
 
-			// 떨림 방지 (오차 1.0f)
 			if (FMath::Abs(HeightError) > 1.0f)
 			{
 				float InterpSpeed = (HeightError > 0) ? 20.0f : 50.0f;
@@ -317,6 +333,7 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 				AddActorWorldOffset(TraceDir * -MoveZ, false);
 			}
 
+			// 회전 보정
 			FRotator CurrentRelRot = GetRootComponent()->GetRelativeRotation();
 			FRotator TargetRelRot = FRotator(0.0f, CurrentRelRot.Yaw, 0.0f);
 			SetActorRelativeRotation(FMath::RInterpTo(CurrentRelRot, TargetRelRot, DeltaTime, AlignSpeed));
@@ -328,12 +345,18 @@ void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	UE_LOG(LogTemp, Warning, TEXT("[Debug] SetupPlayerInputComponent Called! Controller: %s"), *GetNameSafe(Controller));
+
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->ClearAllMappings();
-			if (DefaultMappingContext) Subsystem->AddMappingContext(DefaultMappingContext, 0);
+			if (DefaultMappingContext)
+			{
+				Subsystem->AddMappingContext(DefaultMappingContext, 0);
+				UE_LOG(LogTemp, Warning, TEXT("[Debug] Mapping Context Added!"));
+			}
 		}
 	}
 
@@ -381,6 +404,18 @@ void APSJ_Character::Interact(const FInputActionValue& Value)
 void APSJ_Character::Move(const FInputActionValue& Value)
 {
 	CurrentInputVector = Value.Get<FVector2D>();
+
+	if (!CurrentInputVector.IsNearlyZero())
+	{
+		FString ModeString = UEnum::GetValueAsString(GetCharacterMovement()->MovementMode);
+		FVector Vel = GetVelocity();
+
+		UE_LOG(LogTemp, Warning, TEXT("[Debug] Move Input Received: %s | Mode: %s | Velocity: %s | IsAnchored: %d"),
+			*CurrentInputVector.ToString(),
+			*ModeString,
+			*Vel.ToString(),
+			ReplicatedRelativeData.bIsAnchored);
+	}
 }
 
 void APSJ_Character::StopMove(const FInputActionValue& Value)
@@ -433,10 +468,8 @@ void APSJ_Character::CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutRes
 	}
 }
 
-// [추가] RPC 구현부
 bool APSJ_Character::Server_RequestBoarding_Validate(APSJ_Spaceship* ShipToBoard)
 {
-	// 여기서 거리 체크 등을 추가로 할 수 있음
 	return true;
 }
 
@@ -446,14 +479,92 @@ void APSJ_Character::Server_RequestBoarding_Implementation(APSJ_Spaceship* ShipT
 
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		// 1. 우주선 내부 변수 설정 (물리 고정 등)
 		ShipToBoard->SetPilot(this);
-
-		// 2. 서버 권한으로 빙의 실행
 		PC->Possess(ShipToBoard);
-
-		// [핵심 추가] 빙의가 끝났으니, 해당 우주선(이제 내꺼)에게 
-		// "클라이언트 세팅(입력, UI)을 진행해라"라고 명령
 		ShipToBoard->Client_BoardingSuccess();
+	}
+}
+
+void APSJ_Character::ForceClearAnchoring()
+{
+	ReplicatedRelativeData.BaseActor = nullptr;
+	ReplicatedRelativeData.bIsAnchored = false;
+	CurrentInputVector = FVector2D::ZeroVector;
+
+	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+	SetReplicateMovement(true);
+}
+
+void APSJ_Character::Client_ForceCleanupImmediate()
+{
+	ReplicatedRelativeData.BaseActor = nullptr;
+	ReplicatedRelativeData.bIsAnchored = false;
+
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		GetCharacterMovement()->Velocity = FVector::ZeroVector;
+	}
+
+	SetReplicateMovement(true);
+	CurrentInputVector = FVector2D::ZeroVector;
+}
+
+void APSJ_Character::Client_RestoreInput()
+{
+	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+		{
+			Subsystem->ClearAllMappings();
+			if (DefaultMappingContext)
+			{
+				Subsystem->AddMappingContext(DefaultMappingContext, 0);
+			}
+		}
+		PC->SetInputMode(FInputModeGameOnly());
+		PC->bShowMouseCursor = false;
+	}
+}
+
+void APSJ_Character::OnRep_Controller()
+{
+	Super::OnRep_Controller();
+
+	if (IsLocallyControlled() && Controller)
+	{
+		// 엔진 표준 함수로 입력 시스템 재시동
+		PawnClientRestart();
+
+		if (APlayerController* PC = Cast<APlayerController>(Controller))
+		{
+			PC->SetInputMode(FInputModeGameOnly());
+			PC->bShowMouseCursor = false;
+
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+			{
+				Subsystem->ClearAllMappings();
+				if (DefaultMappingContext)
+				{
+					Subsystem->AddMappingContext(DefaultMappingContext, 0);
+				}
+			}
+		}
+
+		// 혹시 모를 안전장치: 강제 인풋 복구 호출
+		ForceInputRecovery();
+
+		UE_LOG(LogTemp, Warning, TEXT("[Debug] OnRep_Controller: PawnClientRestart Called. Input Restored."));
+	}
+}
+
+void APSJ_Character::Client_LateInputRestore()
+{
+	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Debug] LateInputRestore: Forcing Input Setup..."));
+		PawnClientRestart();
+		ForceInputRecovery();
 	}
 }

@@ -24,6 +24,27 @@ class TEAMSPACEPROJECT_API APSJ_Spaceship : public APawn
 public:
 	APSJ_Spaceship();
 
+	// -------------------------------------------------------------------------
+	// [추가] 입력 신호를 서버로 전달할 RPC 함수들
+	// -------------------------------------------------------------------------
+	UFUNCTION(Server, Unreliable, WithValidation)
+	void Server_ThrustForward(float Value);
+
+	UFUNCTION(Server, Unreliable, WithValidation)
+	void Server_ThrustBackward(float Value);
+
+	UFUNCTION(Server, Unreliable, WithValidation)
+	void Server_MoveAxes(FVector2D Value);
+
+	UFUNCTION(Server, Unreliable, WithValidation)
+	void Server_MoveUp(float Value);
+
+	UFUNCTION(Server, Unreliable, WithValidation)
+	void Server_Roll(float Value);
+
+	UFUNCTION(Server, Unreliable, WithValidation)
+	void Server_MouseLook(FVector2D Value);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -86,13 +107,10 @@ protected:
 
 	FTimerHandle CollisionResetTimerHandle;
 
-
-
 	USpaceShipStateGroup* _spaceShipStateGroup = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	UHealthComponent* HealthComp;
-
 
 public:
 	void SetPilot(APSJ_Character* NewPilot);
@@ -109,9 +127,11 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_BoardingSuccess();
 
-	// [추가] 하차 성공 시 클라이언트 설정을 정리하는 RPC
+	// [변경] 인자를 3개로 수정 (APSJ_Character* ExitingPilot 추가)
 	UFUNCTION(Client, Reliable)
-	void Client_DisembarkSuccess();
+	void Client_DisembarkSuccess(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot);
+
+	// [삭제됨] 구형 선언 Client_DisembarkSuccess_Old 삭제하여 링크 에러 해결
 
 	// [추가] 서버에 하차를 요청하는 RPC 함수
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -139,7 +159,4 @@ public:
 	void OnDeath();
 
 	USpaceShipStateGroup* GetSpaceShipStateGroup();
-
-
-
 };
