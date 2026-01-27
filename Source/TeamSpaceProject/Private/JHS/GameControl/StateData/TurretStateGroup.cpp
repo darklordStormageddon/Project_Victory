@@ -11,6 +11,7 @@
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "YSH/resource/TurretDataTable.h"
 #include "JHS/GameControl/CommonEnums.h"
+#include "PSJ/PSJ_ShipCockpit.h"
 
 // Sets default values for this component's properties
 UTurretStateGroup::UTurretStateGroup()
@@ -91,6 +92,11 @@ void UTurretStateGroup::SetInfiniteMagMode(bool IsInfiniteMagMode)
 	_isInfiniteMagMode = IsInfiniteMagMode;
 }
 
+void UTurretStateGroup::SetTurretChair(TObjectPtr<APSJ_ShipCockpit> TurretChair)
+{
+	_turretChair = TurretChair;
+}
+
 bool UTurretStateGroup::TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, TObjectPtr<AActor> Turret)
 {
 	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
@@ -124,7 +130,12 @@ bool UTurretStateGroup::TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_
 		}
 	}
 	
-	return _outTurretStand->TryEquipTurret(Turret, AmmoType);
+	bool _isEquiped = _outTurretStand->TryEquipTurret(Turret, AmmoType);
+	if (_isEquiped)
+	{
+		_turretChair->SetTargetPawn(Cast<APawn>(Turret));
+	}
+	return _isEquiped;
 }
 
 bool UTurretStateGroup::TryGetTurretFireInterval(E_TURRET_POSITION TurretPosition, float* OutFireCoolTime)

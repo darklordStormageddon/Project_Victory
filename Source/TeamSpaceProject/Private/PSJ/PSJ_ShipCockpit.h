@@ -25,4 +25,6 @@ public:
 protected:
     virtual void OnInteractEnter(TObjectPtr<UUIBase> OpenedUI) override;
 
+public:
+    void SetTargetPawn(TObjectPtr<APawn> TargetPawn);
 };

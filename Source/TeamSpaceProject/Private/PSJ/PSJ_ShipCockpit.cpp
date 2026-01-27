@@ -55,3 +55,8 @@ void APSJ_ShipCockpit::OnInteractExit(TObjectPtr<UUIBase> OpenedUI)
     // 4. 조종사가 없거나 형변환에 실패한 경우 부모 로직 실행
     Super::OnInteractExit(OpenedUI);
 }
+
+void APSJ_ShipCockpit::SetTargetPawn(TObjectPtr<APawn> TargetPawn)
+{
+    TargetSpaceship = TargetPawn;
+}
