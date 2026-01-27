@@ -86,7 +86,7 @@ void ATurretBase_GT::BeginPlay()
 	{
 		_cachedGameState = TempGameState;
 		//_cachedGameState->GetTurretStateGroup()->SetInfiniteMagMode(true);
-		_cachedGameState->GetTurretStateGroup()->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet, this);
+		//_cachedGameState->GetTurretStateGroup()->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet, this);
 	}
 	else
 	{
@@ -140,7 +140,7 @@ void ATurretBase_GT::BeginPlay()
 		return;
 	}
 
-	TempUIManager->OpenUI(E_UI_TYPE::UIPanelTurretSeat);
+	//TempUIManager->OpenUI(E_UI_TYPE::UIPanelTurretSeat);
 }
 
 void ATurretBase_GT::EndPlay(const EEndPlayReason::Type EndPlayReason)

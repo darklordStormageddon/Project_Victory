@@ -18,34 +18,40 @@ APSJ_ShipCockpit::APSJ_ShipCockpit()
 
 void APSJ_ShipCockpit::OnInteractEnter(TObjectPtr<UUIBase> OpenedUI)
 {
-    // 1. 부모 로직 실행
-    Super::OnInteractEnter(OpenedUI);
+    Super::OnInteractEnter(OpenedUI); // 부모의 기본 로직 실행
 
-    // 2. 우주선 연결 및 탑승 처리
     if (TargetSpaceship)
     {
-        APawn* PlayerPawn = GetWorld()->GetFirstPlayerController()->GetPawn();
-
-        if (APSJ_Character* MyChar = Cast<APSJ_Character>(PlayerPawn))
+        // APawn*를 APSJ_Spaceship*으로 형변환하여 내부 기능 접근
+        if (APSJ_Spaceship* Spaceship = Cast<APSJ_Spaceship>(TargetSpaceship))
         {
-            UE_LOG(LogTemp, Log, TEXT("Cockpit: Requesting Boarding..."));
+            APawn* PlayerPawn = GetWorld()->GetFirstPlayerController()->GetPawn();
 
-            TargetSpaceship->LinkedCockpit = this;
-
-            // [변경 핵심] 직접 Possess 하지 않고 캐릭터의 서버 RPC 함수를 호출
-            MyChar->Server_RequestBoarding(TargetSpaceship);
-
+            if (APSJ_Character* MyChar = Cast<APSJ_Character>(PlayerPawn))
+            {
+                // 우주선에 조종석 연결 정보 전달
+                Spaceship->LinkedCockpit = this;
+                MyChar->Server_RequestBoarding(Spaceship);
+            }
         }
     }
 }
 
 void APSJ_ShipCockpit::OnInteractExit(TObjectPtr<UUIBase> OpenedUI)
 {
-    // [예외 처리] 탑승 중(=파일럿 있음)이라면 UI 끄기 무시
-    if (TargetSpaceship && TargetSpaceship->GetCurrentPilot())
+    // 1. TargetSpaceship이 유효한지 확인
+    if (TargetSpaceship)
     {
-        return;
+        // 2. APawn 타입을 APSJ_Spaceship 타입으로 형변환
+        APSJ_Spaceship* Spaceship = Cast<APSJ_Spaceship>(TargetSpaceship);
+
+        // 3. 형변환에 성공했고, 현재 조종사가 있다면 종료(return) 처리
+        if (Spaceship && Spaceship->GetCurrentPilot())
+        {
+            return;
+        }
     }
 
+    // 4. 조종사가 없거나 형변환에 실패한 경우 부모 로직 실행
     Super::OnInteractExit(OpenedUI);
 }

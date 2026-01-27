@@ -1,5 +1,8 @@
 #include "PSJ_Character.h"
 #include "PSJ_Spaceship.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -20,6 +23,14 @@ APSJ_Character::APSJ_Character()
 void APSJ_Character::BeginPlay()
 {
 	Super::BeginPlay();
+
+	AJHSGameState* _outGameState = nullptr;
+	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+		return;
+
+	UTurretStateGroup* _turretStateGroup = _outGameState->GetTurretStateGroup();
+	_turretStateGroup->SetInfiniteMagMode(true);
+	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet, nullptr);
 
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationPitch = false;
