@@ -101,4 +101,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USceneComponent* SceneChild8;
+
+private:
+	UPROPERTY(EditAnywhere, Category = "Property")
+	float MinSpeed = 0.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Property")
+	float MaxSpeed = 0.0f;
+
 };
