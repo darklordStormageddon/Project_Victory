@@ -1,4 +1,4 @@
-#include "CJH/Asteroid/Asteroid.h"
+Ôªø#include "CJH/Asteroid/Asteroid.h"
 #include "CJH/Asteroid/AsteroidComponent.h"
 
 #include "JHS/GameControl/JHSGameMode.h"
@@ -19,6 +19,20 @@ AAsteroid::AAsteroid()
 	SpaceObjectComp = CreateDefaultSubobject<USpaceObjectComponent>(TEXT("SpaceObjectComponent"));
 
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+
+	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
+	RootComponent = Collision;
+
+	Collision->InitSphereRadius(5.f);
+
+	Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	Collision->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+	Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	Collision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
+
+	// ‚≠ê ÌïµÏã¨
+	Collision->SetNotifyRigidBodyCollision(true);
 }
 
 // Called when the game starts or when spawned
@@ -29,6 +43,7 @@ void AAsteroid::BeginPlay()
 	SetAsteroidRot();
 
 	HealthComp->OnDeath.AddDynamic(this, &AAsteroid::OnDestroy);
+	Collision->OnComponentHit.AddDynamic(this, &AAsteroid::OnHit);
 }
 
 // Called every frame
@@ -58,7 +73,7 @@ void AAsteroid::SetAsteroidInfo(
 {
 	_targetInfo = InAsteroidInfo;
 
-	//øÓºÆ¿« ≈©±‚ º≥¡§
+	//Ïö¥ÏÑùÏùò ÌÅ¨Í∏∞ ÏÑ§Ï†ï
 	SetActorScale3D(FVector(_targetInfo.Size));
 
 	bool bHasIntercept = CalculateInterceptPoint(
@@ -70,8 +85,8 @@ void AAsteroid::SetAsteroidInfo(
 	if (!bHasIntercept)
 		TargetLocation = VSpaceShip;
 	
-	// === πÊ«‚ ∞ËªÍ ===
-	Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();// πÊ«‚ ∫§≈Õ ¥‹¿ß∫§≈Õ»≠
+	// === Î∞©Ìñ• Í≥ÑÏÇ∞ ===
+	Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();// Î∞©Ìñ• Î≤°ÌÑ∞ Îã®ÏúÑÎ≤°ÌÑ∞Ìôî
 	Direction *= _targetInfo.Speed;
 
 	AJHSGameMode* GameMode = Cast<AJHSGameMode>(GetWorld()->GetAuthGameMode());
@@ -171,3 +186,30 @@ void AAsteroid::OnDestroy()
 {
 	this->Destroy();
 }
+
+void AAsteroid::OnHit(
+	UPrimitiveComponent* HitComponent, 
+	AActor* OtherActor, 
+	UPrimitiveComponent* OtherComponent, 
+	FVector NormalImpulse, 
+	const FHitResult& Hit)
+{
+	if (!OtherActor)
+		return;
+
+	if (!HitParticle)
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			HitParticle,
+			Hit.ImpactPoint,
+			Hit.ImpactNormal.Rotation()
+		);
+	/*UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherActor->GetName())*/
+
+	
+	if (UHealthComponent* Health = OtherActor->FindComponentByClass<UHealthComponent>())
+		Health->TakeDamage(_targetInfo.Attack_Damage);
+
+	Destroy(); // ÎßûÏúºÎ©¥ ÏÇ¨ÎùºÏßê
+}
+

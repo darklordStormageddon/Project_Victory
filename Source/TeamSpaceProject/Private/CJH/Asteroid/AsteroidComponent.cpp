@@ -38,10 +38,11 @@ void UAsteroidComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 	CanSpawn();
 }
 
-
-
 void UAsteroidComponent::CanSpawn()
 {
+	if (Asteroids.Num() >= MaxSpawn)
+		return;
+
 	UWorld* World = GetWorld();
 
 	AActor* Owner = Cast<AActor>(UGameplayStatics::GetActorOfClass(World, _asteroidInfo.TargetShip));

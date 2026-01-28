@@ -68,6 +68,9 @@ private:
 	UPROPERTY()
 	TArray<AAsteroid*> Asteroids;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+	int MaxSpawn = 100;
+
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	FSpawnAsteroidInfo _asteroidInfo;
