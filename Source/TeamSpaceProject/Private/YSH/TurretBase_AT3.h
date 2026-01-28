@@ -35,6 +35,10 @@ public:
 	void AddYawInput(float YawInputDegPerSec, float DeltaTime);
 	void AddPitchInput(float PitchInputDegPerSec, float DeltaTime);
 
+	// 타겟 무효화 함수 (Projectile이 적을 처치했을 때 호출)
+	UFUNCTION(BlueprintCallable, Category = "Turret")
+	void InvalidateCurrentTarget(AActor* DestroyedTarget);
+
 	// 터렛 위치 설정
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Position")
 	E_TURRET_POSITION TurretPosition = E_TURRET_POSITION::Left;
