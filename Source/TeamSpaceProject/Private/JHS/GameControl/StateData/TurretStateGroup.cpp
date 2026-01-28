@@ -144,7 +144,7 @@ bool UTurretStateGroup::TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_
 	}
 	
 	bool _isEquiped = _outTurretStand->TryEquipTurret(Turret, AmmoType);
-	if (_isEquiped)
+	if (TurretPosition == E_TURRET_POSITION::Main && _isEquiped)
 	{
 		_turretChair->SetTargetPawn(Cast<APawn>(Turret));
 	}
