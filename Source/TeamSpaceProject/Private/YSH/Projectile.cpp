@@ -2,6 +2,8 @@
 
 #include "YSH/Projectile.h"
 #include "YSH/TurretBase_AT1.h"
+#include "YSH/TurretBase_AT2.h"
+#include "YSH/TurretBase_AT3.h"
 #include "KSM/HealthComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -359,9 +361,18 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 	// 적을 처치한 경우 터렛에게 알림
 	if (bTargetKilled && OwningTurret.IsValid())
 	{
-		if (ATurretBase_AT1* Turret = Cast<ATurretBase_AT1>(OwningTurret.Get()))
+		// AT1, AT2, AT3 모두 처리
+		if (ATurretBase_AT1* Turret1 = Cast<ATurretBase_AT1>(OwningTurret.Get()))
 		{
-			Turret->InvalidateCurrentTarget(OtherActor);
+			Turret1->InvalidateCurrentTarget(OtherActor);
+		}
+		else if (ATurretBase_AT2* Turret2 = Cast<ATurretBase_AT2>(OwningTurret.Get()))
+		{
+			Turret2->InvalidateCurrentTarget(OtherActor);
+		}
+		else if (ATurretBase_AT3* Turret3 = Cast<ATurretBase_AT3>(OwningTurret.Get()))
+		{
+			Turret3->InvalidateCurrentTarget(OtherActor);
 		}
 	}
 

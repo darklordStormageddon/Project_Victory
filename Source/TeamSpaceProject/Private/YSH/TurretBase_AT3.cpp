@@ -122,6 +122,20 @@ void ATurretBase_AT3::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	// 자동 터렛이므로 입력 바인딩 불필요
 }
 
+void ATurretBase_AT3::InvalidateCurrentTarget(AActor* DestroyedTarget)
+{
+	// 파괴된 적이 현재 타겟인 경우 타겟 초기화
+	if (CurrentTarget == DestroyedTarget)
+	{
+		CurrentTarget = nullptr;
+
+		if (bShowDebugRange)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("ATurretBase_AT3: Target destroyed, searching for new target"));
+		}
+	}
+}
+
 bool ATurretBase_AT3::IsTargetInHemisphere(AActor* Target) const
 {
 	if (!Target || !bUseHemisphericalDetection)
@@ -274,6 +288,12 @@ void ATurretBase_AT3::TryAutoFire()
 			FireRotation,
 			SpawnParams
 		);
+
+		// 투사체에 터렛 참조 설정 (적 처치 시 알림용)
+		if (Projectile)
+		{
+			Projectile->SetOwningTurret(this);
+		}
 
 		// Muzzle Flash 이펙트
 		if (MuzzleFlashEffect)
