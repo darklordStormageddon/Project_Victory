@@ -14,7 +14,9 @@ class UInputAction;
 class UInputComponent;
 class UInputMappingContext;
 class APawn;
-class APSJ_Spaceship; // [★수정★] 이 줄이 빠져 있었습니다! 꼭 넣어야 합니다.
+class APSJ_Spaceship; 
+// 전방 선언 추가
+class ATurretBase_GT;
 
 // [필수 구조체] 상대 좌표 동기화용 데이터
 USTRUCT()
@@ -60,6 +62,8 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+
+
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	APawn* CurrentSpaceship = nullptr;
@@ -68,6 +72,10 @@ public:
 	// [중요] 위에서 class APSJ_Spaceship; 을 선언했기 때문에 이제 에러가 나지 않습니다.
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RequestBoarding(APSJ_Spaceship* ShipToBoard);
+
+	// [신규] 터렛 탑승 요청 추가
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestTurretBoarding(ATurretBase_GT* TurretToBoard, APSJ_ShipCockpit* LinkedCockpit);
 
 	// [신규] 타이머를 통해 호출될 최종 입력 복구 함수
 	void Client_LateInputRestore();

@@ -7,6 +7,11 @@
 #include "JHS/GameControl/StateData/GameStateStructs.h"
 #include "TurretBase_GT.generated.h"
 
+
+// 전방선언추가
+class APSJ_Character;
+class APSJ_ShipCockpit; // 연결된 의자 정보 저장을 위해
+
 class USceneComponent;
 class UStaticMeshComponent;
 class UCameraComponent;
@@ -26,13 +31,49 @@ public:
 	// Sets default values for this actor's properties
 	ATurretBase_GT();
 
+	// [추가] 하차 입력을 위한 액션 (우주선과 동일한 키 사용 권장)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> InteractAction = nullptr;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	// [추가] 현재 탑승한 조종사
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Pilot")
+	APSJ_Character* CurrentPilot = nullptr;
+
+	// [추가] 연결된 조종석 (내릴 때 정보 갱신용)
+	UPROPERTY(VisibleInstanceOnly, Category = "Connection")
+	APSJ_ShipCockpit* LinkedCockpit;
+
 public:
+
+	// [신규] 탑승 처리 함수 (서버 호출)
+	void SetPilot(APSJ_Character* NewPilot, APSJ_ShipCockpit* Cockpit);
+
+	// [신규] 탑승 성공 시 클라이언트 설정 (IMC 교체, UI 켜기)
+	UFUNCTION(Client, Reliable)
+	void Client_BoardingSuccess();
+
+	// [신규] 하차 요청 (서버 RPC)
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestDisembark();
+
+	// [신규] 하차 처리 구현부
+	void DisembarkCharacter();
+
+	// [신규] 하차 성공 시 클라이언트 정리
+	UFUNCTION(Client, Reliable)
+	void Client_DisembarkSuccess(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot);
+
+	// [신규] 하차 입력 바인딩 함수
+	void Input_Exit(const FInputActionValue& Value);
+
+
+
 	void AddYawInput(float YawInputDegPerSec, float DeltaTime);
 	void AddPitchInput(float PitchInputDegPerSec, float DeltaTime);
 

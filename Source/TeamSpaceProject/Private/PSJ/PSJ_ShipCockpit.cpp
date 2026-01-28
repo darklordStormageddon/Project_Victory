@@ -1,6 +1,7 @@
 #include "PSJ_ShipCockpit.h"
 #include "PSJ_Character.h" 
 #include "PSJ_Spaceship.h"
+#include "YSH/TurretBase_GT.h"
 #include "GameFramework/PlayerController.h"
 #include "JHS/UI/UIBase.h"
 
@@ -20,19 +21,27 @@ void APSJ_ShipCockpit::OnInteractEnter(TObjectPtr<UUIBase> OpenedUI)
 {
     Super::OnInteractEnter(OpenedUI); // 부모의 기본 로직 실행
 
-    if (TargetSpaceship)
+    if (TargetSpaceship) // 변수명은 TargetSpaceship이지만 실제로는 APawn* 타입
     {
-        // APawn*를 APSJ_Spaceship*으로 형변환하여 내부 기능 접근
-        if (APSJ_Spaceship* Spaceship = Cast<APSJ_Spaceship>(TargetSpaceship))
-        {
-            APawn* PlayerPawn = GetWorld()->GetFirstPlayerController()->GetPawn();
+        APawn* PlayerPawn = GetWorld()->GetFirstPlayerController()->GetPawn();
+        APSJ_Character* MyChar = Cast<APSJ_Character>(PlayerPawn);
 
-            if (APSJ_Character* MyChar = Cast<APSJ_Character>(PlayerPawn))
-            {
-                // 우주선에 조종석 연결 정보 전달
-                Spaceship->LinkedCockpit = this;
-                MyChar->Server_RequestBoarding(Spaceship);
-            }
+        if (!MyChar) return;
+
+        // [분기 1] 대상이 터렛(TurretBase_GT)인 경우
+        if (ATurretBase_GT* TargetTurret = Cast<ATurretBase_GT>(TargetSpaceship))
+        {
+            // 터렛용 탑승 요청 호출
+            MyChar->Server_RequestTurretBoarding(TargetTurret, this);
+            UE_LOG(LogTemp, Log, TEXT("Cockpit: Requesting boarding to TURRET: %s"), *TargetTurret->GetName());
+        }
+        // [분기 2] 대상이 우주선(Spaceship)인 경우
+        else if (APSJ_Spaceship* Spaceship = Cast<APSJ_Spaceship>(TargetSpaceship))
+        {
+            // 우주선에 조종석 연결 정보 전달
+            Spaceship->LinkedCockpit = this;
+            MyChar->Server_RequestBoarding(Spaceship);
+            UE_LOG(LogTemp, Log, TEXT("Cockpit: Requesting boarding to SPACESHIP: %s"), *Spaceship->GetName());
         }
     }
 }
@@ -59,4 +68,5 @@ void APSJ_ShipCockpit::OnInteractExit(TObjectPtr<UUIBase> OpenedUI)
 void APSJ_ShipCockpit::SetTargetPawn(TObjectPtr<APawn> TargetPawn)
 {
     TargetSpaceship = TargetPawn;
+    UE_LOG(LogTemp, Warning, TEXT("TargetPawn: %s "), *TargetSpaceship->GetName());
 }

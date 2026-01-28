@@ -1,12 +1,16 @@
 #include "PSJ_Character.h"
 #include "PSJ_Spaceship.h"
+#include "PSJ_ShipCockpit.h"
+#include "YSH/TurretBase_GT.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
+#include "JHS/GameControl/StateData/GameStateStructs.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -24,13 +28,36 @@ void APSJ_Character::BeginPlay()
 {
 	Super::BeginPlay();
 
+
+
 	AJHSGameState* _outGameState = nullptr;
 	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
 		return;
-
+	
 	UTurretStateGroup* _turretStateGroup = _outGameState->GetTurretStateGroup();
 	_turretStateGroup->SetInfiniteMagMode(true);
+
+	TArray<TObjectPtr<AActor>> _chairArray;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APSJ_ShipCockpit::StaticClass(), _chairArray);
+	for (TObjectPtr<AActor> _chairActor : _chairArray)
+	{
+		TObjectPtr<APSJ_ShipCockpit> _chair = Cast<APSJ_ShipCockpit>(_chairActor);
+		if (!_chair)
+		{
+			//UE_LOG(LogTemp, Error, TEXT("TurretStateGroup: TurretStand not found. %s"), *_chairActor->GetName());
+			continue;
+		}
+
+		if (_chair->TargetSpaceship == nullptr)
+		{
+			_turretStateGroup->SetTurretChair(_chair);
+			break;
+		}
+	}
+
 	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet, nullptr);
+
+
 
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationPitch = false;
@@ -235,7 +262,7 @@ void APSJ_Character::ForceInputRecovery()
 		PC->SetInputMode(FInputModeGameOnly());
 		PC->bShowMouseCursor = false;
 
-		UE_LOG(LogTemp, Warning, TEXT("[Debug] ForceInputRecovery: Input Forced & Context Added!"));
+		//UE_LOG(LogTemp, Warning, TEXT("[Debug] ForceInputRecovery: Input Forced & Context Added!"));
 	}
 }
 
@@ -356,7 +383,7 @@ void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	UE_LOG(LogTemp, Warning, TEXT("[Debug] SetupPlayerInputComponent Called! Controller: %s"), *GetNameSafe(Controller));
+	//UE_LOG(LogTemp, Warning, TEXT("[Debug] SetupPlayerInputComponent Called! Controller: %s"), *GetNameSafe(Controller));
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -366,7 +393,7 @@ void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 			if (DefaultMappingContext)
 			{
 				Subsystem->AddMappingContext(DefaultMappingContext, 0);
-				UE_LOG(LogTemp, Warning, TEXT("[Debug] Mapping Context Added!"));
+				//UE_LOG(LogTemp, Warning, TEXT("[Debug] Mapping Context Added!"));
 			}
 		}
 	}
@@ -421,11 +448,11 @@ void APSJ_Character::Move(const FInputActionValue& Value)
 		FString ModeString = UEnum::GetValueAsString(GetCharacterMovement()->MovementMode);
 		FVector Vel = GetVelocity();
 
-		UE_LOG(LogTemp, Warning, TEXT("[Debug] Move Input Received: %s | Mode: %s | Velocity: %s | IsAnchored: %d"),
-			*CurrentInputVector.ToString(),
-			*ModeString,
-			*Vel.ToString(),
-			ReplicatedRelativeData.bIsAnchored);
+		//UE_LOG(LogTemp, Warning, TEXT("[Debug] Move Input Received: %s | Mode: %s | Velocity: %s | IsAnchored: %d"),
+		//	*CurrentInputVector.ToString(),
+		//	*ModeString,
+		//	*Vel.ToString(),
+		//	ReplicatedRelativeData.bIsAnchored);
 	}
 }
 
@@ -566,7 +593,7 @@ void APSJ_Character::OnRep_Controller()
 		// 혹시 모를 안전장치: 강제 인풋 복구 호출
 		ForceInputRecovery();
 
-		UE_LOG(LogTemp, Warning, TEXT("[Debug] OnRep_Controller: PawnClientRestart Called. Input Restored."));
+		//UE_LOG(LogTemp, Warning, TEXT("[Debug] OnRep_Controller: PawnClientRestart Called. Input Restored."));
 	}
 }
 
@@ -574,8 +601,30 @@ void APSJ_Character::Client_LateInputRestore()
 {
 	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Debug] LateInputRestore: Forcing Input Setup..."));
+		//UE_LOG(LogTemp, Warning, TEXT("[Debug] LateInputRestore: Forcing Input Setup..."));
 		PawnClientRestart();
 		ForceInputRecovery();
+	}
+}
+
+bool APSJ_Character::Server_RequestTurretBoarding_Validate(ATurretBase_GT* TurretToBoard, APSJ_ShipCockpit* LinkedCockpit)
+{
+	return true;
+}
+
+void APSJ_Character::Server_RequestTurretBoarding_Implementation(ATurretBase_GT* TurretToBoard, APSJ_ShipCockpit* LinkedCockpit)
+{
+	if (!TurretToBoard) return;
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		// 1. 터렛에 조종사 정보 등록
+		TurretToBoard->SetPilot(this, LinkedCockpit);
+
+		// 2. 컨트롤러 빙의 (Possess) - 이제 캐릭터가 아닌 터렛을 조종
+		PC->Possess(TurretToBoard);
+
+		// 3. 클라이언트 화면/입력 전환 지시
+		TurretToBoard->Client_BoardingSuccess();
 	}
 }
