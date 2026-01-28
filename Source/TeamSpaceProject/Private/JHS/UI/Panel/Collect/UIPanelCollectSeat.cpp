@@ -76,12 +76,14 @@ void UUIPanelCollectSeat::OnChangeDurability(UEventOnCollectToolDurability* Even
 
 	FCollectToolData _collectToolData = Event->CollectToolData;
 	TObjectPtr<UCollectToolDurability> _collectToolItem = GetCollectToolItem(_collectToolData.CollectToolType);
-	float _progress = FMath::Clamp(_collectToolData.Durability.CurrentValue / _collectToolData.Durability.MaxValue, 0.f, 1.f);
-	if (_collectToolData.CollectToolType == E_COLLECT_TOOL_TYPE::Vacuum)
+
+	float _progress = FMath::Clamp(_collectToolData.Durability.CurrentValue / _collectToolData.Durability.MaxValue, 0.0f, 1.0f);
+	bool _isVaccumTool = _collectToolData.CollectToolType == E_COLLECT_TOOL_TYPE::Vacuum;
+	if (_isVaccumTool)
 	{
 		_progress = 0.0f;
 	}
-	_collectToolItem->SetDurabilityProgress(_progress, _collectToolData.CollectToolImage);
+	_collectToolItem->SetDurabilityProgress(_collectToolData.CollectToolImage, _progress, _collectToolData.CollectToolType == E_COLLECT_TOOL_TYPE::Vacuum);
 }
 
 void UUIPanelCollectSeat::ClearDynamicWidgets()
