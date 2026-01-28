@@ -25,3 +25,60 @@ void ATargetBase::Tick(float DeltaTime)
 
 }
 
+void ATargetBase::SpawnGarbageSetting()
+{
+	if (!GarbageTable)
+		return;
+	if (GarbageRowName.IsNone())
+		return;
+
+	const FGarbageInfo* Row =
+		GarbageTable->FindRow<FGarbageInfo>(
+			GarbageRowName,
+			TEXT("GarbageLookup"),
+			false
+		);
+
+	if (!Row)
+		return;
+
+	int Remain = Row->Total_Number;
+
+	for (const auto& Info : Row->GarbageList)
+	{
+		int Count = FMath::RandRange(
+			Info.Min_SpawnNum,
+			Info.Max_SpawnNum
+		);
+
+		Count = FMath::Min(Count, Remain);
+
+		for (int i = 0; i < Count; ++i)
+			Spawn(Info.EnemyGarbage);
+
+		Remain -= Count;
+		if (Remain <= 0)
+			break;
+	}
+}
+
+void ATargetBase::Spawn(TSubclassOf<AActor> EnemyGarbage)
+{
+	if (!EnemyGarbage) return;
+
+	const float Radius = 300.f;
+
+	FVector RandomOffset = FMath::VRand() * FMath::FRandRange(0.f, Radius);
+	FVector SpawnLocation = GetActorLocation() + RandomOffset;
+
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride =
+		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	GetWorld()->SpawnActor<AActor>(
+		EnemyGarbage,
+		SpawnLocation,
+		FRotator::ZeroRotator,
+		Params
+	);
+}

@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "ASManager.generated.h"
 
-class AASCore;
+class ASatellite_Base;
 class ASpaceStation;
 
 UCLASS()
@@ -29,7 +29,7 @@ private:
 	float Spawn_Distance;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
-	TArray<TSubclassOf<AASCore>> Artifical_Satellite;
+	TArray<TSubclassOf<ASatellite_Base>> Artifical_Satellite;
 
 	ASpaceStation* spaceStation = nullptr;
 
