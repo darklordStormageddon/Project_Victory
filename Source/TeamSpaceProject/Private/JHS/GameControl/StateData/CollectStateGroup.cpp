@@ -72,7 +72,8 @@ bool UCollectStateGroup::TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float& 
 	if (CollectToolType != E_COLLECT_TOOL_TYPE::Vacuum && _outCollectToolData->Durability.CurrentValue <= 0)
 		return false;
 
-	_outCollectToolData->Durability.CurrentValue -= CONSUME_DURABILITY;
+	const float _deltaTime = GetWorld()->GetDeltaSeconds();
+	_outCollectToolData->Durability.CurrentValue -= CONSUME_DURABILITY * _deltaTime;
 	if (_outCollectToolData->Durability.CurrentValue <= 0)
 	{
 		_outCollectToolData->Durability.CurrentValue = 0;
