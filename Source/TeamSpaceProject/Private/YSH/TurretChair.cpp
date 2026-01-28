@@ -25,3 +25,7 @@ void ATurretChair::Tick(float DeltaTime)
 
 }
 
+void ATurretChair::SetTurretPawn(TObjectPtr<APawn> TurretPawn)
+{
+	TargetSpaceship = TurretPawn;
+}

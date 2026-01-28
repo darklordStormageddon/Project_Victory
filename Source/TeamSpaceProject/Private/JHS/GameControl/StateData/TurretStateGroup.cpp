@@ -11,7 +11,7 @@
 #include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "Kismet/GameplayStatics.h"
 #include "JHS/Turret/TurretStand.h"
-#include "PSJ/PSJ_ShipCockpit.h"
+#include "YSH/TurretChair.h"
 
 // Sets default values for this component's properties
 UTurretStateGroup::UTurretStateGroup()
@@ -46,10 +46,28 @@ void UTurretStateGroup::InitializeTurretState(TObjectPtr<AJHSGameState> GameStat
 {
 	_gameState = GameState;
 
+	// _turretChair
+	TArray<TObjectPtr<AActor>> _actorArray;
+	_turretChair = nullptr;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATurretChair::StaticClass(), _actorArray);
+	for (TObjectPtr<AActor> _turretChairActor : _actorArray)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TurretChair : %s"), *_turretChairActor->GetName());
+		TObjectPtr<ATurretChair> _castedTurretChair = Cast<ATurretChair>(_turretChairActor);
+		if (_castedTurretChair != nullptr)
+		{
+			_turretChair = _castedTurretChair;
+		}
+	}
+	if (_turretChair == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TurretStateGroup: TurretChair not found."));
+		return;
+	}
+
 	// 레벨에서 모든 ATurretStand 찾아서 설정
-	TArray<TObjectPtr<AActor>> _turretStandArray;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATurretStand::StaticClass(), _turretStandArray);
-	for (TObjectPtr<AActor> _turretStand : _turretStandArray)
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATurretStand::StaticClass(), _actorArray);
+	for (TObjectPtr<AActor> _turretStand : _actorArray)
 	{
 		TObjectPtr<ATurretStand> _turretStandActor = Cast<ATurretStand>(_turretStand);
 		if (!_turretStandActor)
@@ -92,11 +110,6 @@ void UTurretStateGroup::SetInfiniteMagMode(bool IsInfiniteMagMode)
 	_isInfiniteMagMode = IsInfiniteMagMode;
 }
 
-void UTurretStateGroup::SetTurretChair(TObjectPtr<APSJ_ShipCockpit> TurretChair)
-{
-	_turretChair = TurretChair;
-}
-
 bool UTurretStateGroup::TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, TObjectPtr<AActor> Turret)
 {
 	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
@@ -133,9 +146,7 @@ bool UTurretStateGroup::TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_
 	bool _isEquiped = _outTurretStand->TryEquipTurret(Turret, AmmoType);
 	if (_isEquiped)
 	{
-		APawn* _pawn = Cast<APawn>(Turret);
-		UE_LOG(LogTemp, Warning, TEXT("Turret Name: %s"), *_pawn->GetName());
-		//_turretChair->SetTargetPawn();
+		_turretChair->SetTargetPawn(Cast<APawn>(Turret));
 	}
 	return _isEquiped;
 }
