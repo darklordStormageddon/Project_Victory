@@ -175,12 +175,11 @@ void ATurretBase_GT::Tick(float DeltaTime)
 		if (YawPivot)
 		{
 			FRotator CurrentYawRotation = YawPivot->GetRelativeRotation();
-			CurrentYawRotation.Yaw = FMath::FInterpTo(
-				CurrentYawRotation.Yaw,
-				TargetYaw,
-				DeltaTime,
-				BarrelFollowSpeed
-			);
+			// 최단 경로로 보간하기 위해 FInterpTo 대신 직접 계산
+			float CurrentYaw = CurrentYawRotation.Yaw;
+			float DeltaYaw = FRotator::NormalizeAxis(TargetYaw - CurrentYaw);
+			CurrentYawRotation.Yaw = CurrentYaw + (DeltaYaw * FMath::Min(1.0f, DeltaTime * BarrelFollowSpeed));
+			CurrentYawRotation.Normalize();
 			YawPivot->SetRelativeRotation(CurrentYawRotation);
 		}
 
@@ -205,12 +204,10 @@ void ATurretBase_GT::Tick(float DeltaTime)
 		// Yaw 업데이트
 		if (bSmoothCameraFollow)
 		{
-			CurrentCameraYaw = FMath::FInterpTo(
-				CurrentCameraYaw,
-				TargetYaw,
-				DeltaTime,
-				CameraYawFollowSpeed
-			);
+			// 최단 경로로 보간
+			float DeltaYaw = FRotator::NormalizeAxis(TargetYaw - CurrentCameraYaw);
+			CurrentCameraYaw = CurrentCameraYaw + (DeltaYaw * FMath::Min(1.0f, DeltaTime * CameraYawFollowSpeed));
+			CurrentCameraYaw = FRotator::NormalizeAxis(CurrentCameraYaw);
 		}
 		else
 		{
@@ -299,6 +296,8 @@ void ATurretBase_GT::Look(const FInputActionValue& Value)
 		if (bEnableBarrelLag)
 		{
 			TargetYaw += LookAxisVector.X * TurretYawSpeed * DeltaTime;
+			// 각도 정규화: -180 ~ 180 범위로 제한
+			TargetYaw = FRotator::NormalizeAxis(TargetYaw);
 		}
 		else
 		{
@@ -306,6 +305,8 @@ void ATurretBase_GT::Look(const FInputActionValue& Value)
 			{
 				FRotator CurrentRotation = YawPivot->GetRelativeRotation();
 				CurrentRotation.Yaw += LookAxisVector.X * TurretYawSpeed * DeltaTime;
+				// 각도 정규화
+				CurrentRotation.Normalize();
 				YawPivot->SetRelativeRotation(CurrentRotation);
 				TargetYaw = CurrentRotation.Yaw;
 				CurrentCameraYaw = TargetYaw;
