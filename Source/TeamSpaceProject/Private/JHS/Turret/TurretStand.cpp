@@ -49,6 +49,12 @@ bool ATurretStand::TryEquipTurret(TObjectPtr<AActor> Turret, E_AMMO_TYPE AmmoTyp
 
 	_turret = Turret;
 	_ammoType = AmmoType;
+
+	// Turret을 자신의 자식으로 두고 로컬 좌표와 회전값을 0으로 설정
+	FAttachmentTransformRules _attachRules = FAttachmentTransformRules::KeepWorldTransform;
+	Turret->AttachToComponent(this->GetRootComponent(), _attachRules);
+	Turret->SetActorRelativeLocation(FVector::ZeroVector);
+	Turret->SetActorRelativeRotation(FRotator::ZeroRotator);
 	return true;
 }
 

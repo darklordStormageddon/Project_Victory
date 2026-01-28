@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "PSJ/PSJ_ShipCockpit.h"
 #include "TurretChair.generated.h"
 
 UCLASS()
-class ATurretChair : public AActor
+class ATurretChair : public APSJ_ShipCockpit
 {
 	GENERATED_BODY()
 	
@@ -23,4 +23,6 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+public:
+	void SetTurretPawn(TObjectPtr<APawn> TurretPawn);
 };

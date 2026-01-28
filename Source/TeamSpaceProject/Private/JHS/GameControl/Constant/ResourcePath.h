@@ -68,7 +68,7 @@ public:
 		: TEXTURE_HEADER(TEXT("Tex_"))
 		, INTERACT_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/Interact/"))
 		, ELEMENT_FOLDER_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Collectables/Image/"))
-		, COLLECT_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/CollectTool/"))
+		, COLLECT_FOLDER_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Tool_Image/"))
 		, AMMO_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/AmmoType/"))
 	{}
 

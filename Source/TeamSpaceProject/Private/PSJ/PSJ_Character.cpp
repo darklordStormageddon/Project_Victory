@@ -36,25 +36,6 @@ void APSJ_Character::BeginPlay()
 	
 	UTurretStateGroup* _turretStateGroup = _outGameState->GetTurretStateGroup();
 	_turretStateGroup->SetInfiniteMagMode(true);
-
-	TArray<TObjectPtr<AActor>> _chairArray;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APSJ_ShipCockpit::StaticClass(), _chairArray);
-	for (TObjectPtr<AActor> _chairActor : _chairArray)
-	{
-		TObjectPtr<APSJ_ShipCockpit> _chair = Cast<APSJ_ShipCockpit>(_chairActor);
-		if (!_chair)
-		{
-			//UE_LOG(LogTemp, Error, TEXT("TurretStateGroup: TurretStand not found. %s"), *_chairActor->GetName());
-			continue;
-		}
-
-		if (_chair->TargetSpaceship == nullptr)
-		{
-			_turretStateGroup->SetTurretChair(_chair);
-			break;
-		}
-	}
-
 	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet, nullptr);
 
 

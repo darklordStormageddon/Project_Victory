@@ -10,7 +10,7 @@
 
 class AJHSGameState;
 class ATurretStand;
-class APSJ_ShipCockpit;
+class ATurretChair;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UTurretStateGroup : public UActorComponent
@@ -38,7 +38,7 @@ private:
 	bool _isInfiniteMagMode = false;
 
 	UPROPERTY();
-	TObjectPtr<APSJ_ShipCockpit> _turretChair = nullptr;
+	TObjectPtr<ATurretChair> _turretChair = nullptr;
 
 protected:
 	// Called when the game starts
@@ -52,8 +52,6 @@ public:
 	void InitializeTurretState(TObjectPtr<AJHSGameState> GameState);
 
 	void UpdateTurretState();
-
-	void SetTurretChair(TObjectPtr<APSJ_ShipCockpit> TurretChair);
 
 	void SetInfiniteMagMode(bool IsInfiniteMagMode);
 
