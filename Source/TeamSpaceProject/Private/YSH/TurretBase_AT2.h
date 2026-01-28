@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
+#include "GameFramework/Actor.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
 #include "TurretBase_AT2.generated.h"
 
@@ -13,27 +13,18 @@ class AProjectile;
 class AJHSGameState;
 
 UCLASS()
-class ATurretBase_AT2 : public APawn
+class ATurretBase_AT2 : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this pawn's properties
 	ATurretBase_AT2();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	void AddYawInput(float YawInputDegPerSec, float DeltaTime);
-	void AddPitchInput(float PitchInputDegPerSec, float DeltaTime);
 
 	// 타겟 무효화 함수 (Projectile이 적을 처치했을 때 호출)
 	UFUNCTION(BlueprintCallable, Category = "Turret")
