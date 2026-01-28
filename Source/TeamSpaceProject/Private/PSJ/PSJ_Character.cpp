@@ -1,9 +1,11 @@
 #include "PSJ_Character.h"
 #include "PSJ_Spaceship.h"
 #include "PSJ_ShipCockpit.h"
+#include "YSH/TurretBase_GT.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
+#include "JHS/GameControl/StateData/GameStateStructs.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -602,5 +604,27 @@ void APSJ_Character::Client_LateInputRestore()
 		//UE_LOG(LogTemp, Warning, TEXT("[Debug] LateInputRestore: Forcing Input Setup..."));
 		PawnClientRestart();
 		ForceInputRecovery();
+	}
+}
+
+bool APSJ_Character::Server_RequestTurretBoarding_Validate(ATurretBase_GT* TurretToBoard, APSJ_ShipCockpit* LinkedCockpit)
+{
+	return true;
+}
+
+void APSJ_Character::Server_RequestTurretBoarding_Implementation(ATurretBase_GT* TurretToBoard, APSJ_ShipCockpit* LinkedCockpit)
+{
+	if (!TurretToBoard) return;
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		// 1. 터렛에 조종사 정보 등록
+		TurretToBoard->SetPilot(this, LinkedCockpit);
+
+		// 2. 컨트롤러 빙의 (Possess) - 이제 캐릭터가 아닌 터렛을 조종
+		PC->Possess(TurretToBoard);
+
+		// 3. 클라이언트 화면/입력 전환 지시
+		TurretToBoard->Client_BoardingSuccess();
 	}
 }

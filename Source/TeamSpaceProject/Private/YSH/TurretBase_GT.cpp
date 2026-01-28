@@ -4,6 +4,10 @@
 #include "YSH/TurretBase_GT.h"
 #include "YSH/Projectile.h"
 
+#include "PSJ/PSJ_Character.h"     // PSJ 폴더 안에 있는 캐릭터 헤더
+#include "PSJ/PSJ_ShipCockpit.h"   // PSJ 폴더 안에 있는 콕핏 헤더
+#include "GameFramework/CharacterMovementComponent.h" // 무브먼트 제어용
+
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/UI/UIManager.h"
@@ -72,8 +76,8 @@ ATurretBase_GT::ATurretBase_GT()
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
 	Camera->bUsePawnControlRotation = false;
 
-	// Pawn으로 자동 빙의 설정
-	AutoPossessPlayer = EAutoReceiveInput::Player0;
+	// Pawn으로 자동 빙의 설정 -> 멀티플레이어를 위해 해제
+	AutoPossessPlayer = EAutoReceiveInput::Disabled;
 }
 
 void ATurretBase_GT::BeginPlay()
@@ -273,6 +277,12 @@ void ATurretBase_GT::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ATurretBase_GT::Fire);
 			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &ATurretBase_GT::StopFire);
 		}
+
+		// [추가] 내리기(Exit) 바인딩
+		if (InteractAction)
+		{
+			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ATurretBase_GT::Input_Exit);
+		}
 	}
 }
 
@@ -464,6 +474,141 @@ void ATurretBase_GT::AddPitchInput(float PitchInputDegPerSec, float DeltaTime)
 			R.Roll = NewRoll;
 			PitchPivot->SetRelativeRotation(R);
 			TargetPitchRoll = NewRoll;
+		}
+	}
+}
+
+// [신규] 탑승 설정 (서버에서 실행)
+void ATurretBase_GT::SetPilot(APSJ_Character* NewPilot, APSJ_ShipCockpit* Cockpit)
+{
+	CurrentPilot = NewPilot;
+	LinkedCockpit = Cockpit;
+
+	if (CurrentPilot)
+	{
+		// 1. 캐릭터 충돌 끄고 숨기기 (또는 의자에 앉히기)
+		CurrentPilot->SetActorEnableCollision(false);
+
+		// 터렛 위치 혹은 의자 위치로 이동 (여기서는 터렛 Root에 붙임, 필요 시 소켓 지정 가능)
+		CurrentPilot->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+		if (auto* CMC = CurrentPilot->GetCharacterMovement())
+		{
+			CMC->StopMovementImmediately();
+			CMC->DisableMovement();
+		}
+	}
+}
+
+// [신규] 클라이언트 탑승 성공 처리 (UI, IMC)
+void ATurretBase_GT::Client_BoardingSuccess_Implementation()
+{
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+		{
+			// 기존 매핑 싹 비우고 터렛 전용 매핑 추가
+			Subsystem->ClearAllMappings();
+			if (TurretMappingContext)
+			{
+				Subsystem->AddMappingContext(TurretMappingContext, MappingPriority);
+			}
+		}
+	}
+
+	// UI 열기 (UIPanelTurretSeat)
+	UUIManager* TempUIManager = nullptr;
+	if (UStaticFunctionLibrary::TryGetUIManager(TempUIManager))
+	{
+		TempUIManager->OpenUI(E_UI_TYPE::UIPanelTurretSeat);
+	}
+}
+
+// [신규] 하차 요청 (입력 시 호출)
+void ATurretBase_GT::Input_Exit(const FInputActionValue& Value)
+{
+	Server_RequestDisembark();
+}
+
+bool ATurretBase_GT::Server_RequestDisembark_Validate() { return true; }
+
+void ATurretBase_GT::Server_RequestDisembark_Implementation()
+{
+	DisembarkCharacter();
+}
+
+// [신규] 하차 로직 구현
+void ATurretBase_GT::DisembarkCharacter()
+{
+	if (!CurrentPilot) return;
+
+	APSJ_Character* ExitingChar = CurrentPilot;
+	AController* TurretController = GetController();
+
+	CurrentPilot = nullptr;
+
+	// 연결된 콕핏에 하차 알림 (필요하다면)
+	if (LinkedCockpit)
+	{
+		LinkedCockpit->OnInteractExit(nullptr);
+		LinkedCockpit = nullptr;
+	}
+
+	// 하차 위치 계산 (콕핏 앞이나 터렛 주변, 여기서는 임시로 현재 위치)
+	FVector SpawnLoc = GetActorLocation() + (GetActorRightVector() * 200.0f); // 우측 하차 예시
+	FRotator SpawnRot = FRotator(0.0f, GetActorRotation().Yaw, 0.0f);
+
+	// 1. 부착 해제
+	ExitingChar->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+	// 2. 위치 이동 및 물리 복구
+	ExitingChar->SetActorLocationAndRotation(SpawnLoc, SpawnRot);
+	ExitingChar->SetActorEnableCollision(true);
+	ExitingChar->SetActorHiddenInGame(false);
+
+	if (auto* CMC = ExitingChar->GetCharacterMovement())
+	{
+		CMC->SetMovementMode(MOVE_Falling); // 혹은 MOVE_Walking
+	}
+
+	// 3. Client RPC로 정리 지시
+	Client_DisembarkSuccess(ExitingChar, SpawnLoc, SpawnRot);
+
+	// 4. 제어권 반환 (빙의)
+	if (TurretController)
+	{
+		TurretController->Possess(ExitingChar);
+	}
+}
+
+// [신규] 클라이언트 하차 후처리
+void ATurretBase_GT::Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot)
+{
+	if (!ExitingPilot) return;
+
+	// 캐릭터의 입력 복구 함수 호출 (PSJ_Spaceship에 구현된 것과 동일한 원리)
+	ExitingPilot->ForceInputRecovery();
+
+	// 2. [추가] 터렛 UI 닫기
+		// UI 매니저를 불러와서 열려있는 터렛 UI를 닫습니다.
+	UUIManager* TempUIManager = nullptr;
+	if (UStaticFunctionLibrary::TryGetUIManager(TempUIManager))
+	{
+		// CloseUI 함수가 있고, 같은 Enum을 쓴다고 가정합니다.
+		// 만약 함수 이름이 ClosePanel 이거나 HideUI라면 그에 맞춰 수정해주세요.
+		TempUIManager->CloseUI(E_UI_TYPE::UIPanelTurretSeat);
+	}
+
+	// 터렛 매핑 컨텍스트 제거
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+			{
+				if (TurretMappingContext)
+					Subsystem->RemoveMappingContext(TurretMappingContext);
+			}
 		}
 	}
 }
