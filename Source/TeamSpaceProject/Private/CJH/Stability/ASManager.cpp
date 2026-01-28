@@ -3,7 +3,7 @@
 
 #include "CJH/Stability/ASManager.h"
 
-#include "CJH/Stability/ASCore.h"
+#include "KSM/Satellite_Base.h"
 
 #include "JHS/Player/SpaceStation.h"
 
@@ -65,16 +65,15 @@ void AASManager::Artifical_Satellite_Spawn()
 
 		int AS_Num = FMath::RandRange(0, Artifical_Satellite.Num() - 1);
 
-		AASCore* Spawned_AS;
-		Spawned_AS = GetWorld()->SpawnActor<AASCore>(Artifical_Satellite[AS_Num], Spawn_Location, Spawn_Rotation);
+		ASatellite_Base* Spawned_AS = GetWorld()->SpawnActor<ASatellite_Base>(Artifical_Satellite[AS_Num], Spawn_Location, Spawn_Rotation);
 		
-		Spawned_AS->Info.Speed = FMath::RandRange(min_Speed, max_Speed);
+		/*Spawned_AS->Info.Speed = FMath::RandRange(min_Speed, max_Speed);
 		FVector RandDir = FVector(
 			FMath::RandRange(-1.f, 1.f),
 			FMath::RandRange(-1.f, 1.f),
 			FMath::RandRange(-1.f, 1.f)
 		);
-		Spawned_AS->Info.Direction = RandDir.GetSafeNormal();
+		Spawned_AS->Info.Direction = RandDir.GetSafeNormal();*/
 	}
 }
 

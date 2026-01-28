@@ -4,6 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "CJH/TargetBase.h"
+
+#include "Kismet/GameplayStatics.h"
+#include "Components/SphereComponent.h"
+
 #include "Asteroid.generated.h"
 
 class UAsteroidComponent;
@@ -23,6 +27,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Stat")
 	float MaxSize;
 
+	UPROPERTY(VisibleAnywhere, Category = "Collision")
+	USphereComponent* Collision;
 public:
 	UPROPERTY()
 	UAsteroidComponent* AsteroidComponent;
@@ -46,6 +52,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Info")
 	float ShockConstant = 0.01f;//충격량 보정 상수
+
+	UPROPERTY(EditDefaultsOnly, Category = "Particle")
+	UParticleSystem* HitParticle;
 
 protected:
 	UFUNCTION()
@@ -83,5 +92,13 @@ public:
 		const FTargetInfo& InAsteroidInfo,
 		FVector VSpaceShip,
 		FVector Velocity);
+
+	UFUNCTION()
+	void OnHit(
+		UPrimitiveComponent* HitComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComponent,
+		FVector NormalImpulse,
+		const FHitResult& Hit);
 };
 

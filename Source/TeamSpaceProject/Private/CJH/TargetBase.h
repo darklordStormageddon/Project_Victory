@@ -10,6 +10,35 @@
 #include "TargetBase.generated.h"
 
 USTRUCT()
+struct FSpawnGarbage
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Garbage")
+	TSubclassOf<AActor> EnemyGarbage;
+
+	UPROPERTY(EditAnywhere, Category = "Garbage")
+	int Min_SpawnNum;
+
+	UPROPERTY(EditAnywhere, Category = "Garbage")
+	int Max_SpawnNum;
+
+};
+
+USTRUCT()
+struct FGarbageInfo : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Garbage")
+	TArray<FSpawnGarbage> GarbageList;
+
+	UPROPERTY(EditAnywhere, Category = "Garbage")
+	int Total_Number;
+};
+
+
+USTRUCT()
 struct FTargetInfo
 {
 	GENERATED_BODY()
@@ -42,6 +71,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Debug")
 	float RiviveTime = 3.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Garbage")
+	UDataTable* GarbageTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Garbage")
+	FName GarbageRowName;
+
 public:	
 	// Sets default values for this actor's properties
 	ATargetBase();
@@ -49,6 +84,8 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	void SpawnGarbageSetting();
+	void Spawn(TSubclassOf<AActor> EnemyGarbage);
 
 public:	
 	// Called every frame

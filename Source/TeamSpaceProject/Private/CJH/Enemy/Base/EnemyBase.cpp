@@ -141,8 +141,8 @@ void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	Super::EndPlay(EndPlayReason);
 
-	if(EnemyGarbage && Murdered)
-		GetWorld()->SpawnActor<AActor>(EnemyGarbage, this->GetActorTransform());
+	if (EnemyGarbage && Murdered)
+		SpawnGarbageSetting();
 }
 
 void AEnemyBase::SpaceObject_Remove()
@@ -164,5 +164,4 @@ void AEnemyBase::SetEnemyInfo(
 
 	//운석의 크기 설정
 	SetActorScale3D(FVector(_targetInfo.Size));
-
 }
