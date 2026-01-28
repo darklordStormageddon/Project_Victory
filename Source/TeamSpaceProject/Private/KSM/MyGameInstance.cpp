@@ -131,39 +131,39 @@ void UMyGameInstance::Join(int Index)
 		return;
 	}
 
-	// Join 전에 기존 세션 파괴
-	auto ExistingSession = SessionInterface->GetNamedSession(SESSION_NAME);
-	if (ExistingSession)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Destroying existing session before joining"));
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Destroying existing session..."));
+	//// Join 전에 기존 세션 파괴
+	//auto ExistingSession = SessionInterface->GetNamedSession(SESSION_NAME);
+	//if (ExistingSession)
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("Destroying existing session before joining"));
+	//	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Destroying existing session..."));
 
-		// 델리게이트 바인딩 - Join을 위한 파괴 완료 처리
-		FOnDestroySessionCompleteDelegate DestroyDelegate;
-		DestroyDelegate.BindLambda([this, Index](FName SessionName, bool bWasSuccessful)
-			{
-				if (bWasSuccessful)
-				{
-					UE_LOG(LogTemp, Warning, TEXT("Session destroyed successfully, now joining..."));
-					if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Session destroyed, joining..."));
+	//	// 델리게이트 바인딩 - Join을 위한 파괴 완료 처리
+	//	FOnDestroySessionCompleteDelegate DestroyDelegate;
+	//	DestroyDelegate.BindLambda([this, Index](FName SessionName, bool bWasSuccessful)
+	//		{
+	//			if (bWasSuccessful)
+	//			{
+	//				UE_LOG(LogTemp, Warning, TEXT("Session destroyed successfully, now joining..."));
+	//				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Session destroyed, joining..."));
 
-					// 세션 파괴 후 Join 재시도
-					if (SessionSearch.IsValid() && SessionSearch->SearchResults.Num() > Index)
-					{
-						SessionInterface->JoinSession(0, SESSION_NAME, SessionSearch->SearchResults[Index]);
-					}
-				}
-				else
-				{
-					UE_LOG(LogTemp, Error, TEXT("Failed to destroy existing session"));
-					if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Failed to destroy session"));
-				}
-			});
+	//				// 세션 파괴 후 Join 재시도
+	//				if (SessionSearch.IsValid() && SessionSearch->SearchResults.Num() > Index)
+	//				{
+	//					SessionInterface->JoinSession(0, SESSION_NAME, SessionSearch->SearchResults[Index]);
+	//				}
+	//			}
+	//			else
+	//			{
+	//				UE_LOG(LogTemp, Error, TEXT("Failed to destroy existing session"));
+	//				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Failed to destroy session"));
+	//			}
+	//		});
 
-		SessionInterface->OnDestroySessionCompleteDelegates.Add(DestroyDelegate);
-		SessionInterface->DestroySession(SESSION_NAME);
-		return;
-	}
+	//	SessionInterface->OnDestroySessionCompleteDelegates.Add(DestroyDelegate);
+	//	SessionInterface->DestroySession(SESSION_NAME);
+	//	return;
+	//}
 
 	UE_LOG(LogTemp, Warning, TEXT("Attempting to join session at index %d"), Index);
 	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("Joining session %d..."), Index));
