@@ -3,8 +3,7 @@
 #include "PSJ_ShipCockpit.h"
 #include "YSH/TurretBase_GT.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
-#include "JHS/GameControl/JHSGameState.h"
-#include "JHS/GameControl/StateData/TurretStateGroup.h"
+#include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
@@ -28,17 +27,11 @@ void APSJ_Character::BeginPlay()
 {
 	Super::BeginPlay();
 
-
-
-	AJHSGameState* _outGameState = nullptr;
-	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+	AJHSGameMode* _outGameMode = nullptr;
+	if (!UStaticFunctionLibrary::TryGetGameMode(_outGameMode))
 		return;
-	
-	UTurretStateGroup* _turretStateGroup = _outGameState->GetTurretStateGroup();
-	_turretStateGroup->SetInfiniteMagMode(true);
-	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet, nullptr);
 
-
+	_outGameMode->StartGame();
 
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationPitch = false;

@@ -2,6 +2,9 @@
 
 
 #include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "Kismet/GameplayStatics.h"
 #include "JHS/SpaceObject/SpaceObjectManager.h"
 #include "JHS/UI/UIManager.h"
@@ -22,6 +25,24 @@ void AJHSGameMode::InitGame(const FString& MapName, const FString& Options, FStr
 void AJHSGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void AJHSGameMode::StartGame()
+{
+	StartStage(1);
+}
+
+void AJHSGameMode::StartStage(int32 Stage)
+{
+	AJHSGameState* _outGameState = nullptr;
+	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+		return;
+
+	TObjectPtr<UTurretStateGroup> _turretStateGroup = _outGameState->GetTurretStateGroup();
+	_turretStateGroup->SetInfiniteMagMode(true);
+	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet, nullptr);
+	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Right, E_AMMO_TYPE::Bullet, nullptr);
+	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Left, E_AMMO_TYPE::Missile, nullptr);
 }
 
 ASpaceStation* AJHSGameMode::GetSpaceStation()

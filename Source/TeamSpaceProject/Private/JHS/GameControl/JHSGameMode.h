@@ -45,6 +45,12 @@ protected:
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 
 public:
+	UFUNCTION(BlueprintCallable, Category = "GameMode|Game")
+	void StartGame();
+
+	UFUNCTION(BlueprintCallable, Category = "GameMode|Game")
+	void StartStage(int32 Stage);
+
 	UFUNCTION(BlueprintCallable, Category = "GameMode|Space Station")
 	ASpaceStation* GetSpaceStation();
 
