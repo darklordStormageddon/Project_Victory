@@ -44,17 +44,16 @@ void ATurretBase_AT1::BeginPlay()
 	if (UStaticFunctionLibrary::TryGetGameState(TempGameState))
 	{
 		_cachedGameState = TempGameState;
-
-		// TurretStateGroup의 TryEquipTurret 사용
-		if (_cachedGameState->GetTurretStateGroup())
-		{
-			_cachedGameState->GetTurretStateGroup()->TryEquipTurret(E_TURRET_POSITION::Left, E_AMMO_TYPE::Missile, this);
-		}
 	}
 	else
 	{
 		//UE_LOG(LogTemp, Error, TEXT("ATurretBase_AT1: Failed to get GameState"));
 	}
+}
+
+void ATurretBase_AT1::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
 }
 
 void ATurretBase_AT1::Tick(float DeltaTime)
@@ -356,7 +355,7 @@ void ATurretBase_AT1::TryAutoFire()
 		// 카메라 셰이크
 		if (FireCameraShake)
 		{
-			APlayerController* PC = Cast<APlayerController>(GetController());
+			APlayerController* PC = GetWorld()->GetFirstPlayerController();
 			if (PC)
 			{
 				PC->ClientStartCameraShake(FireCameraShake);
@@ -552,25 +551,4 @@ void ATurretBase_AT1::DrawDebugVisualization()
 			3.0f
 		);
 	}
-}
-
-void ATurretBase_AT1::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	// 자동 포탑이므로 입력 바인딩 불필요
-}
-
-void ATurretBase_AT1::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	Super::EndPlay(EndPlayReason);
-}
-
-void ATurretBase_AT1::AddYawInput(float YawInputDegPerSec, float DeltaTime)
-{
-	// 필요시 외부 제어용
-}
-
-void ATurretBase_AT1::AddPitchInput(float PitchInputDegPerSec, float DeltaTime)
-{
-	// 필요시 외부 제어용
 }

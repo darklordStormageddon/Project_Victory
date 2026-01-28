@@ -3,20 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
+#include "GameFramework/Actor.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
 #include "TurretBase_AT1.generated.h"
 
 class USceneComponent;
 class UStaticMeshComponent;
-class UInputMappingContext;
-class UInputAction;
-struct FInputActionValue;
 class AProjectile;
 class AJHSGameState;
 
 UCLASS()
-class ATurretBase_AT1 : public APawn
+class ATurretBase_AT1 : public AActor
 {
 	GENERATED_BODY()
 
@@ -27,12 +24,8 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaTime) override;
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 public:
-	void AddYawInput(float YawInputDegPerSec, float DeltaTime);
-	void AddPitchInput(float PitchInputDegPerSec, float DeltaTime);
-
 	// 타겟 무효화 함수 (Projectile이 적을 처치했을 때 호출)
 	UFUNCTION(BlueprintCallable, Category = "Turret")
 	void InvalidateCurrentTarget(AActor* DestroyedTarget);

@@ -12,10 +12,8 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
-// Sets default values
 ATurretBase_AT2::ATurretBase_AT2()
 {
-	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
@@ -37,7 +35,6 @@ ATurretBase_AT2::ATurretBase_AT2()
 	MainMuzzle->SetupAttachment(BarrelMesh);
 }
 
-// Called when the game starts or when spawned
 void ATurretBase_AT2::BeginPlay()
 {
 	Super::BeginPlay();
@@ -47,12 +44,6 @@ void ATurretBase_AT2::BeginPlay()
 	if (UStaticFunctionLibrary::TryGetGameState(TempGameState))
 	{
 		_cachedGameState = TempGameState;
-
-		// TurretStateGroup의 TryEquipTurret 사용
-		if (_cachedGameState->GetTurretStateGroup())
-		{
-			_cachedGameState->GetTurretStateGroup()->TryEquipTurret(E_TURRET_POSITION::Right, E_AMMO_TYPE::Bullet, this);
-		}
 	}
 	else
 	{
@@ -60,7 +51,6 @@ void ATurretBase_AT2::BeginPlay()
 	}
 }
 
-// Called every frame
 void ATurretBase_AT2::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -94,13 +84,6 @@ void ATurretBase_AT2::Tick(float DeltaTime)
 			}
 		}
 	}
-}
-
-// Called to bind functionality to input
-void ATurretBase_AT2::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	// 자동 포탑이므로 입력 바인딩 불필요
 }
 
 void ATurretBase_AT2::InvalidateCurrentTarget(AActor* DestroyedTarget)
@@ -312,7 +295,7 @@ void ATurretBase_AT2::TryAutoFire()
 		// 카메라 셰이크
 		if (FireCameraShake)
 		{
-			APlayerController* PC = Cast<APlayerController>(GetController());
+			APlayerController* PC = GetWorld()->GetFirstPlayerController();
 			if (PC)
 			{
 				PC->ClientStartCameraShake(FireCameraShake);
@@ -517,14 +500,4 @@ void ATurretBase_AT2::DrawDebugVisualization()
 			3.0f
 		);
 	}
-}
-
-void ATurretBase_AT2::AddYawInput(float YawInputDegPerSec, float DeltaTime)
-{
-	// 필요시 외부 제어용
-}
-
-void ATurretBase_AT2::AddPitchInput(float PitchInputDegPerSec, float DeltaTime)
-{
-	// 필요시 외부 제어용
 }
