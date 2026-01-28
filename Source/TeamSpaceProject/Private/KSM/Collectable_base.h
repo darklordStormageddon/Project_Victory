@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "JHS/GameControl/StateData/GameStateStructs.h"
 #include "Collectable_base.generated.h"
 
 class AJHSGameState;
@@ -35,11 +36,7 @@ public:
 
 	//디스플레이용 + 데이터테이블 행 이름
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ore")
-	FString Ore_Type;
-
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ore")
-	UDataTable* Ore_Datatable;
+	E_ELEMENT_TYPE ElementType;
 
 public:
 
