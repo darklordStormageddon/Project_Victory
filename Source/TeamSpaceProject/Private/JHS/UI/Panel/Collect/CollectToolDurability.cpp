@@ -4,6 +4,7 @@
 #include "JHS/UI/Panel/Collect/CollectToolDurability.h"
 #include "JHS/UI/Material/CircleProgressBar.h"
 #include "Components/Image.h"
+#include "Components/TextBlock.h"
 
 UCollectToolDurability::UCollectToolDurability(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
@@ -26,8 +27,38 @@ void UCollectToolDurability::NativeOnInitialized()
     Super::NativeOnInitialized();
 }
 
-void UCollectToolDurability::SetDurabilityProgress(float Progress, TObjectPtr<UTexture2D> ToolImage)
+void UCollectToolDurability::SetDurabilityProgress(TObjectPtr<UTexture2D> ToolImage, float Progress, bool IsVacuumTool)
 {
-    _circleProgressBar->SetProgress(Progress);
     IMG_Icon->SetBrushFromSoftTexture(ToolImage);
+
+    // Progress
+    _circleProgressBar->SetProgress(Progress);
+
+    // Color
+    FLinearColor _lerpColor;
+    float _lerpRate = 0.0f;
+    if (Progress < 0.5f)
+    {
+        _lerpRate = Progress * 2.0f;
+        _lerpColor = FMath::Lerp(_durabilityColorZero, _durabilityColorMiddle, _lerpRate);
+    }
+    else
+    {
+        _lerpRate = (Progress - 0.5f) * 2.0f;
+        _lerpColor = FMath::Lerp(_durabilityColorMiddle, _durabilityColorMax, _lerpRate);
+    }
+    _circleProgressBar->SetTint(_lerpColor);
+
+    // Text
+    FString _text;
+    if (IsVacuumTool)
+    {
+        _text = FString::Printf(TEXT(""));
+    }
+    else
+    {
+        const int32 _percent = (int32)(Progress * 100.0f);
+        _text = FString::Printf(TEXT("%d%%"), _percent);
+    }
+    TXT_Durability->SetText(FText::FromString(_text));
 }
