@@ -64,6 +64,11 @@ public:
 
 
 
+private:
+	// 하차 직후 상태 관리를 위한 변수 추가
+	bool bJustDisembarked = false;
+	float DisembarkGraceTimer = 0.0f;
+
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	APawn* CurrentSpaceship = nullptr;
@@ -72,6 +77,9 @@ public:
 	// [중요] 위에서 class APSJ_Spaceship; 을 선언했기 때문에 이제 에러가 나지 않습니다.
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RequestBoarding(APSJ_Spaceship* ShipToBoard);
+
+	// 하차 상태 시작 함수
+	void StartDisembarkState();
 
 	// [신규] 터렛 탑승 요청 추가
 	UFUNCTION(Server, Reliable, WithValidation)
