@@ -20,19 +20,19 @@ struct FEnemyInfo
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stat")
-	float MinSize;
+	float MinSize = 0.1f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stat")
-	float MaxSize;
+	float MaxSize = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stat")
-	float Attack_Speed;
+	float Attack_Speed = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stat")
-	float Attack_Range;
+	float Attack_Range = 5000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stat")
-	float Detection_Range;
+	float Detection_Range = 10000.f;
 };
 
 UCLASS()
@@ -55,7 +55,7 @@ protected:
 	UParticleSystemComponent* FireComponent;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Garbage")
-	TSubclassOf<AActor> EnemyGarbage;
+	TSubclassOf<AActor> EnemyGarbage = nullptr;
 
 	AActor* _owner;
 	UActorComponent* _ownerComponent;
@@ -65,7 +65,7 @@ protected:
 
 	bool Murdered = false;
 
-	float delayTime;
+	float delayTime = 1.f;
 
 	FTimerHandle CanDistanceHandle;
 
