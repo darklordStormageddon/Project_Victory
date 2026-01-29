@@ -14,7 +14,7 @@ public:
 	FResourceDataTable()
 		: TURRET_INFO_PATH(TEXT("/Game/Main/PS_YSH/Data/DT_TurretDataTable.DT_TurretDataTable"))
 		, ELEMENT_INFO_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Collectables/DT_ElementProperty.DT_ElementProperty"))
-		, COLLECT_TOOL_PATH(TEXT("/Game/Main/PS_JHS/Blueprint/DT_CollectToolDataTable.DT_CollectToolDataTable"))
+		, COLLECT_TOOL_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Tool/DT_ToolProperty.DT_ToolProperty"))
 	{}
 
 	UPROPERTY()

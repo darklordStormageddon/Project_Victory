@@ -62,7 +62,22 @@ void UCollectStateGroup::RepairAllTool()
 	}
 }
 
-bool UCollectStateGroup::TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float& OutToolDamage)
+bool UCollectStateGroup::TrySelectTool(E_COLLECT_TOOL_TYPE CollectToolType)
+{
+	if (CollectToolType != E_COLLECT_TOOL_TYPE::NONE)
+	{
+		FCollectToolData* _outCollectToolData = nullptr;
+		if (!TryGetCollectToolData(CollectToolType, _outCollectToolData))
+			return false;
+	}
+
+	E_COLLECT_TOOL_TYPE _prevToolType = _selectedToolType;
+	_selectedToolType = CollectToolType;
+	ExecuteEventToolSelect(_prevToolType, _selectedToolType);
+	return true;
+}
+
+bool UCollectStateGroup::TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float DeltaTime, float& OutToolDamage)
 {
 	OutToolDamage = 0.0f;
 	if (CollectToolType != _selectedToolType)
@@ -78,8 +93,7 @@ bool UCollectStateGroup::TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float& 
 	if (CollectToolType != E_COLLECT_TOOL_TYPE::Vacuum && _outCollectToolData->Durability.CurrentValue <= 0)
 		return false;
 
-	const float _deltaTime = GetWorld()->GetDeltaSeconds();
-	_outCollectToolData->Durability.CurrentValue -= CONSUME_DURABILITY * _deltaTime;
+	_outCollectToolData->Durability.CurrentValue -= CONSUME_DURABILITY * DeltaTime;
 	if (_outCollectToolData->Durability.CurrentValue <= 0)
 	{
 		_outCollectToolData->Durability.CurrentValue = 0;
@@ -88,21 +102,6 @@ bool UCollectStateGroup::TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float& 
 	OutToolDamage = _outCollectToolData->ToolDamage;
 
 	ExecuteEventToolDurability(*_outCollectToolData);
-	return true;
-}
-
-bool UCollectStateGroup::TrySelectTool(E_COLLECT_TOOL_TYPE CollectToolType)
-{
-	if (CollectToolType != E_COLLECT_TOOL_TYPE::NONE)
-	{
-		FCollectToolData* _outCollectToolData = nullptr;
-		if (!TryGetCollectToolData(CollectToolType, _outCollectToolData))
-			return false;
-	}
-
-	E_COLLECT_TOOL_TYPE _prevToolType = _selectedToolType;
-	_selectedToolType = CollectToolType;
-	ExecuteEventToolSelect(_prevToolType, _selectedToolType);
 	return true;
 }
 

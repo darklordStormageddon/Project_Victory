@@ -46,9 +46,9 @@ public:
 
 	void RepairAllTool();
 
-	bool TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float& OutToolDamage);
-
 	bool TrySelectTool(E_COLLECT_TOOL_TYPE CollectToolType);
+
+	bool TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float DeltaTime, float& OutToolDamage);
 
 private:
 	void LoadCollectToolDataTable();
