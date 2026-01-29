@@ -58,7 +58,7 @@ void AJHSPlayerBase::BeginPlay()
 	_outUIManager->OpenUI(E_UI_TYPE::UIPanelCollectSeat);*/
 
 	
-	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::UseCollectTool, 3.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::UseCollectTool, 3.0f, false);
 }
 
 // Called every frame
