@@ -7,7 +7,10 @@
 
 APSJ_GameModeBase::APSJ_GameModeBase()
 {
-
-
+	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/Main/PS_PSJ/Blueprint/PlayerCharacter/MyPSJ_Character"));
+	if (PlayerPawnBPClass.Class != NULL)
+	{
+		DefaultPawnClass = PlayerPawnBPClass.Class;
+	}
 }
 
