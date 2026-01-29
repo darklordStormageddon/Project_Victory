@@ -30,13 +30,13 @@ public:
 	TObjectPtr<USpaceObjectComponent> SpaceObjectComponent;
 
 	UPROPERTY()
-	E_SPACE_OBJECT_TYPE SpaceObjectType;
+	E_SPACE_OBJECT_TYPE SpaceObjectType = E_SPACE_OBJECT_TYPE::SpaceStation;
 
 	UPROPERTY()
-	FVector Location;
+	FVector Location = FVector::ZeroVector;
 
 	UPROPERTY()
-	FRotator Rotator;
+	FRotator Rotator = FRotator::ZeroRotator;
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
