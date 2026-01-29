@@ -15,6 +15,9 @@
 
 #include "Components/CapsuleComponent.h"
 
+#include "JHS/SpaceObject/DriveSeatRader.h"
+#include "Kismet/GameplayStatics.h"
+
 APSJ_Spaceship::APSJ_Spaceship()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -117,6 +120,15 @@ void APSJ_Spaceship::Server_MouseLook_Implementation(FVector2D Value)
 void APSJ_Spaceship::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// ADriveSeatRader∏¶ ØÅ∞Ì SetSpaceShip «‘ºˆ »£√‚
+	TArray<AActor*> _driveSeatRaderArray;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADriveSeatRader::StaticClass(), _driveSeatRaderArray);
+	for (AActor* _driveSeatRader : _driveSeatRaderArray)
+	{
+		ADriveSeatRader* _driveSeatRaderActor = Cast<ADriveSeatRader>(_driveSeatRader);
+		_driveSeatRaderActor->SetSpaceShip(this);
+	}
 
 	if (HealthComp)
 	{
