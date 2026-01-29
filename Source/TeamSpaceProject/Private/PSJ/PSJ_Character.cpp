@@ -93,6 +93,9 @@ void APSJ_Character::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// -------------------------------------------------------------------------
+	// 1. 디버그 메시지 출력 (로컬 컨트롤러인 경우만)
+	// -------------------------------------------------------------------------
 	if (IsLocallyControlled())
 	{
 		FString DebugMsg = FString::Printf(TEXT("Controller: %s | InputMode: %s"),
@@ -107,16 +110,22 @@ void APSJ_Character::Tick(float DeltaTime)
 		}
 	}
 
-	// 조종 중이면 로직 패스
+	// -------------------------------------------------------------------------
+	// 2. 조종 중 예외 처리 (조종석 탑승 시)
+	// -------------------------------------------------------------------------
 	if (Controller && IsLocallyControlled() && CurrentSpaceship)
 	{
-		// ...
+		// 조종 중에는 캐릭터 이동 로직을 수행하지 않음
+		// 필요하다면 여기에 리턴을 넣거나 추가 로직 배치
 	}
 
-	// 1. 앵커링 관리
+	// -------------------------------------------------------------------------
+	// 3. 앵커링(부착) 상태 관리
+	// -------------------------------------------------------------------------
 	AActor* ParentActor = GetAttachParentActor();
 	bool bShouldBeAttached = (ReplicatedRelativeData.BaseActor != nullptr);
 
+	// 부착해야 하는데 떨어져 있는 경우 -> 부착 수행
 	if (bShouldBeAttached && ParentActor != ReplicatedRelativeData.BaseActor)
 	{
 		AttachToActor(ReplicatedRelativeData.BaseActor, FAttachmentTransformRules::KeepWorldTransform);
@@ -124,6 +133,7 @@ void APSJ_Character::Tick(float DeltaTime)
 		GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 		SetReplicateMovement(false);
 	}
+	// 부착하지 말아야 하는데 붙어있는 경우 -> 분리 수행
 	else if (!bShouldBeAttached && ParentActor)
 	{
 		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
@@ -132,40 +142,58 @@ void APSJ_Character::Tick(float DeltaTime)
 		SetReplicateMovement(true);
 	}
 
-	// 2. 이동 로직
+	// -------------------------------------------------------------------------
+	// 4. [핵심] 이동 로직 (슬라이딩 직접 구현)
+	// -------------------------------------------------------------------------
 	if (GetAttachParentActor())
 	{
-		// [수정] 클라이언트뿐만 아니라 서버도 이동 로직에 관여하도록 변경 가능하나, 
-		// 일단 클라이언트 예측 이동을 우선시합니다.
 		if (IsLocallyControlled())
 		{
 			if (!CurrentInputVector.IsNearlyZero())
 			{
+				// A. 입력 벡터 변환 (로컬 -> 월드)
 				FVector LocalDir = FVector(CurrentInputVector.Y, CurrentInputVector.X, 0.0f);
-				FVector DesiredMove = LocalDir * FlyModeMaxSpeed * DeltaTime;
+				FVector WorldDir = GetActorQuat().RotateVector(LocalDir);
+				FVector DeltaLoc = WorldDir * FlyModeMaxSpeed * DeltaTime;
 
-				// [★핵심 해결책★] bSweep(충돌검사)를 false로 변경
-				// 바닥이나 우주선 벽에 닿아있을 때 물리 엔진이 이동을 막는 현상(Stuck)을 방지합니다.
-				AddActorLocalOffset(DesiredMove, false);
+				// B. 1차 이동 시도 (SafeMoveUpdatedComponent는 Public이라 사용 가능)
+				FHitResult Hit(1.f);
+				GetCharacterMovement()->SafeMoveUpdatedComponent(DeltaLoc, GetActorRotation(), true, Hit);
 
-				// Sweep을 껐으므로 복잡한 StepUp/Slide 로직은 주석 처리하거나 건너뜁니다.
-				// 자석 부츠(UpdateMagBoots)가 높이를 맞춰주므로 바닥을 뚫지 않습니다.
-				/*
+				// C. 충돌 발생 시(벽/경사면) 미끄러짐 처리
 				if (Hit.IsValidBlockingHit())
 				{
-					// ... (기존 충돌 처리 로직 생략) ...
+					// [해결책] SlideAlongSurface 함수 대신 직접 벡터 연산 사용
+					// VectorPlaneProject: 이동하려던 벡터(DeltaLoc)를 벽면(Hit.Normal)에 평행하게 투영
+					FVector SlideDelta = FVector::VectorPlaneProject(DeltaLoc, Hit.Normal);
+
+					// 남은 시간 비율만큼 이동 적용
+					SlideDelta *= (1.0f - Hit.Time);
+
+					// 2차 이동 시도 (미끄러지는 방향으로 다시 이동)
+					GetCharacterMovement()->SafeMoveUpdatedComponent(SlideDelta, GetActorRotation(), true, Hit);
 				}
-				*/
 			}
 
+			// 속도 갱신 (애니메이션용)
 			if (DeltaTime > 0.0f)
 			{
-				FVector TargetVel = CurrentInputVector.IsNearlyZero() ? FVector::ZeroVector : (GetActorForwardVector() * CurrentInputVector.Y + GetActorRightVector() * CurrentInputVector.X) * FlyModeMaxSpeed;
-				GetCharacterMovement()->Velocity = TargetVel;
+				if (CurrentInputVector.IsNearlyZero())
+				{
+					GetCharacterMovement()->Velocity = FVector::ZeroVector;
+				}
+				else
+				{
+					FVector LocalDir = FVector(CurrentInputVector.Y, CurrentInputVector.X, 0.0f);
+					FVector TargetVel = GetActorQuat().RotateVector(LocalDir) * FlyModeMaxSpeed;
+					GetCharacterMovement()->Velocity = TargetVel;
+				}
 			}
 
+			// 자석 부츠 로직 (높이 보정)
 			UpdateMagBoots(DeltaTime);
 
+			// 서버 동기화
 			if (!HasAuthority())
 			{
 				Server_UpdateRelativeTransform(GetRootComponent()->GetRelativeLocation(), GetRootComponent()->GetRelativeRotation());
@@ -178,12 +206,12 @@ void APSJ_Character::Tick(float DeltaTime)
 		}
 		else
 		{
-			// 시뮬레이티드 프록시(다른 클라)는 서버에서 받은 상대 좌표를 적용
+			// Simulated Proxy
 			SetActorRelativeLocation(ReplicatedRelativeData.RelativeLocation);
 			SetActorRelativeRotation(ReplicatedRelativeData.RelativeRotation);
 		}
 	}
-	else
+	else // 공중 상태
 	{
 		UpdateMagBoots(DeltaTime);
 
@@ -240,6 +268,13 @@ void APSJ_Character::ForceInputRecovery()
 	}
 }
 
+void APSJ_Character::StartDisembarkState()
+{
+	bJustDisembarked = true;
+	DisembarkGraceTimer = 0.2f; // 0.2초간 유예 (우주선 속도에 따라 조절 가능)
+	LastFloorActor = nullptr;
+}
+
 void APSJ_Character::UpdateMagBoots(float DeltaTime)
 {
 	// 1. 타인(Simulated Proxy)이면서 이미 서버에 의해 붙어있는 상태라면 연산 최적화를 위해 패스
@@ -251,6 +286,18 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 	// 2. 바닥 감지를 위한 레이캐스트(Sweep) 준비
 	FHitResult FinalHit;
 	bool bFoundValidHit = false;
+
+	// 하차 유예 타이머 업데이트
+	float CurrentCheckDistance = CheckDistance;
+	if (bJustDisembarked)
+	{
+		DisembarkGraceTimer -= DeltaTime;
+		if (DisembarkGraceTimer <= 0.0f) bJustDisembarked = false;
+
+		// [핵심] 하차 직후엔 트레이스 거리를 2배로 늘려 우주선 하강에 대비
+		CurrentCheckDistance = CheckDistance * 2.0f;
+	}
+
 	FVector Start = GetActorLocation();
 
 	// 발바닥 방향 결정 (붙어있으면 부모 기준, 아니면 내 기준, 우주선 근처면 우주선 기준)
@@ -338,11 +385,15 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 
 			float HeightError = ActualDistance - TargetHeight;
 
-			if (FMath::Abs(HeightError) > 1.0f)
+			if (FMath::Abs(HeightError) > 0.5f)
 			{
-				float InterpSpeed = (HeightError > 0) ? 20.0f : 50.0f;
+				// [핵심] 하차 직후에는 보정 속도를 아주 높여(40.0f 이상) 즉시 안착시킴
+				float InterpSpeed = bJustDisembarked ? 45.0f : 20.0f;
 				float MoveZ = FMath::FInterpTo(0.0f, -HeightError, DeltaTime, InterpSpeed);
-				AddActorWorldOffset(TraceDir * -MoveZ, false);
+
+				// bSweep을 false로 하여 물리 엔진에 의한 '끼임(Stuck)' 현상 방지
+				// 자석 장화 로직이 위치를 강제로 잡아주기 때문입니다.
+				AddActorLocalOffset(FVector(0, 0, MoveZ), false);
 			}
 
 			// 회전 보정
