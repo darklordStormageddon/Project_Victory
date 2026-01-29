@@ -22,6 +22,12 @@ private:
 	UPROPERTY()
 	TObjectPtr<AActor> _spaceStation = nullptr;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Debug")
+	bool DebugSpaceRadius = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Debug")
+	bool DebugRaderRadius = false;
+
 	float _spaceRadius = 0.0f;
 
 protected:
