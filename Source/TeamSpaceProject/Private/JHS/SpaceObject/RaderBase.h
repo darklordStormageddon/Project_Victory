@@ -15,7 +15,7 @@ struct FRaderObjectData
 
 public:
 	UPROPERTY()
-	E_SPACE_OBJECT_TYPE SpaceObjectType;
+	E_SPACE_OBJECT_TYPE SpaceObjectType = E_SPACE_OBJECT_TYPE::SpaceStation;
 
 	UPROPERTY()
 	TSubclassOf<AActor> RaderObjectMesh;
