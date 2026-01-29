@@ -172,8 +172,8 @@ void APSJ_Character::Tick(float DeltaTime)
 
 					// 캡슐 크기를 아주 미세하게 줄여서 판정 (끼임 방지)
 					FCollisionShape Shape = GetCapsuleComponent()->GetCollisionShape();
-					Shape.Capsule.Radius *= 1.05f;
-					Shape.Capsule.HalfHeight *= 1.0f;
+					Shape.Capsule.Radius *= 0.95f;
+					Shape.Capsule.HalfHeight *= 0.95f;
 
 					// [핵심] 채널 대신 '오브젝트 타입'으로 검사
 					// WorldStatic(벽)만 찾고, Spaceship_Floor(바닥)나 WorldDynamic(본체)은 무시
@@ -185,9 +185,9 @@ void APSJ_Character::Tick(float DeltaTime)
 					);
 
 					// [디버그 드로잉]
-					FVector DebugCenter = End;
-					FColor DebugColor = bHit ? FColor::Red : FColor::Green;
-					DrawDebugCapsule(GetWorld(), DebugCenter, Shape.Capsule.HalfHeight, Shape.Capsule.Radius, GetActorQuat(), DebugColor, false, -1.0f, 0, 1.0f);
+					//FVector DebugCenter = End;
+					//FColor DebugColor = bHit ? FColor::Red : FColor::Green;
+					//DrawDebugCapsule(GetWorld(), DebugCenter, Shape.Capsule.HalfHeight, Shape.Capsule.Radius, GetActorQuat(), DebugColor, false, -1.0f, 0, 1.0f);
 
 					if (bHit)
 					{
