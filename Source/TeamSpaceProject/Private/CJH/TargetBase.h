@@ -15,13 +15,13 @@ struct FSpawnGarbage
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, Category = "Garbage")
-	TSubclassOf<AActor> EnemyGarbage;
+	TSubclassOf<AActor> EnemyGarbage = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "Garbage")
-	int Min_SpawnNum;
+	int Min_SpawnNum = 1;
 
 	UPROPERTY(EditAnywhere, Category = "Garbage")
-	int Max_SpawnNum;
+	int Max_SpawnNum = 4;
 
 };
 
@@ -34,7 +34,7 @@ struct FGarbageInfo : public FTableRowBase
 	TArray<FSpawnGarbage> GarbageList;
 
 	UPROPERTY(EditAnywhere, Category = "Garbage")
-	int Total_Number;
+	int Total_Number = 10;
 };
 
 
@@ -43,16 +43,16 @@ struct FTargetInfo
 {
 	GENERATED_BODY()
 
-	float Size;
+	float Size = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stat")
-	float Max_HP;
+	float Max_HP = 50.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stat")
-	float Attack_Damage;
+	float Attack_Damage = 10.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stat")
-	float Speed;
+	float Speed = 800.f;
 };
 
 UCLASS()
@@ -67,12 +67,12 @@ protected:
 	UHealthComponent* HealthComp;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Debug")
-	bool DebugRevive;
+	bool DebugRevive = false;
 	UPROPERTY(EditDefaultsOnly, Category = "Debug")
 	float RiviveTime = 3.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Garbage")
-	UDataTable* GarbageTable;
+	UDataTable* GarbageTable = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Garbage")
 	FName GarbageRowName;

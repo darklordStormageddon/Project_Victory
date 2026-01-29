@@ -21,7 +21,7 @@ struct FSpawnAsteroidInfo
 	bool debugDraw = false;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stat")
-	float Max_HP;
+	float Max_HP = 50.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	float MinSpawnDelay = 0.1f;
@@ -39,16 +39,16 @@ struct FSpawnAsteroidInfo
 	float MaxSpeed = 1000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
-	float MinSize;
+	float MinSize = 0.1f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
-	float MaxSize;
+	float MaxSize = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
 	TArray<TSubclassOf<AAsteroid>> AsteroidClasses;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Asteroid Spawn")
-	TSubclassOf<AActor> TargetShip;
+	TSubclassOf<AActor> TargetShip = nullptr;
 };
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))

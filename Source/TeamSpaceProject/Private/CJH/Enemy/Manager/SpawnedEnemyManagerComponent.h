@@ -17,28 +17,28 @@ struct FSpawnEnemyInfo
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Max_HP;
+	float Max_HP = 100.f;
 
-	float Current_HP;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Attack_Damage;
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Attack_Range;
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Detection_Range;
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Attack_Speed;
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Move_Speed;
+	float Current_HP = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float Value;
+	float Attack_Damage = 100.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float Attack_Range = 5000.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float Detection_Range = 10000.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float Attack_Speed = 2.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float Move_Speed = 1000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float MinSize;
+	float Value = 10.f;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float MaxSize;
+	float MinSize = 0.1f;
+	UPROPERTY(EditDefaultsOnly, Category = "Info")
+	float MaxSize = 1.f;
 };
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
