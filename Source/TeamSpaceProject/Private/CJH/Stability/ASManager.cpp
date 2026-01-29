@@ -33,7 +33,7 @@ void AASManager::GetSetting()
 	if (InGameMode)
 	{
 		spaceStation = InGameMode->GetSpaceStation();
-		Spawn_Distance = InGameMode->GetSpaceRadius();
+		Spawn_Distance = InGameMode->GetSpaceRadius()/1.5;
 	}
 }
 

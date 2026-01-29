@@ -51,7 +51,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|Common")
 	float _raderRadius = 1000.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|Common", meta = (ClampMin = 0.1f, ClampMax = 1.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|Common", meta = (ClampMin = 0.001f, ClampMax = 1.0f))
 	float _raderMeshSize = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|Common")
