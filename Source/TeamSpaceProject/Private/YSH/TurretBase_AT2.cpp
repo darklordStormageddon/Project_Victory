@@ -59,7 +59,7 @@ void ATurretBase_AT2::Tick(float DeltaTime)
 		return;
 
 	// 디버그 시각화
-	DrawDebugVisualization();
+	/*DrawDebugVisualization();*/
 
 	// 1. 타겟 탐색 및 추적
 	FindAndTrackTarget(DeltaTime);
