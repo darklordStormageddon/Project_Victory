@@ -26,7 +26,7 @@ struct FSpaceShipData
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	E_SPACE_SHIP_DATA_TYPE DataType;
+	E_SPACE_SHIP_DATA_TYPE DataType = E_SPACE_SHIP_DATA_TYPE::Shield;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FMaxCurrentData Values;
@@ -57,10 +57,10 @@ struct FPlayerStateData
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerStateData")
-	int32 PlayerUID;
+	int32 PlayerUID = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerStateData")
-	int32 PlayerIdx;
+	int32 PlayerIdx = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerStateData")
 	FMaxCurrentData Radiation;
@@ -85,7 +85,7 @@ struct FCollectToolData
 
 public:
 	UPROPERTY()
-	E_COLLECT_TOOL_TYPE CollectToolType;
+	E_COLLECT_TOOL_TYPE CollectToolType = E_COLLECT_TOOL_TYPE::NONE;
 
 	// 내구도
 	UPROPERTY()
@@ -93,7 +93,7 @@ public:
 
 	// 작업 속도
 	UPROPERTY()
-	float ToolDamage;
+	float ToolDamage = 0.0f;
 
 	UPROPERTY()
 	UTexture2D* CollectToolImage = nullptr;
@@ -118,16 +118,16 @@ struct FAmmoData
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	E_AMMO_TYPE AmmoType;
+	E_AMMO_TYPE AmmoType = E_AMMO_TYPE::NONE;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 ReloadCapacity;
+	int32 ReloadCapacity = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float AmmoDamage;
+	float AmmoDamage = 0.0f;
 
 	UPROPERTY()
-	int32 AmmoStockpile;
+	int32 AmmoStockpile = 0;
 
 	UPROPERTY()
 	UTexture2D* AmmoImage = nullptr;
@@ -153,7 +153,7 @@ public:
 	FString TurretBPName;
 
 	UPROPERTY()
-	E_AMMO_TYPE AmmoType;
+	E_AMMO_TYPE AmmoType = E_AMMO_TYPE::NONE;
 
 	UPROPERTY()
 	FMaxCurrentData Mag;
@@ -188,13 +188,13 @@ struct FElementData
 
 public:
 	UPROPERTY()
-	E_ELEMENT_TYPE ElementType;
+	E_ELEMENT_TYPE ElementType = E_ELEMENT_TYPE::NONE;
 
 	UPROPERTY()
-	int32 Price;
+	int32 Price = 0;
 
 	UPROPERTY()
-	int32 Amount;
+	int32 Amount = 0;
 
 	UPROPERTY()
 	UTexture2D* ElementImage = nullptr;
@@ -207,10 +207,10 @@ struct FContainerState
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 Money;
+	int32 Money = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 MaxElementStockpile;
+	int32 MaxElementStockpile = 0;
 
 	UPROPERTY()
 	TMap<E_ELEMENT_TYPE, FElementData> ElementDataMap;

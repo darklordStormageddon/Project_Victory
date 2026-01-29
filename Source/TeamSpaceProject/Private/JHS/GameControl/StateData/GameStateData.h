@@ -13,8 +13,8 @@ struct FMaxCurrentData
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float MaxValue;
+	float MaxValue = 0.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float CurrentValue;
+	float CurrentValue = 0.0f;
 };
