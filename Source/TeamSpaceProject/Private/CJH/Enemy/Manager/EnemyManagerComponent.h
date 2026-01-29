@@ -30,7 +30,7 @@ protected:
 	AJHSGameMode* _gameMode;
 	ASpaceStation* _spaceStation;
 
-	float _spaceRadius;
+	float _spaceRadius = 0.f;
 
 	// 적 소환 가능 여부
 	FTimerHandle SpawnHandle;
@@ -38,7 +38,7 @@ protected:
 	//Garbage
 	float SpawnedValue;
 
-	AEnemyBase* SpawnedEnemy;
+	AEnemyBase* SpawnedEnemy = nullptr;
 	
 
 protected:
