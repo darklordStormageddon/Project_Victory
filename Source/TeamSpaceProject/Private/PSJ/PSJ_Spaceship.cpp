@@ -352,42 +352,30 @@ void APSJ_Spaceship::Client_DisembarkSuccess_Implementation(APSJ_Character* Exit
 {
 	if (!ExitingPilot) return;
 
-	// 1. 위치 이동
-	ExitingPilot->SetActorLocationAndRotation(ExitLoc, ExitRot, false, nullptr, ETeleportType::TeleportPhysics);
+	// 1. [제거] 기존의 물리 차단 코드를 삭제합니다.
+	// ExitingPilot->MoveIgnoreActorAdd(this); <-- 삭제
+	// this->MoveIgnoreActorAdd(ExitingPilot); <-- 삭제
 
-	// 2. 즉시 부착
+	// 2. 위치 배치 (바닥 큐브에 바로 박히지 않도록 위로 15cm 정도 띄움)
+	FVector SafeExitLoc = ExitLoc + GetActorUpVector() * 15.0f;
+	ExitingPilot->SetActorLocationAndRotation(SafeExitLoc, ExitRot, false, nullptr, ETeleportType::TeleportPhysics);
+
+	// 3. 우주선에 다시 부착 (상대 좌표계 편입)
 	ExitingPilot->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 
-	// 3. [핵심 해결책] 상호 충돌 무시 설정
-	// 이동 시 서로를 벽으로 인식하지 않게 하여 끼임 현상 방지
-	ExitingPilot->MoveIgnoreActorAdd(this);
-	this->MoveIgnoreActorAdd(ExitingPilot);
+	// 4. 캐릭터의 하차 유예 상태 시작 (트레이스 확장 및 빠른 흡착 활성화)
+	ExitingPilot->StartDisembarkState();
 
-	// 4. 이동 모드 활성화
+	// 5. 이동 모드 설정 및 입력 복구
 	if (ExitingPilot->GetCharacterMovement())
 	{
 		ExitingPilot->GetCharacterMovement()->StopMovementImmediately();
 		ExitingPilot->GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 	}
 
-	// 5. 데이터 갱신 및 입력 복구
 	ExitingPilot->SetReplicateMovement(false);
 	ExitingPilot->SetBaseActorData(this);
-
-	// [핵심 해결책] 입력 강제 복구 호출 (엔진에 의존하지 않고 직접 연결)
 	ExitingPilot->ForceInputRecovery();
-
-	// 6. 매핑 정리
-	if (UWorld* World = GetWorld())
-	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
-			{
-				if (ShipMappingContext) Subsystem->RemoveMappingContext(ShipMappingContext);
-			}
-		}
-	}
 }
 
 void APSJ_Spaceship::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
