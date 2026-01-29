@@ -15,6 +15,7 @@
 #include "JHS/SpaceObject/DriveSeatRader.h"
 
 #include "JHS/UI/UIManager.h"
+#include "JHS/GameControl/CommonEnums.h"
 
 // Sets default values
 AJHSPlayerBase::AJHSPlayerBase()
@@ -57,7 +58,7 @@ void AJHSPlayerBase::BeginPlay()
 	_outUIManager->OpenUI(E_UI_TYPE::UIPanelCollectSeat);*/
 
 	
-	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::UseCollectTool, 3.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::UseCollectTool, 3.0f, false);
 }
 
 // Called every frame
@@ -156,7 +157,8 @@ void AJHSPlayerBase::UseCollectTool()
 	if (_collectStateGroup->TrySelectTool(_toolType))
 	{
 		float _outToolDamage = 0.0f;
-		_collectStateGroup->TryUseTool(_toolType, _outToolDamage);
+		_collectStateGroup->TryUseTool(_toolType, 1.0f, _outToolDamage);
+		UE_LOG(LogTemp, Warning, TEXT("Tool [%s] Damage [%f]"), *CommonEnums::GetEnum2FString<E_COLLECT_TOOL_TYPE>(_toolType), _outToolDamage);
 	}
 
 	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::UseCollectTool, 1.0f, false);
