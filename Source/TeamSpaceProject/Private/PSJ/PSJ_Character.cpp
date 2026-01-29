@@ -89,6 +89,9 @@ void APSJ_Character::PossessedBy(AController* NewController)
 	}
 }
 
+// [PSJ_Character.cpp]
+
+
 void APSJ_Character::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -111,13 +114,9 @@ void APSJ_Character::Tick(float DeltaTime)
 	}
 
 	// -------------------------------------------------------------------------
-	// 2. 조종 중 예외 처리 (조종석 탑승 시)
+	// 2. 조종 중 예외 처리
 	// -------------------------------------------------------------------------
-	if (Controller && IsLocallyControlled() && CurrentSpaceship)
-	{
-		// 조종 중에는 캐릭터 이동 로직을 수행하지 않음
-		// 필요하다면 여기에 리턴을 넣거나 추가 로직 배치
-	}
+	if (Controller && IsLocallyControlled() && CurrentSpaceship) return;
 
 	// -------------------------------------------------------------------------
 	// 3. 앵커링(부착) 상태 관리
@@ -125,7 +124,6 @@ void APSJ_Character::Tick(float DeltaTime)
 	AActor* ParentActor = GetAttachParentActor();
 	bool bShouldBeAttached = (ReplicatedRelativeData.BaseActor != nullptr);
 
-	// 부착해야 하는데 떨어져 있는 경우 -> 부착 수행
 	if (bShouldBeAttached && ParentActor != ReplicatedRelativeData.BaseActor)
 	{
 		AttachToActor(ReplicatedRelativeData.BaseActor, FAttachmentTransformRules::KeepWorldTransform);
@@ -133,7 +131,6 @@ void APSJ_Character::Tick(float DeltaTime)
 		GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 		SetReplicateMovement(false);
 	}
-	// 부착하지 말아야 하는데 붙어있는 경우 -> 분리 수행
 	else if (!bShouldBeAttached && ParentActor)
 	{
 		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
@@ -143,7 +140,7 @@ void APSJ_Character::Tick(float DeltaTime)
 	}
 
 	// -------------------------------------------------------------------------
-	// 4. [핵심] 이동 로직 (슬라이딩 직접 구현)
+	// 4. 이동 및 벽 슬라이딩 로직 (핵심 수정 적용)
 	// -------------------------------------------------------------------------
 	if (GetAttachParentActor())
 	{
@@ -151,46 +148,81 @@ void APSJ_Character::Tick(float DeltaTime)
 		{
 			if (!CurrentInputVector.IsNearlyZero())
 			{
-				// A. 입력 벡터 변환 (로컬 -> 월드)
+				// A. 로컬 입력 -> 월드 이동 벡터 변환
 				FVector LocalDir = FVector(CurrentInputVector.Y, CurrentInputVector.X, 0.0f);
 				FVector WorldDir = GetActorQuat().RotateVector(LocalDir);
-				FVector DeltaLoc = WorldDir * FlyModeMaxSpeed * DeltaTime;
+				FVector RemainingMove = WorldDir * FlyModeMaxSpeed * DeltaTime;
 
-				// B. 1차 이동 시도 (SafeMoveUpdatedComponent는 Public이라 사용 가능)
-				FHitResult Hit(1.f);
-				GetCharacterMovement()->SafeMoveUpdatedComponent(DeltaLoc, GetActorRotation(), true, Hit);
-
-				// C. 충돌 발생 시(벽/경사면) 미끄러짐 처리
-				if (Hit.IsValidBlockingHit())
+				// B. 수동 벽 감지 및 슬라이딩 처리 (최대 3회 반사 - 구석 처리용)
+				int32 MaxIterations = 3;
+				for (int32 i = 0; i < MaxIterations; i++)
 				{
-					// [해결책] SlideAlongSurface 함수 대신 직접 벡터 연산 사용
-					// VectorPlaneProject: 이동하려던 벡터(DeltaLoc)를 벽면(Hit.Normal)에 평행하게 투영
-					FVector SlideDelta = FVector::VectorPlaneProject(DeltaLoc, Hit.Normal);
+					if (RemainingMove.IsNearlyZero()) break;
 
-					// 남은 시간 비율만큼 이동 적용
-					SlideDelta *= (1.0f - Hit.Time);
+					FHitResult Hit;
+					FCollisionQueryParams Params;
+					Params.AddIgnoredActor(this); // 나 자신은 무시
 
-					// 2차 이동 시도 (미끄러지는 방향으로 다시 이동)
-					GetCharacterMovement()->SafeMoveUpdatedComponent(SlideDelta, GetActorRotation(), true, Hit);
+					// [중요 수정] BaseActor(우주선) 무시 코드 삭제됨
+					// 우주선의 자식 컴포넌트인 '벽'을 감지해야 하므로 우주선을 Ignore하면 안 됩니다.
+					// 대신 아래에서 ObjectType으로 벽만 골라냅니다.
+
+					FVector Start = GetActorLocation();
+					FVector End = Start + RemainingMove;
+
+					// 캡슐 크기를 아주 미세하게 줄여서 판정 (끼임 방지)
+					FCollisionShape Shape = GetCapsuleComponent()->GetCollisionShape();
+					Shape.Capsule.Radius *= 1.05f;
+					Shape.Capsule.HalfHeight *= 1.0f;
+
+					// [핵심] 채널 대신 '오브젝트 타입'으로 검사
+					// WorldStatic(벽)만 찾고, Spaceship_Floor(바닥)나 WorldDynamic(본체)은 무시
+					FCollisionObjectQueryParams ObjectParams;
+					ObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
+
+					bool bHit = GetWorld()->SweepSingleByObjectType(
+						Hit, Start, End, GetActorQuat(), ObjectParams, Shape, Params
+					);
+
+					// [디버그 드로잉]
+					FVector DebugCenter = End;
+					FColor DebugColor = bHit ? FColor::Red : FColor::Green;
+					DrawDebugCapsule(GetWorld(), DebugCenter, Shape.Capsule.HalfHeight, Shape.Capsule.Radius, GetActorQuat(), DebugColor, false, -1.0f, 0, 1.0f);
+
+					if (bHit)
+					{
+						// 벽 감지됨 -> 디버그 메시지 출력
+						GEngine->AddOnScreenDebugMessage(555, 0.0f, FColor::Red,
+							FString::Printf(TEXT("Wall Detected: %s"), *Hit.GetActor()->GetName()));
+
+						// 1. 부딪힌 지점 앞까지만 이동 (0.01f 간격 유지)
+						FVector MoveToHit = Hit.TraceStart - Start + (Hit.Normal * 0.01f);
+						AddActorWorldOffset(MoveToHit, false);
+
+						// 2. 남은 힘의 방향을 벽면(Normal)에 따라 꺾음 (미끄러짐 처리)
+						FVector SlideVector = FVector::VectorPlaneProject(RemainingMove, Hit.Normal);
+
+						// 3. 이동한 비율만큼 남은 거리 차감
+						float TimeUsed = Hit.Time;
+						RemainingMove = SlideVector * (1.0f - TimeUsed);
+					}
+					else
+					{
+						// 벽 없음 -> 남은 거리 이동
+						AddActorWorldOffset(RemainingMove, false);
+						break;
+					}
 				}
 			}
 
 			// 속도 갱신 (애니메이션용)
 			if (DeltaTime > 0.0f)
 			{
-				if (CurrentInputVector.IsNearlyZero())
-				{
-					GetCharacterMovement()->Velocity = FVector::ZeroVector;
-				}
-				else
-				{
-					FVector LocalDir = FVector(CurrentInputVector.Y, CurrentInputVector.X, 0.0f);
-					FVector TargetVel = GetActorQuat().RotateVector(LocalDir) * FlyModeMaxSpeed;
-					GetCharacterMovement()->Velocity = TargetVel;
-				}
+				FVector TargetVel = CurrentInputVector.IsNearlyZero() ? FVector::ZeroVector :
+					(GetActorForwardVector() * CurrentInputVector.Y + GetActorRightVector() * CurrentInputVector.X) * FlyModeMaxSpeed;
+				GetCharacterMovement()->Velocity = TargetVel;
 			}
 
-			// 자석 부츠 로직 (높이 보정)
 			UpdateMagBoots(DeltaTime);
 
 			// 서버 동기화

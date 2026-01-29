@@ -353,8 +353,8 @@ void APSJ_Spaceship::Client_DisembarkSuccess_Implementation(APSJ_Character* Exit
 	if (!ExitingPilot) return;
 
 	// 1. [제거] 기존의 물리 차단 코드를 삭제합니다.
-	// ExitingPilot->MoveIgnoreActorAdd(this); <-- 삭제
-	// this->MoveIgnoreActorAdd(ExitingPilot); <-- 삭제
+	 ExitingPilot->MoveIgnoreActorAdd(this); 
+	 this->MoveIgnoreActorAdd(ExitingPilot); 
 
 	// 2. 위치 배치 (바닥 큐브에 바로 박히지 않도록 위로 15cm 정도 띄움)
 	FVector SafeExitLoc = ExitLoc + GetActorUpVector() * 15.0f;
