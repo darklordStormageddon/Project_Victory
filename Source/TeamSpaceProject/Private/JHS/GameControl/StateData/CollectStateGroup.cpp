@@ -49,7 +49,7 @@ void UCollectStateGroup::UpdateCollectState()
 {
 	for (auto& _collectToolData : _collectToolDataMap)
 	{
-		ExecuteEventTool(_collectToolData.Value);
+		ExecuteEventToolDurability(_collectToolData.Value);
 	}
 }
 
@@ -58,15 +58,21 @@ void UCollectStateGroup::RepairAllTool()
 	for (auto& _collectToolData : _collectToolDataMap)
 	{
 		_collectToolData.Value.Durability.CurrentValue = _collectToolData.Value.Durability.MaxValue;
-		ExecuteEventTool(_collectToolData.Value);
+		ExecuteEventToolDurability(_collectToolData.Value);
 	}
 }
 
 bool UCollectStateGroup::TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float& OutToolDamage)
 {
 	OutToolDamage = 0.0f;
+	if (CollectToolType != _selectedToolType)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Not selected tool type: %s"), *CommonEnums::GetEnum2FString<E_COLLECT_TOOL_TYPE>(CollectToolType));
+		return false;
+	}
+
 	FCollectToolData* _outCollectToolData = nullptr;
-	if (!TryGetCollectToolData(CollectToolType, _outCollectToolData))
+	if (!TryGetCollectToolData(_selectedToolType, _outCollectToolData))
 		return false;
 
 	if (CollectToolType != E_COLLECT_TOOL_TYPE::Vacuum && _outCollectToolData->Durability.CurrentValue <= 0)
@@ -78,11 +84,25 @@ bool UCollectStateGroup::TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float& 
 	{
 		_outCollectToolData->Durability.CurrentValue = 0;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Durability: %f"), _outCollectToolData->Durability.CurrentValue);
 
 	OutToolDamage = _outCollectToolData->ToolDamage;
 
-	ExecuteEventTool(*_outCollectToolData);
+	ExecuteEventToolDurability(*_outCollectToolData);
+	return true;
+}
+
+bool UCollectStateGroup::TrySelectTool(E_COLLECT_TOOL_TYPE CollectToolType)
+{
+	if (CollectToolType != E_COLLECT_TOOL_TYPE::NONE)
+	{
+		FCollectToolData* _outCollectToolData = nullptr;
+		if (!TryGetCollectToolData(CollectToolType, _outCollectToolData))
+			return false;
+	}
+
+	E_COLLECT_TOOL_TYPE _prevToolType = _selectedToolType;
+	_selectedToolType = CollectToolType;
+	ExecuteEventToolSelect(_prevToolType, _selectedToolType);
 	return true;
 }
 
@@ -136,9 +156,17 @@ bool UCollectStateGroup::TryGetCollectToolData(E_COLLECT_TOOL_TYPE CollectToolTy
 	return OutCollectToolData != nullptr;
 }
 
-void UCollectStateGroup::ExecuteEventTool(FCollectToolData CollectToolData)
+void UCollectStateGroup::ExecuteEventToolDurability(FCollectToolData CollectToolData)
 {
-	UEventOnCollectToolDurability* _event = NewObject<UEventOnCollectToolDurability>(this);
+	UEventOnChangeToolDurability* _event = NewObject<UEventOnChangeToolDurability>(this);
 	_event->CollectToolData = CollectToolData;
-	_gameState->GetEventManager()->ExecuteEvent<UEventOnCollectToolDurability>(_event);
+	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangeToolDurability>(_event);
+}
+
+void UCollectStateGroup::ExecuteEventToolSelect(E_COLLECT_TOOL_TYPE PrevToolType, E_COLLECT_TOOL_TYPE NextToolType)
+{
+	UEventOnChangeTool* _event = NewObject<UEventOnChangeTool>(this);
+	_event->PrevToolType = PrevToolType;
+	_event->NextToolType = NextToolType;
+	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangeTool>(_event);
 }

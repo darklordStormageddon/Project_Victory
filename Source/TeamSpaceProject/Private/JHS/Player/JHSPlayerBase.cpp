@@ -57,7 +57,7 @@ void AJHSPlayerBase::BeginPlay()
 	_outUIManager->OpenUI(E_UI_TYPE::UIPanelCollectSeat);*/
 
 	
-	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::UseCollectTool, 3.0f, false);
+	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::UseCollectTool, 3.0f, false);
 }
 
 // Called every frame
@@ -152,8 +152,12 @@ void AJHSPlayerBase::UseCollectTool()
 		_toolIndex %= _lastIndex;
 	}
 
-	float _outToolDamage = 0.0f;
-	_collectStateGroup->TryUseTool((E_COLLECT_TOOL_TYPE)_toolIndex, _outToolDamage);
+	E_COLLECT_TOOL_TYPE _toolType = (E_COLLECT_TOOL_TYPE)_toolIndex;
+	if (_collectStateGroup->TrySelectTool(_toolType))
+	{
+		float _outToolDamage = 0.0f;
+		_collectStateGroup->TryUseTool(_toolType, _outToolDamage);
+	}
 
 	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::UseCollectTool, 1.0f, false);
 }

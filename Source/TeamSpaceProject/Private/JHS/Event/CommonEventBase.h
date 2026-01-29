@@ -91,17 +91,17 @@ public:
 
 #pragma region Collect
 UCLASS(BlueprintType)
-class UEventOnCollectToolDurability : public UCommonEventBase
+class UEventOnChangeToolDurability : public UCommonEventBase
 {
 	GENERATED_BODY()
 
 public:
-	UEventOnCollectToolDurability(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+	UEventOnChangeToolDurability(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
 	{
 	}
 
-	UEventOnCollectToolDurability(FCollectToolData CollectToolData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+	UEventOnChangeToolDurability(FCollectToolData CollectToolData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
 		, CollectToolData(CollectToolData)
 	{
@@ -109,6 +109,29 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|Collect")
 	FCollectToolData CollectToolData;
+};
+
+UCLASS(BlueprintType)
+class UEventOnChangeTool : public UCommonEventBase
+{
+	GENERATED_BODY()
+
+public:
+	UEventOnChangeTool(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{
+	}
+
+	UEventOnChangeTool(E_COLLECT_TOOL_TYPE PrevToolType, E_COLLECT_TOOL_TYPE NextToolType, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+		, PrevToolType(PrevToolType)
+		, NextToolType(NextToolType)
+	{
+	}
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|Collect")
+	E_COLLECT_TOOL_TYPE PrevToolType;
+	E_COLLECT_TOOL_TYPE NextToolType;
 };
 #pragma endregion Collect
 

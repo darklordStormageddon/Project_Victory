@@ -25,6 +25,8 @@ void UCollectToolDurability::NativePreConstruct()
 void UCollectToolDurability::NativeOnInitialized()
 {
     Super::NativeOnInitialized();
+
+    IMG_SelectHighlight->SetVisibility(ESlateVisibility::Hidden);
 }
 
 void UCollectToolDurability::SetDurabilityProgress(TObjectPtr<UTexture2D> ToolImage, float Progress, bool IsVacuumTool)
@@ -61,4 +63,10 @@ void UCollectToolDurability::SetDurabilityProgress(TObjectPtr<UTexture2D> ToolIm
         _text = FString::Printf(TEXT("%d%%"), _percent);
     }
     TXT_Durability->SetText(FText::FromString(_text));
+}
+
+void UCollectToolDurability::SelectTool(bool IsSelected)
+{
+    ESlateVisibility _visibility = IsSelected ? ESlateVisibility::Visible : ESlateVisibility::Hidden;
+    IMG_SelectHighlight->SetVisibility(_visibility);
 }
