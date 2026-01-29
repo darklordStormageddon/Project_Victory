@@ -178,7 +178,7 @@ TObjectPtr<UCollectToolDurability> UUIPanelCollectSeat::GetCollectToolItem(E_COL
 
 	// 마지막에 인텍스에 추가
 	int32 _spacerLeftIndex = HorizontalBox->GetChildIndex(Spacer_Left);
-	UPanelSlot* _panelSlot = HorizontalBox->InsertChildAt(_spacerLeftIndex + 1 + _toolDurabilityItemMap.Num(), _toolWidget);
+	UPanelSlot* _panelSlot = HorizontalBox->AddChildToHorizontalBox(_toolWidget);
 	UHorizontalBoxSlot* _slot = Cast<UHorizontalBoxSlot>(_panelSlot);
 	if (_slot)
 	{
