@@ -20,6 +20,8 @@ class UUIPanelCollectSeat : public UUIBase
 private:
 	FDelegateHandle _eventHandleOnChangeDurability;
 
+	FDelegateHandle _eventHandleOnChangeTool;
+
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UHorizontalBox> HorizontalBox;
 
@@ -50,9 +52,9 @@ protected:
 	void UnregisterEvent() override;
 
 public:
-	void InitializeCollectSeat();
+	void OnChangeDurability(UEventOnChangeToolDurability* Event);
 
-	void OnChangeDurability(UEventOnCollectToolDurability* Event);
+	void OnChangeTool(UEventOnChangeTool* Event);
 
 private:
 	void ClearDynamicWidgets();

@@ -28,6 +28,9 @@ private:
 	UPROPERTY()
 	TMap<E_COLLECT_TOOL_TYPE, FCollectToolData> _collectToolDataMap;
 
+	UPROPERTY()
+	E_COLLECT_TOOL_TYPE _selectedToolType = E_COLLECT_TOOL_TYPE::NONE;
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -45,10 +48,14 @@ public:
 
 	bool TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float& OutToolDamage);
 
+	bool TrySelectTool(E_COLLECT_TOOL_TYPE CollectToolType);
+
 private:
 	void LoadCollectToolDataTable();
 
 	bool TryGetCollectToolData(E_COLLECT_TOOL_TYPE CollectToolType, FCollectToolData*& OutCollectToolData);
 
-	void ExecuteEventTool(FCollectToolData CollectToolData);
+	void ExecuteEventToolDurability(FCollectToolData CollectToolData);
+
+	void ExecuteEventToolSelect(E_COLLECT_TOOL_TYPE PrevToolType, E_COLLECT_TOOL_TYPE NextToolType);
 };

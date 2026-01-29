@@ -42,7 +42,6 @@ void UUIPanelCollectSeat::NativeOnInitialized()
 
 void UUIPanelCollectSeat::OnOpen()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("Count %d"), _toolDurabilityItemMap.Num());
 }
 
 void UUIPanelCollectSeat::OnClose()
@@ -52,24 +51,37 @@ void UUIPanelCollectSeat::OnClose()
 
 void UUIPanelCollectSeat::RegisterEvent()
 {
-	_eventHandleOnChangeDurability = GetEventManager()->AddListener<UEventOnCollectToolDurability>(
-        [this](UEventOnCollectToolDurability* Event)
+	_eventHandleOnChangeDurability = GetEventManager()->AddListener<UEventOnChangeToolDurability>(
+        [this](UEventOnChangeToolDurability* Event)
         {
 			OnChangeDurability(Event);
         }
     );
+
+	_eventHandleOnChangeTool = GetEventManager()->AddListener<UEventOnChangeTool>(
+		[this](UEventOnChangeTool* Event)
+		{
+			OnChangeTool(Event);
+		}
+	);
 }
 
 void UUIPanelCollectSeat::UnregisterEvent()
 {
 	if (_eventHandleOnChangeDurability.IsValid())
     {
-        GetEventManager()->DelListener<UEventOnChangeTurretData>(_eventHandleOnChangeDurability);
+        GetEventManager()->DelListener<UEventOnChangeToolDurability>(_eventHandleOnChangeDurability);
 		_eventHandleOnChangeDurability.Reset();
     }
+
+	if (_eventHandleOnChangeTool.IsValid())
+	{
+		GetEventManager()->DelListener<UEventOnChangeTool>(_eventHandleOnChangeTool);
+		_eventHandleOnChangeTool.Reset();
+	}
 }
 
-void UUIPanelCollectSeat::OnChangeDurability(UEventOnCollectToolDurability* Event)
+void UUIPanelCollectSeat::OnChangeDurability(UEventOnChangeToolDurability* Event)
 {
 	if (Event == nullptr)
 		return;
@@ -84,6 +96,27 @@ void UUIPanelCollectSeat::OnChangeDurability(UEventOnCollectToolDurability* Even
 		_progress = 0.0f;
 	}
 	_collectToolItem->SetDurabilityProgress(_collectToolData.CollectToolImage, _progress, _collectToolData.CollectToolType == E_COLLECT_TOOL_TYPE::Vacuum);
+}
+
+void UUIPanelCollectSeat::OnChangeTool(UEventOnChangeTool* Event)
+{
+	if (Event == nullptr)
+		return;
+
+	E_COLLECT_TOOL_TYPE _prevToolType = Event->PrevToolType;
+	E_COLLECT_TOOL_TYPE _nextToolType = Event->NextToolType;;
+	TObjectPtr<UCollectToolDurability> _collectToolItem = nullptr;
+	if (_prevToolType != E_COLLECT_TOOL_TYPE::NONE)
+	{
+		_collectToolItem = GetCollectToolItem(_prevToolType);
+		_collectToolItem->SelectTool(false);
+	}
+
+	if (_nextToolType == E_COLLECT_TOOL_TYPE::NONE)
+		return;
+
+	_collectToolItem = GetCollectToolItem(_nextToolType);
+	_collectToolItem->SelectTool(true);
 }
 
 void UUIPanelCollectSeat::ClearDynamicWidgets()

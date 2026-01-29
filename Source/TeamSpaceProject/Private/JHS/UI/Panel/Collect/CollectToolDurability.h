@@ -29,6 +29,9 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* TXT_Durability;
 
+	UPROPERTY(meta = (BindWidget))
+	UImage* IMG_SelectHighlight;
+
 	FDelegateHandle _eventHandleOnChangeTurret;
 
 	UPROPERTY(VisibleAnywhere, Category = "CollectTool|Component")
@@ -54,4 +57,6 @@ protected:
 
 public:
 	void SetDurabilityProgress(TObjectPtr<UTexture2D> ToolImage, float Progress, bool IsVacuumTool);
+
+	void SelectTool(bool IsSelected);
 };
