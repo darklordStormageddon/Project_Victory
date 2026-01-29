@@ -42,10 +42,10 @@ void UGarbageEnemyManagerComponent::GarbageSpawnSetting()
 
 	if (_owner)
 		CenterLocation = _owner->GetActorLocation();
-	else
+	else if (GetOwner())
 		CenterLocation = GetOwner()->GetActorLocation();
-
-	FVector RandomDirection = FMath::VRand();
+	else
+		CenterLocation = FVector::ZeroVector;
 
 	FRotator SpawnRotation = FRotator::ZeroRotator;
 

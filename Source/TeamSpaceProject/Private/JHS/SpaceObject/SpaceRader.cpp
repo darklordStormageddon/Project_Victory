@@ -39,7 +39,7 @@ void ASpaceRader::Tick(float DeltaTime)
 	}
 
 	// _raderRadius 만큼 DebugDrawSphere 그리기
-	DrawDebugSphere(GetWorld(), _raderCenter->GetComponentLocation(), _raderRadius, 10, FColor::Blue, false, DeltaTime * 1.01);
+	/*DrawDebugSphere(GetWorld(), _raderCenter->GetComponentLocation(), _raderRadius, 10, FColor::Blue, false, DeltaTime * 1.01);*/
 }
 
 void ASpaceRader::InitializeRader()
