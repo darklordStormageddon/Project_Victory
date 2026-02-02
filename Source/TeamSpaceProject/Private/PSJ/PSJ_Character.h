@@ -14,7 +14,7 @@ class UInputAction;
 class UInputComponent;
 class UInputMappingContext;
 class APawn;
-class APSJ_Spaceship; 
+class APSJ_Spaceship;
 // 전방 선언 추가
 class ATurretBase_GT;
 
