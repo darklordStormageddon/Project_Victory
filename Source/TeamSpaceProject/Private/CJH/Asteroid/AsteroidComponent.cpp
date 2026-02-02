@@ -10,6 +10,8 @@
 
 #include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/SpaceManager.h"
+#include "JHS/Player/SpaceStation.h"
 
 UAsteroidComponent::UAsteroidComponent()
 {
@@ -75,7 +77,7 @@ void UAsteroidComponent::SpawnAsteroid()
 
 	// 랜덤 방향과 위치
 	FVector RandomDirection = FMath::VRand();
-	FVector SpawnLocation = InGameMode->GetSpaceStation()->GetActorLocation() + RandomDirection * InGameMode->GetSpaceRadius();
+	FVector SpawnLocation = InGameMode->GetSpaceManager()->GetSpaceStation()->GetActorLocation() + RandomDirection * InGameMode->GetSpaceManager()->GetSpaceRadius();
 
 	float Size = FMath::RandRange(_asteroidInfo.MinSize, _asteroidInfo.MaxSize);
 	float Speed = FMath::RandRange(_asteroidInfo.MinSpeed, _asteroidInfo.MaxSpeed);
@@ -126,7 +128,7 @@ void UAsteroidComponent::SpawnAsteroid()
 			ShipSpeed // 이 컴포넌트의 주인인 우주선 속도
 		);
 
-		Asteroid->DestroyDistance = InGameMode->GetSpaceRadius();
+		Asteroid->DestroyDistance = InGameMode->GetSpaceManager()->GetSpaceRadius();
 		Asteroids.Add(Asteroid);
 
 		if(_asteroidInfo.debugDraw)

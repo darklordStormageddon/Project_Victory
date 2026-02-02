@@ -3,6 +3,7 @@
 
 #include "JHS/SpaceObject/SpaceObjectComponent.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameMode.h"
 
 // Sets default values for this component's properties
 USpaceObjectComponent::USpaceObjectComponent()
@@ -42,11 +43,11 @@ void USpaceObjectComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 void USpaceObjectComponent::InitializeSpaceObject()
 {
-	USpaceObjectManager* OutSpaceObjectManager = nullptr;
-	if (!UStaticFunctionLibrary::TryGetSpaceObjectManager(OutSpaceObjectManager))
+	AJHSGameMode* _outGameMode = nullptr;
+	if (!UStaticFunctionLibrary::TryGetGameMode(_outGameMode))
 		return;
 
-	_spaceObjectManager = OutSpaceObjectManager;
+	_spaceManager = _outGameMode->GetSpaceManager();
 	Send();
 }
 
@@ -59,7 +60,7 @@ void USpaceObjectComponent::Send()
 		return;
 
 	// Manager에 업데이트
-	_spaceObjectManager->UpdateSpaceObject(_spaceObjectData);
+	_spaceManager->UpdateSpaceObject(_spaceObjectData);
 
 	GetWorld()->GetTimerManager().SetTimer(
 		_updateTimerHandle,
@@ -74,7 +75,7 @@ void USpaceObjectComponent::UpdateSpaceObjectData(FSpaceObjectData NewSpaceObjec
 	if (GetNetMode() == NM_Standalone)
 	{
 		// Standalone 모드에서는 Manager에만 업데이트 (로컬에서 위치 관리)
-		_spaceObjectManager->UpdateSpaceObject(NewSpaceObjectData);
+		_spaceManager->UpdateSpaceObject(NewSpaceObjectData);
 		return;
 	}
 
@@ -82,7 +83,7 @@ void USpaceObjectComponent::UpdateSpaceObjectData(FSpaceObjectData NewSpaceObjec
 	if (_owner->HasAuthority())
 	{
 		// Manager에 업데이트
-		_spaceObjectManager->UpdateSpaceObject(NewSpaceObjectData);
+		_spaceManager->UpdateSpaceObject(NewSpaceObjectData);
 		
 		// 모든 클라이언트에 위치와 회전 동기화
 		Multicast_UpdateSpaceObjectData(NewSpaceObjectData);

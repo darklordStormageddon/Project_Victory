@@ -4,6 +4,7 @@
 #include "CJH/Enemy/Manager/EnemyManagerComponent.h"
 
 #include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/SpaceManager.h"
 
 #include "CJH/Enemy/Base/GarbageEnemyBase.h"
 #include "CJH/Enemy/Base/SpawnedEnemyBase.h"
@@ -27,8 +28,8 @@ void UEnemyManagerComponent::BeginPlay()
 	if (!_gameMode)
 		return;
 
-	_spaceRadius = _gameMode->GetSpaceRadius();
-	_spaceStation = _gameMode->GetSpaceStation();	
+	_spaceRadius = _gameMode->GetSpaceManager()->GetSpaceRadius();
+	_spaceStation = _gameMode->GetSpaceManager()->GetSpaceStation();
 }
 
 void UEnemyManagerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

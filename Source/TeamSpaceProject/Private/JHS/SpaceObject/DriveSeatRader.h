@@ -17,25 +17,12 @@ public:
 	// Sets default values for this actor's properties
 	ADriveSeatRader();
 
-private:
-	UPROPERTY()
-	TObjectPtr<USpaceObjectManager> _spaceObjectManager = nullptr;
-
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rader|DriveSeatRader|Components")
-	TObjectPtr<UStaticMeshComponent> _rootComponent = nullptr;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rader|DriveSeatRader")
+	TObjectPtr<UStaticMeshComponent> _spaceShipMeshCenter = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rader|DriveSeatRader|Components")
-	TObjectPtr<UStaticMeshComponent> _spaceShipCenter = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rader|DriveSeatRader|Components")
-	TObjectPtr<UStaticMeshComponent> _driveSeatRaderCenter = nullptr;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|Radius")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|DriveSeatRader")
 	TObjectPtr<AActor> _spaceShip = nullptr;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|Radius")
-	float _spaceShipDetectRadius = 1000.0f;
 
 protected:
 	// Called when the game starts or when spawned
@@ -53,5 +40,5 @@ protected:
 	FString GetFileHeaderName() override;
 
 public:
-	void SetSpaceShip(TObjectPtr<AActor> SpaceShip);
+	void InitializeDriveRader(float DriveRaderRadius);
 };

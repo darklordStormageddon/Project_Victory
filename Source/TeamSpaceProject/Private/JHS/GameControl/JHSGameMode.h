@@ -4,12 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
-#include "JHS/Player/SpaceStation.h"
+
 #include "JHSGameMode.generated.h"
 
-class USpaceObjectManager;
 class UUIManager;
 class UEventManager;
+class USpaceManager;
 
 UCLASS()
 class AJHSGameMode : public AGameMode
@@ -19,25 +19,25 @@ class AJHSGameMode : public AGameMode
 public:
 	AJHSGameMode();
 
-protected:
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Space Station")
-	TObjectPtr<ASpaceStation> _spaceStation;
+private:
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
+	TObjectPtr<UUIManager> _uiManager = nullptr;
 
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Space Object Manager")
-	TObjectPtr<USpaceObjectManager> _spaceObjectManager;
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
+	TObjectPtr<UEventManager> _eventManager = nullptr;
 
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameMode|UI Manager")
-	TObjectPtr<UUIManager> _uiManager;
-
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Event Manager")
-	TObjectPtr<UEventManager> _eventManager;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameMode|Space Size")
-	float _spaceRadius = 1000.0f;
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
+	TObjectPtr<USpaceManager> _spaceManager = nullptr;
 
 public:
-	UFUNCTION()
-	float GetSpaceRadius() { return _spaceRadius; }
+	UFUNCTION(BlueprintCallable, Category = "GameMode|UI Manager")
+	UUIManager* GetUIManager() { return _uiManager; }
+
+	UFUNCTION(BlueprintCallable, Category = "GameMode|Event Manager")
+	UEventManager* GetEventManager() { return _eventManager; }
+
+	UFUNCTION(BlueprintCallable, Category = "GameMode|Space Manager")
+	USpaceManager* GetSpaceManager() { return _spaceManager; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -50,16 +50,4 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "GameMode|Game")
 	void StartStage(int32 Stage);
-
-	UFUNCTION(BlueprintCallable, Category = "GameMode|Space Station")
-	ASpaceStation* GetSpaceStation();
-
-	UFUNCTION(BlueprintCallable, Category = "GameMode|Space Object Manager")
-	USpaceObjectManager* GetSpaceObjectManager() { return _spaceObjectManager; }
-
-	UFUNCTION(BlueprintCallable, Category = "GameMode|UI Manager")
-	UUIManager* GetUIManager() { return _uiManager; }
-
-	UFUNCTION(BlueprintCallable, Category = "GameMode|Event Manager")
-	UEventManager* GetEventManager() { return _eventManager; }
 };

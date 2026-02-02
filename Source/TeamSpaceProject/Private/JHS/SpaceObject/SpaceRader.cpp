@@ -4,7 +4,8 @@
 #include "JHS/SpaceObject/SpaceRader.h"
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
-#include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/SpaceManager.h"
+#include "JHS/Player/SpaceStation.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/Engine.h"
 
@@ -13,12 +14,6 @@ ASpaceRader::ASpaceRader()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-	_rootComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RootComponent"));
-	_rootComponent->SetupAttachment(RootComponent);
-
-	_raderCenter = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RaderCenter"));
-	_raderCenter->SetupAttachment(_rootComponent);
 }
 
 // Called when the game starts or when spawned
@@ -31,29 +26,21 @@ void ASpaceRader::BeginPlay()
 void ASpaceRader::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	// _spaceRadius 만큼 DebugDrawSphere 그리기
-	if (DebugSpaceRadius && _spaceStation)
-	{
-		DrawDebugSphere(GetWorld(), _spaceStation->GetActorLocation(), _spaceRadius, 10, FColor::Yellow, false, DeltaTime * 1.01);
-	}
-	if (DebugRaderRadius)
-	{
-		DrawDebugSphere(GetWorld(), _raderCenter->GetComponentLocation(), _raderRadius, 10, FColor::Blue, false, DeltaTime * 1.01);
-	}
 }
 
 void ASpaceRader::InitializeRader()
 {
-	AJHSGameMode* OutGameMode = nullptr;
-	if (!UStaticFunctionLibrary::TryGetGameMode(OutGameMode))
+	FRaderData _newraderData;
+
+	USpaceManager* _outSpaceManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetSpaceManager(_outSpaceManager))
 		return;
 
-	_spaceStation = Cast<AActor>(OutGameMode->GetSpaceStation());
-	_spaceRadius = OutGameMode->GetSpaceRadius();
+	_newraderData.StandardActor = Cast<AActor>(_outSpaceManager->GetSpaceStation());
+	_newraderData.RaderRenderRadius = _outSpaceManager->GetSpaceRadius();
 
 	// 레이더 표시 시작
-	RenderSpaceObjectToRader(_spaceStation, _raderCenter, OutGameMode->GetSpaceRadius());
+	StartRenderRader(_newraderData);
 }
 
 FString ASpaceRader::GetFilePathName()

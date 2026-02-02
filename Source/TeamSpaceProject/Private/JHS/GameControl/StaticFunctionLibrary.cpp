@@ -5,44 +5,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/GameControl/JHSGameState.h"
-#include "JHS/SpaceObject/SpaceObjectManager.h"
 #include "JHS/Event/EventManager.h"
 #include "Engine/Engine.h"
-
-bool UStaticFunctionLibrary::TryGetWorld(UWorld*& OutWorld)
-{
-	UWorld* _world = nullptr;
-
-	// GEngine을 통해 게임 World 찾기
-	if (GEngine)
-	{
-		// 모든 World Context를 순회하면서 게임 World 찾기
-		for (const FWorldContext& _context : GEngine->GetWorldContexts())
-		{
-			UWorld* _checkWorld = _context.World();
-			if (_checkWorld && (_checkWorld->WorldType == EWorldType::Game || _checkWorld->WorldType == EWorldType::PIE))
-			{
-				_world = _checkWorld;
-				break;
-			}
-		}
-
-		// 게임 World를 찾지 못한 경우, 첫 번째 World 사용
-		if (!_world && GEngine->GetWorldContexts().Num() > 0)
-		{
-			_world = GEngine->GetWorldContexts()[0].World();
-		}
-	}
-
-	OutWorld = _world;
-	if (!OutWorld)
-	{
-		UE_LOG(LogTemp, Error, TEXT("TryGetWorld: World is nullptr"));
-		return false;
-	}
-
-	return true;
-}
 
 bool UStaticFunctionLibrary::TryGetGameMode(AJHSGameMode*& OutGameMode)
 {
@@ -90,16 +54,16 @@ bool UStaticFunctionLibrary::TryGetGameState(AJHSGameState*& OutGameState)
 	return true;
 }
 
-bool UStaticFunctionLibrary::TryGetSpaceObjectManager(USpaceObjectManager*& OutSpaceObjectManager)
+bool UStaticFunctionLibrary::TryGetSpaceManager(USpaceManager*& OutSpaceManager)
 {
 	AJHSGameMode* _gameMode = nullptr;
 	if (!TryGetGameMode(_gameMode))
         return false;
 
-	OutSpaceObjectManager = _gameMode->GetSpaceObjectManager();	
-    if (OutSpaceObjectManager == nullptr)
+	OutSpaceManager = _gameMode->GetSpaceManager();
+    if (OutSpaceManager == nullptr)
     {
-        UE_LOG(LogTemp, Error, TEXT("TryGetSpaceObjectManager: SpaceObjectManager is nullptr"));
+        UE_LOG(LogTemp, Error, TEXT("TryGetSpaceManager: SpaceManager is nullptr"));
         return false;
     }
 
@@ -132,6 +96,41 @@ bool UStaticFunctionLibrary::TryGetEventManager(UEventManager*& OutEventManager)
 	if (OutEventManager == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("TryGetEventManager: EventManager is nullptr"));
+		return false;
+	}
+
+	return true;
+}
+
+bool UStaticFunctionLibrary::TryGetWorld(UWorld*& OutWorld)
+{
+	UWorld* _world = nullptr;
+
+	// GEngine을 통해 게임 World 찾기
+	if (GEngine)
+	{
+		// 모든 World Context를 순회하면서 게임 World 찾기
+		for (const FWorldContext& _context : GEngine->GetWorldContexts())
+		{
+			UWorld* _checkWorld = _context.World();
+			if (_checkWorld && (_checkWorld->WorldType == EWorldType::Game || _checkWorld->WorldType == EWorldType::PIE))
+			{
+				_world = _checkWorld;
+				break;
+			}
+		}
+
+		// 게임 World를 찾지 못한 경우, 첫 번째 World 사용
+		if (!_world && GEngine->GetWorldContexts().Num() > 0)
+		{
+			_world = GEngine->GetWorldContexts()[0].World();
+		}
+	}
+
+	OutWorld = _world;
+	if (!OutWorld)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TryGetWorld: World is nullptr"));
 		return false;
 	}
 

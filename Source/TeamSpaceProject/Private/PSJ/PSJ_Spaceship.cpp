@@ -121,15 +121,6 @@ void APSJ_Spaceship::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ADriveSeatRader∏¶ ØÅ∞Ì SetSpaceShip «‘ºˆ »£√‚
-	TArray<AActor*> _driveSeatRaderArray;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADriveSeatRader::StaticClass(), _driveSeatRaderArray);
-	for (AActor* _driveSeatRader : _driveSeatRaderArray)
-	{
-		ADriveSeatRader* _driveSeatRaderActor = Cast<ADriveSeatRader>(_driveSeatRader);
-		_driveSeatRaderActor->SetSpaceShip(this);
-	}
-
 	if (HealthComp)
 	{
 		HealthComp->OnDamaged.AddDynamic(this, &APSJ_Spaceship::OnTakeDamage);

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "JHS/SpaceObject/SpaceObjectManager.h"
+#include "JHS/GameControl/SpaceManager.h"
 
 #include "SpaceObjectComponent.generated.h"
 
@@ -18,7 +18,7 @@ public:
 	USpaceObjectComponent();
 
 private:
-	TObjectPtr<USpaceObjectManager> _spaceObjectManager = nullptr;
+	TObjectPtr<USpaceManager> _spaceManager = nullptr;
 
 	TObjectPtr<AActor> _owner = nullptr;
 

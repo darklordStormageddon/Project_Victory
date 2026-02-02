@@ -29,33 +29,33 @@ void AASCore::Move(float DeltaTime)
 
 void AASCore::DistanceCheck()
 {
-	AJHSGameMode* InGameMode = Cast<AJHSGameMode>(GetWorld()->GetAuthGameMode());
-	if (!InGameMode)
-		return;
+	//AJHSGameMode* InGameMode = Cast<AJHSGameMode>(GetWorld()->GetAuthGameMode());
+	//if (!InGameMode)
+	//	return;
 
-	ASpaceStation* SpaceStation = InGameMode->GetSpaceStation();
-	if (!SpaceStation)
-		return;
+	//ASpaceStation* SpaceStation = InGameMode->GetSpaceStation();
+	//if (!SpaceStation)
+	//	return;
 
-	//SpaceRadius 범위를 벗어나면 범위 내 특정 장소를 랜덤으로 설정 해서 도달 후 방향 재설정
-	float Distance = FVector::Dist(SpaceStation->GetActorLocation(), GetActorLocation());
-	float Radius = InGameMode->GetSpaceRadius();
-	
-	if (!bChangeDirection && Distance > Radius)
-	{
-		FTimerHandle TimerHandle;
+	////SpaceRadius 범위를 벗어나면 범위 내 특정 장소를 랜덤으로 설정 해서 도달 후 방향 재설정
+	//float Distance = FVector::Dist(SpaceStation->GetActorLocation(), GetActorLocation());
+	//float Radius = InGameMode->GetSpaceRadius();
+	//
+	//if (!bChangeDirection && Distance > Radius)
+	//{
+	//	FTimerHandle TimerHandle;
 
-		ReSetVector(SpaceStation, Radius);
-		bChangeDirection = true;
+	//	ReSetVector(SpaceStation, Radius);
+	//	bChangeDirection = true;
 
-		GetWorld()->GetTimerManager().SetTimer(
-			TimerHandle,
-			this,
-			&AASCore::ResetChangeDirection,
-			ResetChangeDelay,
-			false
-		);
-	}
+	//	GetWorld()->GetTimerManager().SetTimer(
+	//		TimerHandle,
+	//		this,
+	//		&AASCore::ResetChangeDirection,
+	//		ResetChangeDelay,
+	//		false
+	//	);
+	//}
 }
 
 void AASCore::ReSetVector(ASpaceStation* SpaceStation, float Radius)
