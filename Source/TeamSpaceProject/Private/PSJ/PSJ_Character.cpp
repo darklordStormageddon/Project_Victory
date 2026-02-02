@@ -20,7 +20,7 @@
 APSJ_Character::APSJ_Character()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.TickGroup = TG_PostUpdateWork;
+	PrimaryActorTick.TickGroup = TG_PostPhysics;
 }
 
 void APSJ_Character::BeginPlay()
@@ -91,169 +91,205 @@ void APSJ_Character::PossessedBy(AController* NewController)
 
 // [PSJ_Character.cpp]
 
-
 void APSJ_Character::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// -------------------------------------------------------------------------
-	// 1. 디버그 메시지 출력 (로컬 컨트롤러인 경우만)
-	// -------------------------------------------------------------------------
-	if (IsLocallyControlled())
-	{
-		FString DebugMsg = FString::Printf(TEXT("Controller: %s | InputMode: %s"),
-			Controller ? *Controller->GetName() : TEXT("NULL"),
-			(DefaultMappingContext) ? TEXT("Context Valid") : TEXT("Context Null"));
+	// 1. 공용 예외 처리
+	if (!Controller || (IsLocallyControlled() && CurrentSpaceship)) return;
 
-		GEngine->AddOnScreenDebugMessage(10, 0.0f, FColor::Cyan, DebugMsg);
-
-		if (CurrentInputVector.IsNearlyZero() == false)
-		{
-			GEngine->AddOnScreenDebugMessage(11, 0.0f, FColor::Green, TEXT("KEYBOARD INPUT DETECTED"));
-		}
-	}
-
-	// -------------------------------------------------------------------------
-	// 2. 조종 중 예외 처리
-	// -------------------------------------------------------------------------
-	if (Controller && IsLocallyControlled() && CurrentSpaceship) return;
-
-	// -------------------------------------------------------------------------
-	// 3. 앵커링(부착) 상태 관리
-	// -------------------------------------------------------------------------
+	// 2. 앵커링(부착) 상태 동기화
 	AActor* ParentActor = GetAttachParentActor();
-	bool bShouldBeAttached = (ReplicatedRelativeData.BaseActor != nullptr);
-
-	if (bShouldBeAttached && ParentActor != ReplicatedRelativeData.BaseActor)
+	if (ReplicatedRelativeData.BaseActor && ParentActor != ReplicatedRelativeData.BaseActor)
 	{
 		AttachToActor(ReplicatedRelativeData.BaseActor, FAttachmentTransformRules::KeepWorldTransform);
 		GetCharacterMovement()->DisableMovement();
 		GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 		SetReplicateMovement(false);
 	}
-	else if (!bShouldBeAttached && ParentActor)
+	else if (!ReplicatedRelativeData.BaseActor && ParentActor)
 	{
 		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-		GetCharacterMovement()->Velocity = FVector::ZeroVector;
 		SetReplicateMovement(true);
 	}
 
-	// -------------------------------------------------------------------------
-	// 4. 이동 및 벽 슬라이딩 로직 (핵심 수정 적용)
-	// -------------------------------------------------------------------------
-	if (GetAttachParentActor())
+	// 3. 로컬 컨트롤러 이동 로직
+	if (IsLocallyControlled())
 	{
-		if (IsLocallyControlled())
+		if (!CurrentInputVector.IsNearlyZero())
 		{
-			if (!CurrentInputVector.IsNearlyZero())
+			// 입력 벡터 -> 월드 이동 벡터 변환
+			FVector LocalDir = FVector(CurrentInputVector.Y, CurrentInputVector.X, 0.0f);
+			FVector WorldDir = GetActorQuat().RotateVector(LocalDir);
+
+			// =================================================================================
+			// [핵심 기능 복구] 경사면 이동 투영 (Slope Projection)
+			// 바닥에 붙어있다면, 이동 방향을 바닥 경사면에 맞춰서 '비행기 이륙하듯' 꺾어줍니다.
+			// 이렇게 하면 계단을 들이받지 않고 타고 올라갑니다.
+			// =================================================================================
+			if (ReplicatedRelativeData.bIsAnchored && !CurrentFloorNormal.IsZero())
 			{
-				// A. 로컬 입력 -> 월드 이동 벡터 변환
-				FVector LocalDir = FVector(CurrentInputVector.Y, CurrentInputVector.X, 0.0f);
-				FVector WorldDir = GetActorQuat().RotateVector(LocalDir);
-				FVector RemainingMove = WorldDir * FlyModeMaxSpeed * DeltaTime;
-
-				// B. 수동 벽 감지 및 슬라이딩 처리 (최대 3회 반사 - 구석 처리용)
-				int32 MaxIterations = 3;
-				for (int32 i = 0; i < MaxIterations; i++)
-				{
-					if (RemainingMove.IsNearlyZero()) break;
-
-					FHitResult Hit;
-					FCollisionQueryParams Params;
-					Params.AddIgnoredActor(this); // 나 자신은 무시
-
-					// [중요 수정] BaseActor(우주선) 무시 코드 삭제됨
-					// 우주선의 자식 컴포넌트인 '벽'을 감지해야 하므로 우주선을 Ignore하면 안 됩니다.
-					// 대신 아래에서 ObjectType으로 벽만 골라냅니다.
-
-					FVector Start = GetActorLocation();
-					FVector End = Start + RemainingMove;
-
-					// 캡슐 크기를 아주 미세하게 줄여서 판정 (끼임 방지)
-					FCollisionShape Shape = GetCapsuleComponent()->GetCollisionShape();
-					Shape.Capsule.Radius *= 0.95f;
-					Shape.Capsule.HalfHeight *= 0.95f;
-
-					// [핵심] 채널 대신 '오브젝트 타입'으로 검사
-					// WorldStatic(벽)만 찾고, Spaceship_Floor(바닥)나 WorldDynamic(본체)은 무시
-					FCollisionObjectQueryParams ObjectParams;
-					ObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
-
-					bool bHit = GetWorld()->SweepSingleByObjectType(
-						Hit, Start, End, GetActorQuat(), ObjectParams, Shape, Params
-					);
-
-					// [디버그 드로잉]
-					//FVector DebugCenter = End;
-					//FColor DebugColor = bHit ? FColor::Red : FColor::Green;
-					//DrawDebugCapsule(GetWorld(), DebugCenter, Shape.Capsule.HalfHeight, Shape.Capsule.Radius, GetActorQuat(), DebugColor, false, -1.0f, 0, 1.0f);
-
-					if (bHit)
-					{
-						// 벽 감지됨 -> 디버그 메시지 출력
-						GEngine->AddOnScreenDebugMessage(555, 0.0f, FColor::Red,
-							FString::Printf(TEXT("Wall Detected: %s"), *Hit.GetActor()->GetName()));
-
-						// 1. 부딪힌 지점 앞까지만 이동 (0.01f 간격 유지)
-						FVector MoveToHit = Hit.TraceStart - Start + (Hit.Normal * 0.01f);
-						AddActorWorldOffset(MoveToHit, false);
-
-						// 2. 남은 힘의 방향을 벽면(Normal)에 따라 꺾음 (미끄러짐 처리)
-						FVector SlideVector = FVector::VectorPlaneProject(RemainingMove, Hit.Normal);
-
-						// 3. 이동한 비율만큼 남은 거리 차감
-						float TimeUsed = Hit.Time;
-						RemainingMove = SlideVector * (1.0f - TimeUsed);
-					}
-					else
-					{
-						// 벽 없음 -> 남은 거리 이동
-						AddActorWorldOffset(RemainingMove, false);
-						break;
-					}
-				}
+				FVector SlopeDir = FVector::VectorPlaneProject(WorldDir, CurrentFloorNormal);
+				WorldDir = SlopeDir.GetSafeNormal();
 			}
 
-			// 속도 갱신 (애니메이션용)
-			if (DeltaTime > 0.0f)
-			{
-				FVector TargetVel = CurrentInputVector.IsNearlyZero() ? FVector::ZeroVector :
-					(GetActorForwardVector() * CurrentInputVector.Y + GetActorRightVector() * CurrentInputVector.X) * FlyModeMaxSpeed;
-				GetCharacterMovement()->Velocity = TargetVel;
-			}
+			FVector MoveDelta = WorldDir * FlyModeMaxSpeed * DeltaTime;
 
-			UpdateMagBoots(DeltaTime);
+			FHitResult MoveHit;
+			GetCharacterMovement()->SafeMoveUpdatedComponent(
+				MoveDelta,
+				GetActorRotation(),
+				true,
+				MoveHit
+			);
 
-			// 서버 동기화
-			if (!HasAuthority())
+			if (MoveHit.IsValidBlockingHit())
 			{
-				Server_UpdateRelativeTransform(GetRootComponent()->GetRelativeLocation(), GetRootComponent()->GetRelativeRotation());
+				FVector SlideVector = FVector::VectorPlaneProject(MoveDelta, MoveHit.Normal);
+				float RemainingPercent = 1.0f - MoveHit.Time;
+				GetCharacterMovement()->SafeMoveUpdatedComponent(
+					SlideVector * RemainingPercent,
+					GetActorRotation(),
+					true,
+					MoveHit
+				);
 			}
-			else
-			{
-				ReplicatedRelativeData.RelativeLocation = GetRootComponent()->GetRelativeLocation();
-				ReplicatedRelativeData.RelativeRotation = GetRootComponent()->GetRelativeRotation();
-			}
+		}
+
+		// 4. 자석 부츠 (바닥 감지 및 높이 보정)
+		UpdateMagBoots(DeltaTime);
+
+		// 5. 서버 동기화
+		if (!HasAuthority())
+		{
+			Server_UpdateRelativeTransform(GetRootComponent()->GetRelativeLocation(), GetRootComponent()->GetRelativeRotation());
 		}
 		else
 		{
-			// Simulated Proxy
+			ReplicatedRelativeData.RelativeLocation = GetRootComponent()->GetRelativeLocation();
+			ReplicatedRelativeData.RelativeRotation = GetRootComponent()->GetRelativeRotation();
+		}
+	}
+	else
+	{
+		// [Simulated Proxy]
+		if (ReplicatedRelativeData.BaseActor)
+		{
 			SetActorRelativeLocation(ReplicatedRelativeData.RelativeLocation);
 			SetActorRelativeRotation(ReplicatedRelativeData.RelativeRotation);
 		}
 	}
-	else // 공중 상태
-	{
-		UpdateMagBoots(DeltaTime);
+}
 
-		if (IsLocallyControlled() && !CurrentInputVector.IsNearlyZero())
+void APSJ_Character::UpdateMagBoots(float DeltaTime)
+{
+	if (!IsLocallyControlled()) return;
+
+	// 1. 방향 설정 (중력 방향)
+	FVector GravityUpDir = FVector::UpVector;
+	if (GetAttachParentActor()) GravityUpDir = GetAttachParentActor()->GetActorUpVector();
+	FVector DownDir = -GravityUpDir;
+
+	// -----------------------------------------------------------
+	// [필수 수정] 캡슐 시작점 보정 (땅속 파묻힘 방지)
+	// -----------------------------------------------------------
+	float MyHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	float TraceHalfHeight = MagBootsTraceHalfHeight; // 에디터 설정값 (20.0)
+
+	// 트레이스 캡슐의 바닥을 내 발바닥 높이에 정확히 맞춤
+	float HeightDiff = TraceHalfHeight - MyHalfHeight;
+	FVector StartOffset = GravityUpDir * (HeightDiff + 0.1f); // 0.1f는 미세한 겹침 방지
+
+	FVector Start = GetActorLocation() + StartOffset;
+
+	// 예측 트레이스 (이동 중일 때 앞쪽 미리 감지)
+	FVector Velocity = GetVelocity();
+	if (Velocity.SizeSquared() > 10.0f)
+	{
+		FVector PredictionOffset = Velocity.GetSafeNormal() * MagBootsTraceRadius;
+		PredictionOffset = FVector::VectorPlaneProject(PredictionOffset, GravityUpDir);
+		Start += PredictionOffset;
+	}
+	FVector End = Start + (DownDir * CheckDistance);
+
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	FCollisionShape CapsuleShape = FCollisionShape::MakeCapsule(MagBootsTraceRadius, MagBootsTraceHalfHeight);
+	FQuat ShapeRotation = FRotationMatrix::MakeFromZ(GravityUpDir).ToQuat();
+
+	// 2. 트레이스 및 판별 (채널 OR 태그)
+	bool bFoundValidFloor = false;
+
+	// (1) 평평한 바닥판 감지 (채널: SpaceshipFloor) - 태그 불필요
+	bool bHit = GetWorld()->SweepSingleByChannel(Hit, Start, End, ShapeRotation, ECC_Spaceship_Floor, CapsuleShape, Params);
+
+	if (bHit)
+	{
+		bFoundValidFloor = true; // 전용 채널이면 무조건 합격
+	}
+	else
+	{
+		// (2) 계단 감지 (채널: Visibility) - 태그 필수
+		bHit = GetWorld()->SweepSingleByChannel(Hit, Start, End, ShapeRotation, ECC_Visibility, CapsuleShape, Params);
+
+		if (bHit && Hit.GetActor())
 		{
-			FVector WorldDir = GetActorForwardVector() * CurrentInputVector.Y + GetActorRightVector() * CurrentInputVector.X;
-			AddMovementInput(WorldDir);
+			if (Hit.GetActor()->ActorHasTag(TEXT("Stairs")))
+			{
+				bFoundValidFloor = true; // "Stairs" 태그가 있으면 합격
+			}
+			else
+			{
+				// 태그도 없고 전용 채널도 아님 (우주선 바닥 등) -> 불합격 (벽 취급)
+				bFoundValidFloor = false;
+			}
 		}
 	}
+
+	// 3. 결과 처리
+	if (bFoundValidFloor && Hit.GetActor())
+	{
+		AActor* NewFloor = Hit.GetActor();
+
+		if (GetAttachParentActor() != NewFloor)
+		{
+			AttachToActor(NewFloor, FAttachmentTransformRules::KeepWorldTransform);
+			GetCharacterMovement()->SetMovementMode(MOVE_Custom);
+			ReplicatedRelativeData.BaseActor = NewFloor;
+			ReplicatedRelativeData.bIsAnchored = true;
+		}
+
+		// [중요] 바닥의 기울기를 저장하여 Tick 함수로 전달 (이동 방향 계산용)
+		CurrentFloorNormal = Hit.Normal;
+
+		// [높이 보정] Hit.ImpactPoint + Normal * Height 방식 (과거에 잘 작동했던 방식)
+		float TargetHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + FloorHeightOffset;
+		FVector TargetLoc = Hit.ImpactPoint + (Hit.Normal * TargetHeight);
+
+		FVector NewLoc = FMath::VInterpTo(GetActorLocation(), TargetLoc, DeltaTime, AlignSpeed);
+		SetActorLocation(NewLoc);
+
+		// 회전 정렬
+		FRotator CurrentRot = GetActorRotation();
+		FRotator TargetRot = FRotationMatrix::MakeFromZX(GravityUpDir, GetActorForwardVector()).Rotator();
+		FQuat NewQuat = FMath::QInterpTo(CurrentRot.Quaternion(), TargetRot.Quaternion(), DeltaTime, AlignSpeed);
+		SetActorRotation(NewQuat);
+	}
+	else
+	{
+		// 바닥 못 찾음
+		CurrentFloorNormal = FVector::ZeroVector;
+
+		// 강제 하강 (Gravity)
+		FVector FallVector = DownDir * FlyModeMaxSpeed * DeltaTime;
+		FHitResult FallHit;
+		GetCharacterMovement()->SafeMoveUpdatedComponent(FallVector, GetActorRotation(), true, FallHit);
+	}
 }
+
 
 // [신규] 변수 세팅 함수
 void APSJ_Character::SetBaseActorData(AActor* NewBase)
@@ -307,134 +343,6 @@ void APSJ_Character::StartDisembarkState()
 	LastFloorActor = nullptr;
 }
 
-void APSJ_Character::UpdateMagBoots(float DeltaTime)
-{
-	// 1. 타인(Simulated Proxy)이면서 이미 서버에 의해 붙어있는 상태라면 연산 최적화를 위해 패스
-	if (!IsLocallyControlled() && GetAttachParentActor())
-	{
-		return;
-	}
-
-	// 2. 바닥 감지를 위한 레이캐스트(Sweep) 준비
-	FHitResult FinalHit;
-	bool bFoundValidHit = false;
-
-	// 하차 유예 타이머 업데이트
-	float CurrentCheckDistance = CheckDistance;
-	if (bJustDisembarked)
-	{
-		DisembarkGraceTimer -= DeltaTime;
-		if (DisembarkGraceTimer <= 0.0f) bJustDisembarked = false;
-
-		// [핵심] 하차 직후엔 트레이스 거리를 2배로 늘려 우주선 하강에 대비
-		CurrentCheckDistance = CheckDistance * 2.0f;
-	}
-
-	FVector Start = GetActorLocation();
-
-	// 발바닥 방향 결정 (붙어있으면 부모 기준, 아니면 내 기준, 우주선 근처면 우주선 기준)
-	FVector TraceDir = -GetActorUpVector();
-	if (GetAttachParentActor())
-	{
-		TraceDir = -GetAttachParentActor()->GetActorUpVector();
-	}
-	else if (CurrentSpaceship)
-	{
-		TraceDir = -CurrentSpaceship->GetActorUpVector();
-	}
-
-	FVector End = Start + (TraceDir * CheckDistance);
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
-
-	TArray<FHitResult> HitResults;
-	FCollisionShape SphereShape = FCollisionShape::MakeSphere(MagBootsTraceRadius * 0.8f);
-
-	// 3. 바닥 감지 실행
-	bool bHit = GetWorld()->SweepMultiByChannel(HitResults, Start, End, FQuat::Identity, ECC_GameTraceChannel5, SphereShape, Params);
-
-	if (bHit)
-	{
-		// 우선순위 결정: 기존에 밟고 있던 바닥이 감지되면 그걸 유지
-		for (const FHitResult& Result : HitResults)
-		{
-			if (LastFloorActor && Result.GetActor() == LastFloorActor)
-			{
-				FinalHit = Result;
-				bFoundValidHit = true;
-				break;
-			}
-		}
-		// 없으면 첫 번째 감지된 바닥 선택
-		if (!bFoundValidHit && HitResults.Num() > 0)
-		{
-			FinalHit = HitResults[0];
-			bFoundValidHit = true;
-		}
-	}
-
-	// 4. [핵심 수정] 데이터 갱신 (서버 OR 클라이언트 본인)
-	// 클라이언트도 스스로 판단하여 BaseActor를 세팅하게 함으로써 텔레포트 현상 방지
-	bool bCanUpdateData = HasAuthority() || IsLocallyControlled();
-
-	AActor* NewFloorActor = bFoundValidHit ? FinalHit.GetActor() : nullptr;
-
-	if (bCanUpdateData)
-	{
-		if (NewFloorActor)
-		{
-			// 바닥 갱신 (즉시 Attach 유도)
-			if (ReplicatedRelativeData.BaseActor != NewFloorActor)
-			{
-				ReplicatedRelativeData.BaseActor = NewFloorActor;
-				ReplicatedRelativeData.bIsAnchored = true;
-			}
-		}
-		else
-		{
-			// 바닥 놓침
-			if (IsLocallyControlled() || HasAuthority())
-			{
-				ReplicatedRelativeData.BaseActor = nullptr;
-				ReplicatedRelativeData.bIsAnchored = false;
-			}
-		}
-	}
-
-	// 5. 물리적 위치/회전 보정
-	if (bFoundValidHit && NewFloorActor)
-	{
-		LastFloorActor = NewFloorActor;
-		CurrentFloorNormal = NewFloorActor->GetActorUpVector();
-
-		if (GetAttachParentActor())
-		{
-			// 높이 보정
-			float TargetHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-			float ActualDistance = FVector::DotProduct(FinalHit.ImpactPoint - GetActorLocation(), TraceDir);
-
-			if (ActualDistance <= 0.0f) ActualDistance = FinalHit.Distance + MagBootsTraceRadius;
-
-			float HeightError = ActualDistance - TargetHeight;
-
-			if (FMath::Abs(HeightError) > 0.5f)
-			{
-				// [핵심] 하차 직후에는 보정 속도를 아주 높여(40.0f 이상) 즉시 안착시킴
-				float InterpSpeed = bJustDisembarked ? 45.0f : 20.0f;
-				float MoveZ = FMath::FInterpTo(0.0f, -HeightError, DeltaTime, InterpSpeed);
-
-				// bSweep을 false로 하여 물리 엔진에 의한 '끼임(Stuck)' 현상 방지
-				// 자석 장화 로직이 위치를 강제로 잡아주기 때문입니다.
-				AddActorLocalOffset(FVector(0, 0, MoveZ), false);
-			}
-
-			// 회전 보정
-			FRotator CurrentRelRot = GetRootComponent()->GetRelativeRotation();
-			FRotator TargetRelRot = FRotator(0.0f, CurrentRelRot.Yaw, 0.0f);
-			SetActorRelativeRotation(FMath::RInterpTo(CurrentRelRot, TargetRelRot, DeltaTime, AlignSpeed));
-		}
-	}
-}
 
 void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
