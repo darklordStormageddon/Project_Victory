@@ -355,18 +355,20 @@ void APSJ_Spaceship::Client_DisembarkSuccess_Implementation(APSJ_Character* Exit
 {
 	if (!ExitingPilot) return;
 
-	// 1. [제거] 기존의 물리 차단 코드를 삭제합니다.
-	 ExitingPilot->MoveIgnoreActorAdd(this); 
-	 this->MoveIgnoreActorAdd(ExitingPilot); 
+	// [수정됨] 충돌 무시(Ignore)가 아니라, 충돌 무시를 "해제(Remove)"해야 합니다.
+	// 그래야 자석 부츠 트레이스가 우주선 바닥을 감지할 수 있습니다.
+	ExitingPilot->MoveIgnoreActorRemove(this);
+	this->MoveIgnoreActorRemove(ExitingPilot);
 
 	// 2. 위치 배치 (바닥 큐브에 바로 박히지 않도록 위로 15cm 정도 띄움)
+	// CheckDistance(50) 이내이므로 자석 부츠가 즉시 바닥을 잡을 수 있습니다.
 	FVector SafeExitLoc = ExitLoc + GetActorUpVector() * 15.0f;
 	ExitingPilot->SetActorLocationAndRotation(SafeExitLoc, ExitRot, false, nullptr, ETeleportType::TeleportPhysics);
 
 	// 3. 우주선에 다시 부착 (상대 좌표계 편입)
 	ExitingPilot->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 
-	// 4. 캐릭터의 하차 유예 상태 시작 (트레이스 확장 및 빠른 흡착 활성화)
+	// 4. 캐릭터의 하차 유예 상태 시작
 	ExitingPilot->StartDisembarkState();
 
 	// 5. 이동 모드 설정 및 입력 복구
