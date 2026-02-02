@@ -59,6 +59,7 @@ void UTurretStateGroup::InitializeTurretState(TObjectPtr<AJHSGameState> GameStat
 			_turretChair = _castedTurretChair;
 		}
 	}
+
 	if (_turretChair == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("TurretStateGroup: TurretChair not found."));

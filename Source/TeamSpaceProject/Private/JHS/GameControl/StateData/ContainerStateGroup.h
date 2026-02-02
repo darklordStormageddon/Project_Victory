@@ -26,6 +26,9 @@ private:
 	UPROPERTY()
 	FContainerState _containerState;
 
+public:
+	int32 GetOwnedDollar() { return _containerState.OwnedDollar; }
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -46,6 +49,8 @@ public:
 	bool TryGetElementData(E_ELEMENT_TYPE ElementType, FElementData*& OutElementData);
 
 	bool TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutAmmoData);
+
+	int32 GetCumulativePrice();
 
 private:
 	void LoadResource();

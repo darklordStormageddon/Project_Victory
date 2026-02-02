@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
-#include "Components/UniformGridSlot.h"
 
 #include "ContainerItemSlot.generated.h"
 
@@ -21,9 +20,6 @@ class UContainerItemSlot : public UUserWidget
 private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<USizeBox> Plate_Slot;
-
-	UPROPERTY()
-	TObjectPtr<UUniformGridSlot> _slot = nullptr;
 	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> IMG_ItemIcon;
@@ -32,13 +28,14 @@ private:
 	TObjectPtr<UTextBlock> TXT_ItemName;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TXT_ItemPrice;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> TXT_ItemAmount;
 
-public:
-	TObjectPtr<UUniformGridSlot> GetSlot() { return _slot; }
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TXT_TotalPrice;
 
 public:
-	void InitializeSlot(float slotSizeWidth, float slotSizeHeight);
-
-	void UpdateItemInfo(TObjectPtr<UTexture2D> Image, FString ItemName, int32 Amount);
+	void UpdateItemInfo(FElementData ElementData);
 };
