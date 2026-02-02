@@ -5,32 +5,12 @@
 #include "Components/SizeBox.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
-#include "Components/UniformGridSlot.h"
 
-void UContainerItemSlot::InitializeSlot(float slotSizeWidth, float slotSizeHeight)
+void UContainerItemSlot::UpdateItemInfo(FElementData ElementData)
 {
-	_slot = Cast<UUniformGridSlot>(Slot);
-	if (_slot != nullptr)
-	{
-		_slot->SetHorizontalAlignment(HAlign_Fill);
-		_slot->SetVerticalAlignment(VAlign_Fill);
-	}
-}
-
-void UContainerItemSlot::UpdateItemInfo(TObjectPtr<UTexture2D> Image, FString ItemName, int32 Amount)
-{
-	if (IMG_ItemIcon != nullptr)
-	{
-		IMG_ItemIcon->SetBrushFromSoftTexture(Image);
-	}
-
-	if (TXT_ItemName != nullptr)
-	{
-		TXT_ItemName->SetText(FText::FromString(ItemName));
-	}
-
-	if (TXT_ItemAmount != nullptr)
-	{
-		TXT_ItemAmount->SetText(FText::AsNumber(Amount));
-	}
+	IMG_ItemIcon->SetBrushFromSoftTexture(ElementData.ElementImage);
+	TXT_ItemName->SetText(FText::FromString(ElementData.KRName));
+	TXT_ItemPrice->SetText(FText::AsNumber(ElementData.Price));
+	TXT_ItemAmount->SetText(FText::AsNumber(ElementData.Amount));
+	TXT_TotalPrice->SetText(FText::AsNumber(ElementData.Price * ElementData.Amount));
 }
