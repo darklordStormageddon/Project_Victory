@@ -8,6 +8,7 @@
 #include "JHS/Player/SpaceStation.h"
 
 #include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/SpaceManager.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 
 #include "Kismet/GameplayStatics.h"
@@ -32,8 +33,8 @@ void AASManager::GetSetting()
 	
 	if (InGameMode)
 	{
-		spaceStation = InGameMode->GetSpaceStation();
-		Spawn_Distance = InGameMode->GetSpaceRadius()/1.5;
+		spaceStation = InGameMode->GetSpaceManager()->GetSpaceStation();
+		Spawn_Distance = InGameMode->GetSpaceManager()->GetSpaceRadius()/1.5;
 	}
 }
 

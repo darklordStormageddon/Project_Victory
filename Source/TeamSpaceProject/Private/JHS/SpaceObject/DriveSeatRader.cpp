@@ -11,14 +11,8 @@ ADriveSeatRader::ADriveSeatRader()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	_rootComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RootComponent"));
-	_rootComponent->SetupAttachment(RootComponent);
-
-	_spaceShipCenter = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpaceShipCenter"));
-	_spaceShipCenter->SetupAttachment(_rootComponent);
-
-	_driveSeatRaderCenter = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DriveRaderCenter"));
-	_driveSeatRaderCenter->SetupAttachment(_rootComponent);
+	_spaceShipMeshCenter = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpaceShipMeshCenter"));
+	_spaceShipMeshCenter->SetupAttachment(_rootComponent);
 }
 
 // Called when the game starts or when spawned
@@ -37,7 +31,7 @@ void ADriveSeatRader::Tick(float DeltaTime)
 	{
 		// _spaceShipCenter를 회전
 		FRotator _spaceShipRotator = _spaceShip->GetActorRotation();
-		_spaceShipCenter->SetRelativeRotation(_spaceShipRotator);
+		_spaceShipMeshCenter->SetRelativeRotation(_spaceShipRotator);
 
 		// _driveSeatRaderCenter를 회전
 		//FVector _spaceShipRotation = FVector(_spaceShipRotator.Roll, _spaceShipRotator.Pitch, _spaceShipRotator.Yaw);
@@ -52,18 +46,20 @@ void ADriveSeatRader::Tick(float DeltaTime)
 		//FRotator _driveRaderRotator = FRotator::MakeFromEuler(_driveRaderRotation);
 		//_driveSeatRaderCenter->SetRelativeRotation(_driveRaderRotator);
 	}
-
-	if (_spaceShip != nullptr)
-	{
-		DrawDebugSphere(GetWorld(), _spaceShip->GetActorLocation(), _spaceShipDetectRadius, 10, FColor::Green, false, DeltaTime * 1.01);
-	}
-
-	DrawDebugSphere(GetWorld(), _driveSeatRaderCenter->GetComponentLocation(), _raderRadius, 10, FColor::Blue, false, DeltaTime * 1.01);
 }
 
 void ADriveSeatRader::InitializeRader()
 {
-	
+	USpaceManager* _outSpaceManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetSpaceManager(_outSpaceManager))
+		return;
+
+	if (_spaceShip == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ADriveSeatRader: SpaceShip is nullptr"));
+		return;
+	}
+	_outSpaceManager->InitializeDriveRader(this, _spaceShip);
 }
 
 FString ADriveSeatRader::GetFilePathName()
@@ -76,8 +72,10 @@ FString ADriveSeatRader::GetFileHeaderName()
 	return ConstantLibrary::Resource.SpaceObject.DRIVE_RADER_HEADER;
 }
 
-void ADriveSeatRader::SetSpaceShip(TObjectPtr<AActor> SpaceShip)
+void ADriveSeatRader::InitializeDriveRader(float DriveRaderRadius)
 {
-	_spaceShip = SpaceShip;
-	RenderSpaceObjectToRader(_spaceShip, _driveSeatRaderCenter, _spaceShipDetectRadius);
+	FRaderData _newraderData;
+	_newraderData.StandardActor = _spaceShip;
+	_newraderData.RaderRenderRadius = DriveRaderRadius;
+	StartRenderRader(_newraderData);
 }

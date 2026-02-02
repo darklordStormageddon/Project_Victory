@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "JHS/SpaceObject/SpaceObjectManager.h"
+#include "JHS/GameControl/SpaceManager.h"
 
 #include "RaderBase.generated.h"
 
@@ -27,6 +27,17 @@ public:
 	int32 LastRaderObjectIndex = 0;
 };
 
+USTRUCT(BlueprintType)
+struct FRaderData
+{
+	GENERATED_BODY()
+
+public:
+	TObjectPtr<AActor> StandardActor = nullptr;
+
+	float RaderRenderRadius = 0.0f;
+};
+
 UCLASS()
 class ARaderBase : public AActor
 {
@@ -37,16 +48,21 @@ public:
 	ARaderBase();
 
 private:
+	TObjectPtr<USpaceManager> _spaceManager = nullptr;
+
 	TMap<E_SPACE_OBJECT_TYPE, FRaderObjectData> _raderObjectDataMap;
+
+	FRaderData _raderData;
 
 	UPROPERTY()
 	FTimerHandle _updateTimerHandle;
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|Debug")
-	bool _isDrawDebug = false;
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Rader|Common")
+	TObjectPtr<UStaticMeshComponent> _rootComponent = nullptr;
 
-	TObjectPtr<USpaceObjectManager> _spaceObjectManager = nullptr;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rader|Common")
+	TObjectPtr<UStaticMeshComponent> _raderCenter = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rader|Common")
 	float _raderRadius = 1000.0f;
@@ -72,10 +88,12 @@ protected:
 
 	virtual FString GetFileHeaderName() { return ""; }
 
-	void RenderSpaceObjectToRader(TObjectPtr<AActor> StandardActor, TObjectPtr<UStaticMeshComponent> RaderCenter, float MaxDistance);
+	void StartRenderRader(FRaderData RaderData);
 
 private:
 	void LoadRaderObjectMesh();
 
 	void InitializeRaderBase();
+
+	void RenderSpaceObjectToRader();
 };

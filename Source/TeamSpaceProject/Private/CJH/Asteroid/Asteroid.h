@@ -8,8 +8,15 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/SphereComponent.h"
 
+// StaticFunctionLibrary를 사용한 JHSGameMode(기타) 호출 예시 : 런타임 1회만 호출
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+
 #include "Asteroid.generated.h"
 
+
+
+class USpaceManager;
+class ASpaceStation;
 class UAsteroidComponent;
 class USpaceObjectComponent;
 
@@ -34,6 +41,15 @@ public:
 	UAsteroidComponent* AsteroidComponent;
 
 	FVector TargetLocation;
+
+private:
+	UPROPERTY()
+	TObjectPtr<USpaceManager> SpaceManager = nullptr;
+
+	TObjectPtr<ASpaceStation> SpaceStation = nullptr;
+
+	// TODO : 메서드 직접 사용 X. 작성자의 스타일로 재구성
+	TObjectPtr<USpaceManager> GetSpaceManager();
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "SpaceObject")
@@ -81,7 +97,6 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	void SpaceObject_Remove();
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

@@ -30,15 +30,6 @@ void AJHSPlayerBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ADriveSeatRader를 칮고 SetSpaceShip 함수 호출
-	TArray<AActor*> _driveSeatRaderArray;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADriveSeatRader::StaticClass(), _driveSeatRaderArray);
-	for (AActor* _driveSeatRader : _driveSeatRaderArray)
-	{
-		ADriveSeatRader* _driveSeatRaderActor = Cast<ADriveSeatRader>(_driveSeatRader);
-		_driveSeatRaderActor->SetSpaceShip(this);
-	}
-
 	AJHSGameState* _outGameState = nullptr;
 	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
 		return;

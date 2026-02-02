@@ -3,11 +3,10 @@
 
 #include "CJH/Enemy/Base/EnemyBase.h"
 
-#include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/SpaceManager.h"
 
 #include "JHS/SpaceObject/SpaceObjectComponent.h"
-#include "JHS/SpaceObject/SpaceObjectManager.h"
 
 #include "CJH/Enemy/Manager/EnemyManagerComponent.h"
 #include "CJH/Enemy/Manager/GarbageEnemyManagerComponent.h"
@@ -137,22 +136,20 @@ void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	else if (SpawnedComponent)
 		SpawnedComponent->RemoveEnemies(this);
 
-	SpaceObject_Remove();
+	USpaceManager* OutSpaceManager = nullptr;
+
+	if (!UStaticFunctionLibrary::TryGetSpaceManager(OutSpaceManager))
+	{
+		UE_LOG(LogTemp, Error, TEXT("AEnemyBase: OutSpaceManager is nullptr"));
+		return;
+	}
+
+	OutSpaceManager->RemoveSpaceObject(SpaceObjectComp);
 
 	Super::EndPlay(EndPlayReason);
 
 	if (EnemyGarbage && Murdered)
 		SpawnGarbageSetting();
-}
-
-void AEnemyBase::SpaceObject_Remove()
-{
-	USpaceObjectManager* _spaceManager = nullptr;
-
-	if (UStaticFunctionLibrary::TryGetSpaceObjectManager(_spaceManager))
-	{
-		_spaceManager->RemoveSpaceObject(SpaceObjectComp);
-	}
 }
 
 void AEnemyBase::SetEnemyInfo(

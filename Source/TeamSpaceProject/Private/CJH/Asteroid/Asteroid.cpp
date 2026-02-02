@@ -1,13 +1,14 @@
-﻿#include "CJH/Asteroid/Asteroid.h"
+#include "CJH/Asteroid/Asteroid.h"
 #include "CJH/Asteroid/AsteroidComponent.h"
 
-#include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/SpaceObject/SpaceRader.h"
+#include "JHS/GameControl/SpaceManager.h"
+#include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/Player/SpaceStation.h"
 
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 
 #include "JHS/SpaceObject/SpaceObjectComponent.h"
-#include "JHS/SpaceObject/SpaceObjectManager.h"
 
 
 // Sets default values
@@ -51,18 +52,14 @@ void AAsteroid::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	AJHSGameMode* InGameMode = Cast<AJHSGameMode>(GetWorld()->GetAuthGameMode());
-	if (!InGameMode)
-		return;
-
 	if (!HasAuthority())
 		return;
 	
 	MoveAsteroid(DeltaTime);
 
-	float DestroyDist = FVector::Dist(InGameMode->GetSpaceStation()->GetActorLocation(), GetActorLocation());
+	float DestroyDist = FVector::Dist(SpaceStation->GetActorLocation(), GetActorLocation());
 	
-	if (DestroyDist > InGameMode->GetSpaceRadius() - 1)
+	if (DestroyDist > SpaceManager->GetSpaceRadius() - 1)
 		Destroy();
 }
 
@@ -154,19 +151,9 @@ void AAsteroid::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if(AsteroidComponent)
 		AsteroidComponent->RemoveAsteroid(this);
 
-	SpaceObject_Remove();
+	SpaceManager->RemoveSpaceObject(SpaceObjectComp);
 	 
 	Super::EndPlay(EndPlayReason);
-}
-
-void AAsteroid::SpaceObject_Remove()
-{
-	USpaceObjectManager* _spaceManager = nullptr;
-
-	if (UStaticFunctionLibrary::TryGetSpaceObjectManager(_spaceManager))
-	{
-		_spaceManager->RemoveSpaceObject(SpaceObjectComp);
-	}
 }
 
 void AAsteroid::DebugDrawing()
@@ -213,3 +200,17 @@ void AAsteroid::OnHit(
 	Destroy(); // 맞으면 사라짐
 }
 
+TObjectPtr<USpaceManager> AAsteroid::GetSpaceManager()
+{
+	if (SpaceManager = nullptr)
+	{
+		USpaceManager* _outSpaceManager = nullptr;
+		if (!UStaticFunctionLibrary::TryGetSpaceManager(_outSpaceManager))
+			return nullptr;
+
+		SpaceManager = _outSpaceManager;
+		SpaceStation = SpaceManager->GetSpaceStation();
+	}
+
+	return SpaceManager;
+}

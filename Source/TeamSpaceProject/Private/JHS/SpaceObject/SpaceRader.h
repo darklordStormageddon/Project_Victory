@@ -18,25 +18,6 @@ public:
 	// Sets default values for this actor's properties
 	ASpaceRader();
 
-private:
-	UPROPERTY()
-	TObjectPtr<AActor> _spaceStation = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Debug")
-	bool DebugSpaceRadius = false;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Debug")
-	bool DebugRaderRadius = false;
-
-	float _spaceRadius = 0.0f;
-
-protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rader|SpaceRader|Components")
-	TObjectPtr<UStaticMeshComponent> _rootComponent = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rader|SpaceRader|Rader")
-	TObjectPtr<UStaticMeshComponent> _raderCenter = nullptr;
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
