@@ -20,6 +20,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     E_ELEMENT_TYPE ElementType;
 
+    //원소 한글 이름
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FString DisplayName;
+
     //가격
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float Price;

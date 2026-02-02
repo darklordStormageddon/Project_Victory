@@ -143,7 +143,7 @@ void UMyGameInstance::OnCreateSessioncomplete(FName InSessionName, bool IsSucces
 	UEngine* Engine = GetEngine();
 	if (!Engine) return;
 
-	Engine->AddOnScreenDebugMessage(0, 2, FColor::Green, TEXT("Host complete!"));
+	//Engine->AddOnScreenDebugMessage(0, 2, FColor::Green, TEXT("Host complete!"));
 
 	UWorld* World = GetWorld();
 	if (!World) return;
