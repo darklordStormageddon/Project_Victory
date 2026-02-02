@@ -3,102 +3,103 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Delegates/DelegateCombinations.h"
 #include "Engine/GameInstance.h"
 #include "OnlineSubsystem.h"
 #include "Interfaces/OnlineSessionInterface.h"
+
 #include "MyGameInstance.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSessionListUpdated);
 
-class UMyGameInstanceSubsystem;
-/**
- *
- */
-
 USTRUCT(BlueprintType)
 struct FServerData
 {
-    GENERATED_BODY()
-
+	GENERATED_BODY()
 public:
-    UPROPERTY(BlueprintReadOnly, Category = "Server Info")
-    FString Name;
-
-    UPROPERTY(BlueprintReadOnly, Category = "Server Info")
-    int CurrentPlayers = 0;
-
-    UPROPERTY(BlueprintReadOnly, Category = "Server Info")
-    FString HostUserName;
-
-    UPROPERTY(BlueprintReadOnly, Category = "Server Info")
-    bool Accessibility = true;
-
-    UPROPERTY(BlueprintReadOnly, Category = "Server Info")
-    FString Password;
-
-    UPROPERTY(BlueprintReadOnly, Category = "Server Info")
-    int32 SearchResultIndex = -1;
+	UPROPERTY(BlueprintReadWrite)
+	FString Name;
+	UPROPERTY(BlueprintReadWrite)
+	int32 CurrentPlayers;
+	UPROPERTY(BlueprintReadWrite)
+	FString HostUserName;
+	UPROPERTY(BlueprintReadWrite)
+	FString Password;
+	UPROPERTY(BlueprintReadWrite)
+	bool Accessibility;
+	UPROPERTY(BlueprintReadWrite)
+	int32 SearchResultIndex;
 };
 
 UCLASS()
 class UMyGameInstance : public UGameInstance
 {
-    GENERATED_BODY()
-
+	GENERATED_BODY()
 public:
-    virtual void Init() override;
+	UMyGameInstance();
 
+protected:
+	virtual void Init() override;
 public:
 
-    //방생성
-    UFUNCTION(BlueprintCallable, Exec)
-    void Host(FString ServerName);
-
-    UFUNCTION(BlueprintCallable, Exec)
-    void Join(int Index);
-
-    UFUNCTION(BlueprintCallable, Exec)
-    void RefreshServerList();
-
-    UFUNCTION(BlueprintCallable, Exec)
-    void StartSession();
+	//방생성
+	UFUNCTION(BlueprintCallable, Exec)
+	void Host(FString ServerName);
+	UFUNCTION(BlueprintCallable, Exec)
+	void Join(int32 Index);
+	UFUNCTION(BlueprintCallable, Exec)
+	void RefreshServerList();
 
 private:
-    void OnCreateSessionComplete(FName InSessionName, bool IsSuccess);
-    void OnDestroySessionComplete(FName InSessionName, bool IsSuccess);
-    void OnFindSessionComplete(bool IsSuccess);
-    void OnJoinSessionComplete(FName InSessionName, EOnJoinSessionCompleteResult::Type InResult);
-    void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
-    void CreateSession();
+	void OnCreateSessioncomplete(FName InSessionName, bool IsSuccess);
+	void OnDestroySessioncomplete(FName InSessionName, bool IsSuccess);
+	void OnFindSessioncomplete(bool IsSuccess);
+	void OnJoinSessioncomplete(FName InSessionName, EOnJoinSessionCompleteResult::Type InResult);
+	void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
 
-    FString GameUniqueTag;
-    IOnlineSessionPtr SessionInterface; //세션 생성할때 쓰는 인터페이스
-    TSharedPtr<FOnlineSessionSearch> SessionSearch;
-    bool bIsHostingAfterDestroy = false;
+	void CreateSession();
+
 
 public:
-    UPROPERTY(BlueprintReadWrite)
-    FString Password;
+	UFUNCTION(BlueprintCallable)
+	void StartSession();
 
-    UPROPERTY(BlueprintReadWrite)
-    bool bIsGameStarted;
+	IOnlineSessionPtr GetSessionInterface() const { return SessionInterface; }
+private:
 
-    //게임 접근성
-    UPROPERTY(BlueprintReadWrite)
-    bool bIsPublic;
+	//내가 생성한 방(세션)이름
+	FString DesiredServerName;
+	IOnlineSessionPtr SessionInterface; //세션 생성할때 쓰는 인터페이스
 
-    // 블루프린트에서 이벤트 바인딩 가능
-    UPROPERTY(BlueprintAssignable, Category = "Session")
-    FOnSessionListUpdated OnSessionListUpdated;
+	TSharedPtr<FOnlineSessionSearch> SessionSearch;
 
-    UPROPERTY(BlueprintReadWrite)
-    FString RoomName;
+	FString GameUniqueTag = "Project_Victory";
 
-    UPROPERTY(BlueprintReadWrite)
-    FString SearchName;
+	bool bRecreateAfterDestroy;
 
-    UPROPERTY(BlueprintReadOnly)
-    TArray<FServerData> ServerNames;
+public:
+	UPROPERTY(BlueprintReadWrite)
+	TArray<FServerData> ServerNames;
 
+	UPROPERTY(BlueprintReadWrite)
+	FString Password;
+
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsGameStarted;
+
+	UPROPERTY(BlueprintReadWrite)
+	FString NickName;
+
+	//게임 접근성
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsPublic;
+
+	// 블루프린트에서 이벤트 바인딩 가능
+	UPROPERTY(BlueprintAssignable, Category = "Session")
+	FOnSessionListUpdated OnSessionListUpdated;
+
+	UPROPERTY(BlueprintReadWrite)
+	FString RoomName;
+
+	UPROPERTY(BlueprintReadWrite)
+	FString SearchName;
 };
