@@ -22,8 +22,6 @@ class UUIPanelContainer : public UUIBase
 private:
 	FDelegateHandle _eventHandleOnChangeElementData;
 
-	TObjectPtr<UContainerStateGroup> _containerStateGroup = nullptr;
-
 	TMap<E_ELEMENT_TYPE, TObjectPtr<UContainerItemSlot>> _elementSlotMap;
 
 	UPROPERTY(meta = (BindWidget))
