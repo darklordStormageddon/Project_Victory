@@ -24,14 +24,17 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
+	UFUNCTION()
+	void OnRep_CurrentHealth();
+
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	UPROPERTY(	EditAnywhere, BlueprintReadWrite, Category = "Health")
 	float MaxHealth = 100.f;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentHealth, VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	float CurrentHealth;
 
 	UPROPERTY(BlueprintAssignable)
@@ -49,4 +52,7 @@ public:
 
 	void SetCurrentHP(float Max_HP);
 
+	virtual void GetLifetimeReplicatedProps(
+		TArray<FLifetimeProperty>& OutLifetimeProps
+	) const override;
 };

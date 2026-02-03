@@ -1,15 +1,24 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-
-#include "CJH/Enemy/Weapon/Bullet.h"
+﻿#include "CJH/Enemy/Weapon/Bullet.h"
 
 #include "KSM/HealthComponent.h"
+#include "Components/SphereComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ABullet::ABullet()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false; // ❌ Tick 필요 없음
 
+	// ======================
+	// Replication
+	// ======================
+	bReplicates = true;
+	SetReplicateMovement(true);
+
+	// ======================
+	// Collision
+	// ======================
 	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
 	RootComponent = Collision;
 
@@ -17,12 +26,26 @@ ABullet::ABullet()
 
 	Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	Collision->SetCollisionResponseToAllChannels(ECR_Ignore);
-
 	Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	Collision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
 
-	// ⭐ 핵심
-	Collision->SetNotifyRigidBodyCollision(true);
+	// Overlap 기반이므로 Hit 아님
+	Collision->SetNotifyRigidBodyCollision(false);
+
+	// ======================
+	// Projectile Movement
+	// ======================
+	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
+	ProjectileMovement->UpdatedComponent = Collision;
+	ProjectileMovement->InitialSpeed = 4000.f;
+	ProjectileMovement->MaxSpeed = 4000.f;
+	ProjectileMovement->bRotationFollowsVelocity = true;
+	ProjectileMovement->bShouldBounce = false;
+	ProjectileMovement->ProjectileGravityScale = 0.f;
+	ProjectileMovement->SetIsReplicated(true);
+
+	// 수명
+	InitialLifeSpan = 3.0f;
 }
 
 // Called when the game starts or when spawned
@@ -30,50 +53,53 @@ void ABullet::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Collision->OnComponentHit.AddDynamic(this, &ABullet::OnHit);
+	Collision->OnComponentBeginOverlap.AddDynamic(this, &ABullet::OnOverlap);
 }
 
-// Called every frame
-void ABullet::Tick(float DeltaTime)
+void ABullet::OnOverlap(
+	UPrimitiveComponent* OverlappedComponent,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult
+)
 {
-	Super::Tick(DeltaTime);
-
 	if (!HasAuthority())
 		return;
 
-	MoveToTarget(DeltaTime);
-
-	BulletLifeTime -= DeltaTime;
-
-	if(BulletLifeTime <= 0.0f)
-		Destroy();
-}
-
-void ABullet::MoveToTarget(float DeltaTime)
-{
-	SetActorLocation(GetActorLocation() + Direction * Speed * DeltaTime, true);
-}
-
-void ABullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
-{
-	if (!OtherActor || OtherActor == _owner || !_owner)
+	if (!OtherActor || OtherActor == _owner)
 		return;
 
-	if (!HitParticle)
-		return;
-	/*UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherActor->GetName())*/
-
-	UGameplayStatics::SpawnEmitterAtLocation(
-		GetWorld(),
-		HitParticle,
-		Hit.ImpactPoint,
-		Hit.ImpactNormal.Rotation()
+	MulticastHitEffect(
+		SweepResult.ImpactPoint,
+		SweepResult.ImpactNormal.Rotation()
 	);
 
 	if (UHealthComponent* Health = OtherActor->FindComponentByClass<UHealthComponent>())
 		Health->TakeDamage(Damage);
 
-	Destroy(); // 맞으면 사라짐
+	Destroy();
 }
 
+void ABullet::Fire(const FVector& Direction)
+{
+	if (ProjectileMovement)
+		ProjectileMovement->Velocity = Direction * ProjectileMovement->InitialSpeed;
+}
 
+void ABullet::MulticastHitEffect_Implementation(
+	const FVector& Location,
+	const FRotator& Rotation
+)
+{
+	if (HitParticle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			HitParticle,
+			Location,
+			Rotation
+		);
+	}
+}

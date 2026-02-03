@@ -9,13 +9,15 @@
 
 #include "CJH/TestSpaceShip.h"
 
+#include "Net/UnrealNetwork.h"
+
 // Sets default values for this component's properties
 UHealthComponent::UHealthComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-	// ...
+	SetIsReplicatedByDefault(true);
 	
 }
 
@@ -24,12 +26,14 @@ void UHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetCurrentHP(MaxHealth);
+	if(GetOwner()->HasAuthority())
+		SetCurrentHP(MaxHealth);
 }
 
 void UHealthComponent::SetCurrentHP(float Max_HP)
 {
-	CurrentHealth = MaxHealth = Max_HP;
+	if (GetOwner()->HasAuthority())
+		CurrentHealth = MaxHealth = Max_HP;
 }
 
 // Called every frame
@@ -42,6 +46,9 @@ void UHealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 
 void UHealthComponent::TakeDamage(float Amount)
 {
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+		return;
+
 	if (Amount <= 0.f)
 		return;
 
@@ -54,3 +61,14 @@ void UHealthComponent::TakeDamage(float Amount)
 		OnDeath.Broadcast();
 }
 
+void UHealthComponent::OnRep_CurrentHealth()
+{
+	OnHealthChanged.Broadcast(CurrentHealth);
+}
+
+void UHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UHealthComponent, CurrentHealth);
+}
