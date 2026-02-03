@@ -57,6 +57,12 @@ public:
 
 	bool TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, TObjectPtr<AActor> Turret);
 
+	UFUNCTION(Server, Reliable)
+	void ServerEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, const FString& TurretBPPath);
+
 	bool TryGetTurretFireInterval(E_TURRET_POSITION TurretPosition, float* OutFireCoolTime);
 
 	bool TryFireTurret(E_TURRET_POSITION TurretPosition);

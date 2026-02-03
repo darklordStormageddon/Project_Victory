@@ -113,43 +113,85 @@ void UTurretStateGroup::SetInfiniteMagMode(bool IsInfiniteMagMode)
 
 bool UTurretStateGroup::TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, TObjectPtr<AActor> Turret)
 {
+	// RPC 구조를 사용하는 경우, ServerEquipTurret을 호출
+	if (Turret == nullptr)
+	{
+		ServerEquipTurret(TurretPosition, AmmoType);
+		return true;
+	}
+
+	// Turret이 이미 존재하는 경우 기존 로직 사용 (로컬 처리)
 	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
 	if (!TryGetTurretStand(TurretPosition, _outTurretStand))
 		return false;
 
-	FTurretData* _outTurretData = nullptr;
-	if (!TryGetTurretData(TurretPosition, AmmoType, _outTurretData))
-		return false;
-
-	if (Turret == nullptr)
-	{
-		// 터렛 BP 클래스 로드
-		FString _fileName = _outTurretData->TurretBPName;
-		FString _turretBPPath = ConstantLibrary::Resource.TurretBP.TURRET_BP_FOLDER_PATH + _fileName + "." + _fileName + "_C";
-		TSubclassOf<AActor> _turretClass = LoadClass<AActor>(nullptr, *_turretBPPath);
-		if (_turretClass == nullptr)
-		{
-			UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to load turret BP class: %s"), *_turretBPPath);
-			return false;
-		}
-
-		// 터렛 액터 스폰
-		FActorSpawnParameters _spawnParams;
-		_spawnParams.Owner = _outTurretStand;
-		Turret = GetWorld()->SpawnActor<AActor>(_turretClass, _spawnParams);
-		if (Turret == nullptr)
-		{
-			UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to spawn turret: %s"), *_turretBPPath);
-			return false;
-		}
-	}
-	
 	bool _isEquiped = _outTurretStand->TryEquipTurret(Turret, AmmoType);
 	if (TurretPosition == E_TURRET_POSITION::Main && _isEquiped)
 	{
 		_turretChair->SetTargetPawn(Cast<APawn>(Turret));
 	}
 	return _isEquiped;
+}
+
+void UTurretStateGroup::ServerEquipTurret_Implementation(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType)
+{
+	// 서버에서만 실행: 데이터 검증
+	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
+	if (!TryGetTurretStand(TurretPosition, _outTurretStand))
+	{
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to get turret stand"));
+		return;
+	}
+
+	FTurretData* _outTurretData = nullptr;
+	if (!TryGetTurretData(TurretPosition, AmmoType, _outTurretData))
+	{
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to get turret data"));
+		return;
+	}
+
+	// 터렛 BP 경로 생성
+	FString _fileName = _outTurretData->TurretBPName;
+	FString _turretBPPath = ConstantLibrary::Resource.TurretBP.TURRET_BP_FOLDER_PATH + _fileName + "." + _fileName + "_C";
+
+	// 모든 클라이언트에 터렛 생성 및 장착 명령
+	MulticastEquipTurret(TurretPosition, AmmoType, _turretBPPath);
+}
+
+void UTurretStateGroup::MulticastEquipTurret_Implementation(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, const FString& TurretBPPath)
+{
+	// 모든 클라이언트에서 실행: 터렛 생성 및 장착
+	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
+	if (!TryGetTurretStand(TurretPosition, _outTurretStand))
+	{
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to get turret stand"));
+		return;
+	}
+
+	// 터렛 BP 클래스 로드
+	TSubclassOf<AActor> _turretClass = LoadClass<AActor>(nullptr, *TurretBPPath);
+	if (_turretClass == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to load turret BP class: %s"), *TurretBPPath);
+		return;
+	}
+
+	// 터렛 액터 스폰
+	FActorSpawnParameters _spawnParams;
+	_spawnParams.Owner = _outTurretStand;
+	TObjectPtr<AActor> _turret = GetWorld()->SpawnActor<AActor>(_turretClass, _spawnParams);
+	if (_turret == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to spawn turret: %s"), *TurretBPPath);
+		return;
+	}
+
+	// 터렛 장착
+	bool _isEquiped = _outTurretStand->TryEquipTurret(_turret, AmmoType);
+	if (TurretPosition == E_TURRET_POSITION::Main && _isEquiped)
+	{
+		_turretChair->SetTargetPawn(Cast<APawn>(_turret));
+	}
 }
 
 bool UTurretStateGroup::TryGetTurretFireInterval(E_TURRET_POSITION TurretPosition, float* OutFireCoolTime)
