@@ -355,30 +355,27 @@ void APSJ_Spaceship::Client_DisembarkSuccess_Implementation(APSJ_Character* Exit
 {
 	if (!ExitingPilot) return;
 
-	// 1. [제거] 기존의 물리 차단 코드를 삭제합니다.
-	 ExitingPilot->MoveIgnoreActorAdd(this); 
-	 this->MoveIgnoreActorAdd(ExitingPilot); 
+	// 1. 물리 데이터 초기화 (E0265 에러 해결: StopMovementImmediately 사용)
+	if (UCharacterMovementComponent* CMC = ExitingPilot->GetCharacterMovement())
+	{
+		CMC->StopMovementImmediately(); // 속도와 가속도를 모두 0으로 만듭니다.
+		CMC->SetMovementMode(MOVE_Custom); // 엔진이 Walking으로 바꾸지 못하게 즉시 다시 설정
+	}
 
-	// 2. 위치 배치 (바닥 큐브에 바로 박히지 않도록 위로 15cm 정도 띄움)
+	// 2. 충돌 무시 및 위치 배치
+	ExitingPilot->MoveIgnoreActorRemove(this);
+	this->MoveIgnoreActorRemove(ExitingPilot);
+
 	FVector SafeExitLoc = ExitLoc + GetActorUpVector() * 15.0f;
 	ExitingPilot->SetActorLocationAndRotation(SafeExitLoc, ExitRot, false, nullptr, ETeleportType::TeleportPhysics);
 
-	// 3. 우주선에 다시 부착 (상대 좌표계 편입)
+	// 3. 우주선 부착 및 데이터 갱신
 	ExitingPilot->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-
-	// 4. 캐릭터의 하차 유예 상태 시작 (트레이스 확장 및 빠른 흡착 활성화)
 	ExitingPilot->StartDisembarkState();
-
-	// 5. 이동 모드 설정 및 입력 복구
-	if (ExitingPilot->GetCharacterMovement())
-	{
-		ExitingPilot->GetCharacterMovement()->StopMovementImmediately();
-		ExitingPilot->GetCharacterMovement()->SetMovementMode(MOVE_Custom);
-	}
-
-	ExitingPilot->SetReplicateMovement(false);
 	ExitingPilot->SetBaseActorData(this);
 	ExitingPilot->ForceInputRecovery();
+
+	UE_LOG(LogTemp, Warning, TEXT("[Disembark] Velocity Reset & Mode Set to Custom"));
 }
 
 void APSJ_Spaceship::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

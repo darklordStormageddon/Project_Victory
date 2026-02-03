@@ -14,7 +14,7 @@ class UInputAction;
 class UInputComponent;
 class UInputMappingContext;
 class APawn;
-class APSJ_Spaceship; 
+class APSJ_Spaceship;
 // 전방 선언 추가
 class ATurretBase_GT;
 
@@ -102,12 +102,30 @@ protected:
 	// [추가] 클라이언트 전용: "서버가 날 조종하라고 보낸 컨트롤러가 도착했다!" 라는 검증 함수
 	virtual void OnRep_Controller() override;
 
+	// --- 벽 감지용 설정 변수 (에디터 수정 가능) ---
+	UPROPERTY(EditAnywhere, Category = "Movement | Wall Detection")
+	float WallTraceRadius = 40.0f; // 구체 트레이스 반지름 (지름의 절반)
+
+	UPROPERTY(EditAnywhere, Category = "Movement | Wall Detection")
+	float WallTraceZOffset = 0.0f; // 캐릭터 중심 기준 Z축 오프셋
+
+	UPROPERTY(EditAnywhere, Category = "Movement | Wall Detection")
+	bool bShowWallDebug = true; // 디버그 라인 표시 여부
+
 protected:
 	UPROPERTY(EditAnywhere, Category = "Mag Boots")
-	float CheckDistance = 400.0f;
+	float CheckDistance = 50.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Mag Boots")
-	float MagBootsTraceRadius = 25.0f;
+	float MagBootsTraceRadius = 15.0f;
+
+	// [신규] 길이(Half Height) 추가 - 에디터 수정 가능
+	UPROPERTY(EditAnywhere, Category = "Mag Boots")
+	float MagBootsTraceHalfHeight = 30.0f;
+
+	// [추가] 바닥에서 캐릭터 캡슐 하단을 얼마나 띄울지 결정하는 오프셋 (기존 2.0f)
+	UPROPERTY(EditAnywhere, Category = "Mag Boots")
+	float FloorHeightOffset = 1.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Mag Boots")
 	float AlignSpeed = 15.0f;

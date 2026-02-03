@@ -66,18 +66,9 @@ void UContainerStateGroup::AddElement(E_ELEMENT_TYPE ElementType, int32 Amount)
 
 	FElementData* _elementData = nullptr;
 	if (!TryGetElementData(ElementType, _elementData))
-	{
-		FElementData _newElementData;
-		_newElementData.ElementType = ElementType;
-		_newElementData.Price = 0;
-		_newElementData.Amount = Amount;
-		_containerState.ElementDataMap.Add(_newElementData.ElementType, _newElementData);
-		_elementData = _containerState.ElementDataMap.Find(ElementType);
-	}
-	else
-	{
-		_elementData->Amount += Amount;
-	}
+		return;
+
+	_elementData->Amount += Amount;
 
 	UEventOnChangeElementData* _event = NewObject<UEventOnChangeElementData>(this);
 	_event->ElementData = *_elementData;
@@ -126,6 +117,17 @@ bool UContainerStateGroup::TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutA
 	return OutAmmoData != nullptr;
 }
 
+int32 UContainerStateGroup::GetCumulativePrice()
+{
+	int32 _cumulativePrice = 0;
+	for (auto& _elementData : _containerState.ElementDataMap)
+	{
+		_cumulativePrice += _elementData.Value.Price * _elementData.Value.Amount;
+	}
+
+	return _cumulativePrice;
+}
+
 void UContainerStateGroup::LoadResource()
 {
 	// Element
@@ -141,12 +143,13 @@ void UContainerStateGroup::LoadResource()
 	TArray<FName> _rowNames = _elementDataTable->GetRowNames();
 	for (const FName& _rowName : _rowNames)
 	{
-		FElementProperty* _turrerInfo = _elementDataTable->FindRow<FElementProperty>(_rowName, TEXT(""));
-		if (_turrerInfo)
+		FElementProperty* _elementProperty = _elementDataTable->FindRow<FElementProperty>(_rowName, TEXT(""));
+		if (_elementProperty)
 		{
 			FElementData _newElementData;
-			_newElementData.ElementType = _turrerInfo->ElementType;
-			_newElementData.Price = _turrerInfo->Price;
+			_newElementData.ElementType = _elementProperty->ElementType;
+			_newElementData.KRName = _elementProperty->DisplayName;
+			_newElementData.Price = _elementProperty->Price;
 			_newElementData.Amount = 0;
 
 			// Texture

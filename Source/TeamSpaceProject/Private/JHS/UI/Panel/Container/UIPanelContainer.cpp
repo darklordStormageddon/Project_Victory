@@ -2,23 +2,23 @@
 
 
 #include "JHS/UI/Panel/Container/UIPanelContainer.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/GameControl/CommonEnums.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
 #include "JHS/UI/Panel/Container/ContainerItemSlot.h"
-#include "Components/UniformGridPanel.h"
-#include "Components/UniformGridSlot.h"
+#include "Components/ScrollBox.h"
+#include "Components/TextBlock.h"
 
-bool UUIPanelContainer::Initialize()
+void UUIPanelContainer::NativeOnInitialized()
 {
-	if (!Super::Initialize())
-		return false;
+	AJHSGameState* _outGameState = nullptr;
+	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+		return;
 
-	UG_Items->SetMinDesiredSlotWidth(_slotSizeWidth);
-	UG_Items->SetMinDesiredSlotHeight(_slotSizeHeight);
-
-	return true;
+	_containerStateGroup = _outGameState->GetContainerStateGroup();
 }
 
 void UUIPanelContainer::RegisterEvent()
@@ -52,7 +52,7 @@ void UUIPanelContainer::OnClose()
 
 void UUIPanelContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 {
-	if (Event == nullptr || UG_Items == nullptr)
+	if (Event == nullptr)
 		return;
 
 	const FElementData _elementData = Event->ElementData;
@@ -65,7 +65,7 @@ void UUIPanelContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 		{
 			if (_removeSlot != nullptr)
 			{
-				UG_Items->RemoveChild(_removeSlot);
+				SB_Items->RemoveChild(_removeSlot);
 			}
 
 			if (_currentSlotCount > 0)
@@ -89,29 +89,15 @@ void UUIPanelContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 		if (_slotWidget == nullptr)
 			return;
 
-		const FString _elementName = CommonEnums::GetEnum2FString<E_ELEMENT_TYPE>(_elementData.ElementType);
-		_slotWidget->UpdateItemInfo(_elementData.ElementImage, _elementName, _elementData.Amount);
+		_slotWidget->UpdateItemInfo(_elementData);
 	}
 	
 	SortItemSlot();
 }
 
-void UUIPanelContainer::SetSlotIndex(TObjectPtr<UContainerItemSlot> ItemSlot, int32 Index)
-{
-    if (ItemSlot == nullptr)
-        return;
-
-    const int32 _columnCount = 3;
-    const int32 _row = Index / _columnCount;
-    const int32 _column = Index % _columnCount;
-
-	ItemSlot->GetSlot()->SetRow(_row);
-	ItemSlot->GetSlot()->SetColumn(_column);
-}
-
 TObjectPtr<UContainerItemSlot> UUIPanelContainer::CreateAndRegisterElementSlot(E_ELEMENT_TYPE ElementType)
 {
-	if (UG_Items == nullptr || _itemSlotClass == nullptr)
+	if (SB_Items == nullptr || _itemSlotClass == nullptr)
 		return nullptr;
 
 	APlayerController* _playerController = GetOwningPlayer();
@@ -122,14 +108,8 @@ TObjectPtr<UContainerItemSlot> UUIPanelContainer::CreateAndRegisterElementSlot(E
 	if (_slotWidget == nullptr)
 		return nullptr;
 
-	UUniformGridSlot* _gridSlot = UG_Items->AddChildToUniformGrid(_slotWidget);
-	_slotWidget->InitializeSlot(_slotSizeWidth, _slotSizeHeight);
-	if (_gridSlot == nullptr)
-		return nullptr;
-
-    SetSlotIndex(_slotWidget, _elementSlotMap.Num());
-	_gridSlot->SetHorizontalAlignment(HAlign_Fill);
-	_gridSlot->SetVerticalAlignment(VAlign_Fill);
+	//_slotWidget->InitializeSlot(_slotSizeWidth, _slotSizeHeight);
+	SB_Items->AddChild(_slotWidget);
 
 	_elementSlotMap.Add(ElementType, _slotWidget);
 	_currentSlotCount++;
@@ -139,17 +119,35 @@ TObjectPtr<UContainerItemSlot> UUIPanelContainer::CreateAndRegisterElementSlot(E
 
 void UUIPanelContainer::SortItemSlot()
 {
-    TArray<int32> _elementIndexArray;
-    for (auto& _element : _elementSlotMap)
-    {
-        _elementIndexArray.Add(int32(_element.Key));
-    }
+	if (SB_Items == nullptr)
+		return;
 
-    _elementIndexArray.Sort();
+	TArray<int32> _elementIndexArray;
+	for (auto& _element : _elementSlotMap)
+	{
+		_elementIndexArray.Add(int32(_element.Key));
+	}
 
-    for (int32 i = 0; i < _elementIndexArray.Num(); ++i)
-    {
-        SetSlotIndex(_elementSlotMap.FindRef((E_ELEMENT_TYPE)_elementIndexArray[i]), i);
-    }
+	_elementIndexArray.Sort();
+
+	// ScrollBox의 모든 자식을 제거하고 정렬된 순서로 다시 추가
+	SB_Items->ClearChildren();
+
+	for (int32 i = 0; i < _elementIndexArray.Num(); ++i)
+	{
+		TObjectPtr<UContainerItemSlot> _slot = _elementSlotMap.FindRef((E_ELEMENT_TYPE)_elementIndexArray[i]);
+		if (_slot != nullptr)
+		{
+			SB_Items->AddChild(_slot);
+		}
+	}
+
+	int32 _cumulativePrice = _containerStateGroup->GetCumulativePrice();
+	TXT_CumulativePrice->SetText(FText::AsNumber(_cumulativePrice));
+
+	int32 _ownedDollar = _containerStateGroup->GetOwnedDollar();
+	TXT_OwnedDollar->SetText(FText::AsNumber(_ownedDollar));
+
+	TXT_ExpectDollar->SetText(FText::AsNumber(_cumulativePrice + _ownedDollar));
 }
 

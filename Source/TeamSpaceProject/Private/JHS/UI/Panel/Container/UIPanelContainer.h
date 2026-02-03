@@ -8,8 +8,10 @@
 
 #include "UIPanelContainer.generated.h"
 
-class UUniformGridPanel;
+class UContainerStateGroup;
+class UScrollBox;
 class UContainerItemSlot;
+class UTextBlock;
 class UEventOnChangeElementData;
 
 UCLASS()
@@ -20,10 +22,21 @@ class UUIPanelContainer : public UUIBase
 private:
 	FDelegateHandle _eventHandleOnChangeElementData;
 
+	TObjectPtr<UContainerStateGroup> _containerStateGroup = nullptr;
+
 	TMap<E_ELEMENT_TYPE, TObjectPtr<UContainerItemSlot>> _elementSlotMap;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UUniformGridPanel> UG_Items;
+	TObjectPtr<UScrollBox> SB_Items;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TXT_CumulativePrice;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TXT_OwnedDollar;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TXT_ExpectDollar;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Container")
@@ -40,7 +53,7 @@ protected:
 	float _slotSizeHeight = 400.0f;
 
 protected:
-	virtual bool Initialize() override;
+	void NativeOnInitialized() override;
 
 	void RegisterEvent() override;
 
@@ -54,8 +67,6 @@ public:
 	void OnChangeElementData(UEventOnChangeElementData* Event);
 
 private:
-	void SetSlotIndex(TObjectPtr<UContainerItemSlot> ItemSlot, int32 Index);
-
 	TObjectPtr<UContainerItemSlot> CreateAndRegisterElementSlot(E_ELEMENT_TYPE ElementType);
 
 	void SortItemSlot();

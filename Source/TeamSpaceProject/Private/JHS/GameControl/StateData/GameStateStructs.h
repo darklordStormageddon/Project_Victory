@@ -191,6 +191,9 @@ public:
 	E_ELEMENT_TYPE ElementType = E_ELEMENT_TYPE::NONE;
 
 	UPROPERTY()
+	FString KRName = "";
+
+	UPROPERTY()
 	int32 Price = 0;
 
 	UPROPERTY()
@@ -207,7 +210,7 @@ struct FContainerState
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 Money = 0;
+	int32 OwnedDollar = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 MaxElementStockpile = 0;
