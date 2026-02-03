@@ -113,6 +113,11 @@ protected:
 	bool bShowWallDebug = true; // 디버그 라인 표시 여부
 
 protected:
+
+	// [신규] 클라이언트가 바닥을 감지하면 서버에 "나 여기 붙여줘"라고 요청하는 함수
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SetAnchoring(AActor* NewBase);
+
 	UPROPERTY(EditAnywhere, Category = "Mag Boots")
 	float CheckDistance = 50.0f;
 
