@@ -136,7 +136,7 @@ bool UTurretStateGroup::TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_
 		// 터렛 액터 스폰
 		FActorSpawnParameters _spawnParams;
 		_spawnParams.Owner = _outTurretStand;
-		Turret = GetWorld()->SpawnActor<AActor>(_turretClass, _outTurretStand->GetActorTransform(), _spawnParams);
+		Turret = GetWorld()->SpawnActor<AActor>(_turretClass, _spawnParams);
 		if (Turret == nullptr)
 		{
 			UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to spawn turret: %s"), *_turretBPPath);

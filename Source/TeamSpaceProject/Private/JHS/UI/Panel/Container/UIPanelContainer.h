@@ -36,9 +36,18 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> TXT_ExpectDollar;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TXT_GoalDollar;
+
 protected:
-	UPROPERTY(EditDefaultsOnly, Category = "Container")
+	UPROPERTY(EditDefaultsOnly, Category = "Container|ItemSlot")
 	TSubclassOf<UContainerItemSlot> _itemSlotClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Container|Expect Dollar Color")
+	FLinearColor _lessExpectDollarColor = FColor::Red;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Container|Expect Dollar Color")
+	FLinearColor _overExpectDollarColor = FColor::Green;
 
 private:
 	int32 _currentSlotCount = 0;
