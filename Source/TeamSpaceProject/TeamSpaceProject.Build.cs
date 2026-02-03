@@ -9,5 +9,10 @@ public class TeamSpaceProject : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "Niagara", "OnlineSubsystemUtils", "OnlineSubsystem" });
-	}
+
+		PrivateDependencyModuleNames.AddRange(new string[] {  });
+
+        DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
+
+    }
 }
