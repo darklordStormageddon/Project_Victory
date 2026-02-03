@@ -145,24 +145,20 @@ class UEventOnChangeElementData : public UCommonEventBase
 	GENERATED_BODY()
 
 public:
-UEventOnChangeElementData(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+	UEventOnChangeElementData(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
-	{}
-
-	UEventOnChangeElementData(FElementData ElementData, int32 CumulativePrice, int32 OwnedDollar, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
-		: Super(ObjectInitializer)
-		, ElementData(ElementData)
-		, CumulativePrice(CumulativePrice)
-		, OwnedDollar(OwnedDollar)
 	{}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
 	FElementData ElementData;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
-	int32 CumulativePrice = 0.0f;
+	int32 CumulativePrice = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
-	int32 OwnedDollar = 0.0f;
+	int32 OwnedDollar = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
+	int32 GoalDollar = 0;
 };
 #pragma endregion Container

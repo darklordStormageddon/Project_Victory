@@ -189,5 +189,7 @@ void UContainerStateGroup::ExecuteEventOnChangeElement(FElementData ElementData)
 
 	_event->OwnedDollar = _containerState.OwnedDollar;
 
+	_event->GoalDollar = _gameState->GetGoalDollar();
+
 	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangeElementData>(_event);
 }

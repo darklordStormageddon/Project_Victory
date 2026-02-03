@@ -26,30 +26,36 @@ public:
 private:
 	UPROPERTY()
 	TObjectPtr<UEventManager> _cachedEventManager = nullptr;
-	
+
+private:
+	UPROPERTY(EditAnywhere, Category = "GameState|Goal")
+	int32 _goalDollar = 1000;
+
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|Components")
 	TObjectPtr<UStaticMeshComponent> _rootComponent = nullptr;
 
+#pragma region State Group
 protected:
+	// SpaceShip
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|SpaceShipStateGroup")
 	TObjectPtr<USpaceShipStateGroup> _spaceShipStateGroup = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "GameState|SpaceShipStateGroup")
 	FSpaceShipState _initSpaceShipState;
 
-protected:
+	// Player
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|PlayerStateGroup")
 	TObjectPtr<UPlayerStateGroup> _playerStateGroup = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "GameState|PlayerStateGroup")
 	float _maxPlayerRadiation = 100.0f;
 
-protected:
+	// Collect
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|CollectStateGroup")
 	TObjectPtr<UCollectStateGroup> _collectStateGroup = nullptr;
 
-protected:
+	// Container
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|ContainerStateGroup")
 	TObjectPtr<UContainerStateGroup> _containerStateGroup = nullptr;
 
@@ -59,13 +65,17 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameState|ContainerStateGroup")
 	TArray<FAmmoData> _initAmmoDataArray;
 
-protected:
+	// Turret
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|TurretStateGroup")
 	TObjectPtr<UTurretStateGroup> _turretStateGroup = nullptr;
+#pragma endregion State Group
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Test")
 	int32 _testPlayerCount = 4;
+
+public:
+	int32 GetGoalDollar() { return _goalDollar; }
 
 public:
 	TObjectPtr<USpaceShipStateGroup> GetSpaceShipStateGroup() { return _spaceShipStateGroup; }

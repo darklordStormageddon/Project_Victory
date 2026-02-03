@@ -50,6 +50,7 @@ void UUIPanelContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 	const FElementData _elementData = Event->ElementData;
 	const int32 _cumulativePrice = Event->CumulativePrice;
 	const int32 _ownedDollar = Event->OwnedDollar;
+	const int32 _goalDollar = Event->GoalDollar;
 	const bool _isRemove = _elementData.Amount <= 0;
 
 	if (_isRemove)
@@ -90,7 +91,12 @@ void UUIPanelContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 
 	TXT_OwnedDollar->SetText(FText::AsNumber(_ownedDollar));
 
-	TXT_ExpectDollar->SetText(FText::AsNumber(_cumulativePrice + _ownedDollar));
+	const int32 _expectDollar = _cumulativePrice + _ownedDollar;
+	TXT_ExpectDollar->SetText(FText::AsNumber(_expectDollar));
+	FLinearColor _expectDollarColor = _expectDollar < _goalDollar ? _lessExpectDollarColor : _overExpectDollarColor;
+	TXT_ExpectDollar->SetColorAndOpacity(_expectDollarColor);
+
+	TXT_GoalDollar->SetText(FText::AsNumber(_goalDollar));
 	
 	SortItemSlot();
 }
