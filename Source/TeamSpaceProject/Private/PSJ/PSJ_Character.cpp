@@ -270,7 +270,24 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 
 	// 3. 결과 처리
 	if (bFoundValidFloor && Hit.GetActor())
+
 	{
+
+		// [수정] 새로운 바닥을 발견했을 때
+		if (GetAttachParentActor() != Hit.GetActor())
+		{
+			// 1. 클라이언트 우선 적용 (즉각적인 반응성을 위해)
+			AttachToActor(Hit.GetActor(), FAttachmentTransformRules::KeepWorldTransform);
+			GetCharacterMovement()->SetMovementMode(MOVE_Custom);
+			ReplicatedRelativeData.BaseActor = Hit.GetActor();
+			ReplicatedRelativeData.bIsAnchored = true;
+
+			// 2. [신규] 서버에 보고! (이게 없어서 그동안 고장났던 것임)
+			Server_SetAnchoring(Hit.GetActor());
+		}
+
+		CurrentFloorNormal = Hit.Normal;
+
 		AActor* NewFloor = Hit.GetActor();
 
 		if (GetAttachParentActor() != NewFloor)
@@ -299,6 +316,17 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 	}
 	else
 	{
+		// 바닥이 없을 때 처리
+		if (ReplicatedRelativeData.bIsAnchored)
+		{
+			// 바닥을 잃었으면 서버에 해제 요청
+			Server_SetAnchoring(nullptr);
+
+			ReplicatedRelativeData.BaseActor = nullptr;
+			ReplicatedRelativeData.bIsAnchored = false;
+			GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		}
+
 		// 바닥 못 찾음
 		CurrentFloorNormal = FVector::ZeroVector;
 
@@ -473,6 +501,8 @@ void APSJ_Character::Server_UpdateRelativeTransform_Implementation(FVector NewRe
 	ReplicatedRelativeData.RelativeLocation = NewRelLoc;
 	ReplicatedRelativeData.RelativeRotation = NewRelRot;
 
+	// 이제 서버도 BaseActor가 누군지 알기 때문에 이 조건문이 통과됩니다!
+	// -> 서버 캐릭터도 회전하기 시작함.
 	if (ReplicatedRelativeData.BaseActor && GetAttachParentActor() == ReplicatedRelativeData.BaseActor)
 	{
 		SetActorRelativeLocation(NewRelLoc);
@@ -610,5 +640,39 @@ void APSJ_Character::Server_RequestTurretBoarding_Implementation(ATurretBase_GT*
 
 		// 3. 클라이언트 화면/입력 전환 지시
 		TurretToBoard->Client_BoardingSuccess();
+	}
+}
+
+// [PSJ_Character.cpp]
+
+bool APSJ_Character::Server_SetAnchoring_Validate(AActor* NewBase)
+{
+	return true;
+}
+
+void APSJ_Character::Server_SetAnchoring_Implementation(AActor* NewBase)
+{
+	// 1. 데이터 갱신 (이제 서버도 BaseActor가 누군지 알게 됨)
+	ReplicatedRelativeData.BaseActor = NewBase;
+	ReplicatedRelativeData.bIsAnchored = (NewBase != nullptr);
+
+	if (NewBase)
+	{
+		// 2. 서버 차원에서 물리적 부착 수행
+		AttachToActor(NewBase, FAttachmentTransformRules::KeepWorldTransform);
+
+		// 3. [핵심] 서버 물리 엔진의 간섭 차단
+		// DisableMovement()는 쓰지 마세요. 대신 Custom 모드로 전환.
+		GetCharacterMovement()->SetMovementMode(MOVE_Custom);
+
+		// 4. [핵심] "이제부터 위치 동기화는 RPC로 수동으로 할 테니, 엔진 너는 빠져"
+		SetReplicateMovement(false);
+	}
+	else
+	{
+		// 부착 해제 시 복구
+		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		SetReplicateMovement(true);
 	}
 }
