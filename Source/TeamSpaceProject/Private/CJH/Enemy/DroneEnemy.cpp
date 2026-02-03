@@ -3,6 +3,8 @@
 #include "CJH/Enemy/Weapon/Bullet.h"
 #include "JHS/GameControl/JHSGameMode.h"
 
+#include "Net/UnrealNetwork.h"
+\
 ADroneEnemy::ADroneEnemy()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -36,11 +38,17 @@ ADroneEnemy::ADroneEnemy()
 	TimeSinceTiltChange = 0.0f;
 	TiltOscAmplitude = 5.0f;
 	TiltOscFrequency = 0.2f;
+
+	NetUpdateFrequency = 20.f;   // 기본 100보다 낮춰도 OK
+	MinNetUpdateFrequency = 10.f;
 }
 
 void ADroneEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (!HasAuthority())
+		return;
 
 	// 공전 위상 랜덤 시작 (개체 간 동기화 방지)
 	ChaseCurvePhase = FMath::RandRange(0.0f, 2.0f * PI);
@@ -58,32 +66,51 @@ void ADroneEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// 타겟 감지 / 추격 여부 판단
-	if(CanCheck)
-		CheckChaseDistance();
-	
-	// 추격이 꺼지면 공전 상태도 해제
-	if (!bIsChasing)
-		bOrbiting = false;
+	if (HasAuthority())
+	{	
+		// 타겟 감지 / 추격 여부 판단
+		if (CanCheck)
+			CheckChaseDistance();
 
-	if (bIsChasing && Target && IsValid(_spaceShip))
-	{
-		LookTarget();
+		// 추격이 꺼지면 공전 상태도 해제
+		if (!bIsChasing)
+			bOrbiting = false;
 
-		// 이동 로직
-		ChaseMove(DeltaTime);
+		if (bIsChasing && Target && IsValid(_spaceShip))
+		{
+			LookTarget();
 
-		// 공격 사거리 내면 바로 발사
-		if (DistanceCheck(_spawnedInfo.Attack_Range))
-			Fire();
+			// 이동 로직
+			ChaseMove(DeltaTime);
+
+			// 공격 사거리 내면 바로 발사
+			if (DistanceCheck(_spawnedInfo.Attack_Range))
+				Fire();
+		}
+		else
+		{
+			// 추격 대상 없으면 기본 오비트 행동
+			FollowOrbitTarget(DeltaTime);
+			ApplySpin(DeltaTime);
+		}
+
+		ServerTransform = GetActorTransform();
 	}
 	else
 	{
-		// 추격 대상 없으면 기본 오비트 행동
-		FollowOrbitTarget(DeltaTime);
-		ApplySpin(DeltaTime);
-	}
+		// 클라 보간
+		InterpAlpha += DeltaTime * 8.f; // 보간 속도
 
+		FTransform NewTransform = FTransform::Identity;
+
+		NewTransform.Blend(
+			PrevTransform,
+			ServerTransform,
+			FMath::Clamp(InterpAlpha, 0.f, 1.f)
+		);
+
+		SetActorTransform(NewTransform);
+	}
 }
 
 void ADroneEnemy::ChaseMove(float DeltaTime)
@@ -284,7 +311,8 @@ void ADroneEnemy::EnterOrbit()
 
 void ADroneEnemy::OrbitAroundTarget(const FVector& ApproachPoint, float DeltaTime)
 {
-	if (!Target) return;
+	if (!Target)
+		return;
 
 	FVector TargetLoc = Target->GetActorLocation();
 	FVector CurrentLoc = GetActorLocation();
@@ -298,7 +326,9 @@ void ADroneEnemy::OrbitAroundTarget(const FVector& ApproachPoint, float DeltaTim
 		FVector DirToTarget = (TargetLoc - CurrentLoc).GetSafeNormal();
 
 		float Speed = _targetInfo.Speed * 0.6f; // 공전 중 접근 속도 (느리게)
-		if (Speed <= 0.0f) Speed = 60.0f;
+
+		if (Speed <= 0.0f) 
+			Speed = 60.0f;
 
 		FVector MoveDir = DirToTarget;
 		float MaxStep = Speed * DeltaTime;
@@ -365,7 +395,8 @@ void ADroneEnemy::OrbitAroundTarget(const FVector& ApproachPoint, float DeltaTim
 
 void ADroneEnemy::LookTarget()
 {
-	if (!IsValid(Target)) return;
+	if (!IsValid(Target)) 
+		return;
 
 	FTimerHandle LookHandle;
 
@@ -395,32 +426,21 @@ void ADroneEnemy::LookTarget()
 }
 void ADroneEnemy::Fire()
 {
+	if (!HasAuthority())
+		return;
 	if (!CanFire)
 		return;
 	if (!Bullet)
 		return;
 
-	MuzzleLocation = MuzzleArrow->GetComponentLocation();
+	const FVector MuzzleLocation = MuzzleArrow->GetComponentLocation();
+	const FRotator MuzzleRotation = MuzzleArrow->GetComponentRotation();
 
-	FRotator MuzzleRotation = MuzzleArrow->GetComponentRotation();
 	FActorSpawnParameters SpawnParams;
-
 	SpawnParams.Owner = this;
-
 	SpawnParams.Instigator = GetInstigator();
 
-	if (FireParticle)
-	{
-		FireComponent = UGameplayStatics::SpawnEmitterAttached(
-			FireParticle,
-			MuzzleArrow,
-			NAME_None,
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			EAttachLocation::SnapToTargetIncludingScale,
-			true
-		);
-	}
+	MulticastFireEffect();
 
 	ABullet* SpawnedBullet = GetWorld()->SpawnActor<ABullet>(
 		Bullet,
@@ -431,14 +451,10 @@ void ADroneEnemy::Fire()
 
 	if (SpawnedBullet)
 	{
-		//FVector LaunchDirection = Target->GetActorLocation() - this->GetActorLocation();
-		FVector LaunchDirection = this->GetActorForwardVector();
-
-		SpawnedBullet->GetTarget(LaunchDirection.GetSafeNormal());
-		SpawnedBullet->SetOwner(this);
+		SpawnedBullet->SetOwnerActor(this);
+		SpawnedBullet->Fire(GetActorForwardVector());
 		SpawnedBullet->SetDamage(_targetInfo.Attack_Damage);
 	}
-
 	CanFire = false;
 
 	FTimerHandle FireRateHandle;
@@ -450,6 +466,24 @@ void ADroneEnemy::Fire()
 		_spawnedInfo.Attack_Speed,
 		false
 	);
+}
+
+void ADroneEnemy::MulticastFireEffect_Implementation()
+{
+	if (GetNetMode() == NM_DedicatedServer)
+		return;
+
+	if (FireParticle && MuzzleArrow)
+	{
+		UGameplayStatics::SpawnEmitterAttached(
+			FireParticle,
+			MuzzleArrow,
+			NAME_None,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTargetIncludingScale
+		);
+	}
 }
 
 void ADroneEnemy::CheckChaseDistance()
@@ -512,7 +546,20 @@ void ADroneEnemy::ApplySpin(float DeltaTime)
 	FQuat SpinQuat = FQuat(CurrentAxis, FMath::DegreesToRadians(SpinSpeed * DeltaTime));
 	FQuat NewQuat = SpinQuat * this->GetActorQuat();
 
-	this->SetActorRotation(NewQuat);
-    
-    
+	this->SetActorRotation(NewQuat);  
+}
+
+void ADroneEnemy::OnRep_ServerTransform()
+{
+	PrevTransform = GetActorTransform();
+	InterpAlpha = 0.f;
+}
+
+void ADroneEnemy::GetLifetimeReplicatedProps(
+	TArray<FLifetimeProperty>& OutLifetimeProps
+) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ADroneEnemy, ServerTransform);
 }

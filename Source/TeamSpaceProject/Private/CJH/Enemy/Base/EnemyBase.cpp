@@ -19,6 +19,9 @@ AEnemyBase::AEnemyBase()
 	FireComponent = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("FireComp"));
 	/*SpaceObjectComp = CreateDefaultSubobject<USpaceObjectComponent>(TEXT("SpaceObjectComponent"));*/
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+
+	bReplicates = true;
+	SetReplicateMovement(false);
 }
 
 // Called when the game starts or when spawned
@@ -26,11 +29,17 @@ void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (!HasAuthority())
+		return;
+
 	HealthComp -> OnDeath.AddDynamic(this, &AEnemyBase::EnemyDeath);
 }
 
 void AEnemyBase::SetInfo()
 {
+	if (!HasAuthority())
+		return;
+
 	// 적 크기에 비례하여 능력치 증감
 	SetActorScale3D(this->NewScale);
 
@@ -45,6 +54,9 @@ void AEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (!HasAuthority())
+		return;
+
 	if(MinusDebug)
 		if (DelayBool)
 			MinusHp();
@@ -53,6 +65,9 @@ void AEnemyBase::Tick(float DeltaTime)
 
 void AEnemyBase::MinusHp()
 {
+	if (!HasAuthority())
+		return;
+
 	DelayBool = false;
 
 	FTimerHandle MinusHandle;
@@ -64,6 +79,9 @@ void AEnemyBase::MinusHp()
 
 bool AEnemyBase::TargetHPCheck()
 {
+	if (!HasAuthority())
+		return false;
+
 	if (!Target)
 		return false;
 
@@ -79,6 +97,9 @@ bool AEnemyBase::TargetHPCheck()
 // 플레이어와의 거리 체크
 bool AEnemyBase::DistanceCheck(float _condition)
 {
+	if (!HasAuthority())
+		return false;
+
 	if (!IsValid(_spaceShip))
 		return false;
 
@@ -92,11 +113,17 @@ bool AEnemyBase::DistanceCheck(float _condition)
 
 void AEnemyBase::SetTargetShip(TSubclassOf<AActor> Targetenemy) 
 { 
+	if (!HasAuthority())
+		return;
+
 	_spaceShip = UGameplayStatics::GetActorOfClass(GetWorld(), Targetenemy);
 }
 
 void AEnemyBase::EnemyDeath()
 {
+	if (!HasAuthority())
+		return;
+
 	Murdered = true;
 
 	if (DeathParticle)
@@ -125,6 +152,9 @@ void AEnemyBase::EnemyDeath()
 
 void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (!HasAuthority())
+		return;
+
 	if (UWorld* World = GetWorld())
 		World->GetTimerManager().ClearAllTimersForObject(this);
 
@@ -156,9 +186,11 @@ void AEnemyBase::SetEnemyInfo(
 	const FTargetInfo& InEnemyInfo,
 	const FEnemyInfo& InSpawnedInfo)
 {
+	if (!HasAuthority())
+		return;
+
 	_targetInfo = InEnemyInfo;
 	_spawnedInfo = InSpawnedInfo;
 
-	//운석의 크기 설정
 	SetActorScale3D(FVector(_targetInfo.Size));
 }

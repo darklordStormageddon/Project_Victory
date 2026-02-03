@@ -38,6 +38,9 @@ void AGarbageEnemyBase::BeginPlay()
 
 void AGarbageEnemyBase::SetInfo()
 {
+	if (!HasAuthority())
+		return;
+
 	_targetInfo.Size = FMath::RandRange(_spawnedInfo.MinSize, _spawnedInfo.MaxSize);
 
 	// 적 크기 구조체에 따라 크기 설정
@@ -48,6 +51,9 @@ void AGarbageEnemyBase::SetInfo()
 
 void AGarbageEnemyBase::FollowOrbitTarget(float DeltaTime)
 {
+	if (!HasAuthority())
+		return;
+
 	if (!bHasOrbitTarget) return;
 
 	// 목표 위치까지의 벡터

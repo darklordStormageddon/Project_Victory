@@ -14,6 +14,9 @@ ACollectable_base::ACollectable_base()
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Ore"));
 	Mesh->SetupAttachment(RootComponent);
 	Mesh->SetSimulatePhysics(true);
+
+	bReplicates = true;
+	SetReplicateMovement(true);
 }
 
 // Called when the game starts or when spawned

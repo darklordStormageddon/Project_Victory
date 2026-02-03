@@ -21,8 +21,6 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Base")
 	UStaticMeshComponent* TurretMesh;
 
-	FVector MuzzleLocation;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Bullet")
 	TSubclassOf<ABullet> Bullet;
 
@@ -99,6 +97,15 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Chase|Target")
 	float LoseTargetDelay = 1.2f;
 
+	UPROPERTY(ReplicatedUsing = OnRep_ServerTransform)
+	FTransform ServerTransform;
+
+	FTransform PrevTransform;
+	float InterpAlpha;
+
+	UFUNCTION()
+	void OnRep_ServerTransform();
+
 private:
 	void Move(float DeltaTime);
 	void ChaseMove(float DeltaTime);
@@ -114,6 +121,9 @@ private:
 
 	void EnableFiring() { CanFire = true; }
 
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastFireEffect();
+
 protected:
 	ADroneEnemy();
 
@@ -126,4 +136,8 @@ public:
 
 	// 자전축 세터
 	void SetSpinAxis(const FVector& NewAxis) { RotationAxis = NewAxis.GetSafeNormal(); }
+
+	virtual void GetLifetimeReplicatedProps(
+		TArray<FLifetimeProperty>& OutLifetimeProps
+	) const override;
 };

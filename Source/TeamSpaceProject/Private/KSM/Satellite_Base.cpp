@@ -40,6 +40,9 @@ ASatellite_Base::ASatellite_Base()
 
     SceneChild8 = CreateDefaultSubobject<USceneComponent>(TEXT("SceneChild8"));
     SceneChild8->SetupAttachment(SceneRoot);
+
+    bReplicates = true;
+    SetReplicateMovement(true);
 }
 
 // Called when the game starts or when spawned

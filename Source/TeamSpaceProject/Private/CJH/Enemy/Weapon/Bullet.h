@@ -1,58 +1,63 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-
-#include "Kismet/GameplayStatics.h"
-#include "Components/SphereComponent.h"
-
 #include "Bullet.generated.h"
 
+class USphereComponent;
+class UProjectileMovementComponent;
 
 UCLASS()
 class ABullet : public AActor
 {
 	GENERATED_BODY()
 
-private:
-	AActor* _owner;
-
-	float Damage;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Bullet")
-	float Speed = 1000.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Bullet")
-	float BulletLifeTime = 5.0f;
-
-	FVector Direction;
-	UPROPERTY(VisibleAnywhere, Category = "Collision")
-	USphereComponent* Collision;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Particle")
-	UParticleSystem* HitParticle;
-
-private:
-	void MoveToTarget(float DeltaTime);
-
-public:	
-	// Sets default values for this actor's properties
+public:
 	ABullet();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UPROPERTY(VisibleAnywhere)
+	USphereComponent* Collision;
+
+	UPROPERTY(VisibleAnywhere)
+	UProjectileMovementComponent* ProjectileMovement;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Bullet")
+	float Damage = 10.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Bullet")
+	UParticleSystem* HitParticle;
+
+	UPROPERTY()
+	AActor* _owner;
+
 	UFUNCTION()
-	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
+	void OnOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult
+	);
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastHitEffect(const FVector& Location, const FRotator& Rotation);
 
-	void GetTarget(FVector _TargetDirection) { Direction = _TargetDirection; }
-	void SetOwner(AActor* _getOwner) { _owner = _getOwner; }
-	void SetDamage(float _getDamage) { Damage = _getDamage; }
+public:
+	// 발사 직후 방향 세팅
+	void Fire(const FVector& Direction);
+
+	void SetOwnerActor(AActor* InOwner)
+	{
+		_owner = InOwner;
+	}
+
+	void SetDamage(float damage)
+	{
+		Damage = damage;
+	}
+
 };
