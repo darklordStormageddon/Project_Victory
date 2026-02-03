@@ -50,8 +50,8 @@ public:
 
 	bool TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutAmmoData);
 
-	int32 GetCumulativePrice();
-
 private:
 	void LoadResource();
+
+	void ExecuteEventOnChangeElement(FElementData ElementData);
 };

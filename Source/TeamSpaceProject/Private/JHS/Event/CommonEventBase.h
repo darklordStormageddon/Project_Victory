@@ -131,6 +131,8 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|Collect")
 	E_COLLECT_TOOL_TYPE PrevToolType;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|Collect")
 	E_COLLECT_TOOL_TYPE NextToolType;
 };
 #pragma endregion Collect
@@ -147,12 +149,20 @@ UEventOnChangeElementData(const FObjectInitializer& ObjectInitializer = FObjectI
 		: Super(ObjectInitializer)
 	{}
 
-	UEventOnChangeElementData(FElementData ElementData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+	UEventOnChangeElementData(FElementData ElementData, int32 CumulativePrice, int32 OwnedDollar, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
 		, ElementData(ElementData)
+		, CumulativePrice(CumulativePrice)
+		, OwnedDollar(OwnedDollar)
 	{}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
 	FElementData ElementData;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
+	int32 CumulativePrice = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
+	int32 OwnedDollar = 0.0f;
 };
 #pragma endregion Container

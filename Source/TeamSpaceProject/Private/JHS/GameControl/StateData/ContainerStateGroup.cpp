@@ -53,7 +53,10 @@ void UContainerStateGroup::InitializeContainerState(TObjectPtr<AJHSGameState> Ga
 
 void UContainerStateGroup::UpdateContainerState()
 {
-
+	for (auto& _elementData : _containerState.ElementDataMap)
+	{
+		ExecuteEventOnChangeElement(_elementData.Value);
+	}
 }
 
 void UContainerStateGroup::AddElement(E_ELEMENT_TYPE ElementType, int32 Amount)
@@ -70,9 +73,7 @@ void UContainerStateGroup::AddElement(E_ELEMENT_TYPE ElementType, int32 Amount)
 
 	_elementData->Amount += Amount;
 
-	UEventOnChangeElementData* _event = NewObject<UEventOnChangeElementData>(this);
-	_event->ElementData = *_elementData;
-	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangeElementData>(_event);
+	ExecuteEventOnChangeElement(*_elementData);
 }
 
 void UContainerStateGroup::RemoveElement(E_ELEMENT_TYPE ElementType, int32 Amount)
@@ -88,9 +89,7 @@ void UContainerStateGroup::RemoveElement(E_ELEMENT_TYPE ElementType, int32 Amoun
 		_amount = 0;
 	}
 
-	UEventOnChangeElementData* _event = NewObject<UEventOnChangeElementData>(this);
-	_event->ElementData = *_elementData;
-	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangeElementData>(_event);
+	ExecuteEventOnChangeElement(*_elementData);
 }
 
 bool UContainerStateGroup::TryGetElementData(E_ELEMENT_TYPE ElementType, FElementData*& OutElementData)
@@ -115,17 +114,6 @@ bool UContainerStateGroup::TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutA
 
 	OutAmmoData = _containerState.AmmoDataMap.Find(AmmoType);
 	return OutAmmoData != nullptr;
-}
-
-int32 UContainerStateGroup::GetCumulativePrice()
-{
-	int32 _cumulativePrice = 0;
-	for (auto& _elementData : _containerState.ElementDataMap)
-	{
-		_cumulativePrice += _elementData.Value.Price * _elementData.Value.Amount;
-	}
-
-	return _cumulativePrice;
 }
 
 void UContainerStateGroup::LoadResource()
@@ -185,4 +173,21 @@ void UContainerStateGroup::LoadResource()
 			UE_LOG(LogTemp, Warning, TEXT("UContainerStateGroup: Failed to load ammo texture: %s"), *_texturePath);
 		}
 	}
+}
+
+void UContainerStateGroup::ExecuteEventOnChangeElement(FElementData ElementData)
+{
+	UEventOnChangeElementData* _event = NewObject<UEventOnChangeElementData>(this);
+	_event->ElementData = ElementData;
+
+	int32 _cumulativePrice = 0;
+	for (auto& _elementData : _containerState.ElementDataMap)
+	{
+		_cumulativePrice += _elementData.Value.Price * _elementData.Value.Amount;
+	}
+	_event->CumulativePrice = _cumulativePrice;
+
+	_event->OwnedDollar = _containerState.OwnedDollar;
+
+	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangeElementData>(_event);
 }

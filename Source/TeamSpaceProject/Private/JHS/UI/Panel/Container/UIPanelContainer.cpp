@@ -2,9 +2,6 @@
 
 
 #include "JHS/UI/Panel/Container/UIPanelContainer.h"
-#include "JHS/GameControl/StaticFunctionLibrary.h"
-#include "JHS/GameControl/JHSGameState.h"
-#include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/GameControl/CommonEnums.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
@@ -14,11 +11,6 @@
 
 void UUIPanelContainer::NativeOnInitialized()
 {
-	AJHSGameState* _outGameState = nullptr;
-	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
-		return;
-
-	_containerStateGroup = _outGameState->GetContainerStateGroup();
 }
 
 void UUIPanelContainer::RegisterEvent()
@@ -56,6 +48,8 @@ void UUIPanelContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 		return;
 
 	const FElementData _elementData = Event->ElementData;
+	const int32 _cumulativePrice = Event->CumulativePrice;
+	const int32 _ownedDollar = Event->OwnedDollar;
 	const bool _isRemove = _elementData.Amount <= 0;
 
 	if (_isRemove)
@@ -91,6 +85,12 @@ void UUIPanelContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 
 		_slotWidget->UpdateItemInfo(_elementData);
 	}
+
+	TXT_CumulativePrice->SetText(FText::AsNumber(_cumulativePrice));
+
+	TXT_OwnedDollar->SetText(FText::AsNumber(_ownedDollar));
+
+	TXT_ExpectDollar->SetText(FText::AsNumber(_cumulativePrice + _ownedDollar));
 	
 	SortItemSlot();
 }
@@ -141,13 +141,5 @@ void UUIPanelContainer::SortItemSlot()
 			SB_Items->AddChild(_slot);
 		}
 	}
-
-	int32 _cumulativePrice = _containerStateGroup->GetCumulativePrice();
-	TXT_CumulativePrice->SetText(FText::AsNumber(_cumulativePrice));
-
-	int32 _ownedDollar = _containerStateGroup->GetOwnedDollar();
-	TXT_OwnedDollar->SetText(FText::AsNumber(_ownedDollar));
-
-	TXT_ExpectDollar->SetText(FText::AsNumber(_cumulativePrice + _ownedDollar));
 }
 
