@@ -95,6 +95,25 @@ void APSJ_Character::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (IsLocallyControlled())
+	{
+		UCharacterMovementComponent* CMC = GetCharacterMovement();
+		FVector Vel = GetVelocity();
+		FString ModeString = UEnum::GetValueAsString(CMC->MovementMode);
+
+		// 1. 상세 속도 및 모드 출력
+		FString DebugMsg = FString::Printf(TEXT("Vel: %s | Mode: %s | Speed: %.2f"),
+			*Vel.ToString(), *ModeString, Vel.Size());
+		GEngine->AddOnScreenDebugMessage(10, 0.0f, FColor::Yellow, DebugMsg);
+
+		// 2. 엔진이 마음대로 모드를 바꿨는지 감시 및 강제 교정
+		if (CMC->MovementMode == MOVE_Walking)
+		{
+			GEngine->AddOnScreenDebugMessage(12, 1.0f, FColor::Red, TEXT("CRITICAL: Mode flipped to Walking! Reverting..."));
+			CMC->SetMovementMode(MOVE_Custom); // 강제로 다시 돌려놓음
+		}
+	}
+
 	// 1. 공용 예외 처리
 	if (!Controller || (IsLocallyControlled() && CurrentSpaceship)) return;
 
