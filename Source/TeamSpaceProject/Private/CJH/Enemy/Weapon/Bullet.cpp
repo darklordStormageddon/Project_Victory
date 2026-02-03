@@ -38,6 +38,9 @@ void ABullet::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (!HasAuthority())
+		return;
+
 	MoveToTarget(DeltaTime);
 
 	BulletLifeTime -= DeltaTime;

@@ -30,7 +30,9 @@ void UGarbageEnemyManagerComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GarbageSpawnSetting();
+	if (GetOwner() && GetOwner()->HasAuthority())
+		GarbageSpawnSetting();
+
 
 	//FTimerHandle Delete;
 	//GetWorld()->GetTimerManager().SetTimer(Delete, this, &UGarbageEnemyManagerComponent::DeleteAllEnemy, 3.f);
@@ -150,6 +152,9 @@ void UGarbageEnemyManagerComponent::TickComponent(float DeltaTime, ELevelTick Ti
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+		return;
+
 	if (candebug && _debug)
 		DebugVector();
 
@@ -159,6 +164,9 @@ void UGarbageEnemyManagerComponent::TickComponent(float DeltaTime, ELevelTick Ti
 
 void UGarbageEnemyManagerComponent::TurnOrbit(float DeltaTime)
 {
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+		return;
+
 	// 그룹 위상(도) 증가
 	CurrentOrbitPhase += RotateSpeed * DeltaTime;
 	if (CurrentOrbitPhase >= 360.0f) CurrentOrbitPhase = FMath::Fmod(CurrentOrbitPhase, 360.0f);
@@ -199,6 +207,9 @@ void UGarbageEnemyManagerComponent::TurnOrbit(float DeltaTime)
 
 void UGarbageEnemyManagerComponent::DebugVector()
 {
+	if (!GetOwner()->HasAuthority())
+		return;
+
 	candebug = false;
 
 	for (auto& elem : JuniorEnemies)
@@ -226,15 +237,16 @@ void UGarbageEnemyManagerComponent::RemoveEnemies(AEnemyBase* _removeEnemy)
 {
 	Super::RemoveEnemies(_removeEnemy);
 	
-	if (_removeEnemy)
-	{
-		AGarbageEnemyBase* GarbageEnemy = Cast<AGarbageEnemyBase>(_removeEnemy);
+	if (!GetOwner() || !GetOwner()->HasAuthority() || !_removeEnemy)
+		return;
 
-		GarbageEnemies.Remove(GarbageEnemy);
-		GarbageEnemies.Shrink();
+	AGarbageEnemyBase* GarbageEnemy = Cast<AGarbageEnemyBase>(_removeEnemy);
 
-		JuniorEnemies.Remove(GarbageEnemy);
-	}
+	GarbageEnemies.Remove(GarbageEnemy);
+	GarbageEnemies.Shrink();
+
+	JuniorEnemies.Remove(GarbageEnemy);
+	
 	BuildOrbitStructure();
 }
 

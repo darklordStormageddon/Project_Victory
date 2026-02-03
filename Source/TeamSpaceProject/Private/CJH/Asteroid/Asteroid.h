@@ -46,10 +46,10 @@ private:
 	UPROPERTY()
 	TObjectPtr<USpaceManager> SpaceManager = nullptr;
 
-	TObjectPtr<ASpaceStation> SpaceStation = nullptr;
+	UPROPERTY()
+	TObjectPtr<AActor> SpaceStation = nullptr;
 
-	// TODO : 메서드 직접 사용 X. 작성자의 스타일로 재구성
-	TObjectPtr<USpaceManager> GetSpaceManager();
+	bool GetSpaceManager();
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "SpaceObject")
@@ -91,6 +91,13 @@ public:
 	AAsteroid();
 
 	float DestroyDistance;
+
+	void InitSpaceStation(AActor* InSpaceStation)
+	{
+		if (!InSpaceStation) return;
+
+		SpaceStation = InSpaceStation;
+	}
 
 protected:
 	// Called when the game starts or when spawned

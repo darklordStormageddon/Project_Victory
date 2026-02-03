@@ -41,10 +41,11 @@ void AAsteroid::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetAsteroidRot();
-
 	HealthComp->OnDeath.AddDynamic(this, &AAsteroid::OnDestroy);
 	Collision->OnComponentHit.AddDynamic(this, &AAsteroid::OnHit);
+	
+	if(GetSpaceManager())
+		SetAsteroidRot();
 }
 
 // Called every frame
@@ -200,17 +201,19 @@ void AAsteroid::OnHit(
 	Destroy(); // 맞으면 사라짐
 }
 
-TObjectPtr<USpaceManager> AAsteroid::GetSpaceManager()
+bool AAsteroid::GetSpaceManager()
 {
 	if (SpaceManager = nullptr)
 	{
 		USpaceManager* _outSpaceManager = nullptr;
 		if (!UStaticFunctionLibrary::TryGetSpaceManager(_outSpaceManager))
-			return nullptr;
+			return true;
 
 		SpaceManager = _outSpaceManager;
 		SpaceStation = SpaceManager->GetSpaceStation();
+		
+		return false;
 	}
 
-	return SpaceManager;
+	return true;
 }

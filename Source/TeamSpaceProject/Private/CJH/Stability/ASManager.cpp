@@ -19,17 +19,22 @@ void AASManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetSetting();
 
 	// 폐기물 위성 스폰 함수 호출
-	Artifical_Satellite_Spawn();
+	if (HasAuthority())
+	{
+		GetSetting();
+
+		Artifical_Satellite_Spawn();
+	}
 }
 
 void AASManager::GetSetting()
 {
 	AJHSGameMode* InGameMode = nullptr;
 	
-	if (!UStaticFunctionLibrary::TryGetGameMode(InGameMode)) return;
+	if (!UStaticFunctionLibrary::TryGetGameMode(InGameMode))
+		return;
 	
 	if (InGameMode)
 	{

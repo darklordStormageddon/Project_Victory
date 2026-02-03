@@ -13,24 +13,27 @@ AGarbageEnemyBase::AGarbageEnemyBase()
 void AGarbageEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	if (HasAuthority())
+	{
+		// 초기 중심
+		if (_owner)
+			Center = _owner->GetActorLocation();
+		else
+			Center = GetActorLocation();
 
-	// 초기 중심
-	if (_owner)
-		Center = _owner->GetActorLocation();
-	else
-		Center = GetActorLocation();
+		CenterAngle = 0.0f;
 
-	CenterAngle = 0.0f;
+		FTimerHandle DelayHandle;
 
-	FTimerHandle DelayHandle;
-
-	GetWorld()->GetTimerManager().SetTimer(
-		DelayHandle,
-		this,
-		&AGarbageEnemyBase::SetInfo,
-		0.01f,
-		false
-	);
+		GetWorld()->GetTimerManager().SetTimer(
+			DelayHandle,
+			this,
+			&AGarbageEnemyBase::SetInfo,
+			0.01f,
+			false
+		);
+	}
 }
 
 void AGarbageEnemyBase::SetInfo()

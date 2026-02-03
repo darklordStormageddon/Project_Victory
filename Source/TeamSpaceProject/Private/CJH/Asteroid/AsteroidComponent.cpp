@@ -128,6 +128,8 @@ void UAsteroidComponent::SpawnAsteroid()
 			ShipSpeed // 이 컴포넌트의 주인인 우주선 속도
 		);
 
+		Asteroid->InitSpaceStation(GetOwner());
+
 		Asteroid->DestroyDistance = InGameMode->GetSpaceManager()->GetSpaceRadius();
 		Asteroids.Add(Asteroid);
 
