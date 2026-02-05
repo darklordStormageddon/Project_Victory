@@ -72,6 +72,14 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Particle")
 	UParticleSystem* HitParticle;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Particle")
+	FVector HitParticleScale = FVector(2.0f, 2.0f, 2.0f);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastHitEffect(const FVector& ImpactPoint, const FRotator& ImpactRotation);
+
+	void MulticastHitEffect_Implementation(const FVector& ImpactPoint, const FRotator& ImpactRotation);
+
 protected:
 	UFUNCTION()
 	void OnDestroy();
@@ -122,5 +130,16 @@ public:
 		UPrimitiveComponent* OtherComponent,
 		FVector NormalImpulse,
 		const FHitResult& Hit);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSetAsteroidInfo(
+		const FTargetInfo& InAsteroidInfo,
+		const FVector& InTargetLocation,
+		const FVector& InDirection);
+
+	void MulticastSetAsteroidInfo_Implementation(
+		const FTargetInfo& InAsteroidInfo,
+		const FVector& InTargetLocation,
+		const FVector& InDirection);
 };
 

@@ -41,11 +41,11 @@ ADroneEnemy::ADroneEnemy()
 	TiltOscAmplitude = 5.0f;
 	TiltOscFrequency = 0.2f;
 
-	// ===== 극단 최적화 =====
+	// ===== 네트워크 최적화: 부드러운 보간을 위해 더 높은 주기 =====
 	bReplicates = true;
-	NetUpdateFrequency = 8.0f;      // 15Hz → 8Hz (네트워크 50% 감소)
-	MinNetUpdateFrequency = 4.0f;   // 최소 4Hz
-	SetReplicateMovement(false);    // 위치/회전 리플리케이션 비활성화
+	NetUpdateFrequency = 20.0f;      // 8Hz → 20Hz (더 자주 동기화)
+	MinNetUpdateFrequency = 10.0f;   // 최소 10Hz
+	SetReplicateMovement(false);     // 커스텀 보간 사용
 }
 
 void ADroneEnemy::BeginPlay()
@@ -69,31 +69,46 @@ void ADroneEnemy::BeginPlay()
 	TiltAngleTarget = FMath::RandRange(-TiltAngleRange, TiltAngleRange);
 	TiltAxisYaw = FMath::RandRange(0.0f, 360.0f);
 	TimeSinceTiltChange = 0.0f;
-
-	// ===== LOD 타이머 시작: 거리 기반 최적화 =====
-	GetWorld()->GetTimerManager().SetTimer(
-		LODTimerHandle,
-		this,
-		&ADroneEnemy::UpdateLOD,
-		0.5f,  // 0.5초마다 거리 체크
-		true
-	);
 }
 
 void ADroneEnemy::Tick(float DeltaTime)
 {
-	// ===== 클라이언트: 서버 상태만 보간 =====
+	// ===== 클라이언트: 부드러운 보간 =====
 	if (!HasAuthority())
 	{
-		InterpAlpha += DeltaTime * 15.0f;
+		if (!bHasServerTransform)
+			return;
 
-		FTransform NewTransform = FTransform::Identity;
-		NewTransform.Blend(
-			PrevTransform,
-			ServerTransform,
-			FMath::Clamp(InterpAlpha, 0.0f, 1.0f)
+		float EffectiveInterpDuration = InterpDuration;
+		if (EffectiveInterpDuration <= KINDA_SMALL_NUMBER)
+			EffectiveInterpDuration = 1.0f / FMath::Max(1.0f, NetUpdateFrequency);
+
+		InterpAlpha += (DeltaTime / EffectiveInterpDuration);
+		float ClampedAlpha = FMath::Clamp(InterpAlpha, 0.0f, 1.0f);
+
+		if (ClampedAlpha >= 1.0f)
+		{
+			SetActorTransform(ServerTransform, false);
+			return;
+		}
+
+		FVector NewLocation = FMath::Lerp(
+			PrevTransform.GetLocation(),
+			ServerTransform.GetLocation(),
+			ClampedAlpha
 		);
 
+		FQuat PrevQuat = PrevTransform.Rotator().Quaternion();
+		FQuat ServerQuat = ServerTransform.Rotator().Quaternion();
+		FQuat NewQuat = FQuat::Slerp(PrevQuat, ServerQuat, ClampedAlpha);
+
+		FVector InterpScale = FMath::Lerp(
+			PrevTransform.GetScale3D(),
+			ServerTransform.GetScale3D(),
+			ClampedAlpha
+		);
+
+		FTransform NewTransform(NewQuat, NewLocation, InterpScale);
 		SetActorTransform(NewTransform, false);
 		return;
 	}
@@ -101,27 +116,13 @@ void ADroneEnemy::Tick(float DeltaTime)
 	// ===== 서버: 실제 로직 실행 =====
 	Super::Tick(DeltaTime);
 
-	// ===== LOD에 따라 처리 빈도 조절 =====
-	static int32 TickCounter = 0;
-	TickCounter++;
-
-	int32 TickSkipInterval = 1;  // 기본값: 모든 Tick 실행
-	
-	if (CurrentLOD == ELODLevel::VeryFar)
-		TickSkipInterval = 4;  // 4프레임마다 한 번
-	else if (CurrentLOD == ELODLevel::Far)
-		TickSkipInterval = 2;  // 2프레임마다 한 번
-	// ELODLevel::Close면 모든 프레임 실행
-
-	if (TickCounter % TickSkipInterval != 0)
-		return;
-
 	if (CanCheck)
 		CheckChaseDistance();
 
 	if (!bIsChasing)
 		bOrbiting = false;
 
+	// ===== 이동은 매프레임 실행 =====
 	if (bIsChasing && Target && IsValid(_spaceShip))
 	{
 		ChaseMove(DeltaTime);
@@ -143,59 +144,23 @@ void ADroneEnemy::Tick(float DeltaTime)
 	ServerTransform = GetActorTransform();
 }
 
-// ===== 거리 기반 LOD 업데이트 =====
-void ADroneEnemy::UpdateLOD()
+void ADroneEnemy::OnRep_ServerTransform()
 {
-	if (!HasAuthority() || !_spaceShip)
-		return;
+	PrevTransform = GetActorTransform();
+	InterpAlpha = 0.0f;
 
-	float Distance = FVector::Dist(GetActorLocation(), _spaceShip->GetActorLocation());
-
-	ELODLevel NewLOD = ELODLevel::Close;
-
-	// ===== 거리에 따라 LOD 결정 (1 UU = 1 cm 기준) =====
-	// Detection Range가 10,000 UU(100m)이므로 그보다 큰 범위로 설정
-	if (Distance > 50000.0f)  // 500m 이상
-		NewLOD = ELODLevel::VeryFar;
-	else if (Distance > 25000.0f)  // 250m 이상
-		NewLOD = ELODLevel::Far;
+	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+	if (LastServerUpdateTime <= KINDA_SMALL_NUMBER)
+	{
+		InterpDuration = 1.0f / FMath::Max(1.0f, NetUpdateFrequency);
+	}
 	else
-		NewLOD = ELODLevel::Close;  // 250m 이하
-
-	// LOD 변경 시에만 업데이트
-	if (NewLOD != CurrentLOD)
 	{
-		CurrentLOD = NewLOD;
-		ApplyLODSettings();
+		InterpDuration = FMath::Max(0.001f, Now - LastServerUpdateTime);
 	}
-}
 
-// ===== LOD 설정 적용 =====
-void ADroneEnemy::ApplyLODSettings()
-{
-	switch (CurrentLOD)
-	{
-	case ELODLevel::Close:
-		// 최고 품질: 모든 기능 활성화 (0~250m)
-		NetUpdateFrequency = 8.0f;
-		if (TurretMesh)
-			TurretMesh->SetVisibility(true);
-		break;
-
-	case ELODLevel::Far:
-		// 중간 품질: 네트워크 업데이트 감소 (250m~500m)
-		NetUpdateFrequency = 4.0f;
-		if (TurretMesh)
-			TurretMesh->SetVisibility(true);
-		break;
-
-	case ELODLevel::VeryFar:
-		// 낮은 품질: 최소 네트워크 업데이트 (500m 이상)
-		NetUpdateFrequency = 2.0f;
-		if (TurretMesh)
-			TurretMesh->SetVisibility(false);  // 렌더링 중단
-		break;
-	}
+	LastServerUpdateTime = Now;
+	bHasServerTransform = true;
 }
 
 void ADroneEnemy::ChaseMove(float DeltaTime)
@@ -658,12 +623,6 @@ void ADroneEnemy::ApplySpin(float DeltaTime)
 	FQuat NewQuat = SpinQuat * GetActorQuat();
 
 	SetActorRotation(NewQuat);  
-}
-
-void ADroneEnemy::OnRep_ServerTransform()
-{
-	PrevTransform = GetActorTransform();
-	InterpAlpha = 0.0f;
 }
 
 void ADroneEnemy::GetLifetimeReplicatedProps(

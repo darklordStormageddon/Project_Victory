@@ -11,10 +11,10 @@ ABullet::ABullet()
 	PrimaryActorTick.bCanEverTick = false;
 
 	// ======================
-	// Replication - 극단 최소화
+	// Replication
 	// ======================
-	bReplicates = false;  // ===== 변경: 서버만 관리, 클라이언트는 시각적으로만 =====
-	SetReplicateMovement(false);
+	bReplicates = true;  // ===== 클라이언트에서도 볼 수 있도록 활성화 =====
+	SetReplicateMovement(true);  // 위치 리플리케이션 활성화
 
 	// ======================
 	// Collision
@@ -41,12 +41,12 @@ ABullet::ABullet()
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
 	ProjectileMovement->ProjectileGravityScale = 0.f;
-	ProjectileMovement->SetIsReplicated(false);
+	ProjectileMovement->SetIsReplicated(true);  // 리플리케이션 활성화
 
-	// ===== 극단적 최적화 =====
-	InitialLifeSpan = 2.0f;  // 생존 시간 단축
-	NetUpdateFrequency = 0.0f;  // 리플리케이션 완전 비활성화
-	MinNetUpdateFrequency = 0.0f;
+	// ===== 최적화 =====
+	InitialLifeSpan = 2.0f;
+	NetUpdateFrequency = 10.0f;      // 클라에 주기적으로 위치 동기화
+	MinNetUpdateFrequency = 5.0f;
 }
 
 // Called when the game starts or when spawned

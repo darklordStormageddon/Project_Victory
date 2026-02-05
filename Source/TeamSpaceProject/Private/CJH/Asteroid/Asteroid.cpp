@@ -17,6 +17,11 @@ AAsteroid::AAsteroid()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	bReplicates = true;
+	SetReplicateMovement(true);
+	NetUpdateFrequency = 30.0f;
+	MinNetUpdateFrequency = 15.0f;
+
 	SpaceObjectComp = CreateDefaultSubobject<USpaceObjectComponent>(TEXT("SpaceObjectComponent"));
 
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
@@ -44,8 +49,11 @@ void AAsteroid::BeginPlay()
 	HealthComp->OnDeath.AddDynamic(this, &AAsteroid::OnDestroy);
 	Collision->OnComponentHit.AddDynamic(this, &AAsteroid::OnHit);
 	
-	if(GetSpaceManager())
+	// Ensure SpaceManager is initialized before any RPC operations
+	if (GetSpaceManager())
+	{
 		SetAsteroidRot();
+	}
 }
 
 // Called every frame
@@ -84,16 +92,30 @@ void AAsteroid::SetAsteroidInfo(
 		TargetLocation = VSpaceShip;
 	
 	// === 방향 계산 ===
-	Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();// 방향 벡터 단위벡터화
+	Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();
 	Direction *= _targetInfo.Speed;
 
 	AJHSGameMode* GameMode = Cast<AJHSGameMode>(GetWorld()->GetAuthGameMode());
 
 	HealthComp->SetCurrentHP(_targetInfo.Max_HP);
 
-
+	// ===== RPC: 모든 클라이언트에 정보 동기화 =====
+	if (HasAuthority())
+		MulticastSetAsteroidInfo(InAsteroidInfo, TargetLocation, Direction);
 }
 
+// ===== RPC 함수 추가 =====
+void AAsteroid::MulticastSetAsteroidInfo_Implementation(
+	const FTargetInfo& InAsteroidInfo,
+	const FVector& InTargetLocation,
+	const FVector& InDirection)
+{
+	_targetInfo = InAsteroidInfo;
+	TargetLocation = InTargetLocation;
+	Direction = InDirection;
+	HealthComp->SetCurrentHP(_targetInfo.Max_HP);
+}
+	
 bool AAsteroid::CalculateInterceptPoint(
 	const FVector& AsteroidPos,
 	const FVector& ShipPos,
@@ -185,34 +207,46 @@ void AAsteroid::OnHit(
 	if (!OtherActor)
 		return;
 
-	if (!HitParticle)
-		UGameplayStatics::SpawnEmitterAtLocation(
-			GetWorld(),
-			HitParticle,
-			Hit.ImpactPoint,
-			Hit.ImpactNormal.Rotation()
-		);
-	/*UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherActor->GetName())*/
+	if (HasAuthority() && HitParticle)
+		MulticastHitEffect(Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
 
-	
 	if (UHealthComponent* Health = OtherActor->FindComponentByClass<UHealthComponent>())
 		Health->TakeDamage(_targetInfo.Attack_Damage);
 
 	Destroy(); // 맞으면 사라짐
 }
 
+void AAsteroid::MulticastHitEffect_Implementation(
+	const FVector& ImpactPoint,
+	const FRotator& ImpactRotation)
+{
+	if (GetNetMode() == NM_DedicatedServer)
+		return;
+
+	if (!HitParticle)
+		return;
+
+	const FTransform SpawnTransform(ImpactRotation, ImpactPoint, HitParticleScale);
+
+	UGameplayStatics::SpawnEmitterAtLocation(
+		GetWorld(),
+		HitParticle,
+		SpawnTransform
+	);
+}
+
 bool AAsteroid::GetSpaceManager()
 {
-	if (SpaceManager = nullptr)
+	if (SpaceManager == nullptr)  // Fixed: Use == for comparison instead of = for assignment
 	{
 		USpaceManager* _outSpaceManager = nullptr;
 		if (!UStaticFunctionLibrary::TryGetSpaceManager(_outSpaceManager))
-			return true;
+			return false;  // Changed: Return false if failed to get SpaceManager
 
 		SpaceManager = _outSpaceManager;
 		SpaceStation = SpaceManager->GetSpaceStation();
 		
-		return false;
+		return true;  // Changed: Return true if successful
 	}
 
 	return true;
