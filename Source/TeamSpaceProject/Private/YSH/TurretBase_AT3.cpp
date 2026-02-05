@@ -51,12 +51,10 @@ void ATurretBase_AT3::BeginPlay()
 	if (UStaticFunctionLibrary::TryGetGameState(TempGameState))
 	{
 		_cachedGameState = TempGameState;
-
-		// TurretStateGroup의 TryEquipTurret 사용
-		if (_cachedGameState->GetTurretStateGroup())
-		{
-			_cachedGameState->GetTurretStateGroup()->TryEquipTurret(E_TURRET_POSITION::Left, E_AMMO_TYPE::Cannon, this);
-		}
+	}
+	else
+	{
+		//UE_LOG(LogTemp, Error, TEXT("ATurretBase_AT3: Failed to get GameState"));
 	}
 }
 
@@ -68,48 +66,29 @@ void ATurretBase_AT3::Tick(float DeltaTime)
 	if (!_cachedGameState)
 		return;
 
-	// 디버그 시각화
-	DrawDebugVisualization();
+	if (!HasAuthority())
+		return;
 
-	// 1. 타겟 탐지 및 추적
+	//DrawDebugVisualization();
+
 	FindAndTrackTarget(DeltaTime);
 
-	// 2. 타겟을 향해서 회전
 	if (CurrentTarget)
 	{
 		RotateTowardsTarget(DeltaTime);
 
-		// 3. 자동 발사 - 좌우 머즐 독립 쿨타임 관리
-		LeftMuzzleTimeSinceLastFire += DeltaTime;
-		RightMuzzleTimeSinceLastFire += DeltaTime;
+		// TurretBase와 동일한 단일 쿨타임 방식
+		TimeSinceLastFire += DeltaTime;
 
 		float CurrentFireCoolTime = 0.0f;
 		UTurretStateGroup* TurretStateGroup = _cachedGameState->GetTurretStateGroup();
 
 		if (TurretStateGroup && TurretStateGroup->TryGetTurretFireInterval(TurretPosition, &CurrentFireCoolTime))
 		{
-			if (IsTargetInLineOfSight())
+			if (IsTargetInLineOfSight() && TimeSinceLastFire >= CurrentFireCoolTime)
 			{
-				// 다음 발사할 머즐의 쿨타임만 체크
-				float& CurrentMuzzleCooldown = bIsLeftMuzzleNext ? LeftMuzzleTimeSinceLastFire : RightMuzzleTimeSinceLastFire;
-
-				// 디버그 로그 추가
-				static float LastLogTime = 0.0f;
-				float CurrentTime = GetWorld()->GetTimeSeconds();
-				if (CurrentTime - LastLogTime > 0.5f)  // 0.5초마다 로그
-				{
-					UE_LOG(LogTemp, Warning, TEXT("AT3 Cooldown Check - Next: %s, Left: %.2f, Right: %.2f, Required: %.2f"),
-						bIsLeftMuzzleNext ? TEXT("Left") : TEXT("Right"),
-						LeftMuzzleTimeSinceLastFire,
-						RightMuzzleTimeSinceLastFire,
-						CurrentFireCoolTime);
-					LastLogTime = CurrentTime;
-				}
-
-				if (CurrentMuzzleCooldown >= CurrentFireCoolTime)
-				{
-					TryAutoFire();
-				}
+				TryAutoFire();
+				TimeSinceLastFire -= CurrentFireCoolTime;
 			}
 		}
 	}
@@ -238,54 +217,44 @@ void ATurretBase_AT3::RotateTowardsTarget(float DeltaTime)
 
 void ATurretBase_AT3::TryAutoFire()
 {
+	if (!HasAuthority())
+		return;
+
 	UTurretStateGroup* TurretStateGroup = _cachedGameState->GetTurretStateGroup();
 	if (!TurretStateGroup)
 		return;
 
-	// 발사할 머즐 선택 (토글 전에 저장)
-	USceneComponent* CurrentMuzzle = bIsLeftMuzzleNext ? LeftMuzzle : RightMuzzle;
-	bool bFiringLeft = bIsLeftMuzzleNext;
-
-	// 탄약 소비 및 발사 가능 여부 확인
+	// TryFireTurret으로 탄약 소비 및 발사 가능 여부 확인
 	if (!TurretStateGroup->TryFireTurret(TurretPosition))
+	{
+		// 발사 실패 (탄약 부족 등)
 		return;
+	}
 
-	// ★ 중요: 쿨타임 리셋을 탄약 소비 성공 후 즉시 실행 ★
-	if (bFiringLeft)
-	{
-		LeftMuzzleTimeSinceLastFire = 0.0f;
-	}
-	else
-	{
-		RightMuzzleTimeSinceLastFire = 0.0f;
-	}
+	// 발사 성공 - 실제 발사 로직 실행 (TurretBase와 동일)
+	USceneComponent* CurrentMuzzle = bIsLeftMuzzleNext ? LeftMuzzle : RightMuzzle;
 
 	// 다음 발사할 머즐 토글
 	bIsLeftMuzzleNext = !bIsLeftMuzzleNext;
 
-	if (CurrentMuzzle && ProjectileClass && CurrentTarget)
+	if (CurrentMuzzle && ProjectileClass)
 	{
+		// 기본 위치와 회전
 		FVector MuzzleLocation = CurrentMuzzle->GetComponentLocation();
-
-		// 타겟 방향으로 발사 각도 설정
-		FVector TargetLocation = CurrentTarget->GetActorLocation();
-		FVector Direction = (TargetLocation - MuzzleLocation).GetSafeNormal();
-		FRotator FireRotation = Direction.Rotation();
-
-		// 이펙트용 머즐 회전 설정
 		FRotator MuzzleRotation = CurrentMuzzle->GetComponentRotation();
+
+		// 이펙트용 회전 및 위치 계산 (TurretBase와 동일)
 		FRotator EffectRotation = MuzzleRotation + MuzzleFlashRotationOffset;
 		FVector EffectLocation = MuzzleLocation + MuzzleRotation.RotateVector(MuzzleFlashLocationOffset);
 
-		// 발사체 생성
+		// 발사체 스폰 (회전 보정 없음)
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 		SpawnParams.Instigator = GetInstigator();
-
 		AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(
 			ProjectileClass,
 			MuzzleLocation,
-			FireRotation,
+			MuzzleRotation,
 			SpawnParams
 		);
 
@@ -295,7 +264,9 @@ void ATurretBase_AT3::TryAutoFire()
 			Projectile->SetOwningTurret(this);
 		}
 
-		// Muzzle Flash 이펙트
+		MulticastPlayFireEffects(EffectLocation, EffectRotation);
+
+		// Cascade 이펙트 (보정된 회전 사용)
 		if (MuzzleFlashEffect)
 		{
 			UParticleSystemComponent* PSC = UGameplayStatics::SpawnEmitterAtLocation(
@@ -316,7 +287,7 @@ void ATurretBase_AT3::TryAutoFire()
 			}
 		}
 
-		// 발사 사운드
+		// 사운드
 		if (FireSound)
 		{
 			UGameplayStatics::PlaySoundAtLocation(this, FireSound, EffectLocation);
@@ -331,12 +302,6 @@ void ATurretBase_AT3::TryAutoFire()
 				PC->ClientStartCameraShake(FireCameraShake);
 			}
 		}
-
-		// 디버그 로그
-		UE_LOG(LogTemp, Warning, TEXT("AT3 Fired: %s Muzzle - Left: %.2f, Right: %.2f"),
-			bFiringLeft ? TEXT("Left") : TEXT("Right"),
-			LeftMuzzleTimeSinceLastFire,
-			RightMuzzleTimeSinceLastFire);
 	}
 }
 
@@ -535,6 +500,46 @@ void ATurretBase_AT3::DrawDebugVisualization()
 			0,
 			3.0f
 		);
+	}
+}
+
+void ATurretBase_AT3::MulticastPlayFireEffects_Implementation(FVector EffectLocation, FRotator EffectRotation)
+{
+	// Cascade 이펙트 (보정된 회전 사용)
+	if (MuzzleFlashEffect)
+	{
+		UParticleSystemComponent* PSC = UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			MuzzleFlashEffect,
+			EffectLocation,
+			EffectRotation,
+			FVector(MuzzleFlashScale),
+			true,
+			EPSCPoolMethod::AutoRelease,
+			true
+		);
+
+		if (PSC)
+		{
+			PSC->bAutoDestroy = true;
+			PSC->SecondsBeforeInactive = 0.0f;
+		}
+	}
+
+	// 사운드
+	if (FireSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, FireSound, EffectLocation);
+	}
+
+	// 카메라 쉐이크 (로컬 플레이어만)
+	if (FireCameraShake)
+	{
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		if (PC && PC->IsLocalController())
+		{
+			PC->ClientStartCameraShake(FireCameraShake);
+		}
 	}
 }
 

@@ -18,28 +18,21 @@ class ATurretBase_AT3 : public APawn
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this pawn's properties
 	ATurretBase_AT3();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void AddYawInput(float YawInputDegPerSec, float DeltaTime);
 	void AddPitchInput(float PitchInputDegPerSec, float DeltaTime);
 
-	// 타겟 무효화 함수 (Projectile이 적을 처치했을 때 호출)
 	UFUNCTION(BlueprintCallable, Category = "Turret")
 	void InvalidateCurrentTarget(AActor* DestroyedTarget);
 
-	// 터렛 위치 설정
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Position")
 	E_TURRET_POSITION TurretPosition = E_TURRET_POSITION::Left;
 
@@ -82,7 +75,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Turret|Auto")
 	TSubclassOf<AActor> TargetActorClass;
 
-	// === 반구형 탐지 영역 ===
+	// === 반구형 탐지 설정 ===
 	UPROPERTY(EditAnywhere, Category = "Turret|Auto")
 	bool bUseHemisphericalDetection = true;
 
@@ -136,10 +129,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Turret|Debug")
 	FColor DebugLineOfSightColor = FColor::Red;
 
-	// === 듀얼 머즐 독립 쿨타임 ===
-	float LeftMuzzleTimeSinceLastFire = 0.0f;
-	float RightMuzzleTimeSinceLastFire = 0.0f;
-	bool bIsLeftMuzzleNext = true;  // 다음에 발사할 머즐 추적
+	// === 단일 쿨타임 변수 ===
+	float TimeSinceLastFire = 0.0f;
+	bool bIsLeftMuzzleNext = true;
 
 	// === GameState 캐시 ===
 	TObjectPtr<AJHSGameState> _cachedGameState = nullptr;
@@ -151,7 +143,9 @@ private:
 	bool IsTargetInRange() const;
 	bool IsTargetInLineOfSight() const;
 	void DrawDebugVisualization();
-
-	// 반구형 탐지 체크 보조 함수
 	bool IsTargetInHemisphere(AActor* Target) const;
+
+	// ★ Multicast RPC 함수 추가 ★
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayFireEffects(FVector EffectLocation, FRotator EffectRotation);
 };
