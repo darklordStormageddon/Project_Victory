@@ -12,6 +12,36 @@ class ASpaceStation;
 class AEnemyBase;
 class AGarbageEnemyBase;
 
+USTRUCT()
+struct FDroneOrbitData
+{
+	GENERATED_BODY()
+
+	FDroneOrbitData()
+	{
+		OrbitAxis = FVector::UpVector;
+		OrbitRadius = 1500.0f;
+		Phase = 0.0f;
+		AngularSpeed = 30.0f;
+	}
+
+	UPROPERTY(EditDefaultsOnly, Category = "Orbit")
+	FVector OrbitAxis;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Orbit", meta = (ClampMin = "100.0", ClampMax = "5000.0"))
+	float OrbitRadius;
+
+	// 현재 그룹 위상(도). RotateSpeed에 따라 증가
+	UPROPERTY(EditDefaultsOnly, Category = "Orbit")
+	float Phase;
+
+	// 개별 공전 회전 속도 범위
+	UPROPERTY(EditDefaultsOnly, Category = "Orbit")
+	float AngularSpeed;
+
+};
+
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UGarbageEnemyManagerComponent : public UEnemyManagerComponent
 {
@@ -72,6 +102,12 @@ protected:
 	bool _debug = true;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Debug")
+	bool _debugOrbitLine = true;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Debug")
+	bool _debugOrbitPoint = true;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Debug")
 	float _debugRadius = 100.0f;
 
 	FQuat TiltQuat;
@@ -81,6 +117,9 @@ protected:
 
 	// 타이머 핸들
 	FTimerHandle OrbitTimerHandle;
+
+	// 개별 드론 궤도 데이터
+	TMap<AGarbageEnemyBase*, FDroneOrbitData> OrbitData;
 
 protected:
 	// Sets default values for this component's properties
@@ -103,7 +142,10 @@ protected:
 
 	// Garbage 중심을 기준으로 Junior의 목표 위치 계산 및 할당
 	void BuildOrbitStructure();
-	void TurnOrbit();  // DeltaTime 파라미터 제거
+	void TurnOrbit();  // DeltaTime 파라미터 없음
+
+	// 개별 궤도 초기화
+	void InitializeOrbitData(AGarbageEnemyBase* Drone);
 
 	// Garbage 중심 좌표 얻기(Owner 기준)
 	FVector GetCenterLocation()
