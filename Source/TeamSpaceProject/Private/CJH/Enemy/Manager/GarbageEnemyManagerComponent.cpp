@@ -14,8 +14,9 @@
 UGarbageEnemyManagerComponent::UGarbageEnemyManagerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	// ===== 극단 최적화: Tick 간격 확대 =====
+	PrimaryComponentTick.TickInterval = 0.2f;  // 10Hz → 5Hz (50% 감소)
 
-	// 기본값(필요시 Detail에서 조정)
 	OrbitMinDistance = 800.0f;
 	OrbitMaxDistance = 1800.0f;
 	OrbitDistance = 1500.0f;
@@ -31,11 +32,18 @@ void UGarbageEnemyManagerComponent::BeginPlay()
 	Super::BeginPlay();
 
 	if (GetOwner() && GetOwner()->HasAuthority())
+	{
 		GarbageSpawnSetting();
 
-
-	//FTimerHandle Delete;
-	//GetWorld()->GetTimerManager().SetTimer(Delete, this, &UGarbageEnemyManagerComponent::DeleteAllEnemy, 3.f);
+		// ===== 극단 최적화: 오비트 타이머 간격 확대 =====
+		GetWorld()->GetTimerManager().SetTimer(
+			OrbitTimerHandle,
+			this,
+			&UGarbageEnemyManagerComponent::TurnOrbit,
+			0.1f,  // 0.05초 → 0.1초 (20Hz → 10Hz, 50% 감소)
+			true
+		);
+	}
 }
 
 void UGarbageEnemyManagerComponent::GarbageSpawnSetting()
@@ -87,20 +95,24 @@ void UGarbageEnemyManagerComponent::SpawnEnemy(
 			Garbage->OwnerGET(_owner);
 			Garbage->ComponentGET(this);
 
-			// 초기 target 자리 채우기 (MakeOrbitStructure가 다음 Tick에서 덮어씀)
 			FVector Center = GetCenterLocation();
-			FRotator R = FRotator(OrbitPitch, 0.0f, 0.0f); // 모든 자식이 공유하는 피치 사용 (초기자리)
+			FRotator R = FRotator(OrbitPitch, 0.0f, 0.0f);
 			FVector Dir = R.Vector().GetSafeNormal();
 			FVector Target = Center + Dir * OrbitDistance;
 			JuniorEnemies.Add(Garbage, Target);
 
-			// 드론 속성 설정(자전축 등 기존 로직 유지)
 			SetDroneProperties(Garbage);
 		}
 
-		OrbitSet();
-
-		BuildOrbitStructure();
+		if (GarbageEnemies.Num() == 1)
+		{
+			OrbitSet();
+			BuildOrbitStructure();
+		}
+		else
+		{
+			BuildOrbitStructure();
+		}
 	}
 }
 
@@ -108,42 +120,35 @@ void UGarbageEnemyManagerComponent::SetDroneProperties(AEnemyBase* Drone)
 {
 	if (!Drone) return;
 
-	if (Drone->IsA<ADroneEnemy>())
+	ADroneEnemy* DroneEnemy = Cast<ADroneEnemy>(Drone);
+	if (DroneEnemy)
 	{
-		ADroneEnemy* DroneEnemy = Cast<ADroneEnemy>(Drone);
-		if (DroneEnemy)
-		{
-			FVector RandomAxis = FMath::VRand();
-			DroneEnemy->SetSpinAxis(RandomAxis);
-		}
+		FVector RandomAxis = FMath::VRand();
+		DroneEnemy->SetSpinAxis(RandomAxis);
 	}
 }
 
 void UGarbageEnemyManagerComponent::OrbitSet()
 {
-	// 모든 Junior가 공유하는 공전 파라미터 결정(컴포넌트 단위)
 	OrbitDistance = FMath::RandRange(OrbitMinDistance, OrbitMaxDistance);
 	OrbitPitch = FMath::RandRange(-OrbitPitchRange, OrbitPitchRange);
 	RotateSpeed = FMath::RandRange(RotateMinSpeed, RotateMaxSpeed);
 
-	// 궤도 평면 기울일 축을 수평 방향에서 랜덤으로 선택 (XY 평면의 단위벡터)
 	float RandomYawForTilt = FMath::RandRange(0.0f, 360.0f);
 	OrbitTiltAxis = FRotator(0.0f, RandomYawForTilt, 0.0f).Vector().GetSafeNormal();
 
-	// 그룹 위상 초기화(랜덤 시작 가능)
 	CurrentOrbitPhase = FMath::RandRange(0.0f, 360.0f);
 }
 
 void UGarbageEnemyManagerComponent::BuildOrbitStructure()
 {
-	Num = GarbageEnemies.Num();
-	if (Num == 0)
+	int32 GarbageCount = GarbageEnemies.Num();
+	
+	if (GarbageCount == 0)
 		return;
 
-	// 각 엔티티에 균등하게 각도 분배 (컴포넌트 단위로 동일한 OrbitPitch/OrbitDistance 사용)
-	AngleStep = 360.0f / float(Num);
+	AngleStep = 360.0f / static_cast<float>(GarbageCount);
 
-	// 쿼터니언 하나로 궤도 평면 전체를 회전시킬 준비
 	TiltQuat = FQuat(OrbitTiltAxis.GetSafeNormal(), FMath::DegreesToRadians(OrbitPitch));
 }
 
@@ -152,55 +157,59 @@ void UGarbageEnemyManagerComponent::TickComponent(float DeltaTime, ELevelTick Ti
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	// ===== 클라이언트: Tick 완전 스킵 =====
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 		return;
-
-	if (candebug && _debug)
-		DebugVector();
-
-	if (GarbageEnemies.Num() != 0 && JuniorEnemies.Num() != 0)
-		TurnOrbit(DeltaTime);
 }
 
-void UGarbageEnemyManagerComponent::TurnOrbit(float DeltaTime)
+// ===== 타이머 기반 오비트 계산 =====
+void UGarbageEnemyManagerComponent::TurnOrbit()
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 		return;
 
-	// 그룹 위상(도) 증가
-	CurrentOrbitPhase += RotateSpeed * DeltaTime;
-	if (CurrentOrbitPhase >= 360.0f) CurrentOrbitPhase = FMath::Fmod(CurrentOrbitPhase, 360.0f);
-	if (CurrentOrbitPhase < 0.0f) CurrentOrbitPhase += 360.0f;
+	const float FixedDeltaTime = 0.1f;
+	
+	CurrentOrbitPhase += RotateSpeed * FixedDeltaTime;
+	if (CurrentOrbitPhase >= 360.0f) 
+		CurrentOrbitPhase -= 360.0f;
 
-	// 중심 위치(garbage의 오너 혹은 컴포넌트 소유자)
 	FVector Center = GetCenterLocation();
+	
+	int32 GarbageCount = GarbageEnemies.Num();
+	if (GarbageCount == 0)
+		return;
 
-	for (int i = 0; i < Num; ++i)
+	// ===== 극단 최적화: 매 3프레임마다만 업데이트 =====
+	static int32 UpdateCounter = 0;
+	UpdateCounter++;
+	
+	int32 UpdateInterval = 3;  // 10Hz → 3Hz 실제 업데이트
+	if (UpdateCounter % UpdateInterval != 0)
+		return;
+
+	for (int32 i = 0; i < GarbageCount; ++i)
 	{
 		AGarbageEnemyBase* GarbageEnemy = GarbageEnemies[i];
-		if (!GarbageEnemy) continue;
+		if (!GarbageEnemy || !IsValid(GarbageEnemy)) 
+			continue;
 
-		// === 추격 중인지 확인 (드론인 경우) ===
 		ADroneEnemy* DroneEnemy = Cast<ADroneEnemy>(GarbageEnemy);
 		if (DroneEnemy && DroneEnemy->IsChasing())
 			continue;
 
-		// 그룹 위상(CurrentOrbitPhase)을 더해 전체가 회전하도록 함
 		float Yaw = i * AngleStep + CurrentOrbitPhase;
 		float YawRad = FMath::DegreesToRadians(Yaw);
 
-		// 원형의 기본 단위벡터 (XY 평면)
-		FVector Radial = FVector(FMath::Cos(YawRad), FMath::Sin(YawRad), 0.0f).GetSafeNormal();
+		float CosYaw = FMath::Cos(YawRad);
+		float SinYaw = FMath::Sin(YawRad);
+		FVector Radial(CosYaw, SinYaw, 0.0f);
 
-		// 전체 궤도 평면을 TiltQuat로 회전 -> 동일한 tilt 축/각도로 모든 점을 이동시킴
 		FVector TiltedDir = TiltQuat.RotateVector(Radial).GetSafeNormal();
-
 		FVector TargetPos = Center + TiltedDir * OrbitDistance;
 
-		// 맵 갱신 및 엔티티에 목표 전달
 		JuniorEnemies[GarbageEnemy] = TargetPos;
 
-		// 엔티티(가비지)에 목표 전달 - 엔티티는 이 목표를 따라가기만 하면 됨
 		GarbageEnemy->SetOrbitTarget(TargetPos);
 	}
 }
@@ -209,8 +218,6 @@ void UGarbageEnemyManagerComponent::DebugVector()
 {
 	if (!GetOwner()->HasAuthority())
 		return;
-
-	candebug = false;
 
 	for (auto& elem : JuniorEnemies)
 	{
@@ -224,14 +231,7 @@ void UGarbageEnemyManagerComponent::DebugVector()
 			0.1f
 		);
 	}
-
-	FTimerHandle debugdelay;
-
-	GetWorld()->GetTimerManager().SetTimer(debugdelay, this, &UGarbageEnemyManagerComponent::CanDebug, 0.1f, false);
-  
 }
-
-
 
 void UGarbageEnemyManagerComponent::RemoveEnemies(AEnemyBase* _removeEnemy)
 {
@@ -254,10 +254,12 @@ void UGarbageEnemyManagerComponent::DeleteAllEnemy()
 {
 	Super::DeleteAllEnemy();
 
+	GetWorld()->GetTimerManager().ClearTimer(OrbitTimerHandle);
+
 	for (AEnemyBase* SpawnEnemy : GarbageEnemies)
 	{
 		if (!IsValid(SpawnEnemy))
-			return;
+			continue;
 
 		SpawnEnemy->Destroy();
 	}

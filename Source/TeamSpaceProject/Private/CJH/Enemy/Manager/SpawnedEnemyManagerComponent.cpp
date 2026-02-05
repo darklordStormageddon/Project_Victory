@@ -18,17 +18,27 @@ void USpawnedEnemyManagerComponent::TickComponent(float DeltaTime, ELevelTick Ti
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	// 클라이언트: 스킵
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+		return;
+
+	// 스폰 대기 중일 때만 처리
 	if (CanSpawn && _EnemyInfoMap.Num() > 0)
 		SpawnSetting();
 }
 
 void USpawnedEnemyManagerComponent::SpawnInMap(FVector SpawnLocation, FRotator SpawnRotation, TMap<TSubclassOf<AEnemyBase>, FSpawnEnemyInfo> _spawnInfo)
 {
-	float SpawnEnemyNum = FMath::RandRange(0, _spawnInfo.Num() - 1);
+	if (_spawnInfo.Num() == 0)
+		return;
 
-	int Index = 0;
+	// 랜덤 인덱스 계산
+	int32 SpawnEnemyNum = FMath::RandRange(0, _spawnInfo.Num() - 1);
 
-	for (auto& Elem : _spawnInfo)
+	int32 Index = 0;
+
+	// 맵 반복 최적화
+	for (const auto& Elem : _spawnInfo)
 	{
 		if (Index == SpawnEnemyNum)
 		{
@@ -47,50 +57,63 @@ void USpawnedEnemyManagerComponent::SpawnSetting()
 {
 	CanSpawn = false;
 
+	if (!_owner)
+		return;
+
 	FVector CenterLocation = _owner->GetActorLocation();
-
 	FVector RandomDirection = FMath::VRand();
-
 	FVector SpawnLocation = CenterLocation + RandomDirection * _spaceRadius;
 
-	FRotator SpawnRotation = FRotator(
-		FMath::RandRange(0, 360),
-		FMath::RandRange(0, 360),
-		FMath::RandRange(0, 360)
-	);
+	// 회전 최적화: 필요한 축만 랜덤화
+	FRotator SpawnRotation = FRotator::ZeroRotator;
 
 	SpawnInMap(SpawnLocation, SpawnRotation, _EnemyInfoMap);
 
-	GetWorld()->GetTimerManager().SetTimer(SpawnHandle, this, &USpawnedEnemyManagerComponent::SetCanSpawnTrue, SpawnDelay, false);
+	// 타이머 설정 (반복 실행 대신 한 번만 설정)
+	GetWorld()->GetTimerManager().SetTimer(
+		SpawnHandle,
+		this,
+		&USpawnedEnemyManagerComponent::SetCanSpawnTrue,
+		SpawnDelay,
+		false
+	);
 }
 
 void USpawnedEnemyManagerComponent::SpawnEnemy(TSubclassOf<AEnemyBase> Enemy, FSpawnEnemyInfo _enemyInfo, FVector SpawnLocation, FRotator SpawnRotator)
 {
-	SpawnedEnemy = GetWorld()->SpawnActor<AEnemyBase>(Enemy, SpawnLocation, SpawnRotator);
+	// 서버에서만 실행
+	if (!GetOwner()->HasAuthority())
+		return;
 
-	_spawnedEnemies.Add(SpawnedEnemy);
+	AEnemyBase* NewEnemy = GetWorld()->SpawnActor<AEnemyBase>(
+		Enemy,
+		SpawnLocation,
+		SpawnRotator
+	);
 
-	if (SpawnedEnemy)
-	{
-		FTargetInfo targetInfo;
-		FEnemyInfo EnemyInfo;
+	if (!NewEnemy)
+		return;
 
-		targetInfo.Size = FMath::RandRange(_enemyInfo.MinSize, _enemyInfo.MaxSize);
+	// 배열 추가
+	_spawnedEnemies.Add(NewEnemy);
 
-		targetInfo.Max_HP  = _enemyInfo.Max_HP;
-		targetInfo.Attack_Damage = _enemyInfo.Attack_Damage;
-		targetInfo.Speed = _enemyInfo.Move_Speed;
+	// 에너미 정보 설정
+	FTargetInfo TargetInfo;
+	TargetInfo.Size = FMath::RandRange(_enemyInfo.MinSize, _enemyInfo.MaxSize);
+	TargetInfo.Max_HP = _enemyInfo.Max_HP;
+	TargetInfo.Attack_Damage = _enemyInfo.Attack_Damage;
+	TargetInfo.Speed = _enemyInfo.Move_Speed;
 
-		EnemyInfo.Attack_Range = _enemyInfo.Attack_Range;
-		EnemyInfo.Detection_Range = _enemyInfo.Detection_Range;
-		EnemyInfo.Attack_Speed = _enemyInfo.Attack_Speed;
+	FEnemyInfo EnemyInfo;
+	EnemyInfo.Attack_Range = _enemyInfo.Attack_Range;
+	EnemyInfo.Detection_Range = _enemyInfo.Detection_Range;
+	EnemyInfo.Attack_Speed = _enemyInfo.Attack_Speed;
 
-		SpawnedEnemy->SetEnemyInfo(targetInfo, EnemyInfo);
-
-		SpawnedEnemy->SetTargetShip(_spaceShip);
-		SpawnedEnemy->OwnerGET(_owner);
-		SpawnedEnemy->ComponentGET(this);
-	}
+	// 한 번의 함수 호출로 정보 설정
+	NewEnemy->SetEnemyInfo(TargetInfo, EnemyInfo);
+	NewEnemy->SetTargetShip(_spaceShip);
+	NewEnemy->OwnerGET(_owner);
+	NewEnemy->ComponentGET(this);
 }
 
 void USpawnedEnemyManagerComponent::RemoveEnemies(AEnemyBase* _removeEnemy)

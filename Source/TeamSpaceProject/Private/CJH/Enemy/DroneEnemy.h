@@ -9,6 +9,15 @@
 
 class ABullet;
 
+// ===== LOD 레벨 정의 =====
+UENUM(BlueprintType)
+enum class ELODLevel : uint8
+{
+	Close = 0,     // 0~250m (25,000 UU): 최고 품질
+	Far = 1,       // 250m~500m (25,000~50,000 UU): 중간 품질
+	VeryFar = 2    // 500m 이상 (50,000 UU 이상): 최저 품질
+};
+
 UCLASS()
 class ADroneEnemy : public AGarbageEnemyBase
 {
@@ -26,70 +35,70 @@ private:
 
 	bool CanFire = true;
 
-	// Turret 회전 속도(인터폴 용)
+	// Turret 회전 속도(도/초)
 	float RotateSpeed = 50.0f;
 
-	// 드론이 현재 추격 중인지 여부
+	// 타켓을 추격 중인지 여부
 	bool bIsChasing = false;
 
-	// 자전 속도 (도/초)
+	// 스핀 속도 (도/초)
 	UPROPERTY(EditDefaultsOnly, Category = "Drone", meta = (ClampMin = "0.0"))
 	float SpinSpeed = 100.0f;
 
-	// --- Chase 곡선 관련 설정 ---
-	// 곡선 추격 시 오프셋 진폭(월드 단위)
+	// --- Chase & Orbit 관련 ---
+	// 공전 곡선 기본 진폭(미터)
 	UPROPERTY(EditDefaultsOnly, Category = "Chase", meta = (ClampMin = "0.0"))
 	float ChaseCurveAmplitude = 300.0f;
 
-	// 곡선 추격 주파수(회/초)
+	// 공전 곡선 진동빈도(회/초)
 	UPROPERTY(EditDefaultsOnly, Category = "Chase", meta = (ClampMin = "0.0"))
 	float ChaseCurveFrequency = 0.5f;
 
-	// 내부 상태: 위상(rad)
+	// 위상 업데이트: 각도(rad)
 	float ChaseCurvePhase = 0.0f;
 
-	// 내부 상태: 좌우 방향(sign, ±1)
+	// 위상 업데이트: 방향 부호(sign, ±1)
 	float ChaseCurveSign = 1.0f;
 
-	// 추격 시작 거리(Detail에서 조정 가능)
+	// 공전 추격 거리(Detail모드 한정)
 	UPROPERTY(EditDefaultsOnly, Category = "Drone", meta = (ClampMin = "100.0", ClampMax = "10000.0"))
 	float ChaseDistance = 2000.0f;
 
-	// 자전축 벡터
+	// 회전축 벡터
 	FVector RotationAxis;
 
 	bool bOrbiting = false;
 
-	// 공전 각속도(라디안/초) 현재/목표, 천천히 보간하여 다양성 제공
+	// 각속도 현재속도(라디안/초) 캐시/타겟, 천천한 보간으로 자연스러운 감소
 	float AngularSpeedCurrent = 0.0f;
 	float AngularSpeedTarget = 0.0f;
 	UPROPERTY(EditDefaultsOnly, Category = "Chase")
-	float AngularLerpSpeed = 1.0f; // 초당 전환 속도
+	float AngularLerpSpeed = 1.0f; // 느린 가속 속도
 
-	// 방향 전환 주기 및 확률
+	// 방향 변경 주기 & 확률
 	float TimeSinceDirChange = 0.0f;
 	UPROPERTY(EditDefaultsOnly, Category = "Chase")
 	float DirChangeInterval = 4.0f;
 	UPROPERTY(EditDefaultsOnly, Category = "Chase")
 	float DirReverseProbability = 0.25f;
 
-	// 컴포넌트가 아닌 개별 드론이 tilt 각도/축을 가짐
-	float TiltAngleCurrent = 0.0f;          // 도 단위
-	float TiltAngleTarget = 0.0f;           // 도 단위
+	// 공전축이 아닌 수직 방향의 tilt 각도/타겟 값
+	float TiltAngleCurrent = 0.0f;          // 현재 각도
+	float TiltAngleTarget = 0.0f;           // 목표 각도
 	UPROPERTY(EditDefaultsOnly, Category = "Chase|Tilt", meta = (ClampMin = "0.0", ClampMax = "89.0"))
-	float TiltAngleRange = 45.0f;           // ±범위 (도)
+	float TiltAngleRange = 45.0f;           // 범위선 (도)
 
 	UPROPERTY(EditDefaultsOnly, Category = "Chase|Tilt")
-	float TiltLerpSpeed = 0.5f;             // 도 단위 보간 속도(초당)
+	float TiltLerpSpeed = 0.5f;             // 틸트 보간 속도(느림)
 
-	float TiltAxisYaw = 0.0f;               // tilt axis를 결정하는 월드 Yaw (deg)
+	float TiltAxisYaw = 0.0f;               // tilt axis를 정의하는 수평 Yaw (deg)
 	UPROPERTY(EditDefaultsOnly, Category = "Chase|Tilt")
-	float TiltChangeInterval = 3.0f;        // tilt 목표 변경 주기(sec)
+	float TiltChangeInterval = 3.0f;        // tilt 타겟 변경 주기(sec)
 	float TimeSinceTiltChange = 0.0f;
 
-	// 약간의 진동 추가 (소량)
+	// 진동하는 미세한 공전 (허브)
 	UPROPERTY(EditDefaultsOnly, Category = "Chase|Tilt")
-	float TiltOscAmplitude = 5.0f;          // 도
+	float TiltOscAmplitude = 5.0f;          // 진폭
 	UPROPERTY(EditDefaultsOnly, Category = "Chase|Tilt")
 	float TiltOscFrequency = 0.2f;          // Hz
 
@@ -106,6 +115,12 @@ private:
 	UFUNCTION()
 	void OnRep_ServerTransform();
 
+	// ===== LOD 관련 멤버 변수 =====
+	UPROPERTY()
+	ELODLevel CurrentLOD = ELODLevel::Close;
+
+	FTimerHandle LODTimerHandle;
+
 private:
 	void Move(float DeltaTime);
 	void ChaseMove(float DeltaTime);
@@ -121,6 +136,10 @@ private:
 
 	void EnableFiring() { CanFire = true; }
 
+	// ===== LOD 함수 =====
+	void UpdateLOD();
+	void ApplyLODSettings();
+
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastFireEffect();
 
@@ -134,7 +153,7 @@ public:
 	void GetOwnerGarbage(AActor* _droneowner) { _owner = _droneowner; }
 	bool IsChasing() { return bIsChasing; }
 
-	// 자전축 세터
+	// 스핀축 설정
 	void SetSpinAxis(const FVector& NewAxis) { RotationAxis = NewAxis.GetSafeNormal(); }
 
 	virtual void GetLifetimeReplicatedProps(

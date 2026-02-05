@@ -1,23 +1,22 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "CJH/Enemy/Base/EnemyBase.h"
 
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/SpaceManager.h"
 
-#include "JHS/SpaceObject/SpaceObjectComponent.h"
+#include "JHS/SpaceObject/SpaceObjectComponent.h"	
 
 #include "CJH/Enemy/Manager/EnemyManagerComponent.h"
 #include "CJH/Enemy/Manager/GarbageEnemyManagerComponent.h"
 #include "CJH/Enemy/Manager/SpawnedEnemyManagerComponent.h"
 
+#include "Net/UnrealNetwork.h"
+
 // Sets default values
 AEnemyBase::AEnemyBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	FireComponent = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("FireComp"));
-	/*SpaceObjectComp = CreateDefaultSubobject<USpaceObjectComponent>(TEXT("SpaceObjectComponent"));*/
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 
 	bReplicates = true;
@@ -32,7 +31,17 @@ void AEnemyBase::BeginPlay()
 	if (!HasAuthority())
 		return;
 
-	HealthComp -> OnDeath.AddDynamic(this, &AEnemyBase::EnemyDeath);
+	// ===== 안전한 초기화 순서 =====
+	if (HealthComp)
+	{
+		FTimerHandle InitHandle;
+
+		GetWorld()->GetTimerManager().SetTimer(InitHandle, [this]()
+		{
+			SetInfo();
+			HealthComp->OnDeath.AddDynamic(this, &AEnemyBase::EnemyDeath);
+		}, 0.01f, false);
+	}
 }
 
 void AEnemyBase::SetInfo()
@@ -46,7 +55,12 @@ void AEnemyBase::SetInfo()
 	_targetInfo.Max_HP *= this->_targetInfo.Size;
 	_targetInfo.Attack_Damage *= this->_targetInfo.Size;
 
-	HealthComp->SetCurrentHP(_targetInfo.Max_HP);
+	// ===== 체력 업데이트 (바인딩 후) =====
+	if (HealthComp)
+	{
+		HealthComp->MaxHealth = _targetInfo.Max_HP;
+		HealthComp->CurrentHealth = _targetInfo.Max_HP;
+	}
 }
 
 // Called every frame
@@ -60,7 +74,6 @@ void AEnemyBase::Tick(float DeltaTime)
 	if(MinusDebug)
 		if (DelayBool)
 			MinusHp();
-
 }
 
 void AEnemyBase::MinusHp()
@@ -72,7 +85,10 @@ void AEnemyBase::MinusHp()
 
 	FTimerHandle MinusHandle;
 
-	HealthComp->CurrentHealth -= 20.f;
+	if (HealthComp)
+	{
+		HealthComp->CurrentHealth -= 20.f;
+	}
 
 	GetWorld()->GetTimerManager().SetTimer(MinusHandle, [this]() {DelayBool = true; }, 1.0f, false);
 }
@@ -94,6 +110,7 @@ bool AEnemyBase::TargetHPCheck()
 	}
 	return false;
 }
+
 // 플레이어와의 거리 체크
 bool AEnemyBase::DistanceCheck(float _condition)
 {
@@ -124,9 +141,16 @@ void AEnemyBase::EnemyDeath()
 	if (!HasAuthority())
 		return;
 
+	// ===== 안전 체크: 이미 죽었으면 리턴 =====
+	if (Murdered)
+		return;
+
 	Murdered = true;
 
-	if (DeathParticle)
+	UE_LOG(LogTemp, Warning, TEXT("AEnemyBase::EnemyDeath - Enemy died!"));
+
+	// ===== 파티클 안전하게 스폰 (현재 위치에서만) =====
+	if (DeathParticle && GetActorLocation().Length() > 100.f)  // 0,0,0 확인
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(
 			GetWorld(),
@@ -141,13 +165,26 @@ void AEnemyBase::EnemyDeath()
 		GetWorld()->GetTimerManager().SetTimer(
 			DebugReviveHandle, 
 			[this](){
-				HealthComp->CurrentHealth = HealthComp->MaxHealth;
+				if (HealthComp && Murdered)
+				{
+					Murdered = false;
+					HealthComp->CurrentHealth = HealthComp->MaxHealth;
+					UE_LOG(LogTemp, Warning, TEXT("AEnemyBase::EnemyDeath - Revived!"));
+				}
 			},
 			RiviveTime,
 			false);
 	}
 	else
-		this -> Destroy();
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			if (IsValid(this))
+			{
+				Destroy();
+			}
+		});
+	}
 }
 
 void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -178,8 +215,11 @@ void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	Super::EndPlay(EndPlayReason);
 
+	// ===== 죽었을 때만 폐기물 스폰 =====
 	if (EnemyGarbage && Murdered)
+	{
 		SpawnGarbageSetting();
+	}
 }
 
 void AEnemyBase::SetEnemyInfo(
