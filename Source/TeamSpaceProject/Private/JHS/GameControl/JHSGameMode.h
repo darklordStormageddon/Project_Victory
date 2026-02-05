@@ -29,6 +29,8 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
 	TObjectPtr<USpaceManager> _spaceManager = nullptr;
 
+	bool _isGameStarted = false;
+
 public:
 	UFUNCTION(BlueprintCallable, Category = "GameMode|UI Manager")
 	UUIManager* GetUIManager() { return _uiManager; }
@@ -46,7 +48,7 @@ protected:
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "GameMode|Game")
-	void StartGame();
+	void StartGame(AActor* Caller);
 
 	UFUNCTION(BlueprintCallable, Category = "GameMode|Game")
 	void StartStage(int32 Stage);

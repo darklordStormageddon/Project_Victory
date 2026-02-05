@@ -14,8 +14,8 @@
 
 AJHSGameState::AJHSGameState()
 {
-	_rootComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RootComponent"));
-	_rootComponent->SetupAttachment(RootComponent);
+	_rootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
+	RootComponent = _rootComponent;
 
 	_spaceShipStateGroup = CreateDefaultSubobject<USpaceShipStateGroup>(TEXT("SpaceShipStateGroup"));
 

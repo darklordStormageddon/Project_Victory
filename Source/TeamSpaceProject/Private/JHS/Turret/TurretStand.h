@@ -27,11 +27,11 @@ private:
 	TObjectPtr<AActor> _turret = nullptr;
 
 	UPROPERTY()
-	E_AMMO_TYPE _ammoType;
+	E_AMMO_TYPE _ammoType = E_AMMO_TYPE::NONE;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "TurretStand")
-	E_TURRET_POSITION _turretPosition;
+	E_TURRET_POSITION _turretPosition = E_TURRET_POSITION::END;
 
 public:
 	E_TURRET_POSITION GetTurretPosition() { return _turretPosition; }
@@ -47,7 +47,12 @@ public:
 public:
 	void InitializeTurretStand(TObjectPtr<UTurretStateGroup> TurretStateGroup);
 
+	bool CanEquipTurret() const;
+
 	bool TryEquipTurret(TObjectPtr<AActor> Turret, E_AMMO_TYPE AmmoType);
 
 	E_AMMO_TYPE GetAmmoType();
+
+private:
+	void RemoveCurrentTurret();
 };

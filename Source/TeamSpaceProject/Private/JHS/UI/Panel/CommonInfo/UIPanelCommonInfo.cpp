@@ -104,6 +104,6 @@ void UUIPanelCommonInfo::BuildRows(int32 InPlayerCount)
 
 		_playerRadiationDoseMap.Add(_playerIndex, _row);
 
-		UE_LOG(LogTemp, Warning, TEXT("UIPanelPlayerFPS: Created and added widget for player %d"), _playerIndex);
+		//UE_LOG(LogTemp, Warning, TEXT("UIPanelPlayerFPS: Created and added widget for player %d"), _playerIndex);
 	}
 }

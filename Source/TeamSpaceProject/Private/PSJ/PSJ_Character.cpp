@@ -31,7 +31,7 @@ void APSJ_Character::BeginPlay()
 	if (!UStaticFunctionLibrary::TryGetGameMode(_outGameMode))
 		return;
 
-	_outGameMode->StartGame();
+	_outGameMode->StartGame(this);
 
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationPitch = false;

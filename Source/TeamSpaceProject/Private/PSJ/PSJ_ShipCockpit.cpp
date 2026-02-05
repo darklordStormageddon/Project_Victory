@@ -68,5 +68,4 @@ void APSJ_ShipCockpit::OnInteractExit(TObjectPtr<UUIBase> OpenedUI)
 void APSJ_ShipCockpit::SetTargetPawn(TObjectPtr<APawn> TargetPawn)
 {
     TargetSpaceship = TargetPawn;
-    UE_LOG(LogTemp, Warning, TEXT("TargetPawn: %s "), *TargetSpaceship->GetName());
 }

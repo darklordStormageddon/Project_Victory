@@ -27,8 +27,20 @@ void AJHSGameMode::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AJHSGameMode::StartGame()
+void AJHSGameMode::StartGame(AActor* Caller)
 {
+	// 서버가 아니면 실행하지 않음
+	if (Caller == nullptr || !Caller->HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AJHSGameMode::StartGame - Not called from server"));
+		return;
+	}
+
+	// 이미 게임이 시작되었으면 중복 실행 방지
+	if (_isGameStarted)
+		return;
+
+	_isGameStarted = true;
 	StartStage(1);
 }
 
@@ -40,7 +52,7 @@ void AJHSGameMode::StartStage(int32 Stage)
 
 	TObjectPtr<UTurretStateGroup> _turretStateGroup = _outGameState->GetTurretStateGroup();
 	_turretStateGroup->SetInfiniteMagMode(true);
-	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet, nullptr);
-	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Right, E_AMMO_TYPE::Bullet, nullptr);
-	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Left, E_AMMO_TYPE::Missile, nullptr);
+	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Main, E_AMMO_TYPE::Bullet);
+	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Right, E_AMMO_TYPE::Bullet);
+	_turretStateGroup->TryEquipTurret(E_TURRET_POSITION::Left, E_AMMO_TYPE::Missile);
 }

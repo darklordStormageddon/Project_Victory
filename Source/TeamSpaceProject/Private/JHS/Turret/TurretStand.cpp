@@ -29,23 +29,20 @@ void ATurretStand::Tick(float DeltaTime)
 void ATurretStand::InitializeTurretStand(TObjectPtr<UTurretStateGroup> TurretStateGroup)
 {
 	_turretManager = TurretStateGroup;
-	_turret = nullptr;
+	RemoveCurrentTurret();
+}
+
+bool ATurretStand::CanEquipTurret() const
+{
+	return _turret == nullptr;
 }
 
 bool ATurretStand::TryEquipTurret(TObjectPtr<AActor> Turret, E_AMMO_TYPE AmmoType)
 {
-	if (Turret == nullptr)
-	{
-		_turret = nullptr;
-		_ammoType = E_AMMO_TYPE::NONE;
-		return true;
-	}
+	RemoveCurrentTurret();
 
-	if (_turret != nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("TurretStand: Turret already equipped at [%s]"), *CommonEnums::GetEnum2FString<E_TURRET_POSITION>(_turretPosition));
+	if (Turret == nullptr)
 		return false;
-	}
 
 	_turret = Turret;
 	_ammoType = AmmoType;
@@ -64,4 +61,14 @@ E_AMMO_TYPE ATurretStand::GetAmmoType()
 		return E_AMMO_TYPE::NONE;
 
 	return _ammoType;
+}
+
+void ATurretStand::RemoveCurrentTurret()
+{
+	if (_turret != nullptr)
+	{
+		_turret->Destroy();
+		_turret = nullptr;
+	}
+	_ammoType = E_AMMO_TYPE::NONE;
 }

@@ -33,7 +33,7 @@ private:
 
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|Components")
-	TObjectPtr<UStaticMeshComponent> _rootComponent = nullptr;
+	TObjectPtr<USceneComponent> _rootComponent = nullptr;
 
 #pragma region State Group
 protected:
