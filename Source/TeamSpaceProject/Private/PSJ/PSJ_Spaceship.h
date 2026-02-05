@@ -15,11 +15,15 @@ class APSJ_ShipCockpit;
 
 class UHealthComponent;
 class USpaceShipStateGroup;
+class AJHSGameState;
 
 UCLASS()
 class TEAMSPACEPROJECT_API APSJ_Spaceship : public APawn
 {
 	GENERATED_BODY()
+
+private:
+	AJHSGameState* _outGameState = nullptr;
 
 public:
 	APSJ_Spaceship();

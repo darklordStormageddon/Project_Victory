@@ -124,8 +124,12 @@ void APSJ_Spaceship::BeginPlay()
 	if (HealthComp)
 	{
 		HealthComp->OnDamaged.AddDynamic(this, &APSJ_Spaceship::OnTakeDamage);
-		HealthComp->OnDeath.AddDynamic(this, &APSJ_Spaceship::OnDeath);
+		////임시 죽음(나중에 제거)
+		//HealthComp->OnDeath.AddDynamic(this, &APSJ_Spaceship::OnDeath);
 	}
+
+	if (_outGameState == nullptr)
+		UStaticFunctionLibrary::TryGetGameState(_outGameState);
 
 	FTimerHandle TestDelay;
 	GetWorld()->GetTimerManager().SetTimer(
@@ -242,7 +246,6 @@ USpaceShipStateGroup* APSJ_Spaceship::GetSpaceShipStateGroup()
 	if (_spaceShipStateGroup)
 		return _spaceShipStateGroup;
 
-	AJHSGameState* _outGameState = nullptr;
 	if (UStaticFunctionLibrary::TryGetGameState(_outGameState))
 	{
 		_spaceShipStateGroup = _outGameState->GetSpaceShipStateGroup();

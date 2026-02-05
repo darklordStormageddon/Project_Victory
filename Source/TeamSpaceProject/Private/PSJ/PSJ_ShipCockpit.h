@@ -4,13 +4,18 @@
 #include "JHS/Interact/InteractableActorBase.h" // 팀원의 베이스 클래스 헤더
 #include "PSJ_ShipCockpit.generated.h"
 
+
+
 class UUIBase;
 class APawn;
+
 
 UCLASS()
 class TEAMSPACEPROJECT_API APSJ_ShipCockpit : public AInteractableActorBase
 {
     GENERATED_BODY()
+
+
 
 public:
     // [1] 생성자 선언 (Tick 설정을 위해 필수)
@@ -24,6 +29,7 @@ public:
 
 protected:
     virtual void OnInteractEnter(TObjectPtr<UUIBase> OpenedUI) override;
+        AJHSGameState* _outGameState = nullptr;
 
 public:
     void SetTargetPawn(TObjectPtr<APawn> TargetPawn);
