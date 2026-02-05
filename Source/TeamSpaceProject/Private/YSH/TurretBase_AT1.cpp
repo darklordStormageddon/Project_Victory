@@ -20,6 +20,7 @@ ATurretBase_AT1::ATurretBase_AT1()
 	SetRootComponent(Root);
 
 	YawPivot = CreateDefaultSubobject<USceneComponent>(TEXT("YawPivot"));
+
 	YawPivot->SetupAttachment(Root);
 
 	PitchPivot = CreateDefaultSubobject<USceneComponent>(TEXT("PitchPivot"));
