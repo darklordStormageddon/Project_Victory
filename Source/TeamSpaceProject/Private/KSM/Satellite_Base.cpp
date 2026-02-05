@@ -43,6 +43,7 @@ ASatellite_Base::ASatellite_Base()
 
     bReplicates = true;
     SetReplicateMovement(true);
+    bAlwaysRelevant = true;
 }
 
 // Called when the game starts or when spawned
