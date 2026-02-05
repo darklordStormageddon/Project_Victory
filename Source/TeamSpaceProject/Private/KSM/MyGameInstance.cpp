@@ -1,13 +1,20 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "MyGameInstance.h"
-#include "OnlineSessionSettings.h"
 #include <Kismet/GameplayStatics.h>
+#include <Online/OnlineSessionNames.h>
 
-//ÃÊº¸Ã¤³Î,Áß¼öÃ¤³Î
-const static FName SESSION_NAME = TEXT("GameSession"); //Ã¤³Î¸í
-const static FName SESSION_SETTINGS_KEY = TEXT("FREE");//°ÔÀÓ¸ðµå
+//ì´ˆë³´ì±„ë„,ì¤‘ìˆ˜ì±„ë„
+const static FName SESSION_NAME = TEXT("GameSession"); //ì±„ë„ëª…
+const static FName SESSION_SETTINGS_KEY = TEXT("FREE");//ê²Œìž„ëª¨ë“œ
+
+// Steam í˜¸í™˜ ì„¸ì…˜ í‚¤ ì •ì˜
+static const FName SETTING_SERVER_NAME = FName(TEXT("SERVER_NAME_KEY"));
+static const FName SETTING_GAME_TAG = FName(TEXT("GAME_TAG_KEY"));
+static const FName SETTING_IS_PUBLIC = FName(TEXT("IS_PUBLIC_KEY"));
+static const FName SETTING_ROOM_NAME = FName(TEXT("ROOM_NAME_KEY"));
+static const FName SETTING_PASSWORD = FName(TEXT("PASSWORD_KEY"));
 
 UMyGameInstance::UMyGameInstance()
 {
@@ -39,6 +46,9 @@ void UMyGameInstance::Init()
 
 			SessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this,
 				&UMyGameInstance::OnJoinSessioncomplete);
+
+			SessionInterface->OnStartSessionCompleteDelegates.AddUObject(this,
+				&UMyGameInstance::OnStartSessionComplete);
 		}
 	}
 	else
@@ -72,6 +82,7 @@ void UMyGameInstance::Host(FString ServerName)
 		}
 	}
 }
+
 void UMyGameInstance::CreateSession()
 {
 	if (SessionInterface.IsValid())
@@ -83,25 +94,33 @@ void UMyGameInstance::CreateSession()
 		else
 			SessionSettings.bIsLANMatch = false;
 
-
 		SessionSettings.NumPublicConnections = 4;
-		SessionSettings.bUsesPresence = SessionSettings.bShouldAdvertise = true;
+		SessionSettings.bUsesPresence = true;
+		SessionSettings.bShouldAdvertise = true;
 		SessionSettings.bAllowJoinInProgress = true;
 		SessionSettings.bAllowJoinViaPresence = true;
-		SessionSettings.Set(
-			SESSION_SETTINGS_KEY, DesiredServerName,
+		SessionSettings.bUseLobbiesIfAvailable = true;
+
+		//ë¹Œë“œ ì²´í¬ ë¹„í™œì„±í™”
+		SessionSettings.bAntiCheatProtected = false;
+		SessionSettings.BuildUniqueId = 0;
+
+		//ë‚˜ë¨¸ì§€ ì„¤ì •
+		SessionSettings.Set(FName("SERVER_NAME_KEY"), DesiredServerName,
+			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		SessionSettings.Set(FName("GAME_TAG_KEY"), GameUniqueTag,
+			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		SessionSettings.Set(FName("IS_PUBLIC_KEY"), bIsPublic,
+			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		SessionSettings.Set(FName("ROOM_NAME_KEY"), RoomName,
 			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
-		//°ÔÀÓ ½Äº° ÅÂ±×
-		SessionSettings.Set(FName("GameUniqueTag"), GameUniqueTag, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-		//°ÔÀÓ Á¢±Ù ÅÂ±×
-		SessionSettings.Set(TEXT("Public"), bIsPublic, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-		//¼¼¼Ç ÀÌ¸§°ú ºñ¹Ð¹øÈ£
-		SessionSettings.Set(TEXT("SessionName"), RoomName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-		SessionSettings.Set(TEXT("Password"), Password, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		if (!Password.IsEmpty())
+		{
+			SessionSettings.Set(FName("PASSWORD_KEY"), Password,
+				EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		}
 
-
-		//¹æ»ý¼º
 		SessionInterface->CreateSession(0, SESSION_NAME, SessionSettings);
 	}
 }
@@ -112,9 +131,17 @@ void UMyGameInstance::RefreshServerList()
 	if (SessionSearch.IsValid())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Finding Session"));
-		//¼¼¼Ç 100°³ ÃÖ´ë Ã£¾Æ¿Â´Ù.
+		//ì„¸ì…˜ 100ê°œ ìµœëŒ€ ì°¾ì•„ì˜¨ë‹¤.
 		SessionSearch->MaxSearchResults = 100;
-		SessionSearch->QuerySettings.Set(FName(TEXT("PRESENCESEARCH")), true, EOnlineComparisonOp::Equals);
+
+		// Steamì„ ì‚¬ìš©í•  ë•ŒëŠ” false, NULL ì„œë¸Œì‹œìŠ¤í…œì¼ ë•ŒëŠ” true
+		if (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL")
+			SessionSearch->bIsLanQuery = true;
+		else
+			SessionSearch->bIsLanQuery = false;
+
+		//SessionSearch->QuerySettings.Set(FName(TEXT("PRESENCESEARCH")), true, EOnlineComparisonOp::Equals);
+		SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
 		SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
 	}
 }
@@ -130,33 +157,40 @@ void UMyGameInstance::Join(int32 Index)
 		UE_LOG(LogTemp, Warning, TEXT("Empty Session"));
 }
 
-void UMyGameInstance::OnCreateSessioncomplete(FName InSessionName, bool IsSuccess)
-{
-	if (!IsSuccess)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Could not Createsession"));
-		return;
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("Session name is %s"), *InSessionName.ToString());
-
-	UEngine* Engine = GetEngine();
-	if (!Engine) return;
-
-	//Engine->AddOnScreenDebugMessage(0, 2, FColor::Green, TEXT("Host complete!"));
-
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	//·¹º§(¸Ê)
-	World->ServerTravel("/Game/Import/Maps/Lobby?listen");
-}
-
-
 void UMyGameInstance::StartSession()
 {
 	if (SessionInterface.IsValid())
 		SessionInterface->StartSession(SESSION_NAME);
+
+}
+
+void UMyGameInstance::OnStartSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	UE_LOG(LogTemp, Warning, TEXT("OnStartSessionComplete: %s, Success=%d"), *SessionName.ToString(), bWasSuccessful ? 1 : 0);
+
+	if (bWasSuccessful)
+	{
+		bPendingTravel = true; // ServerTravelì€ ë‚˜ì¤‘ì— ë¸ë¦¬ê²Œì´íŠ¸ì—ì„œ ì²˜ë¦¬
+		UE_LOG(LogTemp, Warning, TEXT("Waiting for Steam to update lobby joinability..."));
+	}
+
+	//UWorld* World = GetWorld();
+	//if (World)
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("Host registered as participant â€” traveling to Lobby."));
+	//	World->ServerTravel("/Game/Import/Maps/Lobby?listen");
+	//}
+}
+
+void UMyGameInstance::OnCreateSessioncomplete(FName InSessionName, bool IsSuccess)
+{
+	if (!IsSuccess) return;
+
+	if (SessionInterface.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Starting session..."));
+		SessionInterface->StartSession(SESSION_NAME);
+	}
 }
 
 void UMyGameInstance::OnDestroySessioncomplete(FName InSessionName, bool IsSuccess)
@@ -167,79 +201,191 @@ void UMyGameInstance::OnDestroySessioncomplete(FName InSessionName, bool IsSucce
 
 void UMyGameInstance::OnFindSessioncomplete(bool IsSuccess)
 {
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Search Complete!");
+	UE_LOG(LogTemp, Warning, TEXT("=== Find Session Complete ==="));
+	UE_LOG(LogTemp, Warning, TEXT("Success: %s"), IsSuccess ? TEXT("true") : TEXT("false"));
+
 	if (IsSuccess && SessionSearch.IsValid())
 	{
-		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, *FString::Printf(TEXT("Session Found : %d"), SessionSearch->SearchResults.Num()));
+		UE_LOG(LogTemp, Warning, TEXT("Total Sessions Found: %d"), SessionSearch->SearchResults.Num());
+
 		ServerNames.Empty();
 		int32 SessionIndex = 0;
 
 		for (const FOnlineSessionSearchResult& SearchResult : SessionSearch->SearchResults)
 		{
-			//if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, *FString::Printf(TEXT("Session Index : %d"), SessionIndex));
-
-			FString Temp_GameTag;
-			SearchResult.Session.SessionSettings.Get(FName("GameUniqueTag"), Temp_GameTag);
-
-			if (Temp_GameTag != GameUniqueTag || Temp_GameTag.IsEmpty())
+			if (!SearchResult.IsValid())
 			{
-				//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Different Game!");
+				UE_LOG(LogTemp, Warning, TEXT("Session %d is invalid"), SessionIndex);
+				SessionIndex++;
 				continue;
 			}
 
-			FString Temp_SessionName;
-			SearchResult.Session.SessionSettings.Get(FName("SessionName"), Temp_SessionName);
-			if (!SearchName.IsEmpty() && SearchName != Temp_SessionName)
+			// ë¹Œë“œ ID ì²´í¬ ì£¼ì„ ì²˜ë¦¬ ë˜ëŠ” ì œê±°
+			/*
+			// ë¹Œë“œ ë²„ì „ ì²´í¬
+			if (SearchResult.Session.SessionSettings.BuildUniqueId != GetBuildUniqueId())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Session %d: Build mismatch - Server: 0x%08x, Client: 0x%08x"),
+					SessionIndex,
+					SearchResult.Session.SessionSettings.BuildUniqueId,
+					GetBuildUniqueId());
+				SessionIndex++;
 				continue;
+			}
+			*/
 
-			bool Temp_bIsPublic;
-			SearchResult.Session.SessionSettings.Get(FName("Public"), Temp_bIsPublic);
+			//GameTag ì²´í¬
+			FString Temp_GameTag;
+			bool bFoundTag = SearchResult.Session.SessionSettings.Get(FName("GAME_TAG_KEY"), Temp_GameTag);
+
+			UE_LOG(LogTemp, Warning, TEXT("Session %d: GameTag = %s"), SessionIndex, *Temp_GameTag);
+
+			if (!bFoundTag || (!Temp_GameTag.IsEmpty() && Temp_GameTag != GameUniqueTag))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Session %d: GameTag mismatch or empty"), SessionIndex);
+				SessionIndex++;
+				continue;
+			}
+
+			// ë‚˜ë¨¸ì§€ ë¡œì§
+			FString Temp_SessionName;
+			SearchResult.Session.SessionSettings.Get(FName("ROOM_NAME_KEY"), Temp_SessionName);
+
+			if (!SearchName.IsEmpty() && SearchName != Temp_SessionName)
+			{
+				SessionIndex++;
+				continue;
+			}
+
+			bool Temp_bIsPublic = true;
+			SearchResult.Session.SessionSettings.Get(FName("IS_PUBLIC_KEY"), Temp_bIsPublic);
 
 			FString Temp_Password;
-			SearchResult.Session.SessionSettings.Get(FName("Password"), Temp_Password);
-
-
+			SearchResult.Session.SessionSettings.Get(FName("PASSWORD_KEY"), Temp_Password);
 
 			FServerData ServerData;
 			ServerData.Accessibility = Temp_bIsPublic;
 			ServerData.Password = Temp_Password;
 			ServerData.HostUserName = SearchResult.Session.OwningUserName;
-			ServerData.Name = NickName;
-
-			ServerData.CurrentPlayers = SearchResult.Session.SessionSettings.NumPublicConnections - SearchResult.Session.NumOpenPublicConnections;
+			ServerData.Name = Temp_SessionName;
+			ServerData.CurrentPlayers = SearchResult.Session.SessionSettings.NumPublicConnections
+				- SearchResult.Session.NumOpenPublicConnections;
+			ServerData.SearchResultIndex = SessionIndex;
 
 			FString ServerName;
-			if (SearchResult.Session.SessionSettings.Get(SESSION_SETTINGS_KEY, ServerName))
+			if (SearchResult.Session.SessionSettings.Get(FName("SERVER_NAME_KEY"), ServerName))
+			{
 				ServerData.Name = ServerName;
-			//else
-			//	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "SessionName not found!");
-			ServerData.SearchResultIndex = SessionIndex;
-			++SessionIndex;
+			}
 
 			ServerNames.Add(ServerData);
-			OnSessionListUpdated.Broadcast();
-			//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Session Added to list!");
+			UE_LOG(LogTemp, Warning, TEXT("? Session added: %s"), *ServerData.Name);
+
+			SessionIndex++;
 		}
 
+		UE_LOG(LogTemp, Warning, TEXT("=== Final session count: %d ==="), ServerNames.Num());
+		OnSessionListUpdated.Broadcast();
 	}
-	//else GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Search invalid!");
 }
+
 void UMyGameInstance::OnJoinSessioncomplete(FName InSessionName, EOnJoinSessionCompleteResult::Type InResult)
 {
-	if (SessionInterface.IsValid() == false) return;
-
-	FString Address;//ÇØ´ç ¹æÀÇ ¾ÆÀÌÇÇÁÖ¼Ò
-	if (!SessionInterface->GetResolvedConnectString(InSessionName, Address))
+	if (GEngine)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Could not convert IP Address"));
+		GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Cyan,
+			TEXT("=========== OnJoinSessionComplete ==========="), true, FVector2D(2.0f, 2.0f));
+	}
+
+	// ê²°ê³¼ íƒ€ìž… í™•ì¸
+	FString ResultString;
+	FColor ResultColor;
+
+	switch (InResult)
+	{
+	case EOnJoinSessionCompleteResult::Success:
+		ResultString = TEXT("SUCCESS");
+		ResultColor = FColor::Green;
+		break;
+	case EOnJoinSessionCompleteResult::SessionIsFull:
+		ResultString = TEXT("Session is Full");
+		ResultColor = FColor::Red;
+		break;
+	case EOnJoinSessionCompleteResult::SessionDoesNotExist:
+		ResultString = TEXT("Session Does Not Exist");
+		ResultColor = FColor::Red;
+		break;
+	case EOnJoinSessionCompleteResult::CouldNotRetrieveAddress:
+		ResultString = TEXT("Could Not Retrieve Address");
+		ResultColor = FColor::Red;
+		break;
+	case EOnJoinSessionCompleteResult::AlreadyInSession:
+		ResultString = TEXT("Already In Session");
+		ResultColor = FColor::Red;
+		break;
+	default:
+		ResultString = TEXT("Unknown Error");
+		ResultColor = FColor::Red;
+		break;
+	}
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 30.0f, ResultColor,
+			FString::Printf(TEXT("Join Result: %s"), *ResultString),
+			true, FVector2D(2.0f, 2.0f));
+	}
+
+	if (InResult != EOnJoinSessionCompleteResult::Success)
+	{
 		return;
 	}
-	//UEngine* Engine = GetEngine();
-	//if (!Engine) return;
-	//Engine->AddOnScreenDebugMessage(0, 5, FColor::Green, FString::Printf(TEXT("Joining To %s"), *Address));
+
+	if (!SessionInterface.IsValid())
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Red,
+				TEXT("SessionInterface is NOT VALID!"), true, FVector2D(2.0f, 2.0f));
+		}
+		return;
+	}
+
+	FString Address;
+	if (!SessionInterface->GetResolvedConnectString(InSessionName, Address))
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Red,
+				TEXT("Could not get connect string!"), true, FVector2D(2.0f, 2.0f));
+		}
+		return;
+	}
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Yellow,
+			FString::Printf(TEXT("Connect Address: %s"), *Address),
+			true, FVector2D(1.5f, 1.5f));
+	}
 
 	APlayerController* PC = GetFirstLocalPlayerController();
-	if (PC == nullptr) return;
+	if (PC == nullptr)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Red,
+				TEXT("PlayerController is NULL!"), true, FVector2D(2.0f, 2.0f));
+		}
+		return;
+	}
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Magenta,
+			TEXT(">>> Calling ClientTravel() <<<"), true, FVector2D(2.0f, 2.0f));
+	}
+
 	PC->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 }
 
