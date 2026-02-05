@@ -26,6 +26,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
 	float max_Speed = 60.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
+	float Spawn_Interval = 0.5f;
+
 	float Spawn_Distance;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
@@ -36,6 +39,12 @@ private:
 private:
 	void Artifical_Satellite_Spawn();
 	void GetSetting();
+	void SpawnNextArtificialSatellite();
+
+	int Target_Spawn_Count = 0;
+	int Spawned_Count = 0;
+
+	FTimerHandle Spawn_TimerHandle;
 
 protected:
 	// Called when the game starts or when spawned
