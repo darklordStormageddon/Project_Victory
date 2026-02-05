@@ -70,8 +70,27 @@ void ABullet::OnOverlap(
 	if (!HasAuthority())
 		return;
 
-	// 유효성 검사 간소화
-	if (!OtherActor || OtherActor == _owner)
+	// ===== 유효성 검사 =====
+	if (!OtherActor)
+		return;
+
+	// ===== Owner 체크: 자신을 쏜 드론과의 충돌 방지 =====
+	if (OtherActor == _owner)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Bullet: Hit own owner, ignoring"));
+		return;
+	}
+
+	// ===== Owner가 null이 아닌지 확인 =====
+	if (!IsValid(_owner))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Bullet: Owner is invalid"));
+		return;
+	}
+
+	// ===== 최종 체크: Owner의 Owner와도 비교 (Pawn이 Vehicle에 탑승한 경우) =====
+	APawn* OwnerPawn = Cast<APawn>(_owner);
+	if (OwnerPawn && OtherActor == OwnerPawn->GetOwner())
 		return;
 
 	// ===== 이펙트 위치 검증 =====
