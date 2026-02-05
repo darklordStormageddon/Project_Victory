@@ -7,6 +7,7 @@
 #include "Engine/Engine.h"
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/WidgetComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/EnumProperty.h"
 
@@ -25,6 +26,16 @@ void UUIManager::BeginPlay()
 
 void UUIManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	// 월드 공간 UI 컴포넌트 정리
+	for (auto& Elem : _worldSpaceUIComponents)
+	{
+		if (Elem.Value.Get() != nullptr)
+		{
+			Elem.Value.Get()->DestroyComponent();
+		}
+	}
+	_worldSpaceUIComponents.Empty();
+
 	// 모든 로드된 UI 정리
 	for (auto& Elem : _loadedUIDict)
 	{
@@ -73,18 +84,145 @@ UUIBase* UUIManager::OpenUI(E_UI_TYPE UIType)
 	return _ui;
 }
 
-UUIBase* UUIManager::CloseUI(E_UI_TYPE UIType)
+UUIBase* UUIManager::OpenUIInWorld(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation, float Scale)
 {
-	if (!_loadedUIDict.Contains(UIType))
+	if (OwnerActor == nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UUIManager: UI [%d] is not loaded"), (int32)UIType);
+		UE_LOG(LogTemp, Error, TEXT("UUIManager: OwnerActor is nullptr for WorldSpace UI [%d]"), (int32)UIType);
 		return nullptr;
 	}
 
-	UUIBase* _ui = _loadedUIDict[UIType];
-	if (_ui != nullptr)
+	// UI 클래스 로드
+	UUIBase* _ui = LoadUIInternal(UIType);
+	if (_ui == nullptr)
 	{
-		_ui->Close();
+		UE_LOG(LogTemp, Error, TEXT("UUIManager: Failed to load UI [%d]"), (int32)UIType);
+		return nullptr;
+	}
+
+	TSubclassOf<UUIBase> _uiClass = _ui->GetClass();
+	if (_uiClass == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UUIManager: Failed to get UI class [%d]"), (int32)UIType);
+		return nullptr;
+	}
+
+	// 이미 월드 공간에 UI가 있으면 제거
+	if (_worldSpaceUIComponents.Contains(UIType))
+	{
+		TObjectPtr<UWidgetComponent> _existingComponent = _worldSpaceUIComponents[UIType];
+		if (_existingComponent.Get() != nullptr)
+		{
+			_existingComponent.Get()->DestroyComponent();
+		}
+		_worldSpaceUIComponents.Remove(UIType);
+	}
+
+	// WidgetComponent 생성
+	UWidgetComponent* _widgetComponent = NewObject<UWidgetComponent>(OwnerActor, UWidgetComponent::StaticClass(), FName(*FString::Printf(TEXT("WorldSpaceUI_%d"), (int32)UIType)));
+	if (_widgetComponent == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UUIManager: Failed to create WidgetComponent for UI [%d]"), (int32)UIType);
+		return nullptr;
+	}
+
+	// Root Component에 부착
+	USceneComponent* _rootComponent = OwnerActor->GetRootComponent();
+	if (_rootComponent != nullptr)
+	{
+		_widgetComponent->SetupAttachment(_rootComponent);
+	}
+
+	OwnerActor->AddInstanceComponent(_widgetComponent);
+	_widgetComponent->RegisterComponent();
+
+	// WidgetComponent 설정
+	_widgetComponent->SetWidgetClass(_uiClass);
+	_widgetComponent->SetWidgetSpace(EWidgetSpace::World);
+	_widgetComponent->SetVisibility(true);
+	_widgetComponent->SetHiddenInGame(false);
+	
+	// 추가 설정: 월드 스페이스 UI가 보이도록
+	_widgetComponent->SetPivot(FVector2D(0.5f, 0.5f)); // 중앙 피벗
+	_widgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 충돌 비활성화
+	_widgetComponent->SetGeometryMode(EWidgetGeometryMode::Plane); // 평면 모드
+	_widgetComponent->SetBlendMode(EWidgetBlendMode::Transparent); // 투명 블렌드
+	_widgetComponent->SetBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.0f)); // 투명 배경
+	_widgetComponent->SetTwoSided(true); // 양면 렌더링
+	
+	// DrawSize를 고정 크기로 설정 (InitWidget 전에)
+	_widgetComponent->SetDrawSize(FVector2D(1920.0f, 1080.0f));
+	
+	// Location과 Scale을 따로 설정 (Scale이 Location에 영향을 주지 않도록)
+	_widgetComponent->SetRelativeLocation(RelativeLocation);
+	_widgetComponent->SetRelativeRotation(FRotator::ZeroRotator);
+	_widgetComponent->SetRelativeScale3D(FVector(Scale, Scale, Scale));
+	
+	// 위젯 강제 초기화
+	_widgetComponent->InitWidget();
+
+	// UI 위젯 가져오기
+	UUserWidget* _widget = _widgetComponent->GetWidget();
+	if (_widget != nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[UIManager] Widget created successfully"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[UIManager] Widget is null after InitWidget"));
+	}
+
+	// 맵에 저장
+	_worldSpaceUIComponents.Add(UIType, _widgetComponent);
+
+	// 디버그 로그: UI 생성 및 위치 정보
+	FVector _relativeLocation = _widgetComponent->GetRelativeLocation();
+	FVector _worldLocation = _widgetComponent->GetComponentLocation();
+	FVector2D _finalDrawSize = _widgetComponent->GetDrawSize();
+	FVector _finalScale = _widgetComponent->GetRelativeScale3D();
+
+	// UI 타입 설정
+	UUIBase* _worldSpaceUI = Cast<UUIBase>(_widget);
+	if (_worldSpaceUI != nullptr)
+	{
+		_worldSpaceUI->CurrentType = UIType;
+	}
+
+	return _worldSpaceUI;
+}
+
+UUIBase* UUIManager::CloseUI(E_UI_TYPE UIType)
+{
+	UUIBase* _closedUI = nullptr;
+
+	// 월드 공간 UI인 경우 WidgetComponent 제거
+	if (_worldSpaceUIComponents.Contains(UIType))
+	{
+		TObjectPtr<UWidgetComponent> _widgetComponent = _worldSpaceUIComponents[UIType];
+		if (_widgetComponent.Get() != nullptr)
+		{
+			// WidgetComponent가 생성한 위젯 가져오기
+			UUserWidget* _widget = _widgetComponent.Get()->GetWidget();
+			_closedUI = Cast<UUIBase>(_widget);
+
+			_widgetComponent.Get()->DestroyComponent();
+		}
+		_worldSpaceUIComponents.Remove(UIType);
+	}
+	else
+	{
+		// 일반 뷰포트 UI
+		if (!_loadedUIDict.Contains(UIType))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("UUIManager: UI [%d] is not loaded"), (int32)UIType);
+			return nullptr;
+		}
+
+		_closedUI = _loadedUIDict[UIType];
+		if (_closedUI != nullptr)
+		{
+			_closedUI->Close();
+		}
 	}
 
 	// 스택에서 제거
@@ -93,7 +231,7 @@ UUIBase* UUIManager::CloseUI(E_UI_TYPE UIType)
 	{
 		TObjectPtr<UUIBase> _stackedUI = nullptr;
 		_openedUIStack.Pop(_stackedUI);
-		if (_stackedUI != _ui)
+		if (_stackedUI != _closedUI)
 		{
 			_tempStack.Add(_stackedUI);
 		}
@@ -105,7 +243,7 @@ UUIBase* UUIManager::CloseUI(E_UI_TYPE UIType)
 		_openedUIStack.Push(_tempStack[i]);
 	}*/
 
-	return _ui;
+	return _closedUI;
 }
 
 void UUIManager::CloseAllUI()
@@ -123,6 +261,18 @@ void UUIManager::CloseAllUI()
 
 UUIBase* UUIManager::GetUI(E_UI_TYPE UIType) const
 {
+	// 월드 공간 UI인 경우 WidgetComponent에서 위젯 가져오기
+	if (_worldSpaceUIComponents.Contains(UIType))
+	{
+		TObjectPtr<UWidgetComponent> _widgetComponent = _worldSpaceUIComponents[UIType];
+		if (_widgetComponent.Get() != nullptr)
+		{
+			UUserWidget* _widget = _widgetComponent.Get()->GetWidget();
+			return Cast<UUIBase>(_widget);
+		}
+	}
+
+	// 일반 뷰포트 UI
 	if (_loadedUIDict.Contains(UIType))
 	{
 		return _loadedUIDict[UIType];

@@ -25,13 +25,22 @@ private:
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interactable|Debug")
-	bool _isDebugDraw;
+	bool _isDebugDraw = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interactable|ActorBase")
 	float _interactRadius = 100.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interactable|ActorBase")
-	E_UI_TYPE _interatUIType;
+	E_UI_TYPE _interatUIType = E_UI_TYPE::NONE;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interactable|ActorBase")
+	bool _isWorldSpaceUI = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interactable|ActorBase")
+	FVector _worldUIRelativeLocation = FVector(0, 0, 150);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interactable|ActorBase")
+	float _worldUIScale = 1.0f;
 
 protected:
 	// Called when the game starts or when spawned

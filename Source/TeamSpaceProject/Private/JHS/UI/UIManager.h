@@ -7,6 +7,8 @@
 #include "JHS/UI/UIBase.h"
 #include "UIManager.generated.h"
 
+class UWidgetComponent;
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UUIManager : public UActorComponent
 {
@@ -29,6 +31,9 @@ public:
 public:
 	UFUNCTION(BlueprintCallable, Category = "UIManager")
 	UUIBase* OpenUI(E_UI_TYPE UIType);
+
+	UFUNCTION(BlueprintCallable, Category = "UIManager")
+	UUIBase* OpenUIInWorld(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation = FVector(0, 0, 100), float Scale = 1.0f);
 
 	UFUNCTION(BlueprintCallable, Category = "UIManager")
 	UUIBase* CloseUI(E_UI_TYPE UIType);
@@ -55,6 +60,9 @@ private:
 private:
 	UPROPERTY()
 	TMap<E_UI_TYPE, TObjectPtr<UUIBase>> _loadedUIDict;
+
+	UPROPERTY()
+	TMap<E_UI_TYPE, TObjectPtr<UWidgetComponent>> _worldSpaceUIComponents;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Manager|Settings", meta = (AllowPrivateAccess = "true"))
 	TMap<E_UI_TYPE, TSoftClassPtr<UUIBase>> _uiClassMap;
