@@ -21,7 +21,7 @@ void AInteractableActorBase::BeginPlay()
 	if (_uiInteracterable != nullptr)
 	{
 		// 델리게이트 바인딩
-		_uiInteracterable->InitializeUIInteractable(_isDebugDraw, _interactRadius, E_INTERACT_TYPE::Seat, _interatUIType);
+		_uiInteracterable->InitializeUIInteractable(_isDebugDraw, _interactRadius, E_INTERACT_TYPE::Seat, _interatUIType, _isWorldSpaceUI, _worldUIRelativeLocation, _worldUIScale);
 		_uiInteracterable->OnInteractEnterAction.AddDynamic(this, &AInteractableActorBase::InteractEnter);
 		_uiInteracterable->OnInteractExitAction.AddDynamic(this, &AInteractableActorBase::InteractExit);
 	}

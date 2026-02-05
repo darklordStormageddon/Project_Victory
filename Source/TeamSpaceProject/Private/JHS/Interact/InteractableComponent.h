@@ -57,6 +57,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
 	E_UI_TYPE _interactUIType;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
+	bool _isWorldSpaceUI = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
+	FVector _worldUIRelativeLocation = FVector(0, 0, 150);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
+	float _worldUIScale = 1.0f;
+
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Interacter|Events")
 	FOnInteractEnterAction OnInteractEnterAction;
@@ -85,7 +94,7 @@ public:
 	void OnTriggerExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 public:
-	void InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType);
+	void InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType, bool IsWorldSpaceUI, FVector WorldUIRelativeLocation, float WorldUIScale);
 
 	bool TryInteract(bool& OutIsInterupt, bool& OutIsInteractEnter);
 

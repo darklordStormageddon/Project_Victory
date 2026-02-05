@@ -67,6 +67,37 @@ void UInteractableComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	if (_isDebugDraw)
 	{
 		DrawDebugSphere(GetWorld(), _collisionComponent->GetComponentLocation(), _collisionRadius, 16, FColor::Yellow, false, DeltaTime * 1.01f);
+
+		// 월드 스페이스 UI 디버그 드로우
+		if (_isWorldSpaceUI)
+		{
+			AActor* _owner = GetOwner();
+			if (_owner != nullptr)
+			{
+				// Owner의 Transform을 사용하여 RelativeLocation을 월드 좌표로 변환
+				FVector _center = _owner->GetTransform().TransformPosition(_worldUIRelativeLocation);
+
+				// 기본 UI 크기 (1920x1080) * Scale
+				float _width = 1920.0f * _worldUIScale;
+				float _height = 1080.0f * _worldUIScale;
+
+				// Owner의 Transform을 사용하여 방향 벡터 계산
+				FVector _rightVector = _owner->GetTransform().TransformVector(FVector(0, 1, 0)) * (_width / 2.0f);
+				FVector _upVector = _owner->GetTransform().TransformVector(FVector(0, 0, 1)) * (_height / 2.0f);
+
+				// 직사각형의 4개 코너 계산
+				FVector _topLeft = _center - _rightVector + _upVector;
+				FVector _topRight = _center + _rightVector + _upVector;
+				FVector _bottomLeft = _center - _rightVector - _upVector;
+				FVector _bottomRight = _center + _rightVector - _upVector;
+
+				// 노란색 직사각형 그리기
+				DrawDebugLine(GetWorld(), _topLeft, _topRight, FColor::Yellow, false, DeltaTime * 1.01f, 0, 2.0f);
+				DrawDebugLine(GetWorld(), _topRight, _bottomRight, FColor::Yellow, false, DeltaTime * 1.01f, 0, 2.0f);
+				DrawDebugLine(GetWorld(), _bottomRight, _bottomLeft, FColor::Yellow, false, DeltaTime * 1.01f, 0, 2.0f);
+				DrawDebugLine(GetWorld(), _bottomLeft, _topLeft, FColor::Yellow, false, DeltaTime * 1.01f, 0, 2.0f);
+			}
+		}
 	}
 }
 
@@ -100,6 +131,9 @@ void UInteractableComponent::OnTriggerExit(UPrimitiveComponent* OverlappedCompon
 	if (OtherActor == nullptr)
 		return;
 
+	if (_isWorldSpaceUI)
+		return;
+
 	// 오브젝트에서 UInteracterComponent 컴포넌트 찾기
 	UInteracterComponent* _foundInteracter = OtherActor->FindComponentByClass<UInteracterComponent>();
 	if (_foundInteracter == nullptr)
@@ -119,12 +153,15 @@ void UInteractableComponent::OnTriggerExit(UPrimitiveComponent* OverlappedCompon
 	}
 }
 
-void UInteractableComponent::InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType)
+void UInteractableComponent::InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType, bool IsWorldSpaceUI, FVector WorldUIRelativeLocation, float WorldUIScale)
 {
 	_isDebugDraw = IsDebugDraw;
 	_collisionRadius = InteractRadius;
 	_interactType = InteractType;
 	_interactUIType = InteractUIType;
+	_isWorldSpaceUI = IsWorldSpaceUI;
+	_worldUIRelativeLocation = WorldUIRelativeLocation;
+	_worldUIScale = WorldUIScale;
 }
 
 bool UInteractableComponent::TryInteract(bool& OutIsInterupt, bool& OutIsInteractEnter)
@@ -157,7 +194,20 @@ void UInteractableComponent::ChangeInteractState(bool IsInteract)
 		UUIBase* _openedUI = nullptr;
 		if (_interactUIType != E_UI_TYPE::NONE)
 		{
-			_openedUI = _uiManager->OpenUI(_interactUIType);
+			if (_isWorldSpaceUI)
+			{
+				// 월드 공간 UI
+				AActor* _owner = GetOwner();
+				if (_owner != nullptr)
+				{
+					_openedUI = _uiManager->OpenUIInWorld(_interactUIType, _owner, _worldUIRelativeLocation, _worldUIScale);
+				}
+			}
+			else
+			{
+				// 일반 뷰포트 UI
+				_openedUI = _uiManager->OpenUI(_interactUIType);
+			}
 		}
 		OnInteractEnterAction.Broadcast(_openedUI);
 	}
