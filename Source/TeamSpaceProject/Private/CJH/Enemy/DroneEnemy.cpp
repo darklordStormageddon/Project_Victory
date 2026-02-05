@@ -4,10 +4,12 @@
 #include "JHS/GameControl/JHSGameMode.h"
 
 #include "Net/UnrealNetwork.h"
-\
+
 ADroneEnemy::ADroneEnemy()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	// 일정한 Tick 간격 설정 (매프레임 대신 일정 간격으로)
+	PrimaryActorTick.TickInterval = 0.016f;  // ~60Hz 고정
 
 	// 드론 본체 메쉬 (루트)
 	TurretMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TurretMesh"));
@@ -20,17 +22,17 @@ ADroneEnemy::ADroneEnemy()
 	// 기본 회전 축 (Z축 기준 공전)
 	RotationAxis = FVector(0.0f, 0.0f, 1.0f);
 
-	// 공전 반경 진동 관련 파라미터
-	ChaseCurveAmplitude = 300.0f;   // 반경 흔들림 최대치
-	ChaseCurveFrequency = 0.5f;     // 진동 빈도
-	ChaseCurvePhase = 0.0f;         // 위상
-	ChaseCurveSign = 1.0f;          // 방향 (+ / -)
+	// 공전 관련 초기값
+	ChaseCurveAmplitude = 300.0f;
+	ChaseCurveFrequency = 0.5f;
+	ChaseCurvePhase = 0.0f;
+	ChaseCurveSign = 1.0f;
 
-	// 공전 각속도 (rad/s)
-	AngularSpeedCurrent = FMath::DegreesToRadians(15.0f); // 현재 각속도
-	AngularSpeedTarget = AngularSpeedCurrent;             // 목표 각속도
+	// 각속도 초기값
+	AngularSpeedCurrent = FMath::DegreesToRadians(15.0f);
+	AngularSpeedTarget = AngularSpeedCurrent;
 
-	// 기울기(tilt) 관련 초기값
+	// Tilt 관련 초기값
 	TiltAngleCurrent = 0.0f;
 	TiltAngleTarget = 0.0f;
 	TiltLerpSpeed = 0.5f;
@@ -39,8 +41,11 @@ ADroneEnemy::ADroneEnemy()
 	TiltOscAmplitude = 5.0f;
 	TiltOscFrequency = 0.2f;
 
-	NetUpdateFrequency = 20.f;   // 기본 100보다 낮춰도 OK
-	MinNetUpdateFrequency = 10.f;
+	// ===== 극단 최적화 =====
+	bReplicates = true;
+	NetUpdateFrequency = 8.0f;      // 15Hz → 8Hz (네트워크 50% 감소)
+	MinNetUpdateFrequency = 4.0f;   // 최소 4Hz
+	SetReplicateMovement(false);    // 위치/회전 리플리케이션 비활성화
 }
 
 void ADroneEnemy::BeginPlay()
@@ -50,66 +55,146 @@ void ADroneEnemy::BeginPlay()
 	if (!HasAuthority())
 		return;
 
-	// 공전 위상 랜덤 시작 (개체 간 동기화 방지)
+	// ===== MuzzleArrow 위치 동기화 =====
+	if (MuzzleArrow && TurretMesh)
+	{
+		MuzzleArrow->SetRelativeLocation(FVector::ZeroVector);
+	}
+
 	ChaseCurvePhase = FMath::RandRange(0.0f, 2.0f * PI);
 	ChaseCurveSign = FMath::FRand() > 0.5f ? 1.0f : -1.0f;
 
 	TimeSinceDirChange = 0.0f;
 
-	// 초기 기울기 랜덤
 	TiltAngleTarget = FMath::RandRange(-TiltAngleRange, TiltAngleRange);
 	TiltAxisYaw = FMath::RandRange(0.0f, 360.0f);
 	TimeSinceTiltChange = 0.0f;
+
+	// ===== LOD 타이머 시작: 거리 기반 최적화 =====
+	GetWorld()->GetTimerManager().SetTimer(
+		LODTimerHandle,
+		this,
+		&ADroneEnemy::UpdateLOD,
+		0.5f,  // 0.5초마다 거리 체크
+		true
+	);
 }
 
 void ADroneEnemy::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
-
-	if (HasAuthority())
-	{	
-		// 타겟 감지 / 추격 여부 판단
-		if (CanCheck)
-			CheckChaseDistance();
-
-		// 추격이 꺼지면 공전 상태도 해제
-		if (!bIsChasing)
-			bOrbiting = false;
-
-		if (bIsChasing && Target && IsValid(_spaceShip))
-		{
-			LookTarget();
-
-			// 이동 로직
-			ChaseMove(DeltaTime);
-
-			// 공격 사거리 내면 바로 발사
-			if (DistanceCheck(_spawnedInfo.Attack_Range))
-				Fire();
-		}
-		else
-		{
-			// 추격 대상 없으면 기본 오비트 행동
-			FollowOrbitTarget(DeltaTime);
-			ApplySpin(DeltaTime);
-		}
-
-		ServerTransform = GetActorTransform();
-	}
-	else
+	// ===== 클라이언트: 서버 상태만 보간 =====
+	if (!HasAuthority())
 	{
-		// 클라 보간
-		InterpAlpha += DeltaTime * 8.f; // 보간 속도
+		InterpAlpha += DeltaTime * 15.0f;
 
 		FTransform NewTransform = FTransform::Identity;
-
 		NewTransform.Blend(
 			PrevTransform,
 			ServerTransform,
-			FMath::Clamp(InterpAlpha, 0.f, 1.f)
+			FMath::Clamp(InterpAlpha, 0.0f, 1.0f)
 		);
 
-		SetActorTransform(NewTransform);
+		SetActorTransform(NewTransform, false);
+		return;
+	}
+
+	// ===== 서버: 실제 로직 실행 =====
+	Super::Tick(DeltaTime);
+
+	// ===== LOD에 따라 처리 빈도 조절 =====
+	static int32 TickCounter = 0;
+	TickCounter++;
+
+	int32 TickSkipInterval = 1;  // 기본값: 모든 Tick 실행
+	
+	if (CurrentLOD == ELODLevel::VeryFar)
+		TickSkipInterval = 4;  // 4프레임마다 한 번
+	else if (CurrentLOD == ELODLevel::Far)
+		TickSkipInterval = 2;  // 2프레임마다 한 번
+	// ELODLevel::Close면 모든 프레임 실행
+
+	if (TickCounter % TickSkipInterval != 0)
+		return;
+
+	if (CanCheck)
+		CheckChaseDistance();
+
+	if (!bIsChasing)
+		bOrbiting = false;
+
+	if (bIsChasing && Target && IsValid(_spaceShip))
+	{
+		ChaseMove(DeltaTime);
+
+		if (DistanceCheck(_spawnedInfo.Attack_Range))
+			Fire();
+	}
+	else
+	{
+		FollowOrbitTarget(DeltaTime);
+		ApplySpin(DeltaTime);
+	}
+
+	if (bIsChasing && Target && IsValid(_spaceShip))
+	{
+		LookTarget();
+	}
+
+	ServerTransform = GetActorTransform();
+}
+
+// ===== 거리 기반 LOD 업데이트 =====
+void ADroneEnemy::UpdateLOD()
+{
+	if (!HasAuthority() || !_spaceShip)
+		return;
+
+	float Distance = FVector::Dist(GetActorLocation(), _spaceShip->GetActorLocation());
+
+	ELODLevel NewLOD = ELODLevel::Close;
+
+	// ===== 거리에 따라 LOD 결정 (1 UU = 1 cm 기준) =====
+	// Detection Range가 10,000 UU(100m)이므로 그보다 큰 범위로 설정
+	if (Distance > 50000.0f)  // 500m 이상
+		NewLOD = ELODLevel::VeryFar;
+	else if (Distance > 25000.0f)  // 250m 이상
+		NewLOD = ELODLevel::Far;
+	else
+		NewLOD = ELODLevel::Close;  // 250m 이하
+
+	// LOD 변경 시에만 업데이트
+	if (NewLOD != CurrentLOD)
+	{
+		CurrentLOD = NewLOD;
+		ApplyLODSettings();
+	}
+}
+
+// ===== LOD 설정 적용 =====
+void ADroneEnemy::ApplyLODSettings()
+{
+	switch (CurrentLOD)
+	{
+	case ELODLevel::Close:
+		// 최고 품질: 모든 기능 활성화 (0~250m)
+		NetUpdateFrequency = 8.0f;
+		if (TurretMesh)
+			TurretMesh->SetVisibility(true);
+		break;
+
+	case ELODLevel::Far:
+		// 중간 품질: 네트워크 업데이트 감소 (250m~500m)
+		NetUpdateFrequency = 4.0f;
+		if (TurretMesh)
+			TurretMesh->SetVisibility(true);
+		break;
+
+	case ELODLevel::VeryFar:
+		// 낮은 품질: 최소 네트워크 업데이트 (500m 이상)
+		NetUpdateFrequency = 2.0f;
+		if (TurretMesh)
+			TurretMesh->SetVisibility(false);  // 렌더링 중단
+		break;
 	}
 }
 
@@ -121,77 +206,75 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 	const FVector TargetLoc = Target->GetActorLocation();
 	FVector CurrentLoc = GetActorLocation();
 
-	// 거리 기준
-	const float AttackR = _spawnedInfo.Attack_Range; // 주의: 실제 멤버 이름 프로젝트에 맞게 _spawnedInfo로 수정하세요
+	const float AttackR = _spawnedInfo.Attack_Range;
 	const float OrbitMin = AttackR * 0.7f;
-	const float OrbitMax = AttackR; // orbit 허용 구간 [OrbitMin, OrbitMax]
+	const float OrbitMax = AttackR;
 
 	float CurrentDistToTarget = FVector::Dist(CurrentLoc, TargetLoc);
 
-	// 1) 너무 가까이 붙으면 부드럽게 백오프(OrbitMin까지)
+	// 1) 너무 가까우면 뒤로 물러남
 	if (CurrentDistToTarget < OrbitMin)
 	{
-		// Back off 목표 : 타겟에서 OrbitMin 거리
 		FVector BackDir = (CurrentLoc - TargetLoc).GetSafeNormal();
-		if (BackDir.IsNearlyZero()) BackDir = FVector::ForwardVector;
-		FVector BackTarget = TargetLoc + BackDir * OrbitMin;
+		if (BackDir.IsNearlyZero())
+			BackDir = FVector::ForwardVector;
 
-		// 부드럽게 이동 (프레임 최대 이동량 제한)
-		float Speed = FMath::Max(1.0f, _targetInfo.Speed); // 프로젝트 멤버명 확인
+		FVector BackTarget = TargetLoc + BackDir * OrbitMin;
 		FVector ToBack = BackTarget - CurrentLoc;
 		float Dist = ToBack.Size();
+
 		if (Dist > KINDA_SMALL_NUMBER)
 		{
 			FVector Dir = ToBack / Dist;
+			float Speed = FMath::Max(1.0f, _targetInfo.Speed);
 			float MaxStep = Speed * DeltaTime;
 			FVector Move = (Dist > MaxStep) ? Dir * MaxStep : ToBack;
-			AddActorWorldOffset(Move, true);
+			AddActorWorldOffset(Move, false);  // 콜리전 체크 제거
 		}
-		// 계속 백오프하면 공전 상태 해제(혹은 유지하지 않음)
+
 		bOrbiting = false;
 		return;
 	}
 
-	// 2) 공격 사거리 밖이면 직접 접근(직진)
+	// 2) 공격 사거리 밖이면 직진
 	if (CurrentDistToTarget > AttackR)
 	{
-		// 접근: target 쪽으로 직진
 		FVector Dir = (TargetLoc - CurrentLoc).GetSafeNormal();
 		float Speed = FMath::Max(1.0f, _targetInfo.Speed);
-		float MaxStep = Speed * DeltaTime;
-		AddActorWorldOffset(Dir * MaxStep, true);
+		AddActorWorldOffset(Dir * Speed * DeltaTime, false);
 
-		// 아직 공전 시작 조건 못 채우면 bOrbiting = false
 		bOrbiting = false;
 		return;
 	}
 
-	// 3) 현재 거리가 orbit 허용 구간(OrbitMin..OrbitMax) 안에 있으면 공전 유지 / 시작
+	// 3) 공전 구간 (비용이 높으므로 이미 최적화된 상태 유지)
 	if (CurrentDistToTarget >= OrbitMin && CurrentDistToTarget <= OrbitMax)
 	{
-		// 보장: 공전 상태로 설정
 		if (!bOrbiting)
-		{
 			EnterOrbit();
-			// do not return: proceed to orbiting logic this frame
-		}
-		// 공전 이동 수행
-		// compute desired orbit position then move towards it (to avoid teleport)
-		// 공전 위상/tilt 계산 (재사용 기존 로직)
-		AngularSpeedCurrent = FMath::FInterpTo(AngularSpeedCurrent, AngularSpeedTarget, DeltaTime, AngularLerpSpeed);
 
-		// tilt 변경 주기 등 기존 로직 유지...
+		// 각속도 보간
+		AngularSpeedCurrent = FMath::FInterpTo(
+			AngularSpeedCurrent,
+			AngularSpeedTarget,
+			DeltaTime,
+			AngularLerpSpeed
+		);
+
+		// 방향 변경 주기
 		TimeSinceDirChange += DeltaTime;
 		if (TimeSinceDirChange >= DirChangeInterval)
 		{
 			TimeSinceDirChange = 0.0f;
 			if (FMath::FRand() < DirReverseProbability)
 				AngularSpeedTarget *= -1.0f;
+
 			float DegPerSec = FMath::FRandRange(6.0f, 28.0f);
 			float Sign = (FMath::FRand() > 0.5f) ? 1.0f : -1.0f;
 			AngularSpeedTarget = FMath::DegreesToRadians(DegPerSec) * Sign;
 		}
 
+		// Tilt 변경
 		TimeSinceTiltChange += DeltaTime;
 		if (TimeSinceTiltChange >= TiltChangeInterval)
 		{
@@ -200,21 +283,21 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 			TiltAxisYaw = FMath::RandRange(0.0f, 360.0f);
 		}
 
-		// tilt interp
+		// Tilt 보간
 		float TiltOsc = TiltOscAmplitude * FMath::Sin(2.0f * PI * TiltOscFrequency * TimeSinceTiltChange);
 		TiltAngleCurrent = FMath::FInterpTo(TiltAngleCurrent, TiltAngleTarget + TiltOsc, DeltaTime, TiltLerpSpeed);
 
-		// phase update
+		// 위상 업데이트
 		ChaseCurvePhase += AngularSpeedCurrent * DeltaTime;
 		ChaseCurvePhase = FMath::Fmod(ChaseCurvePhase, 2.0f * PI);
 
-		// desired radius inside attack range (e.g. 0.9 * AttackR)
+		// 궤도 반경 계산
 		float RadiusOsc = AttackR * 0.15f * FMath::Sin(ChaseCurvePhase * 0.5f + 0.3f);
 		float MaxOsc = AttackR * 0.2f;
 		RadiusOsc = FMath::Clamp(RadiusOsc, -MaxOsc, MaxOsc);
 		float DesiredRadius = FMath::Clamp(AttackR * 0.9f + RadiusOsc, OrbitMin, OrbitMax);
 
-		// basis
+		// Orbit 기저 벡터 계산
 		FVector Axis = RotationAxis.IsNearlyZero() ? FVector::UpVector : RotationAxis.GetSafeNormal();
 		FVector Temp = (FMath::Abs(FVector::DotProduct(Axis, FVector::UpVector)) > 0.99f) ? FVector::RightVector : FVector::UpVector;
 		FVector Right = FVector::CrossProduct(Temp, Axis).GetSafeNormal();
@@ -227,16 +310,17 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 
 		FVector OrbitTargetPos = TargetLoc + OrbitDir * DesiredRadius;
 
-		// move toward OrbitTargetPos smoothly (max step)
+		// Orbit 방향으로 이동
 		FVector ToOrbit = OrbitTargetPos - CurrentLoc;
 		float DistToOrbit = ToOrbit.Size();
+
 		if (DistToOrbit > KINDA_SMALL_NUMBER)
 		{
 			FVector MoveDir = ToOrbit / DistToOrbit;
 			float Speed = FMath::Max(1.0f, _targetInfo.Speed);
 			float MaxStep = Speed * DeltaTime;
 			FVector MoveDelta = (DistToOrbit > MaxStep) ? MoveDir * MaxStep : ToOrbit;
-			AddActorWorldOffset(MoveDelta, true);
+			AddActorWorldOffset(MoveDelta, false);  // 콜리전 체크 제거
 		}
 
 		return;
@@ -246,7 +330,7 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 	{
 		FVector Dir = (TargetLoc - CurrentLoc).GetSafeNormal();
 		float Speed = FMath::Max(1.0f, _targetInfo.Speed);
-		AddActorWorldOffset(Dir * Speed * DeltaTime, true);
+		AddActorWorldOffset(Dir * Speed * DeltaTime, false);
 	}
 }
 
@@ -395,26 +479,28 @@ void ADroneEnemy::OrbitAroundTarget(const FVector& ApproachPoint, float DeltaTim
 
 void ADroneEnemy::LookTarget()
 {
-	if (!IsValid(Target)) 
+	if (!IsValid(Target))
 		return;
 
-	FTimerHandle LookHandle;
-
 	FVector ToTarget = Target->GetActorLocation() - GetActorLocation();
-	if (ToTarget.IsNearlyZero())
+	
+	// 거리가 거의 0이면 조기 종료
+	if (ToTarget.IsNearlyZero(1.0f))
 		return;
 
 	FRotator CurrentRot = GetActorRotation();
 	FRotator TargetRot = ToTarget.Rotation();
 
+	// 각도 차이 계산
 	float DeltaYaw = FMath::FindDeltaAngleDegrees(CurrentRot.Yaw, TargetRot.Yaw);
 	float DeltaPitch = FMath::FindDeltaAngleDegrees(CurrentRot.Pitch, TargetRot.Pitch);
 
-	float DeadAngle = 0.3f; // degrees (0.2 ~ 0.5 추천)
-
+	// 데드존으로 떨림 방지 (0.5도)
+	const float DeadAngle = 0.5f;
 	if (FMath::Abs(DeltaYaw) < DeadAngle && FMath::Abs(DeltaPitch) < DeadAngle)
 		return;
 
+	// 부드러운 회전
 	FRotator NewRot = FMath::RInterpTo(
 		CurrentRot,
 		TargetRot,
@@ -433,15 +519,29 @@ void ADroneEnemy::Fire()
 	if (!Bullet)
 		return;
 
-	const FVector MuzzleLocation = MuzzleArrow->GetComponentLocation();
-	const FRotator MuzzleRotation = MuzzleArrow->GetComponentRotation();
+	// ===== MuzzleArrow 위치 검증: 0,0,0 파티클 방지 =====
+	if (!MuzzleArrow)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Fire: MuzzleArrow is null"));
+		return;
+	}
+
+	FVector MuzzleLocation = MuzzleArrow->GetComponentLocation();
+	
+	// 0,0,0 근처인지 확인
+	if (MuzzleLocation.IsNearlyZero(50.f))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Fire: MuzzleArrow at origin (0,0,0)"));
+		return;
+	}
+
+	FRotator MuzzleRotation = MuzzleArrow->GetComponentRotation();
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.Instigator = GetInstigator();
 
-	MulticastFireEffect();
-
+	// ===== 총알 스폰 먼저 =====
 	ABullet* SpawnedBullet = GetWorld()->SpawnActor<ABullet>(
 		Bullet,
 		MuzzleLocation,
@@ -455,6 +555,10 @@ void ADroneEnemy::Fire()
 		SpawnedBullet->Fire(GetActorForwardVector());
 		SpawnedBullet->SetDamage(_targetInfo.Attack_Damage);
 	}
+
+	// ===== 그 다음 이펙트 (서버에서만 멀티캐스트) =====
+	MulticastFireEffect();
+
 	CanFire = false;
 
 	FTimerHandle FireRateHandle;
@@ -473,17 +577,24 @@ void ADroneEnemy::MulticastFireEffect_Implementation()
 	if (GetNetMode() == NM_DedicatedServer)
 		return;
 
-	if (FireParticle && MuzzleArrow)
-	{
-		UGameplayStatics::SpawnEmitterAttached(
-			FireParticle,
-			MuzzleArrow,
-			NAME_None,
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			EAttachLocation::SnapToTargetIncludingScale
-		);
-	}
+	// ===== 클라이언트도 MuzzleArrow 유효성 검증 =====
+	if (!FireParticle || !MuzzleArrow)
+		return;
+
+	FVector MuzzleLocation = MuzzleArrow->GetComponentLocation();
+	
+	// 0,0,0 근처면 스킵
+	if (MuzzleLocation.IsNearlyZero(50.f))
+		return;
+
+	UGameplayStatics::SpawnEmitterAttached(
+		FireParticle,
+		MuzzleArrow,
+		NAME_None,
+		FVector::ZeroVector,
+		FRotator::ZeroRotator,
+		EAttachLocation::SnapToTargetIncludingScale
+	);
 }
 
 void ADroneEnemy::CheckChaseDistance()
@@ -540,19 +651,19 @@ void ADroneEnemy::ApplySpin(float DeltaTime)
 	if (RotationAxis.IsNearlyZero())
 		return;
 
-	FRotator CurrentRotation = this->GetActorRotation();
+	FRotator CurrentRotation = GetActorRotation();
 	FVector CurrentAxis = CurrentRotation.RotateVector(RotationAxis);
 
 	FQuat SpinQuat = FQuat(CurrentAxis, FMath::DegreesToRadians(SpinSpeed * DeltaTime));
-	FQuat NewQuat = SpinQuat * this->GetActorQuat();
+	FQuat NewQuat = SpinQuat * GetActorQuat();
 
-	this->SetActorRotation(NewQuat);  
+	SetActorRotation(NewQuat);  
 }
 
 void ADroneEnemy::OnRep_ServerTransform()
 {
 	PrevTransform = GetActorTransform();
-	InterpAlpha = 0.f;
+	InterpAlpha = 0.0f;
 }
 
 void ADroneEnemy::GetLifetimeReplicatedProps(

@@ -51,9 +51,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Particle")
 	UParticleSystem* DeathParticle;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Fire")
-	UParticleSystemComponent* FireComponent;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Garbage")
 	TSubclassOf<AActor> EnemyGarbage = nullptr;
 

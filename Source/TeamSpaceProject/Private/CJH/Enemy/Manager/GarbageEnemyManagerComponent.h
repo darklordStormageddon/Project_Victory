@@ -79,6 +79,9 @@ protected:
 
 	int Num;
 
+	// 타이머 핸들
+	FTimerHandle OrbitTimerHandle;
+
 protected:
 	// Sets default values for this component's properties
 	UGarbageEnemyManagerComponent();
@@ -100,7 +103,7 @@ protected:
 
 	// Garbage 중심을 기준으로 Junior의 목표 위치 계산 및 할당
 	void BuildOrbitStructure();
-	void TurnOrbit(float DeltaTime);
+	void TurnOrbit();  // DeltaTime 파라미터 제거
 
 	// Garbage 중심 좌표 얻기(Owner 기준)
 	FVector GetCenterLocation()

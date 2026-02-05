@@ -69,7 +69,7 @@ void ATargetBase::Spawn(TSubclassOf<AActor> EnemyGarbage)
 	const FVector ExplosionCenter = GetActorLocation();
 	const float Radius = 150.f;
 
-	// 파편 스폰 위치 (폭발 중심 주변)
+	// ===== 우주 무중력 환경: 전방향 랜덤 스폰 =====
 	FVector SpawnOffset = FMath::VRand() * FMath::FRandRange(20.f, Radius);
 	FVector SpawnLocation = ExplosionCenter + SpawnOffset;
 
@@ -91,47 +91,24 @@ void ATargetBase::Spawn(TSubclassOf<AActor> EnemyGarbage)
 
 	if (!Mesh) return;
 
-	// 물리 기본 세팅
+	// ===== 무중력 물리 세팅 =====
 	Mesh->SetSimulatePhysics(true);
-	Mesh->SetEnableGravity(true);
-	Mesh->SetLinearDamping(1.5f);
-	Mesh->SetAngularDamping(2.0f);
+	Mesh->SetEnableGravity(false);  // 무중력 우주 환경
+	Mesh->SetLinearDamping(0.0f);   // 이게 문제! 속도를 계속 줄임
+	Mesh->SetAngularDamping(0.0f);  // 회전 마찰 없음 - 계속 회전
 
-	// 폭발 방향 (핵심)
-	FVector ExplosionDir =
-		(SpawnLocation - ExplosionCenter).GetSafeNormal();
+	// ===== 핵심: 전방향 충격 (우주에서 퍼지듯이) =====
+	FVector ExplosionDir = (SpawnLocation - ExplosionCenter).GetSafeNormal();
 
-	// 힘 조절
-	float DirectionStrength = FMath::FRandRange(80.f, 140.f);
-	float UpBias = FMath::FRandRange(10.f, 30.f); // 살짝만
-
-	FVector Impulse =
-		ExplosionDir * DirectionStrength +
-		FVector::UpVector * UpBias;
+	// 힘: 강화된 범위 (더 크게 퍼지도록)
+	float DirectionStrength = FMath::FRandRange(10.f, 60.f);
+	FVector Impulse = ExplosionDir * DirectionStrength;
 
 	Mesh->AddImpulse(Impulse, NAME_None, false);
 
-	// 회전 (방향성 있는 토크)
-	FVector TorqueDir = FVector::CrossProduct(ExplosionDir, FMath::VRand());
-
-	FVector AngularImpulse =
-		TorqueDir * FMath::FRandRange(100.f, 250.f);
+	// ===== 회전: 축이 랜덤하고 세기도 랜덤 =====
+	FVector TorqueAxis = FMath::VRand();  // 전방향 회전축
+	FVector AngularImpulse = TorqueAxis * FMath::FRandRange(60.f, 120.f);
 
 	Mesh->AddAngularImpulseInDegrees(AngularImpulse, NAME_None, true);
-
-	// 우주 상태 전환
-	FTimerHandle GravityTimer;
-	GetWorldTimerManager().SetTimer(
-		GravityTimer,
-		[Mesh]()
-		{
-			if (!IsValid(Mesh)) return;
-
-			Mesh->SetEnableGravity(false);
-			Mesh->SetLinearDamping(0.05f);
-			Mesh->SetAngularDamping(0.05f);
-		},
-		0.3f,
-		false
-	);
 }

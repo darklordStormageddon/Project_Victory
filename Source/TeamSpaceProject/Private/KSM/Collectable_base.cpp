@@ -16,7 +16,6 @@ ACollectable_base::ACollectable_base()
 	Mesh->SetSimulatePhysics(true);
 
 	bReplicates = true;
-	SetReplicateMovement(true);
 }
 
 // Called when the game starts or when spawned

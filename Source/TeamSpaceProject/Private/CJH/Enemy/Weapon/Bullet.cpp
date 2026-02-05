@@ -8,13 +8,13 @@
 // Sets default values
 ABullet::ABullet()
 {
-	PrimaryActorTick.bCanEverTick = false; // ❌ Tick 필요 없음
+	PrimaryActorTick.bCanEverTick = false;
 
 	// ======================
-	// Replication
+	// Replication - 극단 최소화
 	// ======================
-	bReplicates = true;
-	SetReplicateMovement(true);
+	bReplicates = false;  // ===== 변경: 서버만 관리, 클라이언트는 시각적으로만 =====
+	SetReplicateMovement(false);
 
 	// ======================
 	// Collision
@@ -29,7 +29,6 @@ ABullet::ABullet()
 	Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	Collision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
 
-	// Overlap 기반이므로 Hit 아님
 	Collision->SetNotifyRigidBodyCollision(false);
 
 	// ======================
@@ -42,10 +41,12 @@ ABullet::ABullet()
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
 	ProjectileMovement->ProjectileGravityScale = 0.f;
-	ProjectileMovement->SetIsReplicated(true);
+	ProjectileMovement->SetIsReplicated(false);
 
-	// 수명
-	InitialLifeSpan = 3.0f;
+	// ===== 극단적 최적화 =====
+	InitialLifeSpan = 2.0f;  // 생존 시간 단축
+	NetUpdateFrequency = 0.0f;  // 리플리케이션 완전 비활성화
+	MinNetUpdateFrequency = 0.0f;
 }
 
 // Called when the game starts or when spawned
@@ -65,20 +66,33 @@ void ABullet::OnOverlap(
 	const FHitResult& SweepResult
 )
 {
+	// 서버에서만 처리
 	if (!HasAuthority())
 		return;
 
+	// 유효성 검사 간소화
 	if (!OtherActor || OtherActor == _owner)
 		return;
 
-	MulticastHitEffect(
-		SweepResult.ImpactPoint,
-		SweepResult.ImpactNormal.Rotation()
-	);
+	// ===== 이펙트 위치 검증 =====
+	FVector ImpactLocation = SweepResult.ImpactPoint;
+	
+	// ImpactPoint가 0,0,0이면 현재 위치 사용
+	if (ImpactLocation.IsNearlyZero())
+	{
+		ImpactLocation = GetActorLocation();
+	}
 
+	FRotator ImpactRotation = SweepResult.ImpactNormal.Rotation();
+
+	// 이펙트 발동 (유효한 위치에서만)
+	MulticastHitEffect(ImpactLocation, ImpactRotation);
+
+	// 데미지 처리
 	if (UHealthComponent* Health = OtherActor->FindComponentByClass<UHealthComponent>())
 		Health->TakeDamage(Damage);
 
+	// 즉시 제거
 	Destroy();
 }
 
@@ -93,6 +107,10 @@ void ABullet::MulticastHitEffect_Implementation(
 	const FRotator& Rotation
 )
 {
+	// 클라이언트에서만 실행 (이펙트는 시각적 용도)
+	if (GetNetMode() == NM_DedicatedServer)
+		return;
+
 	if (HitParticle)
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(

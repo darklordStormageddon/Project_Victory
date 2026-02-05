@@ -11,9 +11,6 @@ AConnector_Base::AConnector_Base()
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
-
-	bReplicates = true;
-	SetReplicateMovement(true);
 }
 
 // Called when the game starts or when spawned
