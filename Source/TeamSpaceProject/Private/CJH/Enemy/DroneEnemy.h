@@ -111,6 +111,9 @@ private:
 
 	FTransform PrevTransform;
 	float InterpAlpha;
+	float InterpDuration = 0.05f;
+	float LastServerUpdateTime = 0.0f;
+	bool bHasServerTransform = false;
 
 	UFUNCTION()
 	void OnRep_ServerTransform();
