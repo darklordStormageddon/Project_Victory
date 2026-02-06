@@ -163,6 +163,22 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Camera")
 	UCameraComponent* FPSCamera;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* JumpAction;
+
+	void Input_Jump(const FInputActionValue& Value);
+
+	// [수정] 중력(Gravity) 용어 제거 -> 자력에 의한 감속(Deceleration)으로 변경
+	UPROPERTY(EditAnywhere, Category = "Mag Boots | Jump")
+	float JumpInitialSpeed = 450.0f; // 초기 도약 속도
+
+	UPROPERTY(EditAnywhere, Category = "Mag Boots | Jump")
+	float JumpDeceleration = 980.0f; // 자석이 당기는 힘 (감속도)
+
+	// 점프 상태 변수
+	bool bIsJumping = false;
+	float CurrentVerticalSpeed = 0.0f;
+
 	void Move(const FInputActionValue& Value);
 	void StopMove(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);

@@ -205,24 +205,18 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 {
 	if (!IsLocallyControlled()) return;
 
-	// 1. 방향 설정 (중력 방향)
 	FVector GravityUpDir = FVector::UpVector;
 	if (GetAttachParentActor()) GravityUpDir = GetAttachParentActor()->GetActorUpVector();
 	FVector DownDir = -GravityUpDir;
 
-	// -----------------------------------------------------------
-	// [필수 수정] 캡슐 시작점 보정 (땅속 파묻힘 방지)
-	// -----------------------------------------------------------
 	float MyHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-	float TraceHalfHeight = MagBootsTraceHalfHeight; // 에디터 설정값 (20.0)
+	float TraceHalfHeight = MagBootsTraceHalfHeight;
 
-	// 트레이스 캡슐의 바닥을 내 발바닥 높이에 정확히 맞춤
 	float HeightDiff = TraceHalfHeight - MyHalfHeight;
-	FVector StartOffset = GravityUpDir * (HeightDiff + 0.1f); // 0.1f는 미세한 겹침 방지
+	FVector StartOffset = GravityUpDir * (HeightDiff + 0.1f);
 
 	FVector Start = GetActorLocation() + StartOffset;
 
-	// 예측 트레이스 (이동 중일 때 앞쪽 미리 감지)
 	FVector Velocity = GetVelocity();
 	if (Velocity.SizeSquared() > 10.0f)
 	{
@@ -239,50 +233,81 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 	FCollisionShape CapsuleShape = FCollisionShape::MakeCapsule(MagBootsTraceRadius, MagBootsTraceHalfHeight);
 	FQuat ShapeRotation = FRotationMatrix::MakeFromZ(GravityUpDir).ToQuat();
 
-	// 2. 트레이스 및 판별 (채널 OR 태그)
 	bool bFoundValidFloor = false;
-
-	// (1) 평평한 바닥판 감지 (채널: SpaceshipFloor) - 태그 불필요
 	bool bHit = GetWorld()->SweepSingleByChannel(Hit, Start, End, ShapeRotation, ECC_Spaceship_Floor, CapsuleShape, Params);
 
 	if (bHit)
 	{
-		bFoundValidFloor = true; // 전용 채널이면 무조건 합격
+		bFoundValidFloor = true;
 	}
 	else
 	{
-		// (2) 계단 감지 (채널: Visibility) - 태그 필수
 		bHit = GetWorld()->SweepSingleByChannel(Hit, Start, End, ShapeRotation, ECC_Visibility, CapsuleShape, Params);
 
 		if (bHit && Hit.GetActor())
 		{
 			if (Hit.GetActor()->ActorHasTag(TEXT("Stairs")))
 			{
-				bFoundValidFloor = true; // "Stairs" 태그가 있으면 합격
+				bFoundValidFloor = true;
 			}
 			else
 			{
-				// 태그도 없고 전용 채널도 아님 (우주선 바닥 등) -> 불합격 (벽 취급)
 				bFoundValidFloor = false;
 			}
 		}
 	}
 
-	// 3. 결과 처리
-	if (bFoundValidFloor && Hit.GetActor())
-
+	// [신규] 점프 로직 시작
+	if (bIsJumping)
 	{
+		// 1. 자력 감속 (Deceleration) 적용 - CMC 모드 변경 없음
+		CurrentVerticalSpeed -= JumpDeceleration * DeltaTime;
 
-		// [수정] 새로운 바닥을 발견했을 때
+		// 2. Z축 이동 (바닥 Normal 기준)
+		// 점프 중에는 CurrentFloorNormal을 쓰되, 없으면 GravityUpDir 사용
+		FVector JumpUpDir = !CurrentFloorNormal.IsZero() ? CurrentFloorNormal : GravityUpDir;
+		FVector JumpDelta = JumpUpDir * CurrentVerticalSpeed * DeltaTime;
+		AddActorWorldOffset(JumpDelta, true);
+
+		// 3. 회전 보정 (점프 중에도 발바닥 각도 유지)
+		if (bFoundValidFloor)
+		{
+			FRotator CurrentRot = GetActorRotation();
+			FRotator TargetRot = FRotationMatrix::MakeFromZX(Hit.Normal, GetActorForwardVector()).Rotator();
+			SetActorRotation(FMath::QInterpTo(CurrentRot.Quaternion(), TargetRot.Quaternion(), DeltaTime, AlignSpeed));
+			CurrentFloorNormal = Hit.Normal;
+		}
+
+		// 4. 착지 판정 (속도가 음수이고, 바닥이 가까울 때)
+		if (CurrentVerticalSpeed <= 0.0f && bFoundValidFloor)
+		{
+			if (Hit.Distance <= FloorHeightOffset + 5.0f)
+			{
+				bIsJumping = false;
+				CurrentVerticalSpeed = 0.0f;
+
+				if (GetAttachParentActor() != Hit.GetActor())
+				{
+					AttachToActor(Hit.GetActor(), FAttachmentTransformRules::KeepWorldTransform);
+					ReplicatedRelativeData.BaseActor = Hit.GetActor();
+					ReplicatedRelativeData.bIsAnchored = true;
+					Server_SetAnchoring(Hit.GetActor());
+				}
+			}
+		}
+
+		// 점프 중에는 기존 자석 부츠 로직을 수행하지 않고 리턴
+		return;
+	}
+
+	if (bFoundValidFloor && Hit.GetActor())
+	{
 		if (GetAttachParentActor() != Hit.GetActor())
 		{
-			// 1. 클라이언트 우선 적용 (즉각적인 반응성을 위해)
 			AttachToActor(Hit.GetActor(), FAttachmentTransformRules::KeepWorldTransform);
 			GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 			ReplicatedRelativeData.BaseActor = Hit.GetActor();
 			ReplicatedRelativeData.bIsAnchored = true;
-
-			// 2. [신규] 서버에 보고! (이게 없어서 그동안 고장났던 것임)
 			Server_SetAnchoring(Hit.GetActor());
 		}
 
@@ -298,17 +323,14 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 			ReplicatedRelativeData.bIsAnchored = true;
 		}
 
-		// [중요] 바닥의 기울기를 저장하여 Tick 함수로 전달 (이동 방향 계산용)
 		CurrentFloorNormal = Hit.Normal;
 
-		// [높이 보정] Hit.ImpactPoint + Normal * Height 방식 (과거에 잘 작동했던 방식)
 		float TargetHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + FloorHeightOffset;
 		FVector TargetLoc = Hit.ImpactPoint + (Hit.Normal * TargetHeight);
 
 		FVector NewLoc = FMath::VInterpTo(GetActorLocation(), TargetLoc, DeltaTime, AlignSpeed);
 		SetActorLocation(NewLoc);
 
-		// 회전 정렬
 		FRotator CurrentRot = GetActorRotation();
 		FRotator TargetRot = FRotationMatrix::MakeFromZX(GravityUpDir, GetActorForwardVector()).Rotator();
 		FQuat NewQuat = FMath::QInterpTo(CurrentRot.Quaternion(), TargetRot.Quaternion(), DeltaTime, AlignSpeed);
@@ -316,10 +338,8 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 	}
 	else
 	{
-		// 바닥이 없을 때 처리
 		if (ReplicatedRelativeData.bIsAnchored)
 		{
-			// 바닥을 잃었으면 서버에 해제 요청
 			Server_SetAnchoring(nullptr);
 
 			ReplicatedRelativeData.BaseActor = nullptr;
@@ -327,10 +347,8 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 			GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 		}
 
-		// 바닥 못 찾음
 		CurrentFloorNormal = FVector::ZeroVector;
 
-		// 강제 하강 (Gravity)
 		FVector FallVector = DownDir * FlyModeMaxSpeed * DeltaTime;
 		FHitResult FallHit;
 		GetCharacterMovement()->SafeMoveUpdatedComponent(FallVector, GetActorRotation(), true, FallHit);
@@ -419,6 +437,9 @@ void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		}
 		if (LookAction) EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APSJ_Character::Look);
 		if (InteractAction) EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APSJ_Character::Interact);
+		// [신규] 점프 키 바인딩
+		if (JumpAction) EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &APSJ_Character::Input_Jump);
+	
 	}
 }
 
@@ -488,6 +509,21 @@ void APSJ_Character::Look(const FInputActionValue& Value)
 		float NewPitch = CurrentCamRot.Pitch + (LookAxisVector.Y * -1.0f);
 		NewPitch = FMath::Clamp(NewPitch, -80.0f, 80.0f);
 		FPSCamera->SetRelativeRotation(FRotator(NewPitch, 0.0f, 0.0f));
+	}
+}
+
+void APSJ_Character::Input_Jump(const FInputActionValue& Value)
+{
+	// 앵커링 상태이고, 이미 점프 중이 아닐 때만 발동
+	if (ReplicatedRelativeData.bIsAnchored && !bIsJumping)
+	{
+		bIsJumping = true;
+		CurrentVerticalSpeed = JumpInitialSpeed;
+		// 점프 즉시 바닥 부착 해제 처리나 Mode 변경을 하지 않음 (User Request)
+		// 오직 bIsJumping 플래그로만 제어
+
+		// 디버깅용 로그
+		// UE_LOG(LogTemp, Log, TEXT("Jump Started! Speed: %f"), CurrentVerticalSpeed);
 	}
 }
 
