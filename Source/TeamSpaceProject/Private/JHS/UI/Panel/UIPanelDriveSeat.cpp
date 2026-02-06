@@ -31,19 +31,20 @@ void UUIPanelDriveSeat::OnChangeSpaceShipData(UEventOnChangeSpaceShipData* Event
 		return;
 
 	FSpaceShipData _maxCurrentData = Event->SpaceShipDataData;
+	FMaxCurrentData _value = _maxCurrentData.Data.Value;
 
 	switch (_maxCurrentData.DataType)
 	{
 		case E_SPACE_SHIP_DATA_TYPE::HP:
-			SetProgressBarUI(_maxCurrentData.Values.CurrentValue, _maxCurrentData.Values.MaxValue, PROG_SpaceShipHP, TXT_SpaceShipHP, true);
+			SetProgressBarUI(_value.CurrentValue, _value.MaxValue, PROG_SpaceShipHP, TXT_SpaceShipHP, true);
 			break;
 
 		case E_SPACE_SHIP_DATA_TYPE::Shield:
-			SetProgressBarUI(_maxCurrentData.Values.CurrentValue, _maxCurrentData.Values.MaxValue, PROG_SpaceShipShield, TXT_SpaceShipShield, true);
+			SetProgressBarUI(_value.CurrentValue, _value.MaxValue, PROG_SpaceShipShield, TXT_SpaceShipShield, true);
 			break;
 
 		case E_SPACE_SHIP_DATA_TYPE::Fuel:
-			SetProgressBarUI(_maxCurrentData.Values.CurrentValue, _maxCurrentData.Values.MaxValue, PROG_SpaceShipFuel, TXT_SpaceShipFuel, true);
+			SetProgressBarUI(_value.CurrentValue, _value.MaxValue, PROG_SpaceShipFuel, TXT_SpaceShipFuel, true);
 			break;
 
 		default:

@@ -89,7 +89,7 @@ void UUIPanelCollectSeat::OnChangeDurability(UEventOnChangeToolDurability* Event
 	FCollectToolData _collectToolData = Event->CollectToolData;
 	TObjectPtr<UCollectToolDurability> _collectToolItem = GetCollectToolItem(_collectToolData.CollectToolType);
 
-	float _progress = FMath::Clamp(_collectToolData.Durability.CurrentValue / _collectToolData.Durability.MaxValue, 0.0f, 1.0f);
+	float _progress = FMath::Clamp(_collectToolData.Durability.Value.CurrentValue / _collectToolData.Durability.Value.MaxValue, 0.0f, 1.0f);
 	bool _isVaccumTool = _collectToolData.CollectToolType == E_COLLECT_TOOL_TYPE::Vacuum;
 	if (_isVaccumTool)
 	{

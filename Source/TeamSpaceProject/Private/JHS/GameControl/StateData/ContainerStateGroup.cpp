@@ -121,10 +121,10 @@ void UContainerStateGroup::LoadResource()
 	// Element
 	_containerState.ElementDataMap.Empty();
 
-	TObjectPtr<UDataTable> _elementDataTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ConstantLibrary::Resource.DataTable.ELEMENT_INFO_PATH));
+	TObjectPtr<UDataTable> _elementDataTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ConstantLibrary::Resource.DataTable.ELEMENT_PATH));
 	if (!_elementDataTable)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to load Element Data Table from path [%s]"), *ConstantLibrary::Resource.DataTable.ELEMENT_INFO_PATH);
+		UE_LOG(LogTemp, Error, TEXT("Failed to load Element Data Table from path [%s]"), *ConstantLibrary::Resource.DataTable.ELEMENT_PATH);
 		return;
 	}
 

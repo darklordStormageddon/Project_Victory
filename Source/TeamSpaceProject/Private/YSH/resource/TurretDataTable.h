@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Engine/DataTable.h"
-#include "JHS/GameControl/StateData/GameStateData.h"
+#include "JHS/GameControl/StateData/GameStateStructs.h"
+
 #include "TurretDataTable.generated.h"
 
 USTRUCT(BlueprintType)
@@ -14,22 +14,28 @@ struct FTurretInitState : public FTableRowBase
     GENERATED_BODY()
 
 public:
-    FTurretInitState() :TurretName("TurretName"), bIsMainTurret(0), AmmoType("Bullet"), InitMaxMag(100), InitFireInterval(0.1f) {}
+    FTurretInitState() :TurretType(E_TURRET_TYPE::NONE), bIsMainTurret(0), AmmoType(E_AMMO_TYPE::NONE), Description("Description"), Price(0), Mag(), FireInterval() {}
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FString TurretName;
+    E_TURRET_TYPE TurretType;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bIsMainTurret;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FString AmmoType;
+    E_AMMO_TYPE AmmoType;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 InitMaxMag;
+    FString Description = "";
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float InitFireInterval;
+    float Price;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FPurchaseDataFormat Mag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FPurchaseDataFormat FireInterval;
 };
 
 UCLASS()

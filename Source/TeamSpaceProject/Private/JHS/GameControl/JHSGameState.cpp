@@ -101,3 +101,35 @@ TObjectPtr<UEventManager> AJHSGameState::GetEventManager()
 
 	return _cachedEventManager;
 }
+
+bool AJHSGameState::TryGetTextureFromPath(FString FolderPath, FString FileName, TObjectPtr<UTexture2D>& OutTexture)
+{
+	FString _texturePath = FolderPath + FileName + "." + FileName;
+	OutTexture = LoadObject<UTexture2D>(nullptr, *_texturePath);
+	if (OutTexture == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AJHSGameState: Failed to load texture from path: %s"), *_texturePath);
+		return false;
+	}
+
+	return true;
+}
+
+FPurchaseData AJHSGameState::ParseFromDataRow(UTexture2D* Image, FPurchaseDataFormat PurchaseDataFormat)
+{
+	FPurchaseData _newPurchaseData;
+	_newPurchaseData.Image = Image;
+	_newPurchaseData.Description = PurchaseDataFormat.Description;
+
+	_newPurchaseData.Level.MaxValue = PurchaseDataFormat.MaxLevel;
+	_newPurchaseData.Level.CurrentValue = 1;
+
+	_newPurchaseData.Value.MaxValue = PurchaseDataFormat.InitValue;
+	_newPurchaseData.Value.CurrentValue = _newPurchaseData.Value.MaxValue;
+
+	_newPurchaseData.IncreasePerValue = PurchaseDataFormat.IncreasePerValue;
+	_newPurchaseData.PurchaseDollar = PurchaseDataFormat.InitDollar;
+	_newPurchaseData.IncreasePerDollar = PurchaseDataFormat.IncreasePerDollar;
+
+	return _newPurchaseData;
+}

@@ -57,7 +57,7 @@ void UCollectStateGroup::RepairAllTool()
 {
 	for (auto& _collectToolData : _collectToolDataMap)
 	{
-		_collectToolData.Value.Durability.CurrentValue = _collectToolData.Value.Durability.MaxValue;
+		_collectToolData.Value.Durability.Value.CurrentValue = _collectToolData.Value.Durability.Value.MaxValue;
 		ExecuteEventToolDurability(_collectToolData.Value);
 	}
 }
@@ -90,16 +90,17 @@ bool UCollectStateGroup::TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float D
 	if (!TryGetCollectToolData(_selectedToolType, _outCollectToolData))
 		return false;
 
-	if (CollectToolType != E_COLLECT_TOOL_TYPE::Vacuum && _outCollectToolData->Durability.CurrentValue <= 0)
+	if (CollectToolType != E_COLLECT_TOOL_TYPE::Vacuum && _outCollectToolData->Durability.Value.CurrentValue <= 0)
 		return false;
 
-	_outCollectToolData->Durability.CurrentValue -= CONSUME_DURABILITY * DeltaTime;
-	if (_outCollectToolData->Durability.CurrentValue <= 0)
+	FMaxCurrentData* _durability = &(_outCollectToolData->Durability.Value);
+	_durability->CurrentValue -= CONSUME_DURABILITY * DeltaTime;
+	if (_durability->CurrentValue <= 0)
 	{
-		_outCollectToolData->Durability.CurrentValue = 0;
+		_durability->CurrentValue = 0;
 	}
 
-	OutToolDamage = _outCollectToolData->ToolDamage;
+	OutToolDamage = _outCollectToolData->ToolDamage.Value.MaxValue;
 
 	ExecuteEventToolDurability(*_outCollectToolData);
 	return true;
@@ -124,9 +125,9 @@ void UCollectStateGroup::LoadCollectToolDataTable()
 		{
 			FCollectToolData _newCollectToolData;
 			_newCollectToolData.CollectToolType = _toolInfo->ToolType;
-			_newCollectToolData.Durability.MaxValue = _toolInfo->Durability;
-			_newCollectToolData.Durability.CurrentValue = _newCollectToolData.Durability.MaxValue;
-			_newCollectToolData.ToolDamage = _toolInfo->Damage;
+			//_newCollectToolData.Durability.MaxValue = _toolInfo->Durability;
+			//_newCollectToolData.Durability.CurrentValue = _newCollectToolData.Durability.MaxValue;
+			//_newCollectToolData.ToolDamage = _toolInfo->Damage;
 
 			// Texture
 			FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_COLLECT_TOOL_TYPE>(_newCollectToolData.CollectToolType);

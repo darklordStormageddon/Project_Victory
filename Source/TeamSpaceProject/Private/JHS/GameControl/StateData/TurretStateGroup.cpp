@@ -72,7 +72,7 @@ void UTurretStateGroup::InitializeTurretState(TObjectPtr<AJHSGameState> GameStat
 		TObjectPtr<ATurretStand> _turretStandActor = Cast<ATurretStand>(_turretStand);
 		if (!_turretStandActor)
 		{
-			UE_LOG(LogTemp, Error, TEXT("TurretStateGroup: TurretStand not found. %s"), *_turretStand->GetName());
+			UE_LOG(LogTemp, Error, TEXT("TurretStateGroup: Failed to cast TurretStand. %s"), *_turretStand->GetName());
 			continue;
 		}
 
@@ -141,7 +141,7 @@ void UTurretStateGroup::ServerEquipTurret_Implementation(E_TURRET_POSITION Turre
 	}
 
 	// 터렛 BP 클래스 로드 및 스폰
-	FString _fileName = _outTurretData->TurretBPName;
+	FString _fileName = "BP_" + CommonEnums::GetEnum2FString<E_TURRET_TYPE>(_outTurretData->TurretType);
 	FString _turretBPPath = ConstantLibrary::Resource.TurretBP.TURRET_BP_FOLDER_PATH + _fileName + "." + _fileName + "_C";
 	TSubclassOf<AActor> _turretClass = LoadClass<AActor>(nullptr, *_turretBPPath);
 	if (_turretClass == nullptr)
@@ -203,7 +203,7 @@ bool UTurretStateGroup::TryGetTurretFireInterval(E_TURRET_POSITION TurretPositio
 	if (!TryGetTurretData(TurretPosition, _equipedAmmoType, _outTurretData))
 		return false;
 
-	*OutFireCoolTime = _outTurretData->FireInterval;
+	*OutFireCoolTime = _outTurretData->FireInterval.Value.MaxValue;
 	return true;
 }
 
@@ -221,7 +221,7 @@ bool UTurretStateGroup::TryFireTurret(E_TURRET_POSITION TurretPosition)
 	if (!TryGetTurretData(TurretPosition, _equipedAmmoType, _outTurretData))
 		return false;
 
-	if (_outTurretData->Mag.CurrentValue <= 0)
+	if (_outTurretData->Mag.Value.CurrentValue <= 0)
 	{
 		if (!_isInfiniteMagMode)
 			return false;
@@ -248,7 +248,7 @@ bool UTurretStateGroup::TryReloadTurret(E_TURRET_POSITION TurretPosition)
 	if (!_gameState->GetContainerStateGroup()->TryGetAmmoData(_equipedAmmoType, _outAmmoData))
 		return false;
 
-	ChangeTurretAmmo(TurretPosition, _equipedAmmoType, _outAmmoData->ReloadCapacity);
+	ChangeTurretAmmo(TurretPosition, _equipedAmmoType, _outAmmoData->ReloadCapacity.Value.MaxValue);
 	return true;
 }
 
@@ -269,18 +269,33 @@ void UTurretStateGroup::LoadTurretDataTable()
 		FTurretInitState* _turrerInfo = _turretDataTable->FindRow<FTurretInitState>(_rowName, TEXT(""));
 		if (_turrerInfo)
 		{
-			E_AMMO_TYPE _outAmmoType = E_AMMO_TYPE::NONE;
-			if (!CommonEnums::TryGetAmmoType(_turrerInfo->AmmoType, _outAmmoType))
-				return;
-
 			FTurretData _newTurretData;
-			_newTurretData.TurretBPName = _turrerInfo->TurretName;
-			_newTurretData.AmmoType = _outAmmoType;
-			_newTurretData.Mag.MaxValue = _turrerInfo->InitMaxMag;
-			_newTurretData.Mag.CurrentValue = _newTurretData.Mag.MaxValue;
-			_newTurretData.FireInterval = _turrerInfo->InitFireInterval;
+			// 터렛 정보
+			_newTurretData.TurretType = _turrerInfo->TurretType;
+			_newTurretData.AmmoType = _turrerInfo->AmmoType;
+			TObjectPtr<UTexture2D> _outTexture = nullptr;
+			FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_TURRET_TYPE>(_newTurretData.TurretType);
+			if (AJHSGameState::TryGetTextureFromPath(ConstantLibrary::Resource.Image.TURRET_FOLDER_PATH, _fileName, _outTexture))
+			{
+				_newTurretData.TurretImage = _outTexture;
+			}
 
-			_turretDataMap.Add(GetTurretKey(_turrerInfo->bIsMainTurret, _outAmmoType), _newTurretData);
+			// 가격
+			FPurchaseData _price;
+			_price.Image = _newTurretData.TurretImage;
+			_price.Description = FString::Printf(TEXT("%s 구매"), *_turrerInfo->Description);
+			_price.Level.MaxValue = 1;
+			_price.Level.CurrentValue = 0;
+			_price.PurchaseDollar = _turrerInfo->Price;
+			_newTurretData.Price = _price;
+
+			// 탄약
+			_newTurretData.Mag = AJHSGameState::ParseFromDataRow(_newTurretData.TurretImage, _turrerInfo->Mag);
+
+			// 공격 속도
+			_newTurretData.FireInterval = AJHSGameState::ParseFromDataRow(_newTurretData.TurretImage, _turrerInfo->FireInterval);
+
+			_turretDataMap.Add(GetTurretKey(_turrerInfo->bIsMainTurret, _newTurretData.AmmoType), _newTurretData);
 		}
 	}
 
@@ -321,14 +336,15 @@ void UTurretStateGroup::ChangeTurretAmmo(E_TURRET_POSITION TurretPosition, E_AMM
 	if (!TryGetTurretData(TurretPosition, AmmoType, _outTurretData))
 		return;
 
-	_outTurretData->Mag.CurrentValue += ChangeValue;
-	if (_outTurretData->Mag.CurrentValue > _outTurretData->Mag.MaxValue)
+	FMaxCurrentData* _value = &(_outTurretData->Mag.Value);
+	_value->CurrentValue += ChangeValue;
+	if (_value->CurrentValue > _value->MaxValue)
 	{
-		_outTurretData->Mag.CurrentValue = _outTurretData->Mag.MaxValue;
+		_value->CurrentValue = _value->MaxValue;
 	}
-	if (_outTurretData->Mag.CurrentValue < 0)
+	if (_value->CurrentValue < 0)
 	{
-		_outTurretData->Mag.CurrentValue = 0;
+		_value->CurrentValue = 0;
 	}
 
 	ExecuteTurretEvent(TurretPosition, *_outTurretData);

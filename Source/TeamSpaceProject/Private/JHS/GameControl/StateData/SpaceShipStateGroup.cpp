@@ -41,25 +41,25 @@ void USpaceShipStateGroup::InitializeSpaceShipState(TObjectPtr<AJHSGameState> Ga
 {
 	_gameState = GameState;
 
-	_spaceShipState.Shield.Values = InitSpaceShipState.Shield.Values;
-	_spaceShipState.HP.Values = InitSpaceShipState.HP.Values;
-	_spaceShipState.Fuel.Values = InitSpaceShipState.Fuel.Values;
+	_spaceShipState.Shield.Data.Value = InitSpaceShipState.Shield.Data.Value;
+	_spaceShipState.HP.Data.Value = InitSpaceShipState.HP.Data.Value;
+	_spaceShipState.Fuel.Data.Value = InitSpaceShipState.Fuel.Data.Value;
 
 	RepairSpaceShip();
 }
 
 void USpaceShipStateGroup::UpdateSpaceShipState()
 {
-	ChangeSpaceShipData(&_spaceShipState.Shield, _spaceShipState.Shield.Values.CurrentValue, _spaceShipState.Shield.Values.MaxValue);
-	ChangeSpaceShipData(&_spaceShipState.HP, _spaceShipState.HP.Values.CurrentValue, _spaceShipState.HP.Values.MaxValue);
-	ChangeSpaceShipData(&_spaceShipState.Fuel, _spaceShipState.Fuel.Values.CurrentValue, _spaceShipState.Fuel.Values.MaxValue);
+	ChangeSpaceShipData(&_spaceShipState.Shield, _spaceShipState.Shield.Data.Value.CurrentValue, _spaceShipState.Shield.Data.Value.MaxValue);
+	ChangeSpaceShipData(&_spaceShipState.HP, _spaceShipState.HP.Data.Value.CurrentValue, _spaceShipState.HP.Data.Value.MaxValue);
+	ChangeSpaceShipData(&_spaceShipState.Fuel, _spaceShipState.Fuel.Data.Value.CurrentValue, _spaceShipState.Fuel.Data.Value.MaxValue);
 }
 
 void USpaceShipStateGroup::RepairSpaceShip()
 {
-	ChangeSpaceShipData(&_spaceShipState.Shield, _spaceShipState.Shield.Values.MaxValue);
-	ChangeSpaceShipData(&_spaceShipState.HP, _spaceShipState.HP.Values.MaxValue);
-	ChangeSpaceShipData(&_spaceShipState.Fuel, _spaceShipState.Fuel.Values.MaxValue);
+	ChangeSpaceShipData(&_spaceShipState.Shield, _spaceShipState.Shield.Data.Value.MaxValue);
+	ChangeSpaceShipData(&_spaceShipState.HP, _spaceShipState.HP.Data.Value.MaxValue);
+	ChangeSpaceShipData(&_spaceShipState.Fuel, _spaceShipState.Fuel.Data.Value.MaxValue);
 }
 
 void USpaceShipStateGroup::DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType, float DecreaseValue)
@@ -67,15 +67,15 @@ void USpaceShipStateGroup::DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType
 	switch (DataType)
 	{
 		case E_SPACE_SHIP_DATA_TYPE::Shield:
-			ChangeSpaceShipData(&_spaceShipState.Shield, _spaceShipState.Shield.Values.CurrentValue - DecreaseValue);
+			ChangeSpaceShipData(&_spaceShipState.Shield, _spaceShipState.Shield.Data.Value.CurrentValue - DecreaseValue);
 			break;
 
 		case E_SPACE_SHIP_DATA_TYPE::HP:
-			ChangeSpaceShipData(&_spaceShipState.HP, _spaceShipState.HP.Values.CurrentValue - DecreaseValue);
+			ChangeSpaceShipData(&_spaceShipState.HP, _spaceShipState.HP.Data.Value.CurrentValue - DecreaseValue);
 			break;
 
 		case E_SPACE_SHIP_DATA_TYPE::Fuel:
-			ChangeSpaceShipData(&_spaceShipState.Fuel, _spaceShipState.Fuel.Values.CurrentValue - DecreaseValue);
+			ChangeSpaceShipData(&_spaceShipState.Fuel, _spaceShipState.Fuel.Data.Value.CurrentValue - DecreaseValue);
 			break;
 
 		default:
@@ -85,26 +85,27 @@ void USpaceShipStateGroup::DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType
 
 void USpaceShipStateGroup::RepairShield(float RepairShieldValue)
 {
-	ChangeSpaceShipData(&_spaceShipState.Shield, _spaceShipState.Shield.Values.CurrentValue + RepairShieldValue);
+	ChangeSpaceShipData(&_spaceShipState.Shield, _spaceShipState.Shield.Data.Value.CurrentValue + RepairShieldValue);
 }
 
 void USpaceShipStateGroup::ChangeSpaceShipData(FSpaceShipData* OriginalData, float CurrentValue)
 {
-	ChangeSpaceShipData(OriginalData, CurrentValue, OriginalData->Values.MaxValue);
+	ChangeSpaceShipData(OriginalData, CurrentValue, OriginalData->Data.Value.MaxValue);
 }
 
 void USpaceShipStateGroup::ChangeSpaceShipData(FSpaceShipData* OriginalData, float CurrentValue, float MaxValue)
 {
 	// FMaxCurrentData 원본 데이터 참조
-	OriginalData->Values.CurrentValue = CurrentValue;
-	OriginalData->Values.MaxValue = MaxValue;
-	if (OriginalData->Values.CurrentValue > OriginalData->Values.MaxValue)
+	FMaxCurrentData* _value = &(OriginalData->Data.Value);
+	_value->CurrentValue = CurrentValue;
+	_value->MaxValue = MaxValue;
+	if (_value->CurrentValue > _value->MaxValue)
 	{
-		OriginalData->Values.CurrentValue = OriginalData->Values.MaxValue;
+		_value->CurrentValue = _value->MaxValue;
 	}
-	if (OriginalData->Values.CurrentValue < 0.0f)
+	if (_value->CurrentValue < 0.0f)
 	{
-		OriginalData->Values.CurrentValue = 0.0f;
+		_value->CurrentValue = 0.0f;
 	}
 
 	UEventOnChangeSpaceShipData* _event = NewObject<UEventOnChangeSpaceShipData>(this);

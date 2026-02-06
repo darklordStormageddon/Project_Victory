@@ -3,12 +3,63 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "JHS/GameControl/StateData/GameStateData.h"
 
 #include "GameStateStructs.generated.h"
 
 // Forward declaration
 class AJHSGameState;
+
+UENUM(BlueprintType)
+enum class E_PURCHASE_CATEGORY : uint8
+{
+	SpaceShip = 0 UMETA(DisplayName = "SpaceShip"),
+	CollectTool UMETA(DisplayName = "CollectTool"),
+	Turret UMETA(DisplayName = "Turret"),
+	Ammo UMETA(DisplayName = "Ammo"),
+
+	END UMETA(DisplayName = "END"),
+};
+
+USTRUCT(BlueprintType)
+struct FMaxCurrentData
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float MaxValue = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float CurrentValue = 0.0f;
+};
+
+USTRUCT(BlueprintType)
+struct FPurchaseData
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY()
+	UTexture2D* Image = nullptr;
+
+	UPROPERTY()
+	FString Description = "";
+
+	UPROPERTY()
+	FMaxCurrentData Level;
+
+	UPROPERTY()
+	FMaxCurrentData Value;
+
+	UPROPERTY()
+	float IncreasePerValue = 0.0f;
+
+	UPROPERTY()
+	int32 PurchaseDollar = 0;
+
+	UPROPERTY()
+	float IncreasePerDollar = 0.0f;
+};
 
 #pragma region SpaceShip
 UENUM(BlueprintType)
@@ -17,6 +68,8 @@ enum class E_SPACE_SHIP_DATA_TYPE : uint8
 	Shield = 0 UMETA(DisplayName = "Shield"),
 	HP UMETA(DisplayName = "HP"),
 	Fuel UMETA(DisplayName = "Fuel"),
+
+	NONE UMETA(DisplayName = "NONE"),
 };
 
 USTRUCT(BlueprintType)
@@ -25,11 +78,11 @@ struct FSpaceShipData
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	E_SPACE_SHIP_DATA_TYPE DataType = E_SPACE_SHIP_DATA_TYPE::Shield;
+	UPROPERTY()
+	E_SPACE_SHIP_DATA_TYPE DataType = E_SPACE_SHIP_DATA_TYPE::NONE;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FMaxCurrentData Values;
+	UPROPERTY()
+	FPurchaseData Data;
 };
 
 USTRUCT(BlueprintType)
@@ -38,13 +91,13 @@ struct FSpaceShipState
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY()
 	FSpaceShipData Shield;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY()
 	FSpaceShipData HP;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY()
 	FSpaceShipData Fuel;
 };
 #pragma endregion SpaceShip
@@ -89,11 +142,11 @@ public:
 
 	// 내구도
 	UPROPERTY()
-	FMaxCurrentData Durability;
+	FPurchaseData Durability;
 
 	// 작업 속도
 	UPROPERTY()
-	float ToolDamage = 0.0f;
+	FPurchaseData ToolDamage;
 
 	UPROPERTY()
 	UTexture2D* CollectToolImage = nullptr;
@@ -117,15 +170,22 @@ struct FAmmoData
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY()
 	E_AMMO_TYPE AmmoType = E_AMMO_TYPE::NONE;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 ReloadCapacity = 0;
+	// 탄약 가격
+	UPROPERTY()
+	int32 Price = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float AmmoDamage = 0.0f;
+	// 탄약 용량
+	UPROPERTY()
+	FPurchaseData ReloadCapacity;
 
+	// 탄약 데미지
+	UPROPERTY()
+	FPurchaseData AmmoDamage;
+
+	// 보유량
 	UPROPERTY()
 	int32 AmmoStockpile = 0;
 
@@ -143,6 +203,18 @@ enum class E_TURRET_POSITION : uint8
 	END UMETA(DisplayName = "END"),
 };
 
+UENUM(BlueprintType)
+enum class E_TURRET_TYPE : uint8
+{
+	DualCannon = 0 UMETA(DisplayName = "DualCannon"),
+	GT UMETA(DisplayName = "GT"),
+	AT_Missile UMETA(DisplayName = "AT_Missile"),
+	AT_GT UMETA(DisplayName = "AT_GT"),
+	AT_Cannon UMETA(DisplayName = "AT_Cannon"),
+
+	NONE UMETA(DisplayName = "NONE"),
+};
+
 USTRUCT(BlueprintType)
 struct FTurretData
 {
@@ -150,16 +222,22 @@ struct FTurretData
 
 public:
 	UPROPERTY()
-	FString TurretBPName;
+	E_TURRET_TYPE TurretType = E_TURRET_TYPE::NONE;
 
 	UPROPERTY()
 	E_AMMO_TYPE AmmoType = E_AMMO_TYPE::NONE;
 
 	UPROPERTY()
-	FMaxCurrentData Mag;
+	UTexture2D* TurretImage = nullptr;
 
 	UPROPERTY()
-	float FireInterval = 1.0f;
+	FPurchaseData Price;
+
+	UPROPERTY()
+	FPurchaseData Mag;
+
+	UPROPERTY()
+	FPurchaseData FireInterval;
 };
 #pragma endregion Turret
 
@@ -222,3 +300,40 @@ public:
 	TMap<E_AMMO_TYPE, FAmmoData> AmmoDataMap;
 };
 #pragma endregion Container
+
+USTRUCT(BlueprintType)
+struct FPurchaseDataFormat
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString Description = "";
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 MaxLevel;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float InitValue;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float IncreasePerValue = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 InitDollar = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float IncreasePerDollar = 0.0f;
+};
+
+USTRUCT(BlueprintType)
+struct FTestRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+public:
+	FTestRow() {}
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FPurchaseDataFormat Data;
+};

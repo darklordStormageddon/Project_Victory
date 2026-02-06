@@ -98,4 +98,8 @@ public:
 
 public:
 	TObjectPtr<UEventManager> GetEventManager();
+
+	static bool TryGetTextureFromPath(FString FolderPath, FString FileName, TObjectPtr<UTexture2D>& OutTexture);
+
+	static FPurchaseData ParseFromDataRow(UTexture2D* Image, FPurchaseDataFormat PurchaseDataFormat);
 };

@@ -12,16 +12,20 @@ struct FResourceDataTable
 
 public:
 	FResourceDataTable()
-		: TURRET_INFO_PATH(TEXT("/Game/Main/PS_YSH/Data/DT_TurretDataTable.DT_TurretDataTable"))
-		, ELEMENT_INFO_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Collectables/DT_ElementProperty.DT_ElementProperty"))
+		: SPACESHIP_PATH(TEXT("/Game/Main/PS_PSJ/"))
+		, ELEMENT_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Collectables/DT_ElementProperty.DT_ElementProperty"))
 		, COLLECT_TOOL_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Tool/DT_ToolProperty.DT_ToolProperty"))
+		, TURRET_INFO_PATH(TEXT("/Game/Main/PS_YSH/Data/DT_TurretDataTable.DT_TurretDataTable"))
 	{}
+
+	UPROPERTY()
+	FString SPACESHIP_PATH;
 
 	UPROPERTY()
 	FString TURRET_INFO_PATH;
 
 	UPROPERTY()
-	FString ELEMENT_INFO_PATH;
+	FString ELEMENT_PATH;
 
 	UPROPERTY()
 	FString COLLECT_TOOL_PATH;
@@ -66,14 +70,19 @@ struct FResourceImage
 public:
 	FResourceImage()
 		: TEXTURE_HEADER(TEXT("Tex_"))
+		, SPACESHIP_STATE_PATH(TEXT("/Game/Main/PS_PSJ/"))
 		, INTERACT_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/Interact/"))
 		, ELEMENT_FOLDER_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Collectables/Image/"))
 		, COLLECT_FOLDER_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Tool_Image/"))
+		, TURRET_FOLDER_PATH(TEXT("/Game/Main/PS_YSH/TurretIcon/"))
 		, AMMO_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/AmmoType/"))
 	{}
 
 	UPROPERTY()
 	FString TEXTURE_HEADER;
+
+	UPROPERTY()
+	FString SPACESHIP_STATE_PATH;
 
 	UPROPERTY()
 	FString INTERACT_FOLDER_PATH;
@@ -83,6 +92,9 @@ public:
 
 	UPROPERTY()
 	FString COLLECT_FOLDER_PATH;
+
+	UPROPERTY()
+	FString TURRET_FOLDER_PATH;
 
 	UPROPERTY()
 	FString AMMO_FOLDER_PATH;

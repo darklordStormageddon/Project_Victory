@@ -10,6 +10,7 @@
 class UUIManager;
 class UEventManager;
 class USpaceManager;
+class UShopManager;
 
 UCLASS()
 class AJHSGameMode : public AGameMode
@@ -28,6 +29,9 @@ private:
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
 	TObjectPtr<USpaceManager> _spaceManager = nullptr;
+
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
+	TObjectPtr<UShopManager> _shopManager = nullptr;
 
 	bool _isGameStarted = false;
 

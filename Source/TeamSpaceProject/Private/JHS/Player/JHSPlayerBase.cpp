@@ -4,6 +4,7 @@
 #include "JHS/Player/JHSPlayerBase.h"
 
 #include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/PlayerStateGroup.h"
@@ -47,6 +48,12 @@ void AJHSPlayerBase::BeginPlay()
 
 	
 	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::AddElement, 3.0f, false);
+
+	AJHSGameMode* _outGameMode = nullptr;
+	if (!UStaticFunctionLibrary::TryGetGameMode(_outGameMode))
+		return;
+
+	_outGameMode->StartGame(this);
 }
 
 // Called every frame

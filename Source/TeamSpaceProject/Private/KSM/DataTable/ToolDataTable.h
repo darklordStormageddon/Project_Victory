@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
+
 #include "ToolDataTable.generated.h"
 
 USTRUCT(BlueprintType)
@@ -13,19 +14,23 @@ struct FToolProperty : public FTableRowBase
     GENERATED_BODY()
 
 public:
-    FToolProperty() :ToolType(E_COLLECT_TOOL_TYPE::Vacuum), Durability(0.0f), Damage(0.0f) {}
+    FToolProperty() :ToolType(E_COLLECT_TOOL_TYPE::Vacuum), Price(), Durability(), Damage() {}
 
-    //원소 종류
+    // 도구 종류
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     E_COLLECT_TOOL_TYPE ToolType;
 
-    //가격
+    // 가격
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float Durability;
+    FPurchaseDataFormat Price;
 
-    //Tex뒤에 올 이름
+    // 내구도
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float Damage;
+    FPurchaseDataFormat Durability;
+
+    // 도구 데미지
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FPurchaseDataFormat Damage;
 };
 
 UCLASS()

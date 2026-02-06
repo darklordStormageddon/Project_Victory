@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "JHS/GameControl/StateData/GameStateData.h"
+#include "JHS/GameControl/StateData/GameStateStructs.h"
 
 #include "PlayerInfoRow.generated.h"
 

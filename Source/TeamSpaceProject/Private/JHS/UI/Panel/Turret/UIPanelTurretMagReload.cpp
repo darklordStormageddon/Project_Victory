@@ -34,7 +34,7 @@ void UUIPanelTurretMagReload::OnChangeTurret(UEventOnChangeTurretData* Event)
         return;
 
     FTurretData _turretData = Event->TurretData;
-    SetProgressBarUI(_turretData.Mag.CurrentValue, _turretData.Mag.MaxValue, PROG_TurretMag, TXT_TurretMag, false);
+    SetProgressBarUI(_turretData.Mag.Value.CurrentValue, _turretData.Mag.Value.MaxValue, PROG_TurretMag, TXT_TurretMag, false);
 }
 
 void UUIPanelTurretMagReload::Initialize(E_TURRET_POSITION TurretPosition)
