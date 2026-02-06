@@ -53,6 +53,26 @@ void UCollectStateGroup::UpdateCollectState()
 	}
 }
 
+TArray<FPurchaseData> UCollectStateGroup::GetPurchaseDataArray()
+{
+	TArray<FPurchaseData> _purchaseDataArray;
+	for (int32 i = 0; i < (int32)E_COLLECT_TOOL_TYPE::NONE; i++)
+	{
+		E_COLLECT_TOOL_TYPE _collectToolType = (E_COLLECT_TOOL_TYPE)i;
+		if (_collectToolType == E_COLLECT_TOOL_TYPE::Vacuum)
+			continue;
+
+		FCollectToolData* _outCollectToolData = nullptr;
+		if (!TryGetCollectToolData(_collectToolType, _outCollectToolData))
+			continue;
+
+		_purchaseDataArray.Add(_outCollectToolData->Durability);
+		_purchaseDataArray.Add(_outCollectToolData->ToolDamage);
+	}
+
+	return _purchaseDataArray;
+}
+
 void UCollectStateGroup::RepairAllTool()
 {
 	for (auto& _collectToolData : _collectToolDataMap)
@@ -124,7 +144,7 @@ void UCollectStateGroup::LoadCollectToolDataTable()
 		if (_toolInfo)
 		{
 			FCollectToolData _newCollectToolData;
-			// µµ±¸ Á¤º¸
+			// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 			_newCollectToolData.CollectToolType = _toolInfo->ToolType;
 			TObjectPtr<UTexture2D> _outTexture = nullptr;
 			FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_COLLECT_TOOL_TYPE>(_newCollectToolData.CollectToolType);
@@ -133,10 +153,10 @@ void UCollectStateGroup::LoadCollectToolDataTable()
 				_newCollectToolData.CollectToolImage = _outTexture;
 			}
 
-			// ³»±¸µµ
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			_newCollectToolData.Durability = AJHSGameState::ParseFromDataRow(_newCollectToolData.CollectToolImage, _toolInfo->Durability);
 
-			// µµ±¸ µ¥¹ÌÁö
+			// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			_newCollectToolData.ToolDamage = AJHSGameState::ParseFromDataRow(_newCollectToolData.CollectToolImage, _toolInfo->Damage);
 
 			_collectToolDataMap.Add(_newCollectToolData.CollectToolType, _newCollectToolData);
