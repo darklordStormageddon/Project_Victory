@@ -15,6 +15,13 @@ USTRUCT(BlueprintType)
 struct FServerData
 {
 	GENERATED_BODY()
+
+	FServerData()
+		: Name(TEXT(""))
+		, CurrentPlayers(0)
+		, Accessibility(false)
+		, SearchResultIndex(-1)
+	{}
 public:
 	UPROPERTY(BlueprintReadWrite)
 	FString Name;
