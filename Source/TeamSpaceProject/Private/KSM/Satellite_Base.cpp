@@ -42,7 +42,6 @@ ASatellite_Base::ASatellite_Base()
     SceneChild8->SetupAttachment(SceneRoot);
 
     bReplicates = true;
-    SetReplicateMovement(true);
     bAlwaysRelevant = true;
 }
 
