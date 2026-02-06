@@ -8,8 +8,11 @@
 
 #include "UIPanelShop.generated.h"
 
+class AJHSGameState;
 class UPurchaseCategory;
+class UPurchaseRow;
 class UHorizontalBox;
+class UScrollBox;
 
 UCLASS()
 class UUIPanelShop : public UUIBase
@@ -20,12 +23,26 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UHorizontalBox> HB_Category = nullptr;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UScrollBox> SB_ItemRow = nullptr;
+
+private:
+	UPROPERTY()
+	TObjectPtr<AJHSGameState> _gameState = nullptr;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UPurchaseCategory> _purchaseCategoryClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UPurchaseRow> _purchaseRowClass;
+
 	TMap<E_PURCHASE_CATEGORY, TObjectPtr<UPurchaseCategory>> _purchaseCategoryMap;
 
+	TMap<int32, TObjectPtr<UPurchaseRow>> _purchaseRowMap;
+
 	E_PURCHASE_CATEGORY _selectedCategory = E_PURCHASE_CATEGORY::SpaceShip;
+
+	static constexpr int32 _maxPurchaseRowCount = 50;
 
 protected:
 	void NativeOnInitialized() override;
@@ -35,7 +52,11 @@ protected:
 private:
 	void CreatePurchaseCategories();
 
+	void CreatePurchaseRows();
+
 	void SelectCategory(E_PURCHASE_CATEGORY Category);
+
+	void UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory);
 
 	bool TryGetPurchaseCategory(E_PURCHASE_CATEGORY Category, TObjectPtr<UPurchaseCategory>& OutPurchaseCategory);
 };

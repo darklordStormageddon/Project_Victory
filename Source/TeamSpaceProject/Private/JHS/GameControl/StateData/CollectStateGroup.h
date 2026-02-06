@@ -44,6 +44,8 @@ public:
 
 	void UpdateCollectState();
 
+	TArray<FPurchaseData> GetPurchaseDataArray();
+
 	void RepairAllTool();
 
 	bool TrySelectTool(E_COLLECT_TOOL_TYPE CollectToolType);

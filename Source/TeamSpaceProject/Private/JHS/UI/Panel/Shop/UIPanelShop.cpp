@@ -2,9 +2,14 @@
 
 
 #include "JHS/UI/Panel/Shop/UIPanelShop.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "JHS/UI/Panel/Shop/PurchaseCategory.h"
+#include "JHS/UI/Panel/Shop/PurchaseRow.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
+#include "Components/ScrollBox.h"
 #include "Blueprint/UserWidget.h"
 #include "JHS/GameControl/CommonEnums.h"
 
@@ -12,8 +17,15 @@ void UUIPanelShop::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	// 최초 1회만 카테고리 위젯 생성
+	AJHSGameState* _outGameState = nullptr;
+	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+		return;
+
+	_gameState = _outGameState;
+
+	// 최초 1회만 위젯 생성
 	CreatePurchaseCategories();
+	CreatePurchaseRows();
 }
 
 void UUIPanelShop::OnOpen()
@@ -21,7 +33,7 @@ void UUIPanelShop::OnOpen()
 	Super::OnOpen();
 
 	// 기본 카테고리 선택 (SpaceShip)
-	SelectCategory(E_PURCHASE_CATEGORY::SpaceShip);
+	SelectCategory(E_PURCHASE_CATEGORY::CollectTool);
 }
 
 void UUIPanelShop::CreatePurchaseCategories()
@@ -86,6 +98,66 @@ void UUIPanelShop::SelectCategory(E_PURCHASE_CATEGORY Category)
         return;
 
 	_categoryButton->ChangeSelect(true);
+
+	UpdatePurchaseRow(_selectedCategory);
+}
+
+void UUIPanelShop::CreatePurchaseRows()
+{
+	if (SB_ItemRow == nullptr)
+		return;
+
+	SB_ItemRow->ClearChildren();
+	_purchaseRowMap.Empty();
+}
+
+void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
+{
+	if (_gameState == nullptr || _gameState->GetCollectStateGroup() == nullptr)
+		return;
+
+	if (SB_ItemRow == nullptr || _purchaseRowClass == nullptr)
+		return;
+
+	TArray<FPurchaseData> _purchaseDataArray = _gameState->GetCollectStateGroup()->GetPurchaseDataArray();
+	int32 _activeCount = _purchaseDataArray.Num();
+
+	TObjectPtr<UPurchaseRow> _rowWidget = nullptr;
+	for (int32 i = 0; i < _activeCount && i < _maxPurchaseRowCount; i++)
+	{
+		if (_purchaseRowMap.Contains(i))
+		{
+			_rowWidget = _purchaseRowMap[i];
+		}
+		else
+		{
+			// _purchaseDataArray 수보다 적으면 Row 추가
+			_rowWidget = CreateWidget<UPurchaseRow>(this, _purchaseRowClass);
+			if (_rowWidget == nullptr)
+			{
+				UE_LOG(LogTemp, Error, TEXT("UUIPanelShop: Failed to create PurchaseRow widget for index %d"), i);
+				break;
+			}
+			SB_ItemRow->AddChild(_rowWidget);
+			_purchaseRowMap.Add(i, _rowWidget);
+		}
+		
+		FPurchaseData _purchaseData = _purchaseDataArray[i];
+		_rowWidget->UpdateRow(_purchaseData);
+		_rowWidget->SetVisibility(ESlateVisibility::Visible);
+
+		UE_LOG(LogTemp, Warning, TEXT("UUIPanelShop: Updated purchase row: %d"), i);
+	}
+
+	// _purchaseRowMap.Num()+1 ~ _purchaseRowMap.Num() 비활성화
+	for (int32 i = _activeCount; i < _purchaseRowMap.Num(); i++)
+	{
+		TObjectPtr<UPurchaseRow>* _rowWidgetPtr = _purchaseRowMap.Find(i);
+		if (_rowWidgetPtr == nullptr || *_rowWidgetPtr == nullptr)
+			continue;
+		
+		(*_rowWidgetPtr)->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 bool UUIPanelShop::TryGetPurchaseCategory(E_PURCHASE_CATEGORY Category, TObjectPtr<UPurchaseCategory>& OutPurchaseCategory)
