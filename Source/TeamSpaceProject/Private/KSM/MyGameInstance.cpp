@@ -3,6 +3,8 @@
 
 #include "MyGameInstance.h"
 #include <Kismet/GameplayStatics.h>
+#include "Engine/NetConnection.h"
+#include "Net/Core/Connection/NetCloseResult.h"
 #include <Online/OnlineSessionNames.h>
 
 //초보채널,중수채널
@@ -168,18 +170,21 @@ void UMyGameInstance::OnStartSessionComplete(FName SessionName, bool bWasSuccess
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnStartSessionComplete: %s, Success=%d"), *SessionName.ToString(), bWasSuccessful ? 1 : 0);
 
-	if (bWasSuccessful)
-	{
-		bPendingTravel = true; // ServerTravel은 나중에 델리게이트에서 처리
-		UE_LOG(LogTemp, Warning, TEXT("Waiting for Steam to update lobby joinability..."));
-	}
+	if (!bWasSuccessful)
+		return;
 
-	//UWorld* World = GetWorld();
-	//if (World)
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("Host registered as participant — traveling to Lobby."));
-	//	World->ServerTravel("/Game/Import/Maps/Lobby?listen");
-	//}
+	UE_LOG(LogTemp, Warning, TEXT("Waiting for Steam to update lobby joinability..."));
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	//약간의 지연을 두고 ServerTravel 실행
+	FTimerHandle TimerHandle;
+	World->GetTimerManager().SetTimer(TimerHandle, [World]()
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Performing ServerTravel to Lobby..."));
+			World->ServerTravel(TEXT("/Game/Import/Maps/Lobby?listen"));
+		}, 0.5f, false); // 0.5초 딜레이
 }
 
 void UMyGameInstance::OnCreateSessioncomplete(FName InSessionName, bool IsSuccess)
