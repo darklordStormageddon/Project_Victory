@@ -94,6 +94,13 @@ public:
 	// [신규] 하차 시 강제로 입력을 활성화하는 함수
 	void ForceInputRecovery();
 
+	// [신규] 입력 바인딩용 함수
+	void Input_ForceEject(const FInputActionValue& Value);
+
+	// [신규] 서버 RPC 함수 선언
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_TryForceEject(APSJ_ShipCockpit* TargetCockpit);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* InteractAction;
@@ -167,6 +174,14 @@ protected:
 	UInputAction* JumpAction;
 
 	void Input_Jump(const FInputActionValue& Value);
+
+	// [필수 추가 1] 강제 하차 입력 액션 (에디터 할당 필요)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* ForceEjectAction;
+
+	// [필수 추가 2] 감지 거리 (기본값 500.0f)
+	UPROPERTY(EditAnywhere, Category = "Interaction | Force Eject")
+	float ForceEjectRange = 500.0f;
 
 	// [수정] 중력(Gravity) 용어 제거 -> 자력에 의한 감속(Deceleration)으로 변경
 	UPROPERTY(EditAnywhere, Category = "Mag Boots | Jump")

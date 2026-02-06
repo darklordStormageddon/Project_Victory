@@ -413,8 +413,7 @@ void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	//UE_LOG(LogTemp, Warning, TEXT("[Debug] SetupPlayerInputComponent Called! Controller: %s"), *GetNameSafe(Controller));
-
+	// [1] 매핑 컨텍스트(IMC) 등록 로직
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -423,23 +422,43 @@ void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 			if (DefaultMappingContext)
 			{
 				Subsystem->AddMappingContext(DefaultMappingContext, 0);
-				//UE_LOG(LogTemp, Warning, TEXT("[Debug] Mapping Context Added!"));
 			}
 		}
 	}
 
+	// [2] 액션 바인딩 로직
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
+		// (1) 이동 (Move)
 		if (MoveAction)
 		{
 			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APSJ_Character::Move);
 			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &APSJ_Character::StopMove);
 		}
-		if (LookAction) EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APSJ_Character::Look);
-		if (InteractAction) EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APSJ_Character::Interact);
-		// [신규] 점프 키 바인딩
-		if (JumpAction) EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &APSJ_Character::Input_Jump);
-	
+
+		// (2) 시점 회전 (Look)
+		if (LookAction)
+		{
+			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APSJ_Character::Look);
+		}
+
+		// (3) 상호작용 (Interact - 탑승하기)
+		if (InteractAction)
+		{
+			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APSJ_Character::Interact);
+		}
+
+		// (4) 점프 (Jump)
+		if (JumpAction)
+		{
+			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &APSJ_Character::Input_Jump);
+		}
+
+		// [신규 추가] 강제 하차 (Force Eject - 마우스 우클릭 등)
+		if (ForceEjectAction)
+		{
+			EnhancedInputComponent->BindAction(ForceEjectAction, ETriggerEvent::Started, this, &APSJ_Character::Input_ForceEject);
+		}
 	}
 }
 
@@ -710,5 +729,78 @@ void APSJ_Character::Server_SetAnchoring_Implementation(AActor* NewBase)
 		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 		SetReplicateMovement(true);
+	}
+}
+
+// 입력 처리 함수 (클라이언트)
+void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
+{
+	if (CurrentSpaceship) return; // 내가 탑승 중이면 실행 불가
+
+	// 카메라 기준 트레이스 시작점 계산 (기존과 동일)
+	FVector TraceStart;
+	FRotator TraceRot;
+	if (FPSCamera)
+	{
+		TraceStart = FPSCamera->GetComponentLocation();
+		TraceRot = FPSCamera->GetComponentRotation();
+	}
+	else
+	{
+		GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
+	}
+
+	FVector TraceEnd = TraceStart + (TraceRot.Vector() * ForceEjectRange);
+
+	FHitResult HitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	// 트레이스 발사
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		TraceStart,
+		TraceEnd,
+		ECC_Visibility, // 콕핏 메시가 Visibility 채널을 블록해야 함
+		QueryParams
+	);
+
+#if WITH_EDITOR
+	if (bHit) DrawDebugLine(GetWorld(), TraceStart, HitResult.ImpactPoint, FColor::Green, false, 1.0f);
+	else DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 1.0f);
+#endif
+
+	if (bHit && HitResult.GetActor())
+	{
+		// [수정] 콕핏 클래스로 캐스팅
+		if (APSJ_ShipCockpit* HitCockpit = Cast<APSJ_ShipCockpit>(HitResult.GetActor()))
+		{
+			Server_TryForceEject(HitCockpit);
+		}
+	}
+}
+
+// 3. 서버 RPC 구현
+bool APSJ_Character::Server_TryForceEject_Validate(APSJ_ShipCockpit* TargetCockpit)
+{
+	if (TargetCockpit)
+	{
+		// 거리 검증 (약간의 여유 허용)
+		float DistanceSq = FVector::DistSquared(GetActorLocation(), TargetCockpit->GetActorLocation());
+		float AllowedRangeSq = FMath::Square(ForceEjectRange * 1.5f);
+		if (DistanceSq > AllowedRangeSq)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+void APSJ_Character::Server_TryForceEject_Implementation(APSJ_ShipCockpit* TargetCockpit)
+{
+	if (TargetCockpit)
+	{
+		// 콕핏에게 하차 요청 전달
+		TargetCockpit->ReceiveForceEjectRequest();
 	}
 }
