@@ -33,4 +33,7 @@ protected:
 
 public:
     void SetTargetPawn(TObjectPtr<APawn> TargetPawn);
+
+    // [신규] 외부에서 강제 하차 요청이 들어왔을 때 실행할 함수
+    void ReceiveForceEjectRequest();
 };

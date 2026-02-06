@@ -69,3 +69,35 @@ void APSJ_ShipCockpit::SetTargetPawn(TObjectPtr<APawn> TargetPawn)
 {
     TargetSpaceship = TargetPawn;
 }
+
+void APSJ_ShipCockpit::ReceiveForceEjectRequest()
+{
+    // 1. 연결된 대상이 없는 빈 껍데기 의자라면 무시
+    if (!TargetSpaceship) return;
+
+    // 2. 대상이 우주선(APSJ_Spaceship)인 경우
+    if (APSJ_Spaceship* Spaceship = Cast<APSJ_Spaceship>(TargetSpaceship))
+    {
+        // 현재 조종사가 있을 때만 하차 수행
+        if (Spaceship->GetCurrentPilot())
+        {
+            Spaceship->DisembarkCharacter();
+            UE_LOG(LogTemp, Warning, TEXT("Cockpit: Force Eject Triggered for Spaceship Pilot"));
+        }
+    }
+    // 3. 대상이 터렛(TurretBase_GT)인 경우
+    else if (ATurretBase_GT* Turret = Cast<ATurretBase_GT>(TargetSpaceship))
+    {
+        // 터렛에 구현된 하차 로직 호출 (터렛 코드는 없지만, 우주선과 유사하다고 가정)
+        // Turret->DisembarkCharacter(); 
+        // 혹은 Pawn의 일반적인 Controller 확인 후 Unpossess 처리
+
+        APawn* TurretPawn = Cast<APawn>(Turret);
+        if (TurretPawn && TurretPawn->GetController())
+        {
+            // 터렛 하차 로직이 있다면 그것을 호출하고, 없다면 여기서 구현 필요
+            // 예시: Turret->ForceDisembark();
+            UE_LOG(LogTemp, Warning, TEXT("Cockpit: Force Eject Triggered for Turret Gunner"));
+        }
+    }
+}
