@@ -11,7 +11,6 @@ AAttachment_Base::AAttachment_Base()
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 	bAlwaysRelevant = true;
-	SetReplicateMovement(true);
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
