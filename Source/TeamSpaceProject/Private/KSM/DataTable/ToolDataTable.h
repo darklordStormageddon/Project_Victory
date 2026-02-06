@@ -14,15 +14,11 @@ struct FToolProperty : public FTableRowBase
     GENERATED_BODY()
 
 public:
-    FToolProperty() :ToolType(E_COLLECT_TOOL_TYPE::Vacuum), Price(), Durability(), Damage() {}
+    FToolProperty() :ToolType(E_COLLECT_TOOL_TYPE::Vacuum), Durability(), Damage() {}
 
     // 도구 종류
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     E_COLLECT_TOOL_TYPE ToolType;
-
-    // 가격
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FPurchaseDataFormat Price;
 
     // 내구도
     UPROPERTY(EditAnywhere, BlueprintReadWrite)

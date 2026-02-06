@@ -140,6 +140,9 @@ public:
 	UPROPERTY()
 	E_COLLECT_TOOL_TYPE CollectToolType = E_COLLECT_TOOL_TYPE::NONE;
 
+	UPROPERTY()
+	UTexture2D* CollectToolImage = nullptr;
+
 	// 내구도
 	UPROPERTY()
 	FPurchaseData Durability;
@@ -147,9 +150,6 @@ public:
 	// 작업 속도
 	UPROPERTY()
 	FPurchaseData ToolDamage;
-
-	UPROPERTY()
-	UTexture2D* CollectToolImage = nullptr;
 };
 #pragma endregion Collect
 

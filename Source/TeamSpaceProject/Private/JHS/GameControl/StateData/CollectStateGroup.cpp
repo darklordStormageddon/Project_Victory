@@ -124,23 +124,20 @@ void UCollectStateGroup::LoadCollectToolDataTable()
 		if (_toolInfo)
 		{
 			FCollectToolData _newCollectToolData;
+			// 도구 정보
 			_newCollectToolData.CollectToolType = _toolInfo->ToolType;
-			//_newCollectToolData.Durability.MaxValue = _toolInfo->Durability;
-			//_newCollectToolData.Durability.CurrentValue = _newCollectToolData.Durability.MaxValue;
-			//_newCollectToolData.ToolDamage = _toolInfo->Damage;
-
-			// Texture
+			TObjectPtr<UTexture2D> _outTexture = nullptr;
 			FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_COLLECT_TOOL_TYPE>(_newCollectToolData.CollectToolType);
-			FString _texturePath = ConstantLibrary::Resource.Image.COLLECT_FOLDER_PATH + _fileName + "." + _fileName;
-			UTexture2D* _loadedTexture = LoadObject<UTexture2D>(nullptr, *_texturePath);
-			if (_loadedTexture != nullptr)
+			if (AJHSGameState::TryGetTextureFromPath(ConstantLibrary::Resource.Image.COLLECT_FOLDER_PATH, _fileName, _outTexture))
 			{
-				_newCollectToolData.CollectToolImage = _loadedTexture;
+				_newCollectToolData.CollectToolImage = _outTexture;
 			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("UContainerStateGroup: Failed to load element texture: %s"), *_texturePath);
-			}
+
+			// 내구도
+			_newCollectToolData.Durability = AJHSGameState::ParseFromDataRow(_newCollectToolData.CollectToolImage, _toolInfo->Durability);
+
+			// 도구 데미지
+			_newCollectToolData.ToolDamage = AJHSGameState::ParseFromDataRow(_newCollectToolData.CollectToolImage, _toolInfo->Damage);
 
 			_collectToolDataMap.Add(_newCollectToolData.CollectToolType, _newCollectToolData);
 		}
