@@ -66,20 +66,17 @@ UUIBase* UUIManager::OpenUI(E_UI_TYPE UIType)
 		return nullptr;
 	}
 
-	// Panel UI인 경우 (100 미만) Viewport에 추가
-	if ((int32)UIType < 100)
+	// Viewport에 추가 (일반 뷰포트 UI용)
+	if (!_ui->IsInViewport())
 	{
-		_ui->SetAsLastSibling();
-		_ui->Open();
-		//_openedUIStack.Push(_ui);
+		_ui->AddToViewport(INT_MAX);
 	}
-	// Popup UI인 경우 (100 이상) 별도 처리 가능
 	else
 	{
 		_ui->SetAsLastSibling();
-		_ui->Open();
-		//_openedUIStack.Push(_ui);
 	}
+
+	_ui->Open();
 
 	return _ui;
 }
@@ -181,11 +178,12 @@ UUIBase* UUIManager::OpenUIInWorld(E_UI_TYPE UIType, AActor* OwnerActor, FVector
 	FVector2D _finalDrawSize = _widgetComponent->GetDrawSize();
 	FVector _finalScale = _widgetComponent->GetRelativeScale3D();
 
-	// UI 타입 설정
+	// UI 타입 설정 및 Open 호출
 	UUIBase* _worldSpaceUI = Cast<UUIBase>(_widget);
 	if (_worldSpaceUI != nullptr)
 	{
 		_worldSpaceUI->CurrentType = UIType;
+		_worldSpaceUI->Open();
 	}
 
 	return _worldSpaceUI;

@@ -44,11 +44,6 @@ void UUIBase::NativeDestruct()
 void UUIBase::Open()
 {
 	_isActive = true;
-	
-	if (!IsInViewport())
-	{
-		AddToViewport();
-	}
 
 	AJHSGameState* _outGameState = nullptr;
 	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
