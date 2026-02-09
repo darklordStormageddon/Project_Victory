@@ -23,9 +23,8 @@ private:
 	UPROPERTY()
 	TObjectPtr<AJHSGameState> _gameState = nullptr;
 
-protected:
-	UPROPERTY(EditAnywhere, Category = "SpaceShipStateGroup")
-	FSpaceShipState _spaceShipState;
+	UPROPERTY()
+	TMap<E_SPACE_SHIP_DATA_TYPE, FSpaceShipData> _spaceShipDataMap;
 
 protected:
 	// Called when the game starts
@@ -36,9 +35,11 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	void InitializeSpaceShipState(TObjectPtr<AJHSGameState> GameState, FSpaceShipState InitSpaceShipState);
+	void InitializeSpaceShipState(TObjectPtr<AJHSGameState> GameState);
 
 	void UpdateSpaceShipState();
+
+	TArray<FPurchaseData> GetPurchaseDataArray();
 
 	void RepairSpaceShip();
 
@@ -47,7 +48,13 @@ public:
 	void RepairShield(float RepairShieldValue);
 
 private:
-	void ChangeSpaceShipData(FSpaceShipData* OriginalData, float CurrentValue);
+	void LoadSpaceShipData();
 
-	void ChangeSpaceShipData(FSpaceShipData* OriginalData, float CurrentValue, float MaxValue);
+	void ChangCurrentData(FSpaceShipData* OriginalData, float CurrentValue);
+
+	void ChangeMaxData(FSpaceShipData* OriginalData, float MaxValue, bool IsRepairCurrentValue);
+
+	void ExecuteEventSpaceShipData(FSpaceShipData SpaceShipData);
+
+	bool TryGetSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType, FSpaceShipData*& OutSpaceShipData);
 };

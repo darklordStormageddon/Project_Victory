@@ -4,6 +4,7 @@
 #include "JHS/UI/Panel/Shop/UIPanelShop.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "JHS/UI/Panel/Shop/PurchaseCategory.h"
@@ -35,7 +36,7 @@ void UUIPanelShop::OnOpen()
 	Super::OnOpen();
 
 	// 기본 카테고리 선택 (SpaceShip)
-	SelectCategory(E_PURCHASE_CATEGORY::Turret);
+	SelectCategory(E_PURCHASE_CATEGORY::SpaceShip);
 }
 
 void UUIPanelShop::CreatePurchaseCategories()
@@ -160,7 +161,7 @@ TArray<FPurchaseData> UUIPanelShop::GetPurchaseDataArray(E_PURCHASE_CATEGORY Sel
 	switch (SelectedCategory)
 	{
 	case E_PURCHASE_CATEGORY::SpaceShip:
-
+		_purchaseDataArray = _gameState->GetSpaceShipStateGroup()->GetPurchaseDataArray();
 		break;
 
 	case E_PURCHASE_CATEGORY::CollectTool:

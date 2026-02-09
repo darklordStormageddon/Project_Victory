@@ -12,7 +12,7 @@ struct FResourceDataTable
 
 public:
 	FResourceDataTable()
-		: SPACESHIP_PATH(TEXT("/Game/Main/PS_PSJ/"))
+		: SPACESHIP_PATH(TEXT("/Game/Main/PS_PSJ/Blueprint/Spaceship/DT_SpaceShipState.DT_SpaceShipState"))
 		, ELEMENT_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Collectables/DT_ElementProperty.DT_ElementProperty"))
 		, COLLECT_TOOL_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Tool/DT_ToolProperty.DT_ToolProperty"))
 		, TURRET_INFO_PATH(TEXT("/Game/Main/PS_YSH/Data/DT_TurretDataTable.DT_TurretDataTable"))
@@ -70,7 +70,7 @@ struct FResourceImage
 public:
 	FResourceImage()
 		: TEXTURE_HEADER(TEXT("Tex_"))
-		, SPACESHIP_STATE_PATH(TEXT("/Game/Main/PS_PSJ/"))
+		, SPACESHIP_FOLDER_PATH(TEXT("/Game/Main/PS_PSJ/Blueprint/Spaceship/Images/"))
 		, INTERACT_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/Interact/"))
 		, ELEMENT_FOLDER_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Collectables/Image/"))
 		, COLLECT_FOLDER_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Tool_Image/"))
@@ -78,11 +78,12 @@ public:
 		, AMMO_FOLDER_PATH(TEXT("/Game/Main/PS_JHS/Resource/Images/AmmoType/"))
 	{}
 
+	//C:/Users/jhsro/source/repos/Unreal/TeamSpace/Content/Main/PS_PSJ/Blueprint/Spaceship/DT_SpaceShipState.uasset
 	UPROPERTY()
 	FString TEXTURE_HEADER;
 
 	UPROPERTY()
-	FString SPACESHIP_STATE_PATH;
+	FString SPACESHIP_FOLDER_PATH;
 
 	UPROPERTY()
 	FString INTERACT_FOLDER_PATH;

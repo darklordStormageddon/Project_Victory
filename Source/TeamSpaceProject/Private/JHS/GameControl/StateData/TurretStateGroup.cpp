@@ -5,8 +5,8 @@
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "YSH/resource/TurretDataTable.h"
-#include "JHS/Event/CommonEventBase.h"
 #include "JHS/Event/EventManager.h"
+#include "JHS/Event/CommonEventBase.h"
 #include "JHS/GameControl/CommonEnums.h"
 #include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "Kismet/GameplayStatics.h"
@@ -46,6 +46,8 @@ void UTurretStateGroup::InitializeTurretState(TObjectPtr<AJHSGameState> GameStat
 {
 	_gameState = GameState;
 
+	LoadTurretDataTable();
+
 	// _turretChair
 	TArray<TObjectPtr<AActor>> _actorArray;
 	_turretChair = nullptr;
@@ -84,8 +86,6 @@ void UTurretStateGroup::InitializeTurretState(TObjectPtr<AJHSGameState> GameStat
 	{
 		UE_LOG(LogTemp, Error, TEXT("TurretStateGroup: TurretStand not found. %d"), _turretStandMap.Num());
 	}
-
-	LoadTurretDataTable();
 }
 
 void UTurretStateGroup::UpdateTurretState()
@@ -305,7 +305,7 @@ void UTurretStateGroup::LoadTurretDataTable()
 			// 가격
 			FPurchaseData _price;
 			_price.Image = _newTurretData.TurretImage;
-			_price.Description = FString::Printf(TEXT("%s 구매"), *_turrerInfo->Description);
+			_price.Description = FString::Printf(TEXT("%s"), *_turrerInfo->Description);
 			_price.Level.MaxValue = 1;
 			_price.Level.CurrentValue = 0;
 			_price.PurchaseDollar = _turrerInfo->Price;
@@ -333,7 +333,12 @@ bool UTurretStateGroup::TryGetTurretData(bool ISMainPosition, E_AMMO_TYPE AmmoTy
 {
 	int32 _turretKey = GetTurretKey(ISMainPosition, AmmoType);
 	if (!_turretDataMap.Contains(_turretKey))
+	{
+		FString _isMainPosition = ISMainPosition ? TEXT("Main") : TEXT("Auto");
+		FString _ammoType = CommonEnums::GetEnum2FString<E_AMMO_TYPE>(AmmoType);
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Invalid TurretKey,\nIsMainPosition: [%s], AmmoType: [%s]"), *_isMainPosition, *_ammoType);
 		return false;
+	}
 
 	OutTurretData = _turretDataMap.Find(_turretKey);
 	return OutTurretData != nullptr;
