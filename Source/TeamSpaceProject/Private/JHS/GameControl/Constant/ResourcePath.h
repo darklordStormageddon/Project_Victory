@@ -16,19 +16,23 @@ public:
 		, ELEMENT_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Collectables/DT_ElementProperty.DT_ElementProperty"))
 		, COLLECT_TOOL_PATH(TEXT("/Game/Main/PS_KSM/Collect_System/Tool/DT_ToolProperty.DT_ToolProperty"))
 		, TURRET_INFO_PATH(TEXT("/Game/Main/PS_YSH/Data/DT_TurretDataTable.DT_TurretDataTable"))
+		, AMMO_INFO_PATH(TEXT("/Game/Main/PS_YSH/Data/DT_AmmoData.DT_AmmoData"))
 	{}
 
 	UPROPERTY()
 	FString SPACESHIP_PATH;
 
 	UPROPERTY()
-	FString TURRET_INFO_PATH;
-
-	UPROPERTY()
 	FString ELEMENT_PATH;
 
 	UPROPERTY()
 	FString COLLECT_TOOL_PATH;
+
+	UPROPERTY()
+	FString TURRET_INFO_PATH;
+
+	UPROPERTY()
+	FString AMMO_INFO_PATH;
 };
 
 USTRUCT(BlueprintType)

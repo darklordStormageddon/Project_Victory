@@ -36,7 +36,7 @@ void UUIPanelShop::OnOpen()
 	Super::OnOpen();
 
 	// 기본 카테고리 선택 (SpaceShip)
-	SelectCategory(E_PURCHASE_CATEGORY::SpaceShip);
+	SelectCategory(E_PURCHASE_CATEGORY::Ammo);
 }
 
 void UUIPanelShop::CreatePurchaseCategories()
@@ -169,11 +169,11 @@ TArray<FPurchaseData> UUIPanelShop::GetPurchaseDataArray(E_PURCHASE_CATEGORY Sel
 		break;
 
 	case E_PURCHASE_CATEGORY::Turret:
-		_purchaseDataArray = _gameState->GetTurretStateGroup()->GetPurchaseDataArray();
+		_purchaseDataArray = _gameState->GetTurretStateGroup()->GetTurretPurchaseDataArray();
 		break;
 
 	case E_PURCHASE_CATEGORY::Ammo:
-
+		_purchaseDataArray = _gameState->GetTurretStateGroup()->GetAmmoPurchaseDataArray();
 		break;
 	}
 

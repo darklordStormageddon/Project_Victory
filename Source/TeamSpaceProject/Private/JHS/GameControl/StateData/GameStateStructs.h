@@ -162,9 +162,12 @@ public:
 	UPROPERTY()
 	E_AMMO_TYPE AmmoType = E_AMMO_TYPE::NONE;
 
+	UPROPERTY()
+	UTexture2D* AmmoImage = nullptr;
+
 	// 탄약 가격
 	UPROPERTY()
-	int32 Price = 0;
+	FPurchaseData Price;
 
 	// 탄약 용량
 	UPROPERTY()
@@ -177,9 +180,6 @@ public:
 	// 보유량
 	UPROPERTY()
 	int32 AmmoStockpile = 0;
-
-	UPROPERTY()
-	UTexture2D* AmmoImage = nullptr;
 };
 
 UENUM(BlueprintType)

@@ -28,10 +28,13 @@ private:
 	TObjectPtr<AJHSGameState> _gameState = nullptr;
 
 	UPROPERTY()
-	TMap<E_TURRET_POSITION, TObjectPtr<ATurretStand>> _turretStandMap;
+	TMap<int32, FTurretData> _turretDataMap;
 
 	UPROPERTY()
-	TMap<int32, FTurretData> _turretDataMap;
+	TMap<E_AMMO_TYPE, FAmmoData> _ammoDataMap;
+
+	UPROPERTY()
+	TMap<E_TURRET_POSITION, TObjectPtr<ATurretStand>> _turretStandMap;
 
 	const int32 CONSUME_AMMO = -1;
 
@@ -53,7 +56,9 @@ public:
 
 	void UpdateTurretState();
 
-	TArray<FPurchaseData> GetPurchaseDataArray();
+	TArray<FPurchaseData> GetTurretPurchaseDataArray();
+
+	TArray<FPurchaseData> GetAmmoPurchaseDataArray();
 
 	void SetInfiniteMagMode(bool IsInfiniteMagMode);
 
@@ -79,6 +84,8 @@ private:
 	bool TryGetTurretData(bool ISMainPosition, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData);
 
 	bool TryGetTurretData(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData);
+
+	bool TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutAmmoData);
 
 	bool TryGetTurretStand(E_TURRET_POSITION TurretPosition, TObjectPtr<ATurretStand>& OutTurretStand);
 

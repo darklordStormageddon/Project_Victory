@@ -105,7 +105,7 @@ void UTurretStateGroup::UpdateTurretState()
 	}
 }
 
-TArray<FPurchaseData> UTurretStateGroup::GetPurchaseDataArray()
+TArray<FPurchaseData> UTurretStateGroup::GetTurretPurchaseDataArray()
 {
 	TArray<FPurchaseData> _purchaseDataArray;
 	for (int32 i = 1; i >= 0; i--)
@@ -122,6 +122,25 @@ TArray<FPurchaseData> UTurretStateGroup::GetPurchaseDataArray()
 			_purchaseDataArray.Add(_outTurretData->Mag);
 			_purchaseDataArray.Add(_outTurretData->FireInterval);
 		}
+	}
+
+	return _purchaseDataArray;
+}
+
+TArray<FPurchaseData> UTurretStateGroup::GetAmmoPurchaseDataArray()
+{
+	TArray<FPurchaseData> _purchaseDataArray;
+	for (int8 i = 0; i < (int8)E_AMMO_TYPE::NONE; i++)
+	{
+		E_AMMO_TYPE _ammoType = (E_AMMO_TYPE)i;
+
+		FAmmoData* _outAmmoData = nullptr;
+		if (!TryGetAmmoData(_ammoType, _outAmmoData))
+			continue;
+
+		_purchaseDataArray.Add(_outAmmoData->Price);
+		_purchaseDataArray.Add(_outAmmoData->ReloadCapacity);
+		_purchaseDataArray.Add(_outAmmoData->AmmoDamage);
 	}
 
 	return _purchaseDataArray;
@@ -276,19 +295,20 @@ bool UTurretStateGroup::TryReloadTurret(E_TURRET_POSITION TurretPosition)
 
 void UTurretStateGroup::LoadTurretDataTable()
 {
+	// Turret Data
 	_turretDataMap.Empty();
 
-	TObjectPtr<UDataTable> _turretDataTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ConstantLibrary::Resource.DataTable.TURRET_INFO_PATH));
-	if (!_turretDataTable)
+	TObjectPtr<UDataTable> _dataTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ConstantLibrary::Resource.DataTable.TURRET_INFO_PATH));
+	if (!_dataTable)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to load Turret Data Table from path [%s]"), *ConstantLibrary::Resource.DataTable.TURRET_INFO_PATH);
 		return;
 	}
 
-	TArray<FName> _rowNames = _turretDataTable->GetRowNames();
+	TArray<FName> _rowNames = _dataTable->GetRowNames();
 	for (const FName& _rowName : _rowNames)
 	{
-		FTurretInitState* _turrerInfo = _turretDataTable->FindRow<FTurretInitState>(_rowName, TEXT(""));
+		FTurretInitState* _turrerInfo = _dataTable->FindRow<FTurretInitState>(_rowName, TEXT(""));
 		if (_turrerInfo)
 		{
 			FTurretData _newTurretData;
@@ -322,6 +342,53 @@ void UTurretStateGroup::LoadTurretDataTable()
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("Turret Data Table loaded successfully. %d rows loaded"), _turretDataMap.Num());
+
+	// Ammo Data
+	_ammoDataMap.Empty();
+
+	_dataTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ConstantLibrary::Resource.DataTable.AMMO_INFO_PATH));
+	if (!_dataTable)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to load Ammo Data Table from path [%s]"), *ConstantLibrary::Resource.DataTable.AMMO_INFO_PATH);
+		return;
+	}
+
+	_rowNames = _dataTable->GetRowNames();
+	for (const FName& _rowName : _rowNames)
+	{
+		FAmmoInitState* _ammoInfo = _dataTable->FindRow<FAmmoInitState>(_rowName, TEXT(""));
+		if (_ammoInfo)
+		{
+			FAmmoData _newAmmoData;
+			// 터렛 정보
+			_newAmmoData.AmmoType = _ammoInfo->AmmoType;
+			TObjectPtr<UTexture2D> _outTexture = nullptr;
+			FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_AMMO_TYPE>(_newAmmoData.AmmoType);
+			if (AJHSGameState::TryGetTextureFromPath(ConstantLibrary::Resource.Image.AMMO_FOLDER_PATH, _fileName, _outTexture))
+			{
+				_newAmmoData.AmmoImage = _outTexture;
+			}
+
+			// 가격
+			FPurchaseData _price;
+			_price.Image = _newAmmoData.AmmoImage;
+			_price.Description = FString::Printf(TEXT("%s"), *_ammoInfo->Description);
+			_price.Level.MaxValue = 0;
+			_price.Level.CurrentValue = 0;
+			_price.PurchaseDollar = _ammoInfo->Price;
+			_newAmmoData.Price = _price;
+
+			// 재장전 용량
+			_newAmmoData.ReloadCapacity = AJHSGameState::ParseFromDataRow(_newAmmoData.AmmoImage, _ammoInfo->ReloadCapacity);
+
+			// 탄약 데미지
+			_newAmmoData.AmmoDamage = AJHSGameState::ParseFromDataRow(_newAmmoData.AmmoImage, _ammoInfo->AmmoDamage);
+
+			_ammoDataMap.Add(_newAmmoData.AmmoType, _newAmmoData);
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Ammo Data Table loaded successfully. %d rows loaded"), _turretDataMap.Num());
 }
 
 int32 UTurretStateGroup::GetTurretKey(bool IsMainTurret, E_AMMO_TYPE AmmoType)
@@ -348,6 +415,19 @@ bool UTurretStateGroup::TryGetTurretData(E_TURRET_POSITION TurretPosition, E_AMM
 {
 	bool _isMainTurret = TurretPosition == E_TURRET_POSITION::Main;
 	return TryGetTurretData(_isMainTurret, AmmoType, OutTurretData);
+}
+
+bool UTurretStateGroup::TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutAmmoData)
+{
+	if (!_ammoDataMap.Contains(AmmoType))
+	{
+		FString _ammoType = CommonEnums::GetEnum2FString<E_AMMO_TYPE>(AmmoType);
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Invalid AmmoType: [%s]"), *_ammoType);
+		return false;
+	}
+
+	OutAmmoData = _ammoDataMap.Find(AmmoType);
+	return OutAmmoData != nullptr;
 }
 
 bool UTurretStateGroup::TryGetTurretStand(E_TURRET_POSITION TurretPosition, TObjectPtr<ATurretStand>& OutTurretStand)
