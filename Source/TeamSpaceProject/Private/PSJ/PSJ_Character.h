@@ -74,9 +74,13 @@ public:
 	APawn* CurrentSpaceship = nullptr;
 	void SetCurrentSpaceship(APawn* NewSpaceship);
 
-	// [중요] 위에서 class APSJ_Spaceship; 을 선언했기 때문에 이제 에러가 나지 않습니다.
-	UFUNCTION(Server, Reliable, WithValidation)
+	// [중요] 위에서 class APSJ_Spaceship; 을 선언했기 때문에 이제 에러가 나지 않습니다.BlueprintCallable 추가!
+	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
 	void Server_RequestBoarding(APSJ_Spaceship* ShipToBoard);
+
+	// ▼ [신규 추가] 범용 탑승 요청 (패널, 의자 등 아무 폰이나 조종 요청)
+	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
+	void Server_RequestPawnPossess(APawn* TargetPawn);
 
 	// 하차 상태 시작 함수
 	void StartDisembarkState();

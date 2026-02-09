@@ -101,3 +101,27 @@ void APSJ_ShipCockpit::ReceiveForceEjectRequest()
         }
     }
 }
+
+void APSJ_ShipCockpit::AttemptBoarding(APSJ_Character* RequestingChar)
+{
+    if (!RequestingChar) return;
+    if (!TargetSpaceship)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Cockpit: TargetSpaceship is MISSING! Set it in Editor Details."));
+        return;
+    }
+
+    // 터렛인 경우
+    if (ATurretBase_GT* TargetTurret = Cast<ATurretBase_GT>(TargetSpaceship))
+    {
+        // 서버에게 "나 터렛 탈래"라고 요청 (캐릭터 내부에서 Server RPC 호출됨)
+        RequestingChar->Server_RequestTurretBoarding(TargetTurret, this);
+    }
+    // 우주선인 경우
+    else if (APSJ_Spaceship* Spaceship = Cast<APSJ_Spaceship>(TargetSpaceship))
+    {
+        Spaceship->LinkedCockpit = this;
+        // 서버에게 "나 우주선 탈래"라고 요청
+        RequestingChar->Server_RequestBoarding(Spaceship);
+    }
+}

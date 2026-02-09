@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PSJ_Character.h"
 #include "JHS/Interact/InteractableActorBase.h" // 팀원의 베이스 클래스 헤더
 #include "PSJ_ShipCockpit.generated.h"
 
@@ -24,6 +25,10 @@ public:
     // [설정] 에디터에서 이 의자가 어떤 우주선을 조종할지 스포이드로 찍어줍니다.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Link")
     APawn* TargetSpaceship = nullptr;
+
+    // [신규] 블루프린트에서 "나 탈래!"라고 요청할 때 부르는 함수
+    UFUNCTION(BlueprintCallable, Category = "Interaction")
+    void AttemptBoarding(APSJ_Character* RequestingChar);
 
     virtual void OnInteractExit(TObjectPtr<UUIBase> OpenedUI) override;
 

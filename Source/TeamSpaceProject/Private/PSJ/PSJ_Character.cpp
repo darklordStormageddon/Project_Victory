@@ -804,3 +804,30 @@ void APSJ_Character::Server_TryForceEject_Implementation(APSJ_ShipCockpit* Targe
 		TargetCockpit->ReceiveForceEjectRequest();
 	}
 }
+
+bool APSJ_Character::Server_RequestPawnPossess_Validate(APawn* TargetPawn)
+{
+	return true;
+}
+
+void APSJ_Character::Server_RequestPawnPossess_Implementation(APawn* TargetPawn)
+{
+	if (!TargetPawn) return;
+
+	// 컨트롤러 가져오기
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		// 1. 캐릭터 움직임 멈추기 (선택사항)
+		if (GetCharacterMovement())
+		{
+			GetCharacterMovement()->StopMovementImmediately();
+			GetCharacterMovement()->DisableMovement();
+		}
+
+		// 2. 패널(TargetPawn) 조종 시작!
+		PC->Possess(TargetPawn);
+
+		// (참고) 만약 패널 쪽에서 "탑승 완료되었습니다" 같은 처리가 필요하면
+		// 여기서 TargetPawn->OnBoarded() 같은 함수를 호출해줄 수도 있습니다.
+	}
+}
