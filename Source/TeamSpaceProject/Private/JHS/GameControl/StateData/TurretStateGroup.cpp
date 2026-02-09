@@ -105,6 +105,28 @@ void UTurretStateGroup::UpdateTurretState()
 	}
 }
 
+TArray<FPurchaseData> UTurretStateGroup::GetPurchaseDataArray()
+{
+	TArray<FPurchaseData> _purchaseDataArray;
+	for (int32 i = 1; i >= 0; i--)
+	{
+		for (int32 j = 0; j < (int32)E_AMMO_TYPE::NONE; j++)
+		{
+			E_AMMO_TYPE _ammoType = (E_AMMO_TYPE)j;
+
+			FTurretData* _outTurretData = nullptr;
+			if (!TryGetTurretData((bool)i, _ammoType, _outTurretData))
+				continue;
+
+			_purchaseDataArray.Add(_outTurretData->Price);
+			_purchaseDataArray.Add(_outTurretData->Mag);
+			_purchaseDataArray.Add(_outTurretData->FireInterval);
+		}
+	}
+
+	return _purchaseDataArray;
+}
+
 void UTurretStateGroup::SetInfiniteMagMode(bool IsInfiniteMagMode)
 {
 	_isInfiniteMagMode = IsInfiniteMagMode;
@@ -307,15 +329,20 @@ int32 UTurretStateGroup::GetTurretKey(bool IsMainTurret, E_AMMO_TYPE AmmoType)
 	return ((int32)IsMainTurret + 1) * HUNDRED + (int32)AmmoType;
 }
 
-bool UTurretStateGroup::TryGetTurretData(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData)
+bool UTurretStateGroup::TryGetTurretData(bool ISMainPosition, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData)
 {
-	bool _isMainTurret = TurretPosition == E_TURRET_POSITION::Main;
-	int32 _turretKey = GetTurretKey(_isMainTurret, AmmoType);
+	int32 _turretKey = GetTurretKey(ISMainPosition, AmmoType);
 	if (!_turretDataMap.Contains(_turretKey))
 		return false;
 
 	OutTurretData = _turretDataMap.Find(_turretKey);
 	return OutTurretData != nullptr;
+}
+
+bool UTurretStateGroup::TryGetTurretData(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData)
+{
+	bool _isMainTurret = TurretPosition == E_TURRET_POSITION::Main;
+	return TryGetTurretData(_isMainTurret, AmmoType, OutTurretData);
 }
 
 bool UTurretStateGroup::TryGetTurretStand(E_TURRET_POSITION TurretPosition, TObjectPtr<ATurretStand>& OutTurretStand)

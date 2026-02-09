@@ -53,6 +53,8 @@ public:
 
 	void UpdateTurretState();
 
+	TArray<FPurchaseData> GetPurchaseDataArray();
+
 	void SetInfiniteMagMode(bool IsInfiniteMagMode);
 
 	void TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType);
@@ -73,6 +75,8 @@ private:
 	void LoadTurretDataTable();
 
 	int32 GetTurretKey(bool IsMainTurret, E_AMMO_TYPE AmmoType);
+
+	bool TryGetTurretData(bool ISMainPosition, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData);
 
 	bool TryGetTurretData(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData);
 
