@@ -163,7 +163,6 @@ void UMyGameInstance::StartSession()
 {
 	if (SessionInterface.IsValid())
 		SessionInterface->StartSession(SESSION_NAME);
-
 }
 
 void UMyGameInstance::OnStartSessionComplete(FName SessionName, bool bWasSuccessful)
@@ -173,29 +172,17 @@ void UMyGameInstance::OnStartSessionComplete(FName SessionName, bool bWasSuccess
 	if (!bWasSuccessful)
 		return;
 
-	UE_LOG(LogTemp, Warning, TEXT("Waiting for Steam to update lobby joinability..."));
-
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	//약간의 지연을 두고 ServerTravel 실행
-	FTimerHandle TimerHandle;
-	World->GetTimerManager().SetTimer(TimerHandle, [World]()
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Performing ServerTravel to Lobby..."));
-			World->ServerTravel(TEXT("/Game/Import/Maps/Lobby?listen"));
-		}, 0.5f, false); // 0.5초 딜레이
+	UE_LOG(LogTemp, Warning, TEXT("Performing ServerTravel to Lobby..."));
+	World->ServerTravel(TEXT("/Game/Import/Maps/Lobby?listen"));
 }
 
 void UMyGameInstance::OnCreateSessioncomplete(FName InSessionName, bool IsSuccess)
 {
 	if (!IsSuccess) return;
-
-	if (SessionInterface.IsValid())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Starting session..."));
-		SessionInterface->StartSession(SESSION_NAME);
-	}
+	StartSession();
 }
 
 void UMyGameInstance::OnDestroySessioncomplete(FName InSessionName, bool IsSuccess)
