@@ -52,7 +52,7 @@ void AJHSGameState::BeginPlay()
 
 void AJHSGameState::InitializeGameState(TArray<FPlayerStateData> PlayerStateArray)
 {
-	_spaceShipStateGroup->InitializeSpaceShipState(this, _initSpaceShipState);
+	_spaceShipStateGroup->InitializeSpaceShipState(this);
 
 	_playerStateGroup->InitializePlayerState(this, PlayerStateArray, _maxPlayerRadiation);
 

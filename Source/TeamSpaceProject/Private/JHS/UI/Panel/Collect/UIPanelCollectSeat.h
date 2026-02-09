@@ -31,12 +31,12 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<USpacer> Spacer_Right;
 
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UCollectToolDurability> WBP_CollectToolDurability;
-
 	TMap<E_COLLECT_TOOL_TYPE, TObjectPtr<UCollectToolDurability>> _toolDurabilityItemMap;
 
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "CollectSeat")
+	TSubclassOf<UCollectToolDurability> _toolDurabilityWidgetClass;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "CollectSeat")
 	int32 _toolCount = 3;
 

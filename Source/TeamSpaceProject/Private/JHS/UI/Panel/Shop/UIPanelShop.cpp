@@ -4,7 +4,9 @@
 #include "JHS/UI/Panel/Shop/UIPanelShop.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/CollectStateGroup.h"
+#include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "JHS/UI/Panel/Shop/PurchaseCategory.h"
 #include "JHS/UI/Panel/Shop/PurchaseRow.h"
 #include "Components/HorizontalBox.h"
@@ -25,7 +27,8 @@ void UUIPanelShop::NativeOnInitialized()
 
 	// 최초 1회만 위젯 생성
 	CreatePurchaseCategories();
-	CreatePurchaseRows();
+	SB_ItemRow->ClearChildren();
+	_purchaseRowMap.Empty();
 }
 
 void UUIPanelShop::OnOpen()
@@ -33,7 +36,7 @@ void UUIPanelShop::OnOpen()
 	Super::OnOpen();
 
 	// 기본 카테고리 선택 (SpaceShip)
-	SelectCategory(E_PURCHASE_CATEGORY::CollectTool);
+	SelectCategory(E_PURCHASE_CATEGORY::Ammo);
 }
 
 void UUIPanelShop::CreatePurchaseCategories()
@@ -102,15 +105,6 @@ void UUIPanelShop::SelectCategory(E_PURCHASE_CATEGORY Category)
 	UpdatePurchaseRow(_selectedCategory);
 }
 
-void UUIPanelShop::CreatePurchaseRows()
-{
-	if (SB_ItemRow == nullptr)
-		return;
-
-	SB_ItemRow->ClearChildren();
-	_purchaseRowMap.Empty();
-}
-
 void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
 {
 	if (_gameState == nullptr || _gameState->GetCollectStateGroup() == nullptr)
@@ -119,7 +113,7 @@ void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
 	if (SB_ItemRow == nullptr || _purchaseRowClass == nullptr)
 		return;
 
-	TArray<FPurchaseData> _purchaseDataArray = _gameState->GetCollectStateGroup()->GetPurchaseDataArray();
+	TArray<FPurchaseData> _purchaseDataArray = GetPurchaseDataArray(SelectedCategory);
 	int32 _activeCount = _purchaseDataArray.Num();
 
 	TObjectPtr<UPurchaseRow> _rowWidget = nullptr;
@@ -146,7 +140,7 @@ void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
 		_rowWidget->UpdateRow(_purchaseData);
 		_rowWidget->SetVisibility(ESlateVisibility::Visible);
 
-		UE_LOG(LogTemp, Warning, TEXT("UUIPanelShop: Updated purchase row: %d"), i);
+		UE_LOG(LogTemp, Warning, TEXT("UUIPanelShop: row: %d"), i);
 	}
 
 	// _purchaseRowMap.Num()+1 ~ _purchaseRowMap.Num() 비활성화
@@ -158,6 +152,32 @@ void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
 		
 		(*_rowWidgetPtr)->SetVisibility(ESlateVisibility::Collapsed);
 	}
+}
+
+TArray<FPurchaseData> UUIPanelShop::GetPurchaseDataArray(E_PURCHASE_CATEGORY SelectedCategory)
+{
+	TArray<FPurchaseData> _purchaseDataArray;
+
+	switch (SelectedCategory)
+	{
+	case E_PURCHASE_CATEGORY::SpaceShip:
+		_purchaseDataArray = _gameState->GetSpaceShipStateGroup()->GetPurchaseDataArray();
+		break;
+
+	case E_PURCHASE_CATEGORY::CollectTool:
+		_purchaseDataArray = _gameState->GetCollectStateGroup()->GetPurchaseDataArray();
+		break;
+
+	case E_PURCHASE_CATEGORY::Turret:
+		_purchaseDataArray = _gameState->GetTurretStateGroup()->GetTurretPurchaseDataArray();
+		break;
+
+	case E_PURCHASE_CATEGORY::Ammo:
+		_purchaseDataArray = _gameState->GetTurretStateGroup()->GetAmmoPurchaseDataArray();
+		break;
+	}
+
+	return _purchaseDataArray;
 }
 
 bool UUIPanelShop::TryGetPurchaseCategory(E_PURCHASE_CATEGORY Category, TObjectPtr<UPurchaseCategory>& OutPurchaseCategory)

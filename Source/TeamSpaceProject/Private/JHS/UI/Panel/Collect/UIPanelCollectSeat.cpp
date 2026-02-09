@@ -14,12 +14,6 @@ void UUIPanelCollectSeat::NativeOnInitialized()
 {
 	ClearDynamicWidgets();
 
-	// 템플릿 위젯을 HorizontalBox에서 분리하여 레이아웃에 영향 없도록 함
-	if (WBP_CollectToolDurability && WBP_CollectToolDurability->GetParent())
-	{
-		WBP_CollectToolDurability->RemoveFromParent();
-	}
-
 	// Spacer들의 크기를 Fill로 설정
 	if (Spacer_Left)
 	{
@@ -145,15 +139,12 @@ TObjectPtr<UCollectToolDurability> UUIPanelCollectSeat::GetCollectToolItem(E_COL
 	if (_toolDurabilityItemMap.Contains(CollectToolType))
 		return _toolDurabilityItemMap.FindRef(CollectToolType);
 
-	// WBP_CollectToolDurability의 위젯 클래스 가져오기 (블루프린트 클래스일 수 있음)
-	UClass* _widgetClass = WBP_CollectToolDurability->GetClass();
-	if (!_widgetClass)
+	if (!_toolDurabilityWidgetClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UUIPanelCollectSeat: Failed to get widget class from WBP_CollectToolDurability"));
+		UE_LOG(LogTemp, Error, TEXT("UUIPanelCollectSeat: _toolDurabilityWidgetClass is not set"));
 		return nullptr;
 	}
 
-	// PlayerController 가져오기 (CreateWidget에 필요)
 	APlayerController* _playerController = GetOwningPlayer();
 	if (!_playerController)
 	{
@@ -161,7 +152,7 @@ TObjectPtr<UCollectToolDurability> UUIPanelCollectSeat::GetCollectToolItem(E_COL
 		return nullptr;
 	}
 
-	UCollectToolDurability* _toolWidget = CreateWidget<UCollectToolDurability>(_playerController, _widgetClass);
+	UCollectToolDurability* _toolWidget = CreateWidget<UCollectToolDurability>(_playerController, _toolDurabilityWidgetClass);
 	if (!_toolWidget)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UUIPanelCollectSeat: Failed to create widget"));

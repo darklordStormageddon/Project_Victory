@@ -68,6 +68,8 @@ enum class E_SPACE_SHIP_DATA_TYPE : uint8
 	Shield = 0 UMETA(DisplayName = "Shield"),
 	HP UMETA(DisplayName = "HP"),
 	Fuel UMETA(DisplayName = "Fuel"),
+	MaxSpeed UMETA(DisplayName = "MaxSpeed"),
+	Radiation UMETA(DisplayName = "Radiation"),
 
 	NONE UMETA(DisplayName = "NONE"),
 };
@@ -82,23 +84,10 @@ public:
 	E_SPACE_SHIP_DATA_TYPE DataType = E_SPACE_SHIP_DATA_TYPE::NONE;
 
 	UPROPERTY()
+	UTexture2D* SpaceShipDataImage = nullptr;
+
+	UPROPERTY()
 	FPurchaseData Data;
-};
-
-USTRUCT(BlueprintType)
-struct FSpaceShipState
-{
-	GENERATED_BODY()
-
-public:
-	UPROPERTY()
-	FSpaceShipData Shield;
-
-	UPROPERTY()
-	FSpaceShipData HP;
-
-	UPROPERTY()
-	FSpaceShipData Fuel;
 };
 #pragma endregion SpaceShip
 
@@ -173,9 +162,12 @@ public:
 	UPROPERTY()
 	E_AMMO_TYPE AmmoType = E_AMMO_TYPE::NONE;
 
+	UPROPERTY()
+	UTexture2D* AmmoImage = nullptr;
+
 	// 탄약 가격
 	UPROPERTY()
-	int32 Price = 0;
+	FPurchaseData Price;
 
 	// 탄약 용량
 	UPROPERTY()
@@ -188,9 +180,6 @@ public:
 	// 보유량
 	UPROPERTY()
 	int32 AmmoStockpile = 0;
-
-	UPROPERTY()
-	UTexture2D* AmmoImage = nullptr;
 };
 
 UENUM(BlueprintType)

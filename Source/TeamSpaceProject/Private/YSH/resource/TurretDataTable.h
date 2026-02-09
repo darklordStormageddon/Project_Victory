@@ -29,13 +29,37 @@ public:
     FString Description = "";
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float Price;
+    int32 Price;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FPurchaseDataFormat Mag;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FPurchaseDataFormat FireInterval;
+};
+
+USTRUCT(BlueprintType)
+struct FAmmoInitState : public FTableRowBase
+{
+    GENERATED_BODY()
+
+public:
+    FAmmoInitState() :AmmoType(E_AMMO_TYPE::NONE), Price(0), ReloadCapacity(), AmmoDamage() {}
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    E_AMMO_TYPE AmmoType;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FString Description = "";
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 Price;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FPurchaseDataFormat ReloadCapacity;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FPurchaseDataFormat AmmoDamage;
 };
 
 UCLASS()

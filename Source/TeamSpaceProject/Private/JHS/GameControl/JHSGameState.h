@@ -41,9 +41,6 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|SpaceShipStateGroup")
 	TObjectPtr<USpaceShipStateGroup> _spaceShipStateGroup = nullptr;
 
-	UPROPERTY(EditAnywhere, Category = "GameState|SpaceShipStateGroup")
-	FSpaceShipState _initSpaceShipState;
-
 	// Player
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|PlayerStateGroup")
 	TObjectPtr<UPlayerStateGroup> _playerStateGroup = nullptr;
