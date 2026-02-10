@@ -6,58 +6,49 @@
 #include "OnlineSubsystemUtils.h"
 #include "Interfaces/OnlineSessionInterface.h"
 
+void AKSMGameMode::PreLogin(const FString& Options, const FString& Address,
+    const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+    Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+
+    UE_LOG(LogTemp, Warning, TEXT("PreLogin: %s from %s"), *UniqueId.ToString(), *Address);
+}
+
+FString AKSMGameMode::InitNewPlayer(APlayerController* NewPlayerController,
+    const FUniqueNetIdRepl& UniqueId, const FString& Options, const FString& Portal)
+{
+    FString Result = Super::InitNewPlayer(NewPlayerController, UniqueId, Options, Portal);
+
+    UE_LOG(LogTemp, Warning, TEXT("InitNewPlayer: %s"), *UniqueId.ToString());
+
+    return Result;
+}
+
 void AKSMGameMode::PostLogin(APlayerController* NewPlayer)
 {
     Super::PostLogin(NewPlayer);
 
-    //OnlineSubsystem에서 세션 인터페이스 가져오기
-    IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
-    if (!Subsystem)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("No OnlineSubsystem found"));
-        return;
-    }
+    UE_LOG(LogTemp, Warning, TEXT("PostLogin called"));
 
-    IOnlineSessionPtr Sessions = Subsystem->GetSessionInterface();
-    if (!Sessions.IsValid())
+    // 클라이언트를 세션에 등록
+    if (NewPlayer && NewPlayer->PlayerState)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Session Interface invalid"));
-        return;
-    }
-
-    //이 조건을 제거하거나 수정
-    if (NewPlayer)
-    {
-        APlayerState* PlayerState = NewPlayer->PlayerState;
-        if (PlayerState && PlayerState->GetUniqueId().IsValid())
+        IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
+        if (OnlineSub)
         {
-            TSharedPtr<const FUniqueNetId> UniqueId = PlayerState->GetUniqueId().GetUniqueNetId();
-            if (UniqueId.IsValid())
+            IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
+            if (Sessions.IsValid())
             {
-                //세션에 플레이어 등록
-                bool bSuccess = Sessions->RegisterPlayer(NAME_GameSession, *UniqueId, false);
+                TSharedPtr<const FUniqueNetId> UserId = NewPlayer->PlayerState->GetUniqueId().GetUniqueNetId();
+                if (UserId.IsValid())
+                {
+                    bool bWasInvited = false; // Steam에서는 false
+                    bool bSuccess = Sessions->RegisterPlayer(NAME_GameSession, *UserId, bWasInvited);
 
-                if (bSuccess)
-                {
-                    UE_LOG(LogTemp, Log, TEXT("Player %s registered to session (IsLocal: %d)"),
-                        *UniqueId->ToString(), NewPlayer->IsLocalController());
-                }
-                else
-                {
-                    UE_LOG(LogTemp, Error, TEXT("Failed to register player %s to session"),
-                        *UniqueId->ToString());
+                    UE_LOG(LogTemp, Warning, TEXT("RegisterPlayer in PostLogin: %d for %s"),
+                        bSuccess, *UserId->ToString());
                 }
             }
-            else
-            {
-                UE_LOG(LogTemp, Error, TEXT("UniqueId is invalid for player %s"),
-                    *NewPlayer->GetName());
-            }
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("PlayerState is null or UniqueId invalid for %s"),
-                *NewPlayer->GetName());
         }
     }
 }
