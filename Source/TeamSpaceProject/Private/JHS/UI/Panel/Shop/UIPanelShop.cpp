@@ -7,6 +7,7 @@
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
+#include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/UI/Panel/Shop/PurchaseCategory.h"
 #include "JHS/UI/Panel/Shop/PurchaseRow.h"
 #include "JHS/UI/Panel/Container/PlateContainer.h"
@@ -15,6 +16,7 @@
 #include "Components/ScrollBox.h"
 #include "Components/SizeBox.h"
 #include "Blueprint/UserWidget.h"
+#include "JHS/UI/Interact/InteractableButton.h"
 #include "JHS/GameControl/CommonEnums.h"
 
 void UUIPanelShop::NativeOnInitialized()
@@ -43,6 +45,12 @@ void UUIPanelShop::NativeOnInitialized()
 			}
 		}
 	}
+
+	// BTN_SaleElement
+	if (BTN_SaleElement != nullptr)
+	{
+		BTN_SaleElement->Clicked.AddDynamic(this, &UUIPanelShop::OnClickSaleElement);
+	}
 }
 
 void UUIPanelShop::OnOpen()
@@ -55,6 +63,9 @@ void UUIPanelShop::OnOpen()
 	}
 
 	SelectCategory(E_PURCHASE_CATEGORY::Ammo);
+
+	_elementIndex = 0;
+	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &UUIPanelShop::AddElement, 3.0f, false);
 }
 
 void UUIPanelShop::CreatePurchaseCategories()
@@ -100,8 +111,6 @@ void UUIPanelShop::CreatePurchaseCategories()
 		// 맵에 저장
 		_purchaseCategoryMap.Add(_category, _categoryWidget);
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("UUIPanelShop: Created %d purchase category widgets"), _purchaseCategoryMap.Num());
 }
 
 void UUIPanelShop::SelectCategory(E_PURCHASE_CATEGORY Category)
@@ -157,8 +166,6 @@ void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
 		FPurchaseData _purchaseData = _purchaseDataArray[i];
 		_rowWidget->UpdateRow(_purchaseData);
 		_rowWidget->SetVisibility(ESlateVisibility::Visible);
-
-		UE_LOG(LogTemp, Warning, TEXT("UUIPanelShop: row: %d"), i);
 	}
 
 	// _purchaseRowMap.Num()+1 ~ _purchaseRowMap.Num() 비활성화
@@ -209,4 +216,26 @@ bool UUIPanelShop::TryGetPurchaseCategory(E_PURCHASE_CATEGORY Category, TObjectP
 
     OutPurchaseCategory = _purchaseCategoryMap[Category];
 	return true;
+}
+
+void UUIPanelShop::OnClickSaleElement()
+{
+	_gameState->GetContainerStateGroup()->SaleAllElement();
+}
+
+void UUIPanelShop::AddElement()
+{
+	if (_gameState == nullptr)
+		return;
+
+	UContainerStateGroup* _containerStateGroup = _gameState->GetContainerStateGroup();
+	if (_containerStateGroup == nullptr)
+		return;
+
+	_elementIndex++;
+	if (_elementIndex > (int32)E_ELEMENT_TYPE::CarbonFiber)
+		return;
+	
+	_containerStateGroup->AddElement((E_ELEMENT_TYPE)_elementIndex, _elementIndex + 1);
+	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &UUIPanelShop::AddElement, 1.0f, false);
 }

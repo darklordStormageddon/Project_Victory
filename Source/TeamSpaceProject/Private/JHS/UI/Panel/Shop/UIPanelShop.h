@@ -15,6 +15,7 @@ class UHorizontalBox;
 class UScrollBox;
 class USizeBox;
 class UPlateContainer;
+class UInteractableButton;
 
 UCLASS()
 class UUIPanelShop : public UUIBase
@@ -30,6 +31,9 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<USizeBox> SB_PlateContainer = nullptr;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UInteractableButton> BTN_SaleElement = nullptr;
 
 private:
 	UPROPERTY()
@@ -70,4 +74,15 @@ private:
 	TArray<FPurchaseData> GetPurchaseDataArray(E_PURCHASE_CATEGORY SelectedCategory);
 
 	bool TryGetPurchaseCategory(E_PURCHASE_CATEGORY Category, TObjectPtr<UPurchaseCategory>& OutPurchaseCategory);
+
+	// BTN_SaleElement
+private:
+	UFUNCTION()
+	void OnClickSaleElement();
+
+	void AddElement();
+
+	FTimerHandle _timerHandle;
+
+	int32 _elementIndex = -1;
 };

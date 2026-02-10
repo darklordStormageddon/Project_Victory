@@ -141,7 +141,13 @@ UUIBase* UUIManager::OpenUIInWorld(E_UI_TYPE UIType, AActor* OwnerActor, FVector
 	
 	// 추가 설정: 월드 스페이스 UI가 보이도록
 	_widgetComponent->SetPivot(FVector2D(0.5f, 0.5f)); // 중앙 피벗
-	_widgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 충돌 비활성화
+	// 시선(Visibility) 트레이스를 맞추기 위한 충돌 설정
+	// (UIBase를 상속받은 패널 내부에 UInteractableButton이 BindWidget으로 들어가는 구조이므로
+	//  월드 스페이스 UI 전체에 대해 Visibility 라인 트레이스를 허용합니다.)
+	_widgetComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly); // 물리 충돌 X, 쿼리(라인 트레이스)만
+	_widgetComponent->SetCollisionObjectType(ECC_WorldDynamic);
+	_widgetComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
+	_widgetComponent->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block); // Visibility만 Block
 	_widgetComponent->SetGeometryMode(EWidgetGeometryMode::Plane); // 평면 모드
 	_widgetComponent->SetBlendMode(EWidgetBlendMode::Transparent); // 투명 블렌드
 	_widgetComponent->SetBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.0f)); // 투명 배경
