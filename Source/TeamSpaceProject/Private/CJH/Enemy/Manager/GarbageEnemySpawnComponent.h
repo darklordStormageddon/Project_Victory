@@ -76,11 +76,6 @@ protected:
 
 	TMap<AGarbageEnemyBase*, FVector> JuniorEnemies;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
-	float _minSpawn = 1.0f;
-	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
-	float _maxSpawn = 5.0f;
-
 	bool candebug = true;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Debug")
@@ -98,8 +93,6 @@ protected:
 	FQuat TiltQuat;
 	float AngleStep = 0.0f;
 
-	int Num = 0;
-
 	FTimerHandle OrbitTimerHandle;
 
 	TMap<AGarbageEnemyBase*, FDroneOrbitData> OrbitData;
@@ -107,14 +100,10 @@ protected:
 protected:
 	UGarbageEnemySpawnComponent();
 
-	void GarbageSpawnSetting();
 	void OrbitSet();
 
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
-	void SpawnInMap(FVector SpawnLocation, FRotator SpawnRotation, TArray<TSubclassOf<AGarbageEnemyBase>> _spawn_enemy);
-	void SpawnEnemy(TSubclassOf<AGarbageEnemyBase> Enemy, FVector SpawnLocation, FRotator SpawnRotator);
 
 	void SetDroneProperties(AEnemyBase* Drone);
 	void BuildOrbitStructure();

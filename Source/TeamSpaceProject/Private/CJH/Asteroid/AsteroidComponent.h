@@ -51,6 +51,10 @@ struct FSpawnAsteroidInfo
 	TSubclassOf<AActor> TargetShip = nullptr;
 };
 
+class UEventManager;
+class UEventOnStartStage;
+class UEventOnEndStage;
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 
 class UAsteroidComponent : public UActorComponent
@@ -59,9 +63,13 @@ class UAsteroidComponent : public UActorComponent
 private:
 	FTimerHandle SpawnTimerHandle;
 
+	FDelegateHandle OnStartStageHandle;
+	FDelegateHandle OnEndStageHandle;
+
 	AActor* _ownerActor = nullptr;
 
 	bool bIsSpawning = false;
+	bool bSpawningEnabled = false;
 
 	FVector ShipSpeed;
 
@@ -70,6 +78,12 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
 	int MaxSpawn = 100;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+	bool bAutoStart = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn", meta = (ClampMin = "1"))
+	int32 AutoStartStage = 1;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
@@ -81,13 +95,26 @@ private:
 
 	float SetDamage(float Speed, float Size);
 
+	void HandleStartStage(UEventOnStartStage* Event);
+	void HandleEndStage(UEventOnEndStage* Event);
+
 public:
 	// Sets default values for this component's properties
 	UAsteroidComponent();
 
+	UFUNCTION(BlueprintCallable)
+	void StartSpawning();
+
+	UFUNCTION(BlueprintCallable)
+	void StopSpawning();
+
+	UFUNCTION(BlueprintCallable)
+	void ClearAsteroids();
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
 	// Called every frame
@@ -95,4 +122,3 @@ public:
 	void RemoveAsteroid(AAsteroid* _removeTarget);
 
 };
- 

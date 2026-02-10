@@ -2,13 +2,17 @@
 
 #include "CJH/Stability/ASManagerComponent.h"
 
+#include "JHS/GameControl/StageChangeExample.h" 
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/Event/EventManager.h"
+#include "JHS/Event/CommonEventBase.h"
+
 #include "KSM/Satellite_Base.h"
 
 #include "JHS/Player/SpaceStation.h"
 
 #include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/GameControl/SpaceManager.h"
-#include "JHS/GameControl/StaticFunctionLibrary.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -28,8 +32,55 @@ void UASManagerComponent::BeginPlay()
 
 	GetSetting();
 
+	UEventManager* EventManager = nullptr;
+	if (UStaticFunctionLibrary::TryGetEventManager(EventManager) && EventManager)
+	{
+		OnStartStageHandle = EventManager->AddListener<UEventOnStartStage>(
+			[this](UEventOnStartStage* Event)
+			{
+				if (!Event)
+					return;
+
+				StartSpawn();
+			}
+		);
+
+		OnEndStageHandle = EventManager->AddListener<UEventOnEndStage>(
+			[this](UEventOnEndStage* Event)
+			{
+				if (!Event)
+					return;
+				ClearSpawnedSatellites();
+			}
+		);
+	}
+
 	if (bAutoStart)
 		Artifical_Satellite_Spawn();
+}
+
+void UASManagerComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		UEventManager* EventManager = nullptr;
+		if (UStaticFunctionLibrary::TryGetEventManager(EventManager) && EventManager)
+		{
+			if (OnStartStageHandle.IsValid())
+			{
+				EventManager->DelListener<UEventOnStartStage>(OnStartStageHandle);
+				OnStartStageHandle.Reset();
+			}
+
+			if (OnEndStageHandle.IsValid())
+			{
+				EventManager->DelListener<UEventOnEndStage>(OnEndStageHandle);
+				OnEndStageHandle.Reset();
+			}
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void UASManagerComponent::StartSpawn()
@@ -54,8 +105,18 @@ void UASManagerComponent::ClearSpawnedSatellites()
 
 	for (const TWeakObjectPtr<ASatellite_Base>& Satellite : SpawnedSatellites)
 	{
-		if (Satellite.IsValid())
-			Satellite->Destroy();
+		if (!Satellite.IsValid())
+			continue;
+
+		TArray<AActor*> AttachedActors;
+		Satellite->GetAttachedActors(AttachedActors);
+		for (AActor* AttachedActor : AttachedActors)
+		{
+			if (IsValid(AttachedActor))
+				AttachedActor->Destroy();
+		}
+
+		Satellite->Destroy();
 	}
 
 	SpawnedSatellites.Empty();

@@ -6,6 +6,9 @@
 #include "CJH/Enemy/Manager/EnemySpawnComponent.h"
 #include "CJH/Enemy/Manager/GarbageEnemySpawnComponent.h"
 #include "CJH/Stability/ASManagerComponent.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/Event/EventManager.h"
+#include "JHS/Event/CommonEventBase.h"
 #include "KSM/Satellite_Base.h"
 
 UEnemyManagerComponent::UEnemyManagerComponent()
@@ -25,6 +28,58 @@ void UEnemyManagerComponent::BeginPlay()
 	{
 		SatelliteManager->OnSatelliteSpawned.AddDynamic(this, &UEnemyManagerComponent::HandleSatelliteSpawned);
 	}
+
+	UEventManager* EventManager = nullptr;
+	if (UStaticFunctionLibrary::TryGetEventManager(EventManager) && EventManager)
+	{
+		OnStartStageHandle = EventManager->AddListener<UEventOnStartStage>(
+			[this](UEventOnStartStage* Event)
+			{
+				if (!Event)
+					return;
+
+				const int32 Stage = Event->Stage <= 0 ? AutoStartStage : Event->Stage;
+				StartRound(Stage);
+			}
+		);
+
+		OnEndStageHandle = EventManager->AddListener<UEventOnEndStage>(
+			[this](UEventOnEndStage* Event)
+			{
+				if (!Event)
+					return;
+
+				EndRound();
+			}
+		);
+	}
+
+	if (bAutoStart)
+		StartRound(AutoStartStage);
+}
+
+void UEnemyManagerComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		UEventManager* EventManager = nullptr;
+		if (UStaticFunctionLibrary::TryGetEventManager(EventManager) && EventManager)
+		{
+			if (OnStartStageHandle.IsValid())
+			{
+				EventManager->DelListener<UEventOnStartStage>(OnStartStageHandle);
+				OnStartStageHandle.Reset();
+			}
+
+			if (OnEndStageHandle.IsValid())
+			{
+				EventManager->DelListener<UEventOnEndStage>(OnEndStageHandle);
+				OnEndStageHandle.Reset();
+			}
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void UEnemyManagerComponent::StartRound(int32 Round)

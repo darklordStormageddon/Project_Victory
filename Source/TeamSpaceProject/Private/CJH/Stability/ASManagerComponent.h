@@ -8,6 +8,9 @@
 
 class ASatellite_Base;
 class ASpaceStation;
+class UEventManager;
+class UEventOnStartStage;
+class UEventOnEndStage;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSatelliteSpawned, ASatellite_Base*, Satellite);
 
@@ -35,8 +38,12 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
+	FDelegateHandle OnStartStageHandle;
+	FDelegateHandle OnEndStageHandle;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
 	int min_Spawn = 30;
 	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
@@ -51,7 +58,7 @@ private:
 	float Spawn_Interval = 0.5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Artifical_Satellite_Spawn")
-	bool bAutoStart = true;
+	bool bAutoStart = false;
 
 	float Spawn_Distance = 0.f;
 
