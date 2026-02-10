@@ -11,7 +11,7 @@
 
 #include "EnemyBase.generated.h"
 
-class UEnemyManagerComponent;
+class UEnemySpawnComponent;
 class USpaceObjectComponent;
 
 USTRUCT()
@@ -75,7 +75,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Target")
 	AActor* Target = nullptr;
 
-	UEnemyManagerComponent* EnemyComponent;
+	UEnemySpawnComponent* EnemyComponent;
 
 public:	
 	// Sets default values for this actor's properties

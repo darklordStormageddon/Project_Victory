@@ -4,17 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "EnemyManagerComponent.generated.h"
+#include "EnemySpawnComponent.generated.h"
 
 class AJHSGameMode;
 class ASpaceStation;
 class AEnemyBase;
-class AGarbageEnemyBase;
-class ASpawnedEnemyBase;
+class ASatellite_Base;
 
-
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class UEnemyManagerComponent : public UActorComponent
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+class UEnemySpawnComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
@@ -26,36 +24,36 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "TargetShip")
 	TSubclassOf<AActor> _spaceShip;
 
-	// 소환 될 공간 반지름
-	AJHSGameMode* _gameMode;
-	ASpaceStation* _spaceStation;
+	AJHSGameMode* _gameMode = nullptr;
+	ASpaceStation* _spaceStation = nullptr;
 
 	float _spaceRadius = 0.f;
 
-	// 적 소환 가능 여부
 	FTimerHandle SpawnHandle;
 
-	//Garbage
-	float SpawnedValue;
+	float SpawnedValue = 0.f;
 
 	AEnemyBase* SpawnedEnemy = nullptr;
-	
 
 protected:
-	// 적 소환 함수
 	void SpawnSetting();
 	void GarbageSpawnSetting();
 
-public:	
-	// Sets default values for this component's properties
-	UEnemyManagerComponent();
+	virtual void OnEnemySpawned(AEnemyBase* NewEnemy);
+
+public:
+	UEnemySpawnComponent();
+
+	UFUNCTION(BlueprintCallable)
+	virtual void SpawnEnemies(const TArray<TSubclassOf<AEnemyBase>>& EnemiesToSpawn);
+
+	UFUNCTION(BlueprintCallable)
+	virtual void ClearSpawnedEnemies();
 
 protected:
-	// Called when the game starts
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
+public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	virtual void RemoveEnemies(AEnemyBase* _removeEnemy) {};

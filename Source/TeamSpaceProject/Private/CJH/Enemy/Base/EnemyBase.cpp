@@ -7,9 +7,8 @@
 
 #include "JHS/SpaceObject/SpaceObjectComponent.h"	
 
-#include "CJH/Enemy/Manager/EnemyManagerComponent.h"
-#include "CJH/Enemy/Manager/GarbageEnemyManagerComponent.h"
-#include "CJH/Enemy/Manager/SpawnedEnemyManagerComponent.h"
+#include "CJH/Enemy/Manager/EnemySpawnComponent.h"
+#include "CJH/Enemy/Manager/GarbageEnemySpawnComponent.h"
 
 #include "Net/UnrealNetwork.h"
 
@@ -195,13 +194,13 @@ void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (UWorld* World = GetWorld())
 		World->GetTimerManager().ClearAllTimersForObject(this);
 
-	UGarbageEnemyManagerComponent* GarbageComponent = Cast<UGarbageEnemyManagerComponent>(EnemyComponent);
-	USpawnedEnemyManagerComponent* SpawnedComponent = Cast<USpawnedEnemyManagerComponent>(EnemyComponent);
+	UGarbageEnemySpawnComponent* GarbageComponent = Cast<UGarbageEnemySpawnComponent>(EnemyComponent);
+	UEnemySpawnComponent* SpawnComponent = Cast<UEnemySpawnComponent>(EnemyComponent);
 
 	if (GarbageComponent)
 		GarbageComponent->RemoveEnemies(this);
-	else if (SpawnedComponent)
-		SpawnedComponent->RemoveEnemies(this);
+	else if (SpawnComponent)
+		SpawnComponent->RemoveEnemies(this);
 
 	USpaceManager* OutSpaceManager = nullptr;
 
