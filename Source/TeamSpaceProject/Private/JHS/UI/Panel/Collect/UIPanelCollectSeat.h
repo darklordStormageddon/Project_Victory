@@ -37,9 +37,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "CollectSeat")
 	TSubclassOf<UCollectToolDurability> _toolDurabilityWidgetClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "CollectSeat")
-	int32 _toolCount = 3;
-
 protected:
 	void NativeOnInitialized() override;
 

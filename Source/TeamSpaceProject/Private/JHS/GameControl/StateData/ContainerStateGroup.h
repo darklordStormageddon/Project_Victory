@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "TimerManager.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
 
 #include "ContainerStateGroup.generated.h"
@@ -26,6 +27,8 @@ private:
 	UPROPERTY()
 	FContainerState _containerState;
 
+	FTimerHandle _saleAllElementTimerHandle;
+
 public:
 	int32 GetOwnedDollar() { return _containerState.OwnedDollar; }
 
@@ -38,20 +41,20 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	void InitializeContainerState(TObjectPtr<AJHSGameState> GameState, FContainerState InitContainerState, TArray<FAmmoData> AmmoDataArray);
+	void InitializeContainerState(TObjectPtr<AJHSGameState> GameState, FContainerState InitContainerState);
 
 	void UpdateContainerState();
 
 	void AddElement(E_ELEMENT_TYPE ElementType, int32 Amount);
 
-	void RemoveElement(E_ELEMENT_TYPE ElementType, int32 Amount);
+	void SaleAllElement();
 	
 	bool TryGetElementData(E_ELEMENT_TYPE ElementType, FElementData*& OutElementData);
 
-	bool TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutAmmoData);
-
 private:
-	void LoadResource();
+	void LoadElementData();
+
+	void SaleElementInternal(int32 ElementTypeIndex);
 
 	void ExecuteEventOnChangeElement(FElementData ElementData);
 };

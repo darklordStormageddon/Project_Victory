@@ -42,8 +42,6 @@ private:
 
 	int32 _elementIndex = -1;
 
-	bool _isAddMode = true;
-
 	int32 _toolIndex = -1;
 
 private:

@@ -230,11 +230,6 @@ void UTurretStateGroup::MulticastEquipTurret_Implementation(E_TURRET_POSITION Tu
 		_spawnedTurret->SetReplicates(true);
 		_spawnedTurret->SetReplicateMovement(true);
 		_spawnedTurret->ForceNetUpdate();
-
-		UE_LOG(LogTemp, Warning, TEXT("UTurretStateGroup::MulticastEquipTurret_Implementation Spawned. Actor: %s, bReplicates: %s, bReplicateMovement: %s"),
-			*_spawnedTurret->GetName(),
-			_spawnedTurret->GetIsReplicated() ? TEXT("True") : TEXT("False"),
-			_spawnedTurret->IsReplicatingMovement() ? TEXT("True") : TEXT("False"));
 	}
 
 	// 터렛 장착 (서버만 직접 수행, 클라이언트는 복제로 반영)
@@ -304,7 +299,7 @@ bool UTurretStateGroup::TryReloadTurret(E_TURRET_POSITION TurretPosition)
 		return false;
 
 	FAmmoData* _outAmmoData = nullptr;
-	if (!_gameState->GetContainerStateGroup()->TryGetAmmoData(_equipedAmmoType, _outAmmoData))
+	if (!TryGetAmmoData(_equipedAmmoType, _outAmmoData))
 		return false;
 
 	ChangeTurretAmmo(TurretPosition, _equipedAmmoType, _outAmmoData->ReloadCapacity.Value.MaxValue);

@@ -59,9 +59,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameState|ContainerStateGroup")
 	FContainerState _initContainerState;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameState|ContainerStateGroup")
-	TArray<FAmmoData> _initAmmoDataArray;
-
 	// Turret
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|TurretStateGroup")
 	TObjectPtr<UTurretStateGroup> _turretStateGroup = nullptr;

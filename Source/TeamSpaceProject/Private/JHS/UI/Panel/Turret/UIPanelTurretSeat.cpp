@@ -5,8 +5,8 @@
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "JHS/UI/Material/CircleProgressBar.h"
-#include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
@@ -38,7 +38,7 @@ void UUIPanelTurretSeat::NativeOnInitialized()
     if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
         return;
     
-    _containerStateGroup = _outGameState->GetContainerStateGroup();
+    _turretStateGroup = _outGameState->GetTurretStateGroup();
 }
 
 void UUIPanelTurretSeat::RegisterEvent()
@@ -84,7 +84,7 @@ void UUIPanelTurretSeat::OnChangeTurret(UEventOnChangeTurretData* Event)
     }
 
     FAmmoData* _outAmmoData = nullptr;
-    if (!_containerStateGroup->TryGetAmmoData(_turretData.AmmoType, _outAmmoData))
+    if (!_turretStateGroup->TryGetAmmoData(_turretData.AmmoType, _outAmmoData))
         return;
     
     TObjectPtr<UTexture2D> _texture = _outAmmoData->AmmoImage;

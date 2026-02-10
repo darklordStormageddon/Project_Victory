@@ -9,9 +9,11 @@
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "JHS/UI/Panel/Shop/PurchaseCategory.h"
 #include "JHS/UI/Panel/Shop/PurchaseRow.h"
+#include "JHS/UI/Panel/Container/PlateContainer.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/ScrollBox.h"
+#include "Components/SizeBox.h"
 #include "Blueprint/UserWidget.h"
 #include "JHS/GameControl/CommonEnums.h"
 
@@ -25,17 +27,33 @@ void UUIPanelShop::NativeOnInitialized()
 
 	_gameState = _outGameState;
 
-	// 최초 1회만 위젯 생성
 	CreatePurchaseCategories();
 	SB_ItemRow->ClearChildren();
 	_purchaseRowMap.Empty();
+
+	if (SB_PlateContainer != nullptr && _plateContainerClass != nullptr)
+	{
+		APlayerController* _playerController = GetOwningPlayer();
+		if (_playerController != nullptr)
+		{
+			_plateContainer = CreateWidget<UPlateContainer>(_playerController, _plateContainerClass);
+			if (_plateContainer != nullptr)
+			{
+				SB_PlateContainer->AddChild(_plateContainer);
+			}
+		}
+	}
 }
 
 void UUIPanelShop::OnOpen()
 {
 	Super::OnOpen();
 
-	// 기본 카테고리 선택 (SpaceShip)
+	if (_plateContainer != nullptr)
+	{
+		_plateContainer->Open();
+	}
+
 	SelectCategory(E_PURCHASE_CATEGORY::Ammo);
 }
 

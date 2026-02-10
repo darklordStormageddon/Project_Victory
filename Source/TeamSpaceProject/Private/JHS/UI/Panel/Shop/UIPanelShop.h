@@ -13,6 +13,8 @@ class UPurchaseCategory;
 class UPurchaseRow;
 class UHorizontalBox;
 class UScrollBox;
+class USizeBox;
+class UPlateContainer;
 
 UCLASS()
 class UUIPanelShop : public UUIBase
@@ -26,6 +28,9 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UScrollBox> SB_ItemRow = nullptr;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<USizeBox> SB_PlateContainer = nullptr;
+
 private:
 	UPROPERTY()
 	TObjectPtr<AJHSGameState> _gameState = nullptr;
@@ -36,7 +41,13 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UPurchaseRow> _purchaseRowClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UPlateContainer> _plateContainerClass;
+
 	TMap<E_PURCHASE_CATEGORY, TObjectPtr<UPurchaseCategory>> _purchaseCategoryMap;
+
+	UPROPERTY()
+	TObjectPtr<UPlateContainer> _plateContainer = nullptr;
 
 	TMap<int32, TObjectPtr<UPurchaseRow>> _purchaseRowMap;
 

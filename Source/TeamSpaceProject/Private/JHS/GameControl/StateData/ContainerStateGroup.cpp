@@ -38,17 +38,12 @@ void UContainerStateGroup::TickComponent(float DeltaTime, ELevelTick TickType, F
 	// ...
 }
 
-void UContainerStateGroup::InitializeContainerState(TObjectPtr<AJHSGameState> GameState, FContainerState InitContainerState, TArray<FAmmoData> AmmoDataArray)
+void UContainerStateGroup::InitializeContainerState(TObjectPtr<AJHSGameState> GameState, FContainerState InitContainerState)
 {
 	_gameState = GameState;
 
 	_containerState = InitContainerState;
-	_containerState.AmmoDataMap.Empty();
-	for (auto _ammoData : AmmoDataArray)
-	{
-		_containerState.AmmoDataMap.Add(_ammoData.AmmoType, _ammoData);
-	}
-	LoadResource();
+	LoadElementData();
 }
 
 void UContainerStateGroup::UpdateContainerState()
@@ -76,20 +71,44 @@ void UContainerStateGroup::AddElement(E_ELEMENT_TYPE ElementType, int32 Amount)
 	ExecuteEventOnChangeElement(*_elementData);
 }
 
-void UContainerStateGroup::RemoveElement(E_ELEMENT_TYPE ElementType, int32 Amount)
+void UContainerStateGroup::SaleAllElement()
 {
-	FElementData* _elementData = nullptr;
-	if (!TryGetElementData(ElementType, _elementData))
-		return;
+	SaleElementInternal(0);
+}
 
-	_elementData->Amount -= Amount;
-	int32 _amount = _elementData->Amount;
-	if (_elementData->Amount <= 0)
+void UContainerStateGroup::SaleElementInternal(int32 ElementTypeIndex)
+{
+	if (!GetWorld())
 	{
-		_amount = 0;
+		UE_LOG(LogTemp, Error, TEXT("UContainerStateGroup::SaleElementInternal: World is null."));
+		return;
 	}
 
-	ExecuteEventOnChangeElement(*_elementData);
+	if (ElementTypeIndex >= (int32)E_ELEMENT_TYPE::NONE)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(_saleAllElementTimerHandle);
+		return;
+	}
+
+	FElementData* _elementData = nullptr;
+	const E_ELEMENT_TYPE _elementType = (E_ELEMENT_TYPE)ElementTypeIndex;
+	if (TryGetElementData(_elementType, _elementData))
+	{
+		int32 _totalDollar = _elementData->Price * _elementData->Amount;
+		_containerState.OwnedDollar += _totalDollar;
+		_elementData->Amount = 0;
+
+		ExecuteEventOnChangeElement(*_elementData);
+	}
+
+	if (_containerState.SaleInterval <= 0.0f)
+	{
+		_containerState.SaleInterval = 0.5f;
+	}
+
+	FTimerDelegate _delegate;
+	_delegate.BindUObject(this, &UContainerStateGroup::SaleElementInternal, ElementTypeIndex + 1);
+	GetWorld()->GetTimerManager().SetTimer(_saleAllElementTimerHandle, _delegate, _containerState.SaleInterval, false);
 }
 
 bool UContainerStateGroup::TryGetElementData(E_ELEMENT_TYPE ElementType, FElementData*& OutElementData)
@@ -104,19 +123,7 @@ bool UContainerStateGroup::TryGetElementData(E_ELEMENT_TYPE ElementType, FElemen
 	return OutElementData != nullptr;
 }
 
-bool UContainerStateGroup::TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutAmmoData)
-{
-	if (!_containerState.AmmoDataMap.Contains(AmmoType))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Not found ammo data. AmmoType: %d"), (int32)AmmoType);
-		return false;
-	}
-
-	OutAmmoData = _containerState.AmmoDataMap.Find(AmmoType);
-	return OutAmmoData != nullptr;
-}
-
-void UContainerStateGroup::LoadResource()
+void UContainerStateGroup::LoadElementData()
 {
 	// Element
 	_containerState.ElementDataMap.Empty();
@@ -142,35 +149,13 @@ void UContainerStateGroup::LoadResource()
 
 			// Texture
 			FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_ELEMENT_TYPE>(_newElementData.ElementType);
-			FString _texturePath = ConstantLibrary::Resource.Image.ELEMENT_FOLDER_PATH + _fileName + "." + _fileName;
-			UTexture2D* _loadedTexture = LoadObject<UTexture2D>(nullptr, *_texturePath);
-			if (_loadedTexture != nullptr)
+			TObjectPtr<UTexture2D> _outTexture = nullptr;
+			if (AJHSGameState::TryGetTextureFromPath(ConstantLibrary::Resource.Image.ELEMENT_FOLDER_PATH, _fileName, _outTexture))
 			{
-				_newElementData.ElementImage = _loadedTexture;
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("UContainerStateGroup: Failed to load element texture: %s"), *_texturePath);
+				_newElementData.ElementImage = _outTexture;
 			}
 
 			_containerState.ElementDataMap.Add(_newElementData.ElementType, _newElementData);
-		}
-	}
-
-	// Ammo
-	for (auto& _ammoData : _containerState.AmmoDataMap)
-	{
-		E_AMMO_TYPE _ammoType = _ammoData.Key;
-		FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_AMMO_TYPE>(_ammoType);
-		FString _texturePath = ConstantLibrary::Resource.Image.AMMO_FOLDER_PATH + _fileName + "." + _fileName;
-		UTexture2D* _loadedTexture = LoadObject<UTexture2D>(nullptr, *_texturePath);
-		if (_loadedTexture != nullptr)
-		{
-			_ammoData.Value.AmmoImage = _loadedTexture;
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("UContainerStateGroup: Failed to load ammo texture: %s"), *_texturePath);
 		}
 	}
 }
