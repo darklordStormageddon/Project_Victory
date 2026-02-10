@@ -11,6 +11,8 @@ class APanelBase;
 class ABodyBase;
 class AAttachment_Base;
 class AConnector_Base;
+class USpaceObjectComponent;
+class USpaceManager;
 
 USTRUCT(BlueprintType)
 struct FElem_Set
@@ -108,5 +110,16 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Property")
 	float MaxSpeed = 0.0f;
+
+private:
+	UPROPERTY()
+	TObjectPtr<USpaceManager> SpaceManager = nullptr;
+	UPROPERTY(EditDefaultsOnly, Category = "SpaceObject")
+	USpaceObjectComponent* SpaceObjectComp;
+
+private:
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	bool GetSpaceManager();
 
 };

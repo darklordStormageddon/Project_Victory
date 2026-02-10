@@ -6,6 +6,11 @@
 #include "KSM/Attachment_Base.h"
 #include "KSM/Connector_Base.h"
 
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/SpaceManager.h"
+
+#include "JHS/SpaceObject/SpaceObjectComponent.h"
+
 // Sets default values
 ASatellite_Base::ASatellite_Base()
 {
@@ -41,6 +46,8 @@ ASatellite_Base::ASatellite_Base()
     SceneChild8 = CreateDefaultSubobject<USceneComponent>(TEXT("SceneChild8"));
     SceneChild8->SetupAttachment(SceneRoot);
 
+    SpaceObjectComp = CreateDefaultSubobject<USpaceObjectComponent>(TEXT("SpaceObjectComponent"));
+
     bReplicates = true;
     bAlwaysRelevant = true;
 }
@@ -50,6 +57,7 @@ void ASatellite_Base::BeginPlay()
 {
 	Super::BeginPlay();
 	
+    GetSpaceManager();
 }
 
 // Called every frame
@@ -64,5 +72,31 @@ void ASatellite_Base::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+}
+
+bool ASatellite_Base::GetSpaceManager()
+{
+    if (SpaceManager == nullptr)  // Fixed: Use == for comparison instead of = for assignment
+    {
+        USpaceManager* _outSpaceManager = nullptr;
+        if (!UStaticFunctionLibrary::TryGetSpaceManager(_outSpaceManager))
+            return false;  // Changed: Return false if failed to get SpaceManager
+
+        SpaceManager = _outSpaceManager;
+
+        return true;  // Changed: Return true if successful
+    }
+
+    return true;
+}
+
+void ASatellite_Base::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (IsValid(SpaceManager))
+    {
+        SpaceManager->RemoveSpaceObject(SpaceObjectComp);
+    }
+
+    Super::EndPlay(EndPlayReason);
 }
 

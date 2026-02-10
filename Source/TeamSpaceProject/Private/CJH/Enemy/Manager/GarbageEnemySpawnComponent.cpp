@@ -2,8 +2,6 @@
 
 #include "CJH/Enemy/Manager/GarbageEnemySpawnComponent.h"
 
-#include "JHS/GameControl/JHSGameMode.h"
-
 #include "CJH/Enemy/Base/GarbageEnemyBase.h"
 #include "CJH/Enemy/DroneEnemy.h"
 
@@ -29,8 +27,6 @@ void UGarbageEnemySpawnComponent::BeginPlay()
 
 	if (GetOwner() && GetOwner()->HasAuthority())
 	{
-		GarbageSpawnSetting();
-
 		GetWorld()->GetTimerManager().SetTimer(
 			OrbitTimerHandle,
 			this,
@@ -38,49 +34,6 @@ void UGarbageEnemySpawnComponent::BeginPlay()
 			0.05f,
 			true
 		);
-	}
-}
-
-void UGarbageEnemySpawnComponent::GarbageSpawnSetting()
-{
-	FVector CenterLocation;
-
-	if (_owner)
-		CenterLocation = _owner->GetActorLocation();
-	else if (GetOwner())
-		CenterLocation = GetOwner()->GetActorLocation();
-	else
-		CenterLocation = FVector::ZeroVector;
-
-	FRotator SpawnRotation = FRotator::ZeroRotator;
-
-	float _spawnNum = FMath::RandRange(_minSpawn, _maxSpawn);
-
-	for (int i = 0; i < _spawnNum; i++)
-		SpawnInMap(CenterLocation, SpawnRotation, _Enemy);
-}
-
-void UGarbageEnemySpawnComponent::SpawnInMap(FVector SpawnLocation, FRotator SpawnRotation, TArray<TSubclassOf<AGarbageEnemyBase>> _spawn_enemy)
-{
-	if (_spawn_enemy.Num() == 0)
-		return;
-
-	float SpawnEnemyNum = FMath::RandRange(0, _spawn_enemy.Num() - 1);
-
-	SpawnEnemy(_spawn_enemy[SpawnEnemyNum], SpawnLocation, SpawnRotation);
-}
-
-void UGarbageEnemySpawnComponent::SpawnEnemy(
-	TSubclassOf<AGarbageEnemyBase> Enemy,
-	FVector SpawnLocation,
-	FRotator SpawnRotator)
-{
-	SpawnedEnemy = GetWorld()->SpawnActor<AGarbageEnemyBase>(Enemy, SpawnLocation, SpawnRotator);
-
-	if (SpawnedEnemy)
-	{
-		OnEnemySpawned(SpawnedEnemy);
-		BuildOrbitStructure();
 	}
 }
 

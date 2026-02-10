@@ -3,13 +3,17 @@
 #include "CJH/Asteroid/AsteroidComponent.h"
 #include "Engine/World.h"
 
+#include "JHS/GameControl/StageChangeExample.h" 
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/Event/EventManager.h"
+#include "JHS/Event/CommonEventBase.h"
+
 #include "TimerManager.h"
 
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
 
 #include "JHS/GameControl/JHSGameMode.h"
-#include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/SpaceManager.h"
 #include "JHS/Player/SpaceStation.h"
 
@@ -24,17 +28,90 @@ void UAsteroidComponent::BeginPlay()
 	// ...
 	_ownerActor = GetOwner();
 
-	if (_ownerActor->HasAuthority())
-		SpawnAsteroid();
+	if (!_ownerActor || !_ownerActor->HasAuthority())
+		return;
+
+	UEventManager* EventManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetEventManager(EventManager) || !EventManager)
+		return;
+
+	OnStartStageHandle = EventManager->AddListener<UEventOnStartStage>(
+		[this](UEventOnStartStage* Event)
+		{
+			HandleStartStage(Event);
+		}
+	);
+
+	OnEndStageHandle = EventManager->AddListener<UEventOnEndStage>(
+		[this](UEventOnEndStage* Event)
+		{
+			HandleEndStage(Event);
+		}
+	);
+
+	if (bAutoStart)
+		StartSpawning();
 }
 
+void UAsteroidComponent::HandleStartStage(UEventOnStartStage* Event)
+{
+	if (!Event)
+		return;
+
+	StartSpawning();
+}
+
+void UAsteroidComponent::HandleEndStage(UEventOnEndStage* Event)
+{
+	if (!Event)
+		return;
+
+	ClearAsteroids();
+}
+
+void UAsteroidComponent::StartSpawning()
+{
+	if (!_ownerActor || !_ownerActor->HasAuthority())
+		return;
+
+	bSpawningEnabled = true;
+	bIsSpawning = false;
+	CanSpawn();
+}
+
+void UAsteroidComponent::StopSpawning()
+{
+	if (!GetWorld())
+		return;
+
+	GetWorld()->GetTimerManager().ClearTimer(SpawnTimerHandle);
+	bIsSpawning = false;
+	bSpawningEnabled = false;
+}
+
+void UAsteroidComponent::ClearAsteroids()
+{
+	StopSpawning();
+
+	TArray<AAsteroid*> ToDestroy = Asteroids;
+	Asteroids.Empty(); // 먼저 비우고
+
+	for (AAsteroid* Asteroid : ToDestroy)
+	{
+		if (IsValid(Asteroid))
+			Asteroid->Destroy();
+	}
+}
 
 // Called every frame
 void UAsteroidComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// 이미 스폰 중이면 아무것도 안함
+	if (!bSpawningEnabled)
+		return;
+
+	// 이미 생성 중이면 아무것도 하지 않음
 	if (bIsSpawning) return;
 
 	CanSpawn();
@@ -42,6 +119,9 @@ void UAsteroidComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 
 void UAsteroidComponent::CanSpawn()
 {
+	if (!bSpawningEnabled)
+		return;
+
 	if (Asteroids.Num() >= MaxSpawn)
 		return;
 
@@ -51,8 +131,6 @@ void UAsteroidComponent::CanSpawn()
 	if (!World || !Owner) return;
 
 	ShipSpeed = Owner->GetVelocity();
-
-	//UE_LOG(LogTemp, Warning, TEXT("Ship Speed: %.f, %.f, %.f"), ShipSpeed.X, ShipSpeed.Y, ShipSpeed.Z)
 
 	FTimerManager& TimerManager = World->GetTimerManager();
 
@@ -152,4 +230,28 @@ void UAsteroidComponent::RemoveAsteroid(AAsteroid* _removeTarget)
 		//어레이 공간 정리
 		Asteroids.Shrink();
 	}
+}
+
+void UAsteroidComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (_ownerActor && _ownerActor->HasAuthority())
+	{
+		UEventManager* EventManager = nullptr;
+		if (UStaticFunctionLibrary::TryGetEventManager(EventManager) && EventManager)
+		{
+			if (OnStartStageHandle.IsValid())
+			{
+				EventManager->DelListener<UEventOnStartStage>(OnStartStageHandle);
+				OnStartStageHandle.Reset();
+			}
+
+			if (OnEndStageHandle.IsValid())
+			{
+				EventManager->DelListener<UEventOnEndStage>(OnEndStageHandle);
+				OnEndStageHandle.Reset();
+			}
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
