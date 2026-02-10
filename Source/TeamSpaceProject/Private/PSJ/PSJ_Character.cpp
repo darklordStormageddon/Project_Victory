@@ -37,6 +37,11 @@ void APSJ_Character::BeginPlay()
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 
+	// 1. 착지 시 기본 모드를 '걷기'가 아닌 '비행'으로 변경
+	GetCharacterMovement()->DefaultLandMovementMode = MOVE_Flying;
+	// 2. 걷을 수 있는 경사각을 0으로 설정 (어떤 바닥도 걷는 바닥으로 인식 안 함)
+	GetCharacterMovement()->SetWalkableFloorAngle(0.0f);
+
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 	GetCharacterMovement()->MaxFlySpeed = FlyModeMaxSpeed;
 
@@ -98,19 +103,23 @@ void APSJ_Character::Tick(float DeltaTime)
 	if (IsLocallyControlled())
 	{
 		UCharacterMovementComponent* CMC = GetCharacterMovement();
-		FVector Vel = GetVelocity();
-		FString ModeString = UEnum::GetValueAsString(CMC->MovementMode);
 
-		// 1. 상세 속도 및 모드 출력
-		FString DebugMsg = FString::Printf(TEXT("Vel: %s | Mode: %s | Speed: %.2f"),
-			*Vel.ToString(), *ModeString, Vel.Size());
-		GEngine->AddOnScreenDebugMessage(10, 0.0f, FColor::Yellow, DebugMsg);
-
-		// 2. 엔진이 마음대로 모드를 바꿨는지 감시 및 강제 교정
-		if (CMC->MovementMode == MOVE_Walking)
+		// [기획 확정] Walking 절대 금지 로직
+		// Walking이나 Falling이 감지되면 즉시 올바른 모드로 강제 복구
+		if (CMC->MovementMode == MOVE_Walking || CMC->MovementMode == MOVE_Falling)
 		{
-			GEngine->AddOnScreenDebugMessage(12, 1.0f, FColor::Red, TEXT("CRITICAL: Mode flipped to Walking! Reverting..."));
-			CMC->SetMovementMode(MOVE_Custom); // 강제로 다시 돌려놓음
+			// 앵커링 상태면 Custom, 아니면 무조건 Flying
+			if (ReplicatedRelativeData.bIsAnchored)
+			{
+				CMC->SetMovementMode(MOVE_Custom);
+			}
+			else
+			{
+				CMC->SetMovementMode(MOVE_Flying);
+			}
+
+			// 관성으로 인한 미끄러짐 방지
+			CMC->Velocity = FVector::ZeroVector;
 		}
 	}
 
@@ -878,4 +887,17 @@ void APSJ_Character::Server_RequestPawnPossess_Implementation(APawn* TargetPawn)
 		// (참고) 만약 패널 쪽에서 "탑승 완료되었습니다" 같은 처리가 필요하면
 		// 여기서 TargetPawn->OnBoarded() 같은 함수를 호출해줄 수도 있습니다.
 	}
+}
+
+void APSJ_Character::Client_RestoreInputRPC_Implementation()
+{
+	// 이 코드는 클라이언트 컴퓨터에서 실행됩니다.
+	// 기존에 만들어둔 "입력 강제 복구 함수"를 실행하여 마우스/키보드를 활성화합니다.
+	ForceInputRecovery();
+
+	// 혹시 모를 안전장치: 엔진 표준 입력 재시작 함수도 같이 호출
+	PawnClientRestart();
+
+	// 로그로 확인
+	// UE_LOG(LogTemp, Warning, TEXT("[RPC] Client Input Restored via Blueprint Request!"));
 }

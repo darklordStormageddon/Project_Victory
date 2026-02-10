@@ -1,8 +1,9 @@
-#include "Net/UnrealNetwork.h" // [필수] 이 헤더가 맨 위에 있어야 합니다
+
 #include "PSJ_ShipCockpit.h"
 #include "PSJ_Character.h" 
 #include "PSJ_Spaceship.h"
 #include "YSH/TurretBase_GT.h"
+#include "Net/UnrealNetwork.h" // [필수] 이 헤더가 맨 위에 있어야 합니다
 #include "GameFramework/Pawn.h" // APawn 사용을 위해 필요
 #include "GameFramework/Controller.h" // Controller 체크를 위해 필요
 #include "GameFramework/PlayerController.h"
