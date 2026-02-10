@@ -224,6 +224,17 @@ void UTurretStateGroup::MulticastEquipTurret_Implementation(E_TURRET_POSITION Tu
 			UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to spawn turret: %s"), *_turretBPPath);
 			return;
 		}
+
+		// BP 기본값과 무관하게 일반 클라이언트에도 보이도록 복제 강제
+		_spawnedTurret->SetOwner(_outTurretStand);
+		_spawnedTurret->SetReplicates(true);
+		_spawnedTurret->SetReplicateMovement(true);
+		_spawnedTurret->ForceNetUpdate();
+
+		UE_LOG(LogTemp, Warning, TEXT("UTurretStateGroup::MulticastEquipTurret_Implementation Spawned. Actor: %s, bReplicates: %s, bReplicateMovement: %s"),
+			*_spawnedTurret->GetName(),
+			_spawnedTurret->GetIsReplicated() ? TEXT("True") : TEXT("False"),
+			_spawnedTurret->IsReplicatingMovement() ? TEXT("True") : TEXT("False"));
 	}
 
 	// 터렛 장착 (서버만 직접 수행, 클라이언트는 복제로 반영)
