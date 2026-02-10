@@ -22,6 +22,44 @@ public:
 	{}
 };
 
+#pragma region Game Control
+UCLASS(BlueprintType)
+class UEventOnStartStage : public UCommonEventBase
+{
+	GENERATED_BODY()
+
+public:
+	UEventOnStartStage(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{
+	}
+
+	UEventOnStartStage(int32 State, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+		, State(State)
+	{
+	}
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|GameControl")
+	int32 State;
+};
+
+UCLASS(BlueprintType)
+class UEventOnEndStage : public UCommonEventBase
+{
+	GENERATED_BODY()
+
+public:
+	UEventOnEndStage(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{
+	}
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|GameControl")
+	int32 State = 0;
+};
+#pragma endregion Game Control
+
 #pragma region SpaceShip
 UCLASS(BlueprintType)
 class UEventOnChangeSpaceShipData : public UCommonEventBase
@@ -31,11 +69,6 @@ class UEventOnChangeSpaceShipData : public UCommonEventBase
 public:
 	UEventOnChangeSpaceShipData(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
-	{}
-
-	UEventOnChangeSpaceShipData(FSpaceShipData SpaceShipData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
-		: Super(ObjectInitializer)
-		, SpaceShipDataData(SpaceShipData)
 	{}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|SpaceShipData")
@@ -54,11 +87,6 @@ public:
 		: Super(ObjectInitializer)
 	{}
 
-	UEventOnChangePlayerRadiation(FPlayerStateData PlayerStateData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
-		: Super(ObjectInitializer)
-		, PlayerStateData(PlayerStateData)
-	{}
-
 	UPROPERTY(BlueprintReadOnly, Category = "Event|SpaceShipData")
 	FPlayerStateData PlayerStateData;
 };
@@ -73,12 +101,6 @@ class UEventOnChangeTurretData : public UCommonEventBase
 public:
 	UEventOnChangeTurretData(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
-	{}
-
-	UEventOnChangeTurretData(E_TURRET_POSITION TurretPosition, FTurretData TurretData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
-		: Super(ObjectInitializer)
-		, TurretPosition(TurretPosition)
-		, TurretData(TurretData)
 	{}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|TurretData")
@@ -101,12 +123,6 @@ public:
 	{
 	}
 
-	UEventOnChangeToolDurability(FCollectToolData CollectToolData, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
-		: Super(ObjectInitializer)
-		, CollectToolData(CollectToolData)
-	{
-	}
-
 	UPROPERTY(BlueprintReadOnly, Category = "Event|Collect")
 	FCollectToolData CollectToolData;
 };
@@ -119,13 +135,6 @@ class UEventOnChangeTool : public UCommonEventBase
 public:
 	UEventOnChangeTool(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
 		: Super(ObjectInitializer)
-	{
-	}
-
-	UEventOnChangeTool(E_COLLECT_TOOL_TYPE PrevToolType, E_COLLECT_TOOL_TYPE NextToolType, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
-		: Super(ObjectInitializer)
-		, PrevToolType(PrevToolType)
-		, NextToolType(NextToolType)
 	{
 	}
 

@@ -10,7 +10,7 @@ AInteractableActorBase::AInteractableActorBase()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	_uiInteracterable = CreateDefaultSubobject<UInteractableComponent>(TEXT("Interactable"));
+	_interacterable = CreateDefaultSubobject<UInteractableComponent>(TEXT("Interactable"));
 }
 
 // Called when the game starts or when spawned
@@ -18,12 +18,12 @@ void AInteractableActorBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (_uiInteracterable != nullptr)
+	if (_interacterable != nullptr)
 	{
 		// 델리게이트 바인딩
-		_uiInteracterable->InitializeUIInteractable(_isDebugDraw, _interactRadius, E_INTERACT_TYPE::Seat, _interatUIType, _isWorldSpaceUI, _worldUIRelativeLocation, _worldUIScale);
-		_uiInteracterable->OnInteractEnterAction.AddDynamic(this, &AInteractableActorBase::InteractEnter);
-		_uiInteracterable->OnInteractExitAction.AddDynamic(this, &AInteractableActorBase::InteractExit);
+		_interacterable->InitializeUIInteractable(_isDebugDraw, _interactRadius, E_INTERACT_TYPE::Seat, _interatUIType, _isWorldSpaceUI, _worldUIRelativeLocation, _worldUIScale);
+		_interacterable->OnInteractEnterAction.AddDynamic(this, &AInteractableActorBase::InteractEnter);
+		_interacterable->OnInteractExitAction.AddDynamic(this, &AInteractableActorBase::InteractExit);
 	}
 	else
 	{
@@ -38,12 +38,12 @@ void AInteractableActorBase::Tick(float DeltaTime)
 
 }
 
-void AInteractableActorBase::InteractEnter(UUIBase* OpenedUI)
+void AInteractableActorBase::InteractEnter(AActor* Caller, UUIBase* OpenedUI)
 {
-	OnInteractEnter(OpenedUI);
+	OnInteractEnter(Caller, OpenedUI);
 }
 
-void AInteractableActorBase::InteractExit(UUIBase* ClosedUI)
+void AInteractableActorBase::InteractExit(AActor* Caller, UUIBase* ClosedUI)
 {
-	OnInteractExit(ClosedUI);
+	OnInteractExit(Caller, ClosedUI);
 }

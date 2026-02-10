@@ -21,7 +21,7 @@ public:
 
 private:
 	UPROPERTY()
-	TObjectPtr<UInteractableComponent> _uiInteracterable = nullptr;
+	TObjectPtr<UInteractableComponent> _interacterable = nullptr;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interactable|Debug")
@@ -52,14 +52,14 @@ public:
 
 private:
 	UFUNCTION()
-	void InteractEnter(UUIBase* OpenedUI);
+	void InteractEnter(AActor* Caller, UUIBase* OpenedUI);
 
 	UFUNCTION()
-	void InteractExit(UUIBase* ClosedUI);
+	void InteractExit(AActor* Caller, UUIBase* ClosedUI);
 
 protected:
-	virtual void OnInteractEnter(TObjectPtr<UUIBase> OpenedUI) { }
+	virtual void OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> OpenedUI) { }
 	
-	virtual void OnInteractExit(TObjectPtr<UUIBase> ClosedUI) { }
+	virtual void OnInteractExit(AActor* Caller, TObjectPtr<UUIBase> ClosedUI) { }
 
 };

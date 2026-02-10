@@ -551,7 +551,7 @@ void ATurretBase_GT::DisembarkCharacter()
 	// 연결된 콕핏에 하차 알림 (필요하다면)
 	if (LinkedCockpit)
 	{
-		LinkedCockpit->OnInteractExit(nullptr);
+		LinkedCockpit->OnInteractExit(ExitingChar, nullptr);
 		LinkedCockpit = nullptr;
 	}
 

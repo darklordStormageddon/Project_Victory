@@ -13,8 +13,8 @@
 class UInteracterComponent;
 class UUIManager;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractEnterAction, UUIBase*, OpenedUI);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractExitAction, UUIBase*, ClosedUI);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInteractEnterAction, AActor*, Caller, UUIBase*, OpenedUI);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInteractExitAction, AActor*, Caller, UUIBase*, ClosedUI);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractInterruptAction);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -96,8 +96,8 @@ public:
 public:
 	void InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType, bool IsWorldSpaceUI, FVector WorldUIRelativeLocation, float WorldUIScale);
 
-	bool TryInteract(bool& OutIsInterupt, bool& OutIsInteractEnter);
+	bool TryInteract(AActor* Caller, bool& OutIsInterupt, bool& OutIsInteractEnter);
 
 private:
-	void ChangeInteractState(bool IsInteract);
+	void ChangeInteractState(bool IsInteract, AActor* Caller);
 };

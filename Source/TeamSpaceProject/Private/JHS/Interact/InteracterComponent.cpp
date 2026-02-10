@@ -64,7 +64,8 @@ bool UInteracterComponent::TryInteractInput(bool& OutIsInterupt, bool& OutIsInte
 	if (_interactable == nullptr)
 		return false;
 
-	if (!_interactable->TryInteract(OutIsInterupt, OutIsInteractEnter))
+	UE_LOG(LogTemp, Warning, TEXT("OwnerName: %s"), *GetOwner()->GetName());
+	if (!_interactable->TryInteract(GetOwner(), OutIsInterupt, OutIsInteractEnter))
 		return false;
 
 	if (OutIsInterupt)

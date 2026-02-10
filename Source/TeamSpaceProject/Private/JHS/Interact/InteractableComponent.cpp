@@ -149,7 +149,8 @@ void UInteractableComponent::OnTriggerExit(UPrimitiveComponent* OverlappedCompon
 
 	if (_isInteract)
 	{
-		ChangeInteractState(false);
+		AActor* _caller = _foundInteracter != nullptr ? _foundInteracter->GetOwner() : nullptr;
+		ChangeInteractState(false, _caller);
 	}
 }
 
@@ -164,7 +165,7 @@ void UInteractableComponent::InitializeUIInteractable(bool IsDebugDraw, float In
 	_worldUIScale = WorldUIScale;
 }
 
-bool UInteractableComponent::TryInteract(bool& OutIsInterupt, bool& OutIsInteractEnter)
+bool UInteractableComponent::TryInteract(AActor* Caller, bool& OutIsInterupt, bool& OutIsInteractEnter)
 {
 	OutIsInterupt = false;
 	OutIsInteractEnter = false;
@@ -181,12 +182,12 @@ bool UInteractableComponent::TryInteract(bool& OutIsInterupt, bool& OutIsInterac
 	}
 
 	_isInteract = !_isInteract;
-	ChangeInteractState(_isInteract);
+	ChangeInteractState(_isInteract, Caller);
 	OutIsInteractEnter = _isInteract;
 	return true;
 }
 
-void UInteractableComponent::ChangeInteractState(bool IsInteract)
+void UInteractableComponent::ChangeInteractState(bool IsInteract, AActor* Caller)
 {
 	_isInteract = IsInteract;
 	if (_isInteract)
@@ -209,7 +210,7 @@ void UInteractableComponent::ChangeInteractState(bool IsInteract)
 				_openedUI = _uiManager->OpenUI(_interactUIType);
 			}
 		}
-		OnInteractEnterAction.Broadcast(_openedUI);
+		OnInteractEnterAction.Broadcast(Caller, _openedUI);
 	}
 	else
 	{
@@ -218,6 +219,6 @@ void UInteractableComponent::ChangeInteractState(bool IsInteract)
 		{
 			_closedUI = _uiManager->CloseUI(_interactUIType);
 		}
-		OnInteractExitAction.Broadcast(_closedUI);
+		OnInteractExitAction.Broadcast(Caller, _closedUI);
 	}
 }

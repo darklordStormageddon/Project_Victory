@@ -318,7 +318,7 @@ void APSJ_Spaceship::DisembarkCharacter()
 	CurrentPilot = nullptr;
 	if (LinkedCockpit)
 	{
-		LinkedCockpit->OnInteractExit(nullptr);
+		LinkedCockpit->OnInteractExit(ExitingChar, nullptr);
 		LinkedCockpit = nullptr;
 	}
 

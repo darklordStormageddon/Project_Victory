@@ -21,7 +21,7 @@ void ATurretMagReload::BeginPlay()
 	_turretStateGroup = _outGameState->GetTurretStateGroup();
 }
 
-void ATurretMagReload::OnInteractEnter(TObjectPtr<UUIBase> OpenedUI)
+void ATurretMagReload::OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> OpenedUI)
 {
 	if (_uiTurretMagReload == nullptr)
 	{
@@ -37,7 +37,7 @@ void ATurretMagReload::OnInteractEnter(TObjectPtr<UUIBase> OpenedUI)
 	_turretStateGroup->UpdateTurretState();
 }
 
-void ATurretMagReload::OnInteractExit(TObjectPtr<UUIBase> ClosedUI)
+void ATurretMagReload::OnInteractExit(AActor* Caller, TObjectPtr<UUIBase> ClosedUI)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Interact exit"));
 }

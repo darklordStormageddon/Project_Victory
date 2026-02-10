@@ -34,11 +34,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Interaction")
     void AttemptBoarding(APSJ_Character* RequestingChar);
 
-    virtual void OnInteractExit(TObjectPtr<UUIBase> OpenedUI) override;
+    virtual void OnInteractExit(AActor* Caller, TObjectPtr<UUIBase> ClosedUI) override;
 
 protected:
-    virtual void OnInteractEnter(TObjectPtr<UUIBase> OpenedUI) override;
-        AJHSGameState* _outGameState = nullptr;
+    virtual void OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> OpenedUI) override;
 
 public:
     void SetTargetPawn(TObjectPtr<APawn> TargetPawn);

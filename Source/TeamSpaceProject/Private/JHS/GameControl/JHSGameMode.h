@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
+#include "JHS/GameControl/StateData/GameStateStructs.h"
 
 #include "JHSGameMode.generated.h"
 
@@ -11,6 +12,19 @@ class UUIManager;
 class UEventManager;
 class USpaceManager;
 class UShopManager;
+
+USTRUCT(BlueprintType)
+struct FEquipTurretData
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere)
+	E_TURRET_POSITION TurretPosition = E_TURRET_POSITION::END;
+
+	UPROPERTY(EditAnywhere)
+	E_AMMO_TYPE AmmoType = E_AMMO_TYPE::NONE;
+};
 
 UCLASS()
 class AJHSGameMode : public AGameMode
@@ -33,7 +47,18 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
 	TObjectPtr<UShopManager> _shopManager = nullptr;
 
+	UPROPERTY()
 	bool _isGameStarted = false;
+
+	UPROPERTY()
+	bool _isStageStarted = false;
+
+	UPROPERTY()
+	int32 _currentStage = 0;
+
+	// Start Equip Turret
+	UPROPERTY(EditAnywhere, Category = "GameMode|Start Equip Turret")
+	TArray<FEquipTurretData> _startEquipTurretArray;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "GameMode|UI Manager")
@@ -55,5 +80,12 @@ public:
 	void StartGame(AActor* Caller);
 
 	UFUNCTION(BlueprintCallable, Category = "GameMode|Game")
-	void StartStage(int32 Stage);
+	void StartNextStage(AActor* Caller);
+
+	UFUNCTION(BlueprintCallable, Category = "GameMode|Game")
+	void EndStage(AActor* Caller);
+
+private:
+	UFUNCTION()
+	bool CheckIsServerCaller(AActor* Caller);
 };
