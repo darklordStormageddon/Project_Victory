@@ -467,27 +467,71 @@ void APSJ_Character::SetCurrentSpaceship(APawn* NewSpaceship)
 	CurrentSpaceship = NewSpaceship;
 }
 
+
 void APSJ_Character::Interact(const FInputActionValue& Value)
 {
-	if (CurrentSpaceship && Controller)
+	if (!Controller) return;
+
+	// 1. 시선 추적 (Line Trace) - "내 눈앞에 좌석이 있는가?"
+	FVector TraceStart;
+	FRotator TraceRot;
+
+	if (FPSCamera)
 	{
+		TraceStart = FPSCamera->GetComponentLocation();
+		TraceRot = FPSCamera->GetComponentRotation();
+	}
+	else
+	{
+		GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
+	}
+
+	FVector TraceEnd = TraceStart + (TraceRot.Vector() * 300.0f); // 3m 거리 체크
+
+	FHitResult HitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this); // 나는 무시
+
+	// Trace 채널은 프로젝트 설정에 맞게 (Visibility or Interaction)
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		TraceStart,
+		TraceEnd,
+		ECC_Visibility,
+		QueryParams
+	);
+
+	// 디버그 라인 (테스트 후 주석 처리)
+	// DrawDebugLine(GetWorld(), TraceStart, TraceEnd, bHit ? FColor::Green : FColor::Red, false, 1.0f);
+
+	if (bHit && HitResult.GetActor())
+	{
+		// 2. 콕핏(좌석)인지 확인
+		if (APSJ_ShipCockpit* HitCockpit = Cast<APSJ_ShipCockpit>(HitResult.GetActor()))
+		{
+			// [핵심 해결] 콕핏에게 탑승 처리를 위임합니다.
+			// 콕핏이 알아서 TargetPawn을 확인하고 Character의 RPC를 불러줍니다.
+			HitCockpit->AttemptBoarding(this);
+			return; // 탑승 시도했으면 함수 종료
+		}
+	}
+
+	// 3. [예외 처리] 눈앞에 좌석은 없지만, 이미 우주선 내부에 탑승한 상태라면?
+	// (이 부분은 기획 의도에 따라 남겨두거나 삭제하세요. 
+	//  예: 우주선 안에서 허공에 대고 F 누르면 조종석으로 순간이동 시킬 것인가?)
+	if (CurrentSpaceship)
+	{
+		// 만약 조종석을 직접 바라보지 않고도 탑승하게 하려면 이 로직 유지.
+		// 하지만 멀티플레이어 환경에서 오작동 가능성이 있어 권장하진 않습니다.
+		/*
 		if (APlayerController* PC = Cast<APlayerController>(Controller))
 		{
 			if (APSJ_Spaceship* TargetShip = Cast<APSJ_Spaceship>(CurrentSpaceship))
 			{
-				TargetShip->SetPilot(this);
-
-				if (HasAuthority())
-				{
-					ReplicatedRelativeData.bIsAnchored = false;
-					ReplicatedRelativeData.BaseActor = nullptr;
-				}
-
-				GetCharacterMovement()->DisableMovement();
-				DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-				PC->Possess(TargetShip);
+				Server_RequestBoarding(TargetShip);
 			}
 		}
+		*/
 	}
 }
 
@@ -735,11 +779,13 @@ void APSJ_Character::Server_SetAnchoring_Implementation(AActor* NewBase)
 // 입력 처리 함수 (클라이언트)
 void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
 {
-	if (CurrentSpaceship) return; // 내가 탑승 중이면 실행 불가
+	// 내가 탑승 중이면 실행 불가 (내부에서 내리는 건 Interact 키로)
+	if (CurrentSpaceship) return;
 
-	// 카메라 기준 트레이스 시작점 계산 (기존과 동일)
 	FVector TraceStart;
 	FRotator TraceRot;
+
+	// 카메라 위치 기준
 	if (FPSCamera)
 	{
 		TraceStart = FPSCamera->GetComponentLocation();
@@ -756,25 +802,27 @@ void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 
-	// 트레이스 발사
+	// [중요] 콕핏의 메쉬(Mesh)나 콜리전 박스가 'Visibility' 채널을 'Block' 하고 있어야 감지됩니다.
 	bool bHit = GetWorld()->LineTraceSingleByChannel(
 		HitResult,
 		TraceStart,
 		TraceEnd,
-		ECC_Visibility, // 콕핏 메시가 Visibility 채널을 블록해야 함
+		ECC_Visibility,
 		QueryParams
 	);
 
 #if WITH_EDITOR
+	// 디버그 라인 확인: 초록색이면 히트 성공, 빨간색이면 허공
 	if (bHit) DrawDebugLine(GetWorld(), TraceStart, HitResult.ImpactPoint, FColor::Green, false, 1.0f);
 	else DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 1.0f);
 #endif
 
 	if (bHit && HitResult.GetActor())
 	{
-		// [수정] 콕핏 클래스로 캐스팅
+		// 콕핏 클래스로 캐스팅 (상속받은 모든 블루프린트 포함)
 		if (APSJ_ShipCockpit* HitCockpit = Cast<APSJ_ShipCockpit>(HitResult.GetActor()))
 		{
+			// 서버에 요청
 			Server_TryForceEject(HitCockpit);
 		}
 	}

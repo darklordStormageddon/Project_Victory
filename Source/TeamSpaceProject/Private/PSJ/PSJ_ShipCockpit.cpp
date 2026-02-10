@@ -1,7 +1,10 @@
+#include "Net/UnrealNetwork.h" // [필수] 이 헤더가 맨 위에 있어야 합니다
 #include "PSJ_ShipCockpit.h"
 #include "PSJ_Character.h" 
 #include "PSJ_Spaceship.h"
 #include "YSH/TurretBase_GT.h"
+#include "GameFramework/Pawn.h" // APawn 사용을 위해 필요
+#include "GameFramework/Controller.h" // Controller 체크를 위해 필요
 #include "GameFramework/PlayerController.h"
 #include "JHS/UI/UIBase.h"
 
@@ -15,6 +18,19 @@ APSJ_ShipCockpit::APSJ_ShipCockpit()
     // 물리(Physics) 이동이 끝난 '뒤'에 틱을 실행해라!
     // -> 이 설정 덕분에 BP에서 그리는 디버그 라인도 밀리지 않고 딱 붙어 나옵니다.
     PrimaryActorTick.TickGroup = TG_PostPhysics;
+
+    // [!!! 핵심 누락 수정 !!!] 
+    // 이 줄이 없으면 변수 동기화(Replicated)가 아예 작동하지 않습니다.
+    bReplicates = true;
+}
+
+// [신규 추가] 변수 동기화 규칙 설정
+void APSJ_ShipCockpit::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    // TargetSpaceship 변수를 서버 -> 클라이언트로 복제(Replication)합니다.
+    DOREPLIFETIME(APSJ_ShipCockpit, TargetSpaceship);
 }
 
 void APSJ_ShipCockpit::OnInteractEnter(TObjectPtr<UUIBase> OpenedUI)
@@ -72,33 +88,35 @@ void APSJ_ShipCockpit::SetTargetPawn(TObjectPtr<APawn> TargetPawn)
 
 void APSJ_ShipCockpit::ReceiveForceEjectRequest()
 {
-    // 1. 연결된 대상이 없는 빈 껍데기 의자라면 무시
+    // 1. 연결된 대상(우주선, 터렛 등)이 아예 세팅 안 된 경우 -> 무시
     if (!TargetSpaceship) return;
 
-    // 2. 대상이 우주선(APSJ_Spaceship)인 경우
-    if (APSJ_Spaceship* Spaceship = Cast<APSJ_Spaceship>(TargetSpaceship))
+    // [핵심 안전장치] 대상 Pawn에 현재 빙의(Possess)한 컨트롤러(플레이어)가 있는가?
+    // Controller가 nullptr라면, 타고 있는 사람이 없다는 뜻입니다.
+    if (TargetSpaceship->GetController() == nullptr)
     {
-        // 현재 조종사가 있을 때만 하차 수행
-        if (Spaceship->GetCurrentPilot())
-        {
-            Spaceship->DisembarkCharacter();
-            UE_LOG(LogTemp, Warning, TEXT("Cockpit: Force Eject Triggered for Spaceship Pilot"));
-        }
+        // 사람이 없으므로 하차 로직을 실행하지 않고 그냥 나갑니다.
+        // 역으로 내가 탑승하는 로직도 없으므로 안전합니다.
+        // UE_LOG(LogTemp, Log, TEXT("Cockpit: Seat is empty. No one to eject."));
+        return;
     }
-    // 3. 대상이 터렛(TurretBase_GT)인 경우
-    else if (ATurretBase_GT* Turret = Cast<ATurretBase_GT>(TargetSpaceship))
-    {
-        // 터렛에 구현된 하차 로직 호출 (터렛 코드는 없지만, 우주선과 유사하다고 가정)
-        // Turret->DisembarkCharacter(); 
-        // 혹은 Pawn의 일반적인 Controller 확인 후 Unpossess 처리
 
-        APawn* TurretPawn = Cast<APawn>(Turret);
-        if (TurretPawn && TurretPawn->GetController())
-        {
-            // 터렛 하차 로직이 있다면 그것을 호출하고, 없다면 여기서 구현 필요
-            // 예시: Turret->ForceDisembark();
-            UE_LOG(LogTemp, Warning, TEXT("Cockpit: Force Eject Triggered for Turret Gunner"));
-        }
+    // --- 사람이 있을 때만 아래 로직이 실행됩니다 ---
+
+    // 2. 리플렉션을 이용해 연결된 Pawn의 'DisembarkCharacter' 함수 찾기
+    static const FName DisembarkFuncName(TEXT("DisembarkCharacter"));
+    UFunction* DisembarkFunc = TargetSpaceship->FindFunction(DisembarkFuncName);
+
+    if (DisembarkFunc)
+    {
+        // 함수가 있으면 실행 (강제 하차)
+        TargetSpaceship->ProcessEvent(DisembarkFunc, nullptr);
+        UE_LOG(LogTemp, Warning, TEXT("Cockpit: Force Eject Executed on %s"), *TargetSpaceship->GetName());
+    }
+    else
+    {
+        // 함수가 없으면 로그 출력
+        UE_LOG(LogTemp, Error, TEXT("Cockpit: Target %s does NOT have 'DisembarkCharacter' function!"), *TargetSpaceship->GetName());
     }
 }
 
@@ -123,5 +141,26 @@ void APSJ_ShipCockpit::AttemptBoarding(APSJ_Character* RequestingChar)
         Spaceship->LinkedCockpit = this;
         // 서버에게 "나 우주선 탈래"라고 요청
         RequestingChar->Server_RequestBoarding(Spaceship);
+    }
+}
+
+
+void APSJ_ShipCockpit::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+
+    // 테스트용: F키를 누르기 전에 이미 변수가 들어왔는지 눈으로 확인
+    if (GetWorld()->IsNetMode(NM_Client))
+    {
+        if (TargetSpaceship)
+        {
+            // 초록색: 연결 성공
+            DrawDebugString(GetWorld(), GetActorLocation(), TEXT("Link OK"), nullptr, FColor::Green, 0.0f);
+        }
+        else
+        {
+            // 빨간색: 아직 변수 안 넘어옴 (이 상태면 탑승 불가)
+            DrawDebugString(GetWorld(), GetActorLocation(), TEXT("Link NULL"), nullptr, FColor::Red, 0.0f);
+        }
     }
 }
