@@ -6,6 +6,7 @@
 #include "Engine/NetConnection.h"
 #include "Net/Core/Connection/NetCloseResult.h"
 #include <Online/OnlineSessionNames.h>
+#include "GameFramework/PlayerState.h"
 
 //초보채널,중수채널
 const static FName SESSION_NAME = TEXT("GameSession"); //채널명
@@ -167,28 +168,144 @@ void UMyGameInstance::StartSession()
 
 void UMyGameInstance::OnStartSessionComplete(FName SessionName, bool bWasSuccessful)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnStartSessionComplete: %s, Success=%d"), *SessionName.ToString(), bWasSuccessful ? 1 : 0);
+	UE_LOG(LogTemp, Warning, TEXT("OnStartSessionComplete: %s, Success=%d"),
+		*SessionName.ToString(), bWasSuccessful ? 1 : 0);
 
 	if (!bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to start session!"));
 		return;
+	}
 
-	UWorld* World = GetWorld();
-	if (!World) return;
+	// 세션 상태 확인
+	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(SessionName);
+	if (Session)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Session State: %d (0=Pending, 1=Starting, 2=InProgress, 3=Ending, 4=Ended, 5=Destroying)"),
+			(int32)Session->SessionState);
+	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Performing ServerTravel to Lobby..."));
-	World->ServerTravel(TEXT("/Game/Import/Maps/Lobby?listen"));
+	// RegisterPlayer
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (PC && PC->PlayerState)
+	{
+		TSharedPtr<const FUniqueNetId> UserId = PC->PlayerState->GetUniqueId().GetUniqueNetId();
+		if (UserId.IsValid())
+		{
+			bool bRegistered = SessionInterface->RegisterPlayer(SessionName, *UserId, false);
+			UE_LOG(LogTemp, Warning, TEXT("RegisterPlayer result: %d"), bRegistered ? 1 : 0);
+
+			// 등록 후 세션 상태 다시 확인
+			Session = SessionInterface->GetNamedSession(SessionName);
+			if (Session)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("After RegisterPlayer - State: %d, Players: %d"),
+					(int32)Session->SessionState, Session->RegisteredPlayers.Num());
+
+				// 세션을 InProgress로 강제 전환
+				if (Session->SessionState == EOnlineSessionState::Pending)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Session still Pending! Trying to update session..."));
+
+					// 세션 설정을 다시 업데이트하여 InProgress로 전환
+					FOnlineSessionSettings UpdatedSettings = Session->SessionSettings;
+					UpdatedSettings.bAllowJoinInProgress = true;
+
+					SessionInterface->UpdateSession(SessionName, UpdatedSettings);
+				}
+			}
+		}
+	}
 }
 
 void UMyGameInstance::OnCreateSessioncomplete(FName InSessionName, bool IsSuccess)
 {
-	if (!IsSuccess) return;
-	StartSession();
+	UE_LOG(LogTemp, Warning, TEXT("=== OnCreateSessionComplete ==="));
+	UE_LOG(LogTemp, Warning, TEXT("SessionName: %s, Success: %d"), *InSessionName.ToString(), IsSuccess ? 1 : 0);
+
+	if (!IsSuccess)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to create session!"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Session created successfully."));
+
+	// World 확인
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		UE_LOG(LogTemp, Error, TEXT("World is NULL!"));
+		return;
+	}
+
+	// PlayerController 확인
+	APlayerController* PC = World->GetFirstPlayerController();
+	if (!PC)
+	{
+		UE_LOG(LogTemp, Error, TEXT("PlayerController is NULL!"));
+		return;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("PlayerController found"));
+
+	// PlayerState 확인
+	if (!PC->PlayerState)
+	{
+		UE_LOG(LogTemp, Error, TEXT("PlayerState is NULL!"));
+		return;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("PlayerState found"));
+
+	// UniqueNetId 확인
+	TSharedPtr<const FUniqueNetId> UserId = PC->PlayerState->GetUniqueId().GetUniqueNetId();
+	if (!UserId.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("UniqueNetId is INVALID!"));
+		return;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("UniqueNetId: %s"), *UserId->ToString());
+
+	// RegisterPlayer 시도
+	UE_LOG(LogTemp, Warning, TEXT("Calling RegisterPlayer..."));
+	bool bRegistered = SessionInterface->RegisterPlayer(InSessionName, *UserId, false);
+	UE_LOG(LogTemp, Warning, TEXT("RegisterPlayer returned: %d"), bRegistered ? 1 : 0);
+
+	// 세션 상태 확인
+	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(InSessionName);
+	if (Session)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("After RegisterPlayer:"));
+		UE_LOG(LogTemp, Warning, TEXT("  SessionState: %d (0=Pending, 1=Starting, 2=InProgress, 3=Ending, 4=Ended, 5=Destroying)"),
+			(int32)Session->SessionState);
+		UE_LOG(LogTemp, Warning, TEXT("  RegisteredPlayers: %d"), Session->RegisteredPlayers.Num());
+
+		// 등록된 플레이어 목록 출력
+		for (int32 i = 0; i < Session->RegisteredPlayers.Num(); i++)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("    Player %d: %s"), i, *Session->RegisteredPlayers[i]->ToString());
+		}
+
+		// UpdateSession 시도
+		UE_LOG(LogTemp, Warning, TEXT("Calling UpdateSession..."));
+		FOnlineSessionSettings UpdatedSettings = Session->SessionSettings;
+		bool bUpdated = SessionInterface->UpdateSession(InSessionName, UpdatedSettings, true);
+		UE_LOG(LogTemp, Warning, TEXT("UpdateSession returned: %d"), bUpdated ? 1 : 0);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Session not found after RegisterPlayer!"));
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("================================="));
 }
 
 void UMyGameInstance::OnDestroySessioncomplete(FName InSessionName, bool IsSuccess)
 {
-	if (IsSuccess == true && bRecreateAfterDestroy == false)
+	if (IsSuccess && bRecreateAfterDestroy)
+	{
+		bRecreateAfterDestroy = false;
 		CreateSession();
+	}
 }
 
 void UMyGameInstance::OnFindSessioncomplete(bool IsSuccess)

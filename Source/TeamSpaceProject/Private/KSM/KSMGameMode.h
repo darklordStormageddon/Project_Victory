@@ -16,6 +16,12 @@ class AKSMGameMode : public AGameMode
 	
 public:
 
-	UFUNCTION(BlueprintCallable)
-	virtual void PostLogin(APlayerController* NewPlayer) override;
+    virtual void PreLogin(const FString& Options, const FString& Address,
+        const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
+
+    virtual void PostLogin(APlayerController* NewPlayer) override;
+
+    virtual FString InitNewPlayer(APlayerController* NewPlayerController,
+        const FUniqueNetIdRepl& UniqueId, const FString& Options,
+        const FString& Portal = TEXT("")) override;
 };
