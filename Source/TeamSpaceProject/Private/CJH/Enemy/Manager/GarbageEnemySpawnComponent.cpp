@@ -1,21 +1,18 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "CJH/Enemy/Manager/GarbageEnemyManagerComponent.h"
+#include "CJH/Enemy/Manager/GarbageEnemySpawnComponent.h"
 
 #include "JHS/GameControl/JHSGameMode.h"
 
 #include "CJH/Enemy/Base/GarbageEnemyBase.h"
-#include "CJH/Enemy/Base/SpawnedEnemyBase.h"
 #include "CJH/Enemy/DroneEnemy.h"
 
 #include "DrawDebugHelpers.h"
 
-// Sets default values for this component's properties
-UGarbageEnemyManagerComponent::UGarbageEnemyManagerComponent()
+UGarbageEnemySpawnComponent::UGarbageEnemySpawnComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	// ===== 극단 최적화: Tick 간격 확대 =====
-	PrimaryComponentTick.TickInterval = 0.05f;  // 10Hz → 5Hz (50% 감소)
+	PrimaryComponentTick.TickInterval = 0.05f;
 
 	OrbitMinDistance = 800.0f;
 	OrbitMaxDistance = 1800.0f;
@@ -26,8 +23,7 @@ UGarbageEnemyManagerComponent::UGarbageEnemyManagerComponent()
 	_debugRadius = 100.0f;
 }
 
-// Called when the game starts
-void UGarbageEnemyManagerComponent::BeginPlay()
+void UGarbageEnemySpawnComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -38,14 +34,14 @@ void UGarbageEnemyManagerComponent::BeginPlay()
 		GetWorld()->GetTimerManager().SetTimer(
 			OrbitTimerHandle,
 			this,
-			&UGarbageEnemyManagerComponent::TurnOrbit,
+			&UGarbageEnemySpawnComponent::TurnOrbit,
 			0.05f,
 			true
 		);
 	}
 }
 
-void UGarbageEnemyManagerComponent::GarbageSpawnSetting()
+void UGarbageEnemySpawnComponent::GarbageSpawnSetting()
 {
 	FVector CenterLocation;
 
@@ -64,7 +60,7 @@ void UGarbageEnemyManagerComponent::GarbageSpawnSetting()
 		SpawnInMap(CenterLocation, SpawnRotation, _Enemy);
 }
 
-void UGarbageEnemyManagerComponent::SpawnInMap(FVector SpawnLocation, FRotator SpawnRotation, TArray<TSubclassOf<AGarbageEnemyBase>> _spawn_enemy)
+void UGarbageEnemySpawnComponent::SpawnInMap(FVector SpawnLocation, FRotator SpawnRotation, TArray<TSubclassOf<AGarbageEnemyBase>> _spawn_enemy)
 {
 	if (_spawn_enemy.Num() == 0)
 		return;
@@ -74,7 +70,7 @@ void UGarbageEnemyManagerComponent::SpawnInMap(FVector SpawnLocation, FRotator S
 	SpawnEnemy(_spawn_enemy[SpawnEnemyNum], SpawnLocation, SpawnRotation);
 }
 
-void UGarbageEnemyManagerComponent::SpawnEnemy(
+void UGarbageEnemySpawnComponent::SpawnEnemy(
 	TSubclassOf<AGarbageEnemyBase> Enemy,
 	FVector SpawnLocation,
 	FRotator SpawnRotator)
@@ -83,47 +79,12 @@ void UGarbageEnemyManagerComponent::SpawnEnemy(
 
 	if (SpawnedEnemy)
 	{
-		AGarbageEnemyBase* Garbage = Cast<AGarbageEnemyBase>(SpawnedEnemy);
-		if (Garbage)
-		{
-			Garbage->EnemyComponent = this;
-
-			GarbageEnemies.Add(Garbage);
-
-			Garbage->SetTargetShip(_spaceShip);
-			Garbage->OwnerGET(_owner);
-			Garbage->ComponentGET(this);
-
-			SetDroneProperties(Garbage);
-			InitializeOrbitData(Garbage);
-
-			const FDroneOrbitData* Data = OrbitData.Find(Garbage);
-			if (Data)
-			{
-				FVector Center = GetCenterLocation();
-				FVector Axis = Data->OrbitAxis;
-
-				FVector Temp = (FMath::Abs(FVector::DotProduct(Axis, FVector::UpVector)) > 0.99f)
-					? FVector::RightVector
-					: FVector::UpVector;
-
-				FVector Right = FVector::CrossProduct(Temp, Axis).GetSafeNormal();
-				FVector Forward = FVector::CrossProduct(Axis, Right).GetSafeNormal();
-
-				float Rad = FMath::DegreesToRadians(Data->Phase);
-				FVector Radial = Right * FMath::Cos(Rad) + Forward * FMath::Sin(Rad);
-
-				FVector Target = Center + Radial * Data->OrbitRadius;
-				JuniorEnemies.Add(Garbage, Target);
-				Garbage->SetOrbitTarget(Target);
-			}
-		}
-
+		OnEnemySpawned(SpawnedEnemy);
 		BuildOrbitStructure();
 	}
 }
 
-void UGarbageEnemyManagerComponent::SetDroneProperties(AEnemyBase* Drone)
+void UGarbageEnemySpawnComponent::SetDroneProperties(AEnemyBase* Drone)
 {
 	if (!Drone) return;
 
@@ -135,7 +96,7 @@ void UGarbageEnemyManagerComponent::SetDroneProperties(AEnemyBase* Drone)
 	}
 }
 
-void UGarbageEnemyManagerComponent::InitializeOrbitData(AGarbageEnemyBase* Drone)
+void UGarbageEnemySpawnComponent::InitializeOrbitData(AGarbageEnemyBase* Drone)
 {
 	if (!Drone)
 		return;
@@ -157,7 +118,7 @@ void UGarbageEnemyManagerComponent::InitializeOrbitData(AGarbageEnemyBase* Drone
 	OrbitData.Add(Drone, Data);
 }
 
-void UGarbageEnemyManagerComponent::OrbitSet()
+void UGarbageEnemySpawnComponent::OrbitSet()
 {
 	OrbitDistance = FMath::RandRange(OrbitMinDistance, OrbitMaxDistance);
 	OrbitPitch = FMath::RandRange(-OrbitPitchRange, OrbitPitchRange);
@@ -169,7 +130,7 @@ void UGarbageEnemyManagerComponent::OrbitSet()
 	CurrentOrbitPhase = FMath::RandRange(0.0f, 360.0f);
 }
 
-void UGarbageEnemyManagerComponent::BuildOrbitStructure()
+void UGarbageEnemySpawnComponent::BuildOrbitStructure()
 {
 	int32 GarbageCount = GarbageEnemies.Num();
 	
@@ -190,11 +151,10 @@ void UGarbageEnemyManagerComponent::BuildOrbitStructure()
 }
 
 
-void UGarbageEnemyManagerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UGarbageEnemySpawnComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ===== 클라이언트: Tick 완전 스킵 =====
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 		return;
 
@@ -202,8 +162,7 @@ void UGarbageEnemyManagerComponent::TickComponent(float DeltaTime, ELevelTick Ti
 		DebugVector();
 }
 
-// ===== 타이머 기반 오비트 계산 =====
-void UGarbageEnemyManagerComponent::TurnOrbit()
+void UGarbageEnemySpawnComponent::TurnOrbit()
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 		return;
@@ -264,7 +223,45 @@ void UGarbageEnemyManagerComponent::TurnOrbit()
 	}
 }
 
-void UGarbageEnemyManagerComponent::DebugVector()
+void UGarbageEnemySpawnComponent::OnEnemySpawned(AEnemyBase* SpawnedEnemyBase)
+{
+	AGarbageEnemyBase* Garbage = Cast<AGarbageEnemyBase>(SpawnedEnemyBase);
+	if (!Garbage)
+		return;
+
+	Garbage->EnemyComponent = this;
+	GarbageEnemies.Add(Garbage);
+
+	Garbage->SetTargetShip(_spaceShip);
+	Garbage->OwnerGET(_owner);
+	Garbage->ComponentGET(this);
+
+	SetDroneProperties(Garbage);
+	InitializeOrbitData(Garbage);
+
+	const FDroneOrbitData* Data = OrbitData.Find(Garbage);
+	if (Data)
+	{
+		FVector Center = GetCenterLocation();
+		FVector Axis = Data->OrbitAxis;
+
+		FVector Temp = (FMath::Abs(FVector::DotProduct(Axis, FVector::UpVector)) > 0.99f)
+			? FVector::RightVector
+			: FVector::UpVector;
+
+		FVector Right = FVector::CrossProduct(Temp, Axis).GetSafeNormal();
+		FVector Forward = FVector::CrossProduct(Axis, Right).GetSafeNormal();
+
+		float Rad = FMath::DegreesToRadians(Data->Phase);
+		FVector Radial = Right * FMath::Cos(Rad) + Forward * FMath::Sin(Rad);
+
+		FVector Target = Center + Radial * Data->OrbitRadius;
+		JuniorEnemies.Add(Garbage, Target);
+		Garbage->SetOrbitTarget(Target);
+	}
+}
+
+void UGarbageEnemySpawnComponent::DebugVector()
 {
 	if (!GetOwner()->HasAuthority())
 		return;
@@ -321,7 +318,7 @@ void UGarbageEnemyManagerComponent::DebugVector()
 	}
 }
 
-void UGarbageEnemyManagerComponent::RemoveEnemies(AEnemyBase* _removeEnemy)
+void UGarbageEnemySpawnComponent::RemoveEnemies(AEnemyBase* _removeEnemy)
 {
 	Super::RemoveEnemies(_removeEnemy);
 	
@@ -339,7 +336,7 @@ void UGarbageEnemyManagerComponent::RemoveEnemies(AEnemyBase* _removeEnemy)
 	BuildOrbitStructure();
 }
 
-void UGarbageEnemyManagerComponent::DeleteAllEnemy()
+void UGarbageEnemySpawnComponent::DeleteAllEnemy()
 {
 	Super::DeleteAllEnemy();
 
