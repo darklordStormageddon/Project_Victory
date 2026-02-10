@@ -74,6 +74,9 @@ public:
 	APawn* CurrentSpaceship = nullptr;
 	void SetCurrentSpaceship(APawn* NewSpaceship);
 
+	UFUNCTION(Client, Reliable, BlueprintCallable)
+	void Client_RestoreInputRPC();
+
 	// [중요] 위에서 class APSJ_Spaceship; 을 선언했기 때문에 이제 에러가 나지 않습니다.BlueprintCallable 추가!
 	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
 	void Server_RequestBoarding(APSJ_Spaceship* ShipToBoard);
