@@ -34,14 +34,8 @@ public:
 	{
 	}
 
-	UEventOnStartStage(int32 State, const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
-		: Super(ObjectInitializer)
-		, State(State)
-	{
-	}
-
 	UPROPERTY(BlueprintReadOnly, Category = "Event|GameControl")
-	int32 State;
+	int32 Stage;
 };
 
 UCLASS(BlueprintType)
@@ -54,9 +48,6 @@ public:
 		: Super(ObjectInitializer)
 	{
 	}
-
-	UPROPERTY(BlueprintReadOnly, Category = "Event|GameControl")
-	int32 State = 0;
 };
 #pragma endregion Game Control
 

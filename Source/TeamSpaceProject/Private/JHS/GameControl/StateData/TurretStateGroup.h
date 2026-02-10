@@ -68,7 +68,7 @@ public:
 	void ServerEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, AActor* SpawnedTurret);
+	void MulticastEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType);
 
 	bool TryGetTurretFireInterval(E_TURRET_POSITION TurretPosition, float* OutFireCoolTime);
 

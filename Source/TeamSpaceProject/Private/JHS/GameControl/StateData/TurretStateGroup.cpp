@@ -159,7 +159,7 @@ void UTurretStateGroup::TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_
 
 void UTurretStateGroup::ServerEquipTurret_Implementation(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType)
 {
-	// 서버에서만 실행: 데이터 검증 및 장착 가능 여부 체크
+	// 서버에서만 실행: 장착가능 여부 체크
 	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
 	if (!TryGetTurretStand(TurretPosition, _outTurretStand))
 	{
@@ -167,7 +167,6 @@ void UTurretStateGroup::ServerEquipTurret_Implementation(E_TURRET_POSITION Turre
 		return;
 	}
 
-	// 장착 가능 여부 체크
 	if (!_outTurretStand->CanEquipTurret())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UTurretStateGroup: Turret already equipped at [%s]"), *CommonEnums::GetEnum2FString<E_TURRET_POSITION>(TurretPosition));
@@ -181,7 +180,28 @@ void UTurretStateGroup::ServerEquipTurret_Implementation(E_TURRET_POSITION Turre
 		return;
 	}
 
-	// 터렛 BP 클래스 로드 및 스폰
+	// 검증 통과 시 서버/클라이언트 모두에서 로드·스폰·장착 수행
+	MulticastEquipTurret(TurretPosition, AmmoType);
+}
+
+void UTurretStateGroup::MulticastEquipTurret_Implementation(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType)
+{
+	// 서버/클라이언트 모두에서 실행: 터렛 BP 로드, 스폰, 장착
+	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
+	if (!TryGetTurretStand(TurretPosition, _outTurretStand))
+	{
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to get turret stand"));
+		return;
+	}
+
+	FTurretData* _outTurretData = nullptr;
+	if (!TryGetTurretData(TurretPosition, AmmoType, _outTurretData))
+	{
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to get turret data"));
+		return;
+	}
+
+	// 터렛 BP 클래스 로드
 	FString _fileName = "BP_" + CommonEnums::GetEnum2FString<E_TURRET_TYPE>(_outTurretData->TurretType);
 	FString _turretBPPath = ConstantLibrary::Resource.TurretBP.TURRET_BP_FOLDER_PATH + _fileName + "." + _fileName + "_C";
 	TSubclassOf<AActor> _turretClass = LoadClass<AActor>(nullptr, *_turretBPPath);
@@ -191,42 +211,29 @@ void UTurretStateGroup::ServerEquipTurret_Implementation(E_TURRET_POSITION Turre
 		return;
 	}
 
-	// 터렛 액터 스폰 (서버에서만)
-	FVector _spawnLocation = _outTurretStand->GetActorLocation() + _outTurretStand->GetActorUpVector() * 1.0f;
-	FActorSpawnParameters _spawnParams;
-	_spawnParams.Owner = _outTurretStand;
-	AActor* _spawnedTurret = GetWorld()->SpawnActor<AActor>(_turretClass, _spawnLocation, _outTurretStand->GetActorRotation(), _spawnParams);
-	if (_spawnedTurret == nullptr)
+	// 스폰은 서버에서만 (복제로 클라이언트에 전달)
+	AActor* _spawnedTurret = nullptr;
+	if (GetOwner()->HasAuthority())
 	{
-		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to spawn turret: %s"), *_turretBPPath);
-		return;
+		FVector _spawnLocation = _outTurretStand->GetActorLocation() + _outTurretStand->GetActorUpVector() * 1.0f;
+		FActorSpawnParameters _spawnParams;
+		_spawnParams.Owner = _outTurretStand;
+		_spawnedTurret = GetWorld()->SpawnActor<AActor>(_turretClass, _spawnLocation, _outTurretStand->GetActorRotation(), _spawnParams);
+		if (_spawnedTurret == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to spawn turret: %s"), *_turretBPPath);
+			return;
+		}
 	}
 
-	// 모든 클라이언트(서버 포함)에 터렛 장착 명령 (스폰된 터렛 전달)
-	MulticastEquipTurret(TurretPosition, AmmoType, _spawnedTurret);
-}
-
-void UTurretStateGroup::MulticastEquipTurret_Implementation(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, AActor* SpawnedTurret)
-{
-	// 모든 클라이언트(서버 포함)에서 실행: 터렛 장착
-	if (SpawnedTurret == nullptr)
+	// 터렛 장착 (서버만 직접 수행, 클라이언트는 복제로 반영)
+	if (_spawnedTurret != nullptr)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: SpawnedTurret is null"));
-		return;
-	}
-
-	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
-	if (!TryGetTurretStand(TurretPosition, _outTurretStand))
-	{
-		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to get turret stand"));
-		return;
-	}
-
-	// 터렛 장착
-	bool _isEquiped = _outTurretStand->TryEquipTurret(SpawnedTurret, AmmoType);
-	if (TurretPosition == E_TURRET_POSITION::Main && _isEquiped)
-	{
-		_turretChair->SetTargetPawn(Cast<APawn>(SpawnedTurret));
+		bool _isEquiped = _outTurretStand->TryEquipTurret(_spawnedTurret, AmmoType);
+		if (TurretPosition == E_TURRET_POSITION::Main && _isEquiped && _turretChair != nullptr)
+		{
+			_turretChair->SetTargetPawn(Cast<APawn>(_spawnedTurret));
+		}
 	}
 }
 

@@ -80,9 +80,12 @@ public:
 	void StartGame(AActor* Caller);
 
 	UFUNCTION(BlueprintCallable, Category = "GameMode|Game")
+	void EndGame(AActor* Caller);
+
+	UFUNCTION(BlueprintCallable, Category = "GameMode|Stage")
 	void StartNextStage(AActor* Caller);
 
-	UFUNCTION(BlueprintCallable, Category = "GameMode|Game")
+	UFUNCTION(BlueprintCallable, Category = "GameMode|Stage")
 	void EndStage(AActor* Caller);
 
 private:

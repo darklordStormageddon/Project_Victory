@@ -39,11 +39,24 @@ void AJHSGameMode::StartGame(AActor* Caller)
 
 	_isGameStarted = true;
 	_currentStage = 0;
-	StartNextStage(Caller);
+}
+
+void AJHSGameMode::EndGame(AActor* Caller)
+{
+	if (!CheckIsServerCaller(Caller))
+		return;
+
+	if (!_isGameStarted)
+		return;
+
+	_isGameStarted = false;
 }
 
 void AJHSGameMode::StartNextStage(AActor* Caller)
 {
+	if (!_isGameStarted)
+		return;
+
 	if (!CheckIsServerCaller(Caller))
 		return;
 
@@ -61,7 +74,7 @@ void AJHSGameMode::StartNextStage(AActor* Caller)
 			return;
 
 		TObjectPtr<UTurretStateGroup> _turretStateGroup = _outGameState->GetTurretStateGroup();
-		_turretStateGroup->SetInfiniteMagMode(true);
+		_turretStateGroup->SetInfiniteMagMode(false);
 		for (auto& _startEquipTurret : _startEquipTurretArray)
 		{
 			_turretStateGroup->TryEquipTurret(_startEquipTurret.TurretPosition, _startEquipTurret.AmmoType);
@@ -75,7 +88,7 @@ void AJHSGameMode::StartNextStage(AActor* Caller)
 		return;
 	}
 
-	_event->State = _currentStage;
+	_event->Stage = _currentStage;
 	_eventManager->ExecuteEvent<UEventOnStartStage>(_event);
 }
 

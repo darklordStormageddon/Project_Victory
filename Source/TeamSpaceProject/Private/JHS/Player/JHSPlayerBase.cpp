@@ -37,9 +37,6 @@ void AJHSPlayerBase::BeginPlay()
 
 	_gameState = _outGameState;
 
-	UTurretStateGroup* _turretStateGroup = _gameState->GetTurretStateGroup();
-	_turretStateGroup->SetInfiniteMagMode(true);
-
 	/*UUIManager* _outUIManager = nullptr;
 	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
 		return;
@@ -54,6 +51,9 @@ void AJHSPlayerBase::BeginPlay()
 		return;
 
 	_outGameMode->StartGame(this);
+
+	UTurretStateGroup* _turretStateGroup = _gameState->GetTurretStateGroup();
+	_turretStateGroup->SetInfiniteMagMode(true);
 }
 
 // Called every frame
