@@ -8,8 +8,9 @@
 
 #include "PurchaseCategory.generated.h"
 
+class UUIPanelShop;
+class UInteractableButton;
 class UImage;
-class UButton;
 class UTextBlock;
 
 UCLASS()
@@ -22,12 +23,11 @@ private:
 	TObjectPtr<UImage> IMG_Select = nullptr;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> BTN_Category = nullptr;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> TXT_Category = nullptr;
+	TObjectPtr<UInteractableButton> BTN_Category = nullptr;
 
 private:
+	TObjectPtr<UUIPanelShop> _uiPanelShop = nullptr;
+
 	E_PURCHASE_CATEGORY _category = E_PURCHASE_CATEGORY::END;
 
 	UPROPERTY(VisibleAnywhere, Category = "PurchaseCategory|Color")
@@ -37,7 +37,11 @@ private:
 	FLinearColor _unselectedColor = FLinearColor(1.0f, 1.0f, 1.0f, 0.0f);
 
 public:
-	void InitializeCategory(E_PURCHASE_CATEGORY Category);
+	void InitializeCategory(TObjectPtr<UUIPanelShop> UIShop, E_PURCHASE_CATEGORY Category);
 
 	void ChangeSelect(bool IsSelected);
+
+private:
+	UFUNCTION()
+	void OnSelectCategory();
 };

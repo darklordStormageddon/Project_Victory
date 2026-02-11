@@ -11,6 +11,7 @@
 class UEventManager;
 class UTextBlock;
 class UProgressBar;
+class UWidgetComponent;
 
 UCLASS()
 class UUIBase : public UUserWidget
@@ -27,6 +28,8 @@ private:
 	bool _isInitialized = false;
 
 	bool _isActive = false;
+
+	TWeakObjectPtr<UWidgetComponent> _hostWidgetComponent;
 
 protected:
 	virtual void NativeOnInitialized() override;
@@ -58,9 +61,15 @@ public:
 
 	void SetAsLastSibling();
 
+	/** 월드 공간 UI일 때 호스트 WidgetComponent 설정. 충돌은 기본 비활성, Open() 시 UInteractableButton 존재하면 활성화 */
+	void SetHostWidgetComponent(UWidgetComponent* InComponent);
+
 public:
 	static void SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar* ProgressBar, UTextBlock* TextBlock, bool IsOnlyCurrentText);
 
 protected:
 	TObjectPtr<UEventManager> GetEventManager();
+
+	/** 자식 중 UInteractableButton이 하나라도 있으면 호스트 충돌 활성화(QueryOnly) */
+	void UpdateHostCollision();
 };

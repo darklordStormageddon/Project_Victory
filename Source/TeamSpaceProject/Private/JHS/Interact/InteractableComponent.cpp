@@ -111,10 +111,12 @@ void UInteractableComponent::OnTriggerEnter(UPrimitiveComponent* OverlappedCompo
 
 	// 오브젝트에서 UInteracterComponent 컴포넌트 찾기
 	UInteracterComponent* _foundInteracter = OtherActor->FindComponentByClass<UInteracterComponent>();
+
+	// 끌어내리기
 	if (_isInterrupt && _interacter != nullptr && _interacter != _foundInteracter)
 	{
 		_InterruptInteracter = _foundInteracter;
-		_interacter->OnInteractable(this, true);
+		_interacter->OnInteractable(this, E_INTERACT_TYPE::DumpThrow);
 		return;
 	}
 
@@ -123,15 +125,19 @@ void UInteractableComponent::OnTriggerEnter(UPrimitiveComponent* OverlappedCompo
 	if (_interacter == nullptr)
 		return;
 
-	_interacter->OnInteractable(this, false);
+	if (_isWorldSpaceUI)
+	{
+		_interacter->OnInteractable(this, E_INTERACT_TYPE::Handle);
+	}
+	else
+	{
+		_interacter->OnInteractable(this, E_INTERACT_TYPE::Seat);
+	}
 }
 
 void UInteractableComponent::OnTriggerExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (OtherActor == nullptr)
-		return;
-
-	if (_isWorldSpaceUI)
 		return;
 
 	// 오브젝트에서 UInteracterComponent 컴포넌트 찾기
@@ -146,6 +152,9 @@ void UInteractableComponent::OnTriggerExit(UPrimitiveComponent* OverlappedCompon
 	// UInteracterComponent 컴포넌트와 UInteractableComponent 컴포넌트 연결 해제
 	_interacter = nullptr;
 	_foundInteracter->OnDisInteractable();
+
+	if (_isWorldSpaceUI)
+		return;
 
 	if (_isInteract)
 	{
@@ -176,7 +185,7 @@ bool UInteractableComponent::TryInteract(AActor* Caller, bool& OutIsInterupt, bo
 	{
 		// TODO : 작업자 집어 던지기 성공 체크
 		bool _isInterruptSuccess = false;
-		_InterruptInteracter->OnInteractable(this, !_isInterruptSuccess);
+		_InterruptInteracter->OnInteractable(this, E_INTERACT_TYPE::Seat);
 		OutIsInterupt = true;
 		return true;
 	}

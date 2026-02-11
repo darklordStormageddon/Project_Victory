@@ -42,21 +42,20 @@ void UInteracterComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	// ...
 }
 
-void UInteracterComponent::OnInteractable(TObjectPtr<UInteractableComponent> Interactable, bool IsInterrupt)
+void UInteracterComponent::OnInteractable(TObjectPtr<UInteractableComponent> Interactable, E_INTERACT_TYPE InteractType)
 {
 	_interactable = Interactable;
 	if (_interactable != nullptr)
 	{
-		E_INTERACT_TYPE _interactType = IsInterrupt ? E_INTERACT_TYPE::DumpThrow : _interactable->GetInteractType();
-		_uiPanelPlayer->ChangeInteractable(_interactType);
+		_uiPanelPlayer->ChangeInteractable(InteractType);
 	}
 }
 
 void UInteracterComponent::OnDisInteractable()
 {
+	UE_LOG(LogTemp, Warning, TEXT("DisInteractable"));
 	_interactable = nullptr;
 	_uiPanelPlayer->ChangeInteractable(E_INTERACT_TYPE::Idle);
-	_uiPanelPlayer->Open();
 }
 
 bool UInteracterComponent::TryInteractInput(bool& OutIsInterupt, bool& OutIsInteractEnter)

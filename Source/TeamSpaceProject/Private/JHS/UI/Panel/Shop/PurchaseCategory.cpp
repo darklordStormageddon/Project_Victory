@@ -2,38 +2,40 @@
 
 
 #include "JHS/UI/Panel/Shop/PurchaseCategory.h"
+#include "JHS/UI/Panel/Shop/UIPanelShop.h"
+#include "JHS/UI/Interact/InteractableButton.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "JHS/GameControl/CommonEnums.h"
 
-void UPurchaseCategory::InitializeCategory(E_PURCHASE_CATEGORY Category)
+void UPurchaseCategory::InitializeCategory(TObjectPtr<UUIPanelShop> UIShop, E_PURCHASE_CATEGORY Category)
 {
+	_uiPanelShop = UIShop;
 	_category = Category;
 
+	BTN_Category->Clicked.AddDynamic(this, &UPurchaseCategory::OnSelectCategory);
+
 	FString _categoryName = "Unknown";
-	if (TXT_Category != nullptr)
+	switch (Category)
 	{
-		switch (Category)
-		{
-			case E_PURCHASE_CATEGORY::SpaceShip:
-				_categoryName = TEXT("우주선");
-				break;
+	case E_PURCHASE_CATEGORY::SpaceShip:
+		_categoryName = TEXT("우주선");
+		break;
 
-			case E_PURCHASE_CATEGORY::CollectTool:
-				_categoryName = TEXT("회수 장비");
-				break;
+	case E_PURCHASE_CATEGORY::CollectTool:
+		_categoryName = TEXT("회수 장비");
+		break;
 
-			case E_PURCHASE_CATEGORY::Turret:
-				_categoryName = TEXT("포탑");
-				break;
+	case E_PURCHASE_CATEGORY::Turret:
+		_categoryName = TEXT("포탑");
+		break;
 
-			case E_PURCHASE_CATEGORY::Ammo:
-				_categoryName = TEXT("탄약");
-				break;
-		}
+	case E_PURCHASE_CATEGORY::Ammo:
+		_categoryName = TEXT("탄약");
+		break;
 	}
 
-	TXT_Category->SetText(FText::FromString(_categoryName));
+	BTN_Category->InitializeButton(_categoryName);
 
 	ChangeSelect(false);
 }
@@ -48,4 +50,9 @@ void UPurchaseCategory::ChangeSelect(bool IsSelected)
 
 	FLinearColor _color = IsSelected ? _selectedColor : _unselectedColor;
 	IMG_Select->SetColorAndOpacity(_color);
+}
+
+void UPurchaseCategory::OnSelectCategory()
+{
+	_uiPanelShop->SelectCategory(_category);
 }

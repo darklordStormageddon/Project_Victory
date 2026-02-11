@@ -39,7 +39,7 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	void OnInteractable(TObjectPtr<UInteractableComponent> Interactable, bool IsInterrupt);
+	void OnInteractable(TObjectPtr<UInteractableComponent> Interactable, E_INTERACT_TYPE InteractType);
 
 	void OnDisInteractable();
 

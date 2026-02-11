@@ -49,6 +49,12 @@ void UCircleProgressBar::SetClockWise(bool IsClockWise)
 
 void UCircleProgressBar::SetProgress(float Progress)
 {
+    if (Progress <= 0.0f)
+    {
+        _MID->SetScalarParameterValue(PARAMETER_PROGRESS, 0.0f);
+        return;
+    }
+
     _MID->SetScalarParameterValue(PARAMETER_PROGRESS, Progress);
 }
 

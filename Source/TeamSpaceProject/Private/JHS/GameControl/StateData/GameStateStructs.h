@@ -258,6 +258,9 @@ public:
 	E_ELEMENT_TYPE ElementType = E_ELEMENT_TYPE::NONE;
 
 	UPROPERTY()
+	UTexture2D* ElementImage = nullptr;
+
+	UPROPERTY()
 	FString KRName = "";
 
 	UPROPERTY()
@@ -265,9 +268,6 @@ public:
 
 	UPROPERTY()
 	int32 Amount = 0;
-
-	UPROPERTY()
-	UTexture2D* ElementImage = nullptr;
 };
 
 USTRUCT(BlueprintType)
@@ -280,13 +280,10 @@ public:
 	int32 OwnedDollar = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 MaxElementStockpile = 0;
+	float SaleInterval = 0.5f;
 
 	UPROPERTY()
 	TMap<E_ELEMENT_TYPE, FElementData> ElementDataMap;
-
-	UPROPERTY()
-	TMap<E_AMMO_TYPE, FAmmoData> AmmoDataMap;
 };
 #pragma endregion Container
 

@@ -43,8 +43,7 @@ void AJHSPlayerBase::BeginPlay()
 
 	_outUIManager->OpenUI(E_UI_TYPE::UIPanelCollectSeat);*/
 
-	
-	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::UseCollectTool, 3.0f, false);
+	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::AddElement, 3.0f, false);
 
 	AJHSGameMode* _outGameMode = nullptr;
 	if (!UStaticFunctionLibrary::TryGetGameMode(_outGameMode))
@@ -119,19 +118,14 @@ void AJHSPlayerBase::AddElement()
 	if (_elementIndex >= _lastIndex)
 	{
 		_elementIndex %= _lastIndex;
-		_isAddMode = !_isAddMode;
-	}
-
-	if (_isAddMode)
-	{
-		_containerStateGroup->AddElement((E_ELEMENT_TYPE)_elementIndex, _elementIndex + 1);
+		_containerStateGroup->SaleAllElement();
+		GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::AddElement, 10.0f, false);
 	}
 	else
 	{
-		_containerStateGroup->RemoveElement((E_ELEMENT_TYPE)_elementIndex, _elementIndex + 1);
+		_containerStateGroup->AddElement((E_ELEMENT_TYPE)_elementIndex, _elementIndex + 1);
+		GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::AddElement, 1.0f, false);
 	}
-
-	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::AddElement, 1.0f, false);
 }
 
 void AJHSPlayerBase::UseCollectTool()

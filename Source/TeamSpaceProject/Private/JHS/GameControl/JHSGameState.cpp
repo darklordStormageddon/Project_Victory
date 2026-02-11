@@ -26,12 +26,6 @@ AJHSGameState::AJHSGameState()
 	_containerStateGroup = CreateDefaultSubobject<UContainerStateGroup>(TEXT("ContainerStateGroup"));
 
 	_turretStateGroup = CreateDefaultSubobject<UTurretStateGroup>(TEXT("TurretStateGroup"));
-	for (int32 i = 0; i < ((int32)E_AMMO_TYPE::Missile + 1); i++)
-	{
-		FAmmoData _ammoData;
-		_ammoData.AmmoType = (E_AMMO_TYPE)i;
-		_initAmmoDataArray.Add(_ammoData);
-	}
 }
 
 void AJHSGameState::BeginPlay()
@@ -58,7 +52,7 @@ void AJHSGameState::InitializeGameState(TArray<FPlayerStateData> PlayerStateArra
 
 	_collectStateGroup->InitializeCollectState(this);
 
-	_containerStateGroup->InitializeContainerState(this, _initContainerState, _initAmmoDataArray);
+	_containerStateGroup->InitializeContainerState(this, _initContainerState);
 	
 	_turretStateGroup->InitializeTurretState(this);
 

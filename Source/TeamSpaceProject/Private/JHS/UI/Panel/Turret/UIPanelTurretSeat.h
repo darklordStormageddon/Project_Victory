@@ -11,7 +11,7 @@
 class UImage;
 class UProgressBar;
 class UTextBlock;
-class UContainerStateGroup;
+class UTurretStateGroup;
 class UCircleProgressBar;
 
 UCLASS()
@@ -26,7 +26,7 @@ private:
 	FDelegateHandle _eventHandleOnChangeTurret;
 
 	UPROPERTY()
-	TObjectPtr<UContainerStateGroup> _containerStateGroup = nullptr;
+	TObjectPtr<UTurretStateGroup> _turretStateGroup = nullptr;
 
 #pragma region Main Turret
 	UPROPERTY(meta = (BindWidget))
