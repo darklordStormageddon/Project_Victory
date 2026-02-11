@@ -28,8 +28,10 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 
-private:
+public:
+	UFUNCTION(BlueprintNativeEvent)
 	void OnStartStage(UEventOnStartStage* Event);
 
+	UFUNCTION(BlueprintNativeEvent)
 	void OnEndStage(UEventOnEndStage* Event);
 };
