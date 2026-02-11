@@ -1,5 +1,6 @@
 
 #include "PSJ_ShipCockpit.h"
+#include "Kismet/GameplayStatics.h" // 매니저 찾기용
 #include "PSJ_Character.h" 
 #include "PSJ_Spaceship.h"
 #include "YSH/TurretBase_GT.h"
@@ -25,6 +26,53 @@ APSJ_ShipCockpit::APSJ_ShipCockpit()
     bReplicates = true;
 }
 
+void APSJ_ShipCockpit::BeginPlay()
+{
+    Super::BeginPlay();
+
+    // [중요] 서버에서만 이벤트를 처리하면 됩니다.
+    if (HasAuthority())
+    {
+        // 1. 월드에 있는 태양풍 매니저를 찾습니다.
+        // (보통 매니저는 1개만 존재하므로 GetActorOfClass 사용)
+        AActor* ManagerActor = UGameplayStatics::GetActorOfClass(GetWorld(), ASolarWindManager::StaticClass());
+
+        if (ASolarWindManager* WindManager = Cast<ASolarWindManager>(ManagerActor))
+        {
+            // 2. 이벤트에 내 함수를 등록(Bind)합니다.
+            // "매니저님, 태양풍 터지면 저한테도(HandleSolarWindEvent) 알려주세요"
+            WindManager->OnSolarWindImpact.AddDynamic(this, &APSJ_ShipCockpit::HandleSolarWindEvent);
+
+            UE_LOG(LogTemp, Log, TEXT("[Cockpit] Successfully bound to SolarWindManager."));
+        }
+    }
+}
+
+// [신규] 이벤트 수신 함수 (Delegate에 의해 호출됨)
+void APSJ_ShipCockpit::HandleSolarWindEvent()
+{
+    // 서버인지 한번 더 체크 (안전장치)
+    if (!HasAuthority()) return;
+
+    // 이미 고장난 상태면 확률 계산 없이 패스하거나 타이머 갱신 (선택사항)
+    if (bIsMalfunctioning) return;
+
+    // 1. 확률 계산 (주사위 굴리기)
+    float DiceRoll = FMath::FRand(); // 0.0 ~ 1.0 랜덤
+
+    if (DiceRoll <= MalfunctionProbability)
+    {
+        // 당첨! 고장 로직 실행
+        UE_LOG(LogTemp, Warning, TEXT("[Cockpit] Hit by Solar Wind! (Roll: %.2f <= Prob: %.2f)"), DiceRoll, MalfunctionProbability);
+        StartMalfunction();
+    }
+    else
+    {
+        // 회피 성공
+        UE_LOG(LogTemp, Log, TEXT("[Cockpit] Survived Solar Wind. (Roll: %.2f > Prob: %.2f)"), DiceRoll, MalfunctionProbability);
+    }
+}
+
 // [신규 추가] 변수 동기화 규칙 설정
 void APSJ_ShipCockpit::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -32,10 +80,22 @@ void APSJ_ShipCockpit::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
     // TargetSpaceship 변수를 서버 -> 클라이언트로 복제(Replication)합니다.
     DOREPLIFETIME(APSJ_ShipCockpit, TargetSpaceship);
+
+    // [신규] 고장 상태 동기화 (이게 없으면 클라에서 고장난 줄 모름)
+    DOREPLIFETIME(APSJ_ShipCockpit, bIsMalfunctioning);
 }
 
 void APSJ_ShipCockpit::OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> OpenedUI)
 {
+
+    // [신규] 고장 상태 체크
+    if (bIsMalfunctioning)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[Cockpit] System Error! Repair required before boarding."));
+        // 여기에 "수리가 필요합니다" 같은 팝업이나 사운드를 재생할 수 있습니다.
+        return;
+    }
+
     Super::OnInteractEnter(Caller, OpenedUI); // 부모의 기본 로직 실행
 
     if (TargetSpaceship) // 변수명은 TargetSpaceship이지만 실제로는 APawn* 타입
@@ -62,6 +122,33 @@ void APSJ_ShipCockpit::OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> Opene
         }
     }
 }
+
+// [3] 고장 발생 (SolarWindManager가 호출)
+void APSJ_ShipCockpit::StartMalfunction()
+{
+    if (!HasAuthority()) return; // 서버만 실행
+
+    // 이미 고장난 상태면 타이머만 리셋 (또는 무시 가능)
+    if (bIsMalfunctioning)
+    {
+        CurrentMalfunctionTimer = MalfunctionDuration;
+        return;
+    }
+
+    // 1. 탑승자 강제 하차 (기존 함수 활용)
+    ReceiveForceEjectRequest();
+
+    // 2. 상태 변경
+    bIsMalfunctioning = true;
+    CurrentMalfunctionTimer = MalfunctionDuration;
+    RepairingCharacters.Empty(); // 수리 인원 초기화
+
+    // 3. 상태 갱신 (OnRep 호출됨)
+    OnRep_IsMalfunctioning();
+
+    UE_LOG(LogTemp, Error, TEXT("[Cockpit] MALFUNCTION STARTED! Timer: %.1f"), MalfunctionDuration);
+}
+
 
 void APSJ_ShipCockpit::OnInteractExit(AActor* Caller, TObjectPtr<UUIBase> OpenedUI)
 {
@@ -150,6 +237,42 @@ void APSJ_ShipCockpit::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
+    // 서버이고, 고장난 상태일 때만 타이머가 돌아갑니다.
+    if (HasAuthority() && bIsMalfunctioning)
+    {
+        // === [합연산 수리 속도 공식] ===
+        // 기본 감소 속도: 1.0 (초당 1초 감소)
+        // 추가 가속도: (RepairSpeedRate - 1.0)
+        // 최종 속도 = 1.0 + (수리인원 * 추가 가속도)
+
+        float BonusRatePerPerson = FMath::Max(1.0f, RepairSpeedRate) - 1.0f;
+        float TotalSpeed = 1.0f + (RepairingCharacters.Num() * BonusRatePerPerson);
+
+        // 시간 감소
+        CurrentMalfunctionTimer -= (DeltaTime * TotalSpeed);
+
+        // 디버깅용 로그 (개발 중에만 켜두세요)
+        /*
+        if (RepairingCharacters.Num() > 0)
+        {
+            UE_LOG(LogTemp, Log, TEXT("Repairing... Users: %d | Speed: x%.2f | TimeLeft: %.2f"),
+                RepairingCharacters.Num(), TotalSpeed, CurrentMalfunctionTimer);
+        }
+        */
+
+        // 수리 완료 체크
+        if (CurrentMalfunctionTimer <= 0.0f)
+        {
+            bIsMalfunctioning = false;
+            CurrentMalfunctionTimer = 0.0f;
+            RepairingCharacters.Empty();
+
+            OnRep_IsMalfunctioning(); // 클라에 알림
+            UE_LOG(LogTemp, Log, TEXT("[Cockpit] REPAIR COMPLETE! System Online."));
+        }
+    }
+
+
     // 테스트용: F키를 누르기 전에 이미 변수가 들어왔는지 눈으로 확인
     if (GetWorld()->IsNetMode(NM_Client))
     {
@@ -163,5 +286,37 @@ void APSJ_ShipCockpit::Tick(float DeltaTime)
             // 빨간색: 아직 변수 안 넘어옴 (이 상태면 탑승 불가)
             DrawDebugString(GetWorld(), GetActorLocation(), TEXT("Link NULL"), nullptr, FColor::Red, 0.0f);
         }
+    }
+}
+
+// [5] 수리 인원 관리 (Character에서 호출됨)
+void APSJ_ShipCockpit::AddRepairer(APSJ_Character* Mechanic)
+{
+    if (Mechanic && !RepairingCharacters.Contains(Mechanic))
+    {
+        RepairingCharacters.Add(Mechanic);
+    }
+}
+
+void APSJ_ShipCockpit::RemoveRepairer(APSJ_Character* Mechanic)
+{
+    if (Mechanic)
+    {
+        RepairingCharacters.Remove(Mechanic);
+    }
+}
+
+// [6] RepNotify (클라이언트 효과 처리)
+void APSJ_ShipCockpit::OnRep_IsMalfunctioning()
+{
+    if (bIsMalfunctioning)
+    {
+        // 예: 스파크 파티클 켜기, 고장음 루프 재생
+        UE_LOG(LogTemp, Warning, TEXT("[Client] Cockpit looks broken!"));
+    }
+    else
+    {
+        // 예: 파티클 끄기, 정상 상태 복구
+        UE_LOG(LogTemp, Log, TEXT("[Client] Cockpit looks fixed!"));
     }
 }
