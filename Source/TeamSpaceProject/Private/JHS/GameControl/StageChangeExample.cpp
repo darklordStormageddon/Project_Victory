@@ -65,7 +65,7 @@ void AStageChangeExample::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AStageChangeExample::OnStartStage(UEventOnStartStage* Event)
+void AStageChangeExample::OnStartStage_Implementation(UEventOnStartStage* Event)
 {
 	if (Event == nullptr)
 		return;
@@ -75,7 +75,7 @@ void AStageChangeExample::OnStartStage(UEventOnStartStage* Event)
 	UE_LOG(LogTemp, Warning, TEXT("OnStartStage: %d"), _stage);
 }
 
-void AStageChangeExample::OnEndStage(UEventOnEndStage* Event)
+void AStageChangeExample::OnEndStage_Implementation(UEventOnEndStage* Event)
 {
 	if (Event == nullptr)
 		return;
