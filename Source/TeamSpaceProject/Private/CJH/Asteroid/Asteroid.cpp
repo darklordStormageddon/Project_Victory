@@ -46,14 +46,14 @@ void AAsteroid::BeginPlay()
 {
 	Super::BeginPlay();
 
-	HealthComp->OnDeath.AddDynamic(this, &AAsteroid::OnDestroy);
-	Collision->OnComponentHit.AddDynamic(this, &AAsteroid::OnHit);
-	
 	// Ensure SpaceManager is initialized before any RPC operations
 	if (GetSpaceManager())
 	{
 		SetAsteroidRot();
 	}
+
+	HealthComp->OnDeath.AddDynamic(this, &AAsteroid::OnDestroy);
+	Collision->OnComponentHit.AddDynamic(this, &AAsteroid::OnHit);
 }
 
 // Called every frame

@@ -112,7 +112,8 @@ void UAsteroidComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 		return;
 
 	// 이미 생성 중이면 아무것도 하지 않음
-	if (bIsSpawning) return;
+	if (bIsSpawning)
+		return;
 
 	CanSpawn();
 }
@@ -155,7 +156,7 @@ void UAsteroidComponent::SpawnAsteroid()
 
 	// 랜덤 방향과 위치
 	FVector RandomDirection = FMath::VRand();
-	FVector SpawnLocation = InGameMode->GetSpaceManager()->GetSpaceStation()->GetActorLocation() + RandomDirection * InGameMode->GetSpaceManager()->GetSpaceRadius();
+	FVector SpawnLocation = InGameMode->GetSpaceManager()->GetSpaceStation()->GetActorLocation() + RandomDirection * (InGameMode->GetSpaceManager()->GetSpaceRadius() - 200.f);
 
 	float Size = FMath::RandRange(_asteroidInfo.MinSize, _asteroidInfo.MaxSize);
 	float Speed = FMath::RandRange(_asteroidInfo.MinSpeed, _asteroidInfo.MaxSpeed);
@@ -171,9 +172,13 @@ void UAsteroidComponent::SpawnAsteroid()
 	}
 
 	int Index = FMath::RandRange(0, _asteroidInfo.AsteroidClasses.Num() - 1);
+		
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride =
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	TSubclassOf<AAsteroid> AsteroidClass = _asteroidInfo.AsteroidClasses[Index];
-	if (!*AsteroidClass)
+	if (!AsteroidClass)
 	{
 		bIsSpawning = false;
 		return;
@@ -182,7 +187,8 @@ void UAsteroidComponent::SpawnAsteroid()
 	AAsteroid* Asteroid = World->SpawnActor<AAsteroid>(
 		AsteroidClass,
 		SpawnLocation,
-		SpawnRotation
+		SpawnRotation,
+		Params
 	);
 
 	bIsSpawning = false;
