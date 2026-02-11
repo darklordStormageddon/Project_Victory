@@ -8,6 +8,7 @@
 #include "InteractableButton.generated.h"
 
 class UButton;
+class UTextBlock;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInteractableButtonEvent);
 
@@ -27,6 +28,12 @@ private:
 	// BindWidget은 위젯 이름과 C++ 멤버명이 같아야 합니다.
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> BTN_Button = nullptr;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TXT_Label;
+
+public:
+	void InitializeButton(FString Label);
 
 private:
 	UFUNCTION()

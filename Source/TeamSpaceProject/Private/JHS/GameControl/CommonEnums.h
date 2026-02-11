@@ -34,6 +34,7 @@ enum class E_INTERACT_TYPE : uint8
 	Idle = 0 UMETA(DisplayName = "Idle"),
 	Seat UMETA(DisplayName = "Seat"),
 	DumpThrow UMETA(DisplayName = "DumpThrow"),
+	Handle UMETA(DisplayName = "Handle"),
 
 	NONE UMETA(DisplayName = "NONE"),
 };

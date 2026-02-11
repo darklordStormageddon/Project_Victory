@@ -8,6 +8,7 @@
 #include "GameFramework/Actor.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetTree.h"
+#include "Components/PanelWidget.h"
 #include "Layout/Geometry.h"
 #include "JHS/UI/Interact/InteractableButton.h"
 #include "TeamSpaceProject/TeamSpaceProjectCharacter.h"
@@ -132,29 +133,105 @@ UInteractableButton* UIGazeInteract::_FindInteractableFromHit(const FHitResult& 
 		return nullptr;
 	}
 
-	// 월드 히트 위치를 위젯 로컬 좌표로 변환
+	// 월드 히트 위치를 루트 위젯 로컬 좌표로 변환 (이 좌표계 기준으로 모든 히트 검사)
 	FVector2D _localHitLocation = FVector2D::ZeroVector;
 	_widgetComponent->GetLocalHitLocation(HitResult.ImpactPoint, _localHitLocation);
 
-	// 패널(UIBase) 내부에서, 실제 히트 위치를 포함하는 UInteractableButton만 선택
-	if (UWidgetTree* _widgetTree = _rootWidget->WidgetTree)
+	const FGeometry _rootGeometry = _rootWidget->GetCachedGeometry();
+
+	// 1) WidgetTree->GetAllWidgets로 블루프린트 위젯 수집
+	TArray<UWidget*> _allWidgets;
+	TSet<UWidget*> _seen;
+	if (UWidgetTree* _tree = _rootWidget->WidgetTree)
 	{
-		TArray<UWidget*> _allWidgets;
-		_widgetTree->GetAllWidgets(_allWidgets);
-
-		for (UWidget* _widget : _allWidgets)
+		_tree->GetAllWidgets(_allWidgets);
+		for (UWidget* _w : _allWidgets)
 		{
-			UInteractableButton* _button = Cast<UInteractableButton>(_widget);
-			if (_button == nullptr)
-			{
-				continue;
-			}
+			_seen.Add(_w);
+		}
+	}
 
-			const FGeometry& _geometry = _button->GetCachedGeometry();
-			if (_geometry.IsUnderLocation(_localHitLocation))
+	// 2) BFS로 동적 추가 위젯(HB_Category->UPurchaseCategory->BTN_Category 등) 추가
+	UWidget* _treeRoot = (_rootWidget->WidgetTree && _rootWidget->WidgetTree->RootWidget)
+		? _rootWidget->WidgetTree->RootWidget
+		: _rootWidget;
+	TArray<UWidget*> _bfsQueue;
+	_bfsQueue.Add(_treeRoot);
+	for (int32 _i = 0; _i < _bfsQueue.Num(); ++_i)
+	{
+		UWidget* _w = _bfsQueue[_i];
+		if (UPanelWidget* _panel = Cast<UPanelWidget>(_w))
+		{
+			const int32 _n = _panel->GetChildrenCount();
+			for (int32 _c = 0; _c < _n; ++_c)
 			{
-				return _button;
+				if (UWidget* _child = _panel->GetChildAt(_c))
+				{
+					_bfsQueue.Add(_child);
+					if (!_seen.Contains(_child))
+					{
+						_seen.Add(_child);
+						_allWidgets.Add(_child);
+					}
+				}
 			}
+		}
+		else if (UUserWidget* _userW = Cast<UUserWidget>(_w))
+		{
+			// UUserWidget(예: UPurchaseCategory)은 UPanelWidget이 아니므로 GetChildAt 불가 → 내부 트리 루트를 큐에 추가
+			if (_userW->WidgetTree && _userW->WidgetTree->RootWidget)
+			{
+				UWidget* _innerRoot = _userW->WidgetTree->RootWidget;
+				_bfsQueue.Add(_innerRoot);
+				if (!_seen.Contains(_innerRoot))
+				{
+					_seen.Add(_innerRoot);
+					_allWidgets.Add(_innerRoot);
+				}
+			}
+		}
+	}
+
+	// 3) 역순으로 히트 검사 (나중에 수집된/위에 그려진 버튼 우선)
+	static constexpr float _slack = 2.0f;
+	for (int32 _i = _allWidgets.Num() - 1; _i >= 0; --_i)
+	{
+		UInteractableButton* _button = Cast<UInteractableButton>(_allWidgets[_i]);
+		if (_button == nullptr)
+		{
+			continue;
+		}
+
+		const FGeometry& _geometry = _button->GetCachedGeometry();
+		const FVector2D _size = _geometry.GetLocalSize();
+		if (_size.X <= 0.0f || _size.Y <= 0.0f)
+		{
+			continue;
+		}
+
+		FVector2D _min = _rootGeometry.AbsoluteToLocal(_geometry.LocalToAbsolute(FVector2D(0.0f, 0.0f)));
+		FVector2D _max = _min;
+		const FVector2D _corners[3] = {
+			_geometry.LocalToAbsolute(FVector2D(_size.X, 0.0f)),
+			_geometry.LocalToAbsolute(FVector2D(_size.X, _size.Y)),
+			_geometry.LocalToAbsolute(FVector2D(0.0f, _size.Y))
+		};
+		for (int32 _j = 0; _j < 3; ++_j)
+		{
+			FVector2D _p = _rootGeometry.AbsoluteToLocal(_corners[_j]);
+			_min.X = FMath::Min(_min.X, _p.X);
+			_min.Y = FMath::Min(_min.Y, _p.Y);
+			_max.X = FMath::Max(_max.X, _p.X);
+			_max.Y = FMath::Max(_max.Y, _p.Y);
+		}
+		_min.X -= _slack;
+		_min.Y -= _slack;
+		_max.X += _slack;
+		_max.Y += _slack;
+		if (_localHitLocation.X >= _min.X && _localHitLocation.X <= _max.X &&
+		    _localHitLocation.Y >= _min.Y && _localHitLocation.Y <= _max.Y)
+		{
+			return _button;
 		}
 	}
 

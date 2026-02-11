@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "JHS/UI/Interact/InteractableButton.h"
-
 #include "Components/Button.h"
+#include "Components/TextBlock.h"
 
 void UInteractableButton::NativeOnInitialized()
 {
@@ -16,6 +16,11 @@ void UInteractableButton::NativeOnInitialized()
 	BTN_Button->OnHovered.AddDynamic(this, &UInteractableButton::HandleHovered);
 	BTN_Button->OnUnhovered.AddDynamic(this, &UInteractableButton::HandleUnhovered);
 	BTN_Button->OnClicked.AddDynamic(this, &UInteractableButton::HandleClicked);
+}
+
+void UInteractableButton::InitializeButton(FString Label)
+{
+	TXT_Label->SetText(FText::FromString(Label));
 }
 
 void UInteractableButton::HandleHovered()
@@ -54,21 +59,15 @@ void UInteractableButton::Click()
 void UInteractableButton::OnHovered_Implementation()
 {
 	// 블루프린트에서 포커스 연출 구현
-
-	UE_LOG(LogTemp, Warning, TEXT("OnHover"));
 }
 
 void UInteractableButton::OnUnhovered_Implementation()
 {
 	// 블루프린트에서 포커스 해제 연출 구현
-
-	UE_LOG(LogTemp, Warning, TEXT("OnUnhover"));
 }
 
 void UInteractableButton::OnClicked_Implementation()
 {
 	// 블루프린트에서 클릭 연출/로직 구현
-
-	UE_LOG(LogTemp, Warning, TEXT("OnClick"));
 }
 

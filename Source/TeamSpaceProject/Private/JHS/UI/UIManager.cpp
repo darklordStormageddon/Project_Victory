@@ -184,10 +184,11 @@ UUIBase* UUIManager::OpenUIInWorld(E_UI_TYPE UIType, AActor* OwnerActor, FVector
 	FVector2D _finalDrawSize = _widgetComponent->GetDrawSize();
 	FVector _finalScale = _widgetComponent->GetRelativeScale3D();
 
-	// UI 타입 설정 및 Open 호출
+	// UI 타입 설정, 호스트 WidgetComponent 전달(충돌 기본 비활성 → Open() 시 UInteractableButton 있으면 활성화)
 	UUIBase* _worldSpaceUI = Cast<UUIBase>(_widget);
 	if (_worldSpaceUI != nullptr)
 	{
+		_worldSpaceUI->SetHostWidgetComponent(_widgetComponent);
 		_worldSpaceUI->CurrentType = UIType;
 		_worldSpaceUI->Open();
 	}

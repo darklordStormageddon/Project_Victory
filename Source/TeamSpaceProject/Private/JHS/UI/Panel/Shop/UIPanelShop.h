@@ -64,10 +64,11 @@ protected:
 
 	void OnOpen() override;
 
+public:
+	void SelectCategory(E_PURCHASE_CATEGORY Category);
+
 private:
 	void CreatePurchaseCategories();
-
-	void SelectCategory(E_PURCHASE_CATEGORY Category);
 
 	void UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory);
 

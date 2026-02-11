@@ -5,7 +5,11 @@
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/Event/EventManager.h"
+#include "JHS/UI/Interact/InteractableButton.h"
+#include "Blueprint/WidgetTree.h"
 #include "Components/Widget.h"
+#include "Components/WidgetComponent.h"
+#include "Components/PanelWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
 
@@ -54,6 +58,60 @@ void UUIBase::Open()
 	SetVisibility(ESlateVisibility::Visible);
 
 	OnOpen();
+
+	UpdateHostCollision();
+}
+
+void UUIBase::SetHostWidgetComponent(UWidgetComponent* InComponent)
+{
+	_hostWidgetComponent = InComponent;
+	if (UWidgetComponent* _wc = _hostWidgetComponent.Get())
+	{
+		_wc->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+}
+
+void UUIBase::UpdateHostCollision()
+{
+	UWidgetComponent* _wc = _hostWidgetComponent.Get();
+	if (_wc == nullptr)
+	{
+		return;
+	}
+
+	TArray<UWidget*> _allWidgets;
+	UWidget* _treeRoot = (WidgetTree && WidgetTree->RootWidget) ? WidgetTree->RootWidget : this;
+	_allWidgets.Add(_treeRoot);
+	for (int32 _i = 0; _i < _allWidgets.Num(); ++_i)
+	{
+		if (UPanelWidget* _panel = Cast<UPanelWidget>(_allWidgets[_i]))
+		{
+			const int32 _childCount = _panel->GetChildrenCount();
+			for (int32 _c = 0; _c < _childCount; ++_c)
+			{
+				if (UWidget* _child = _panel->GetChildAt(_c))
+				{
+					_allWidgets.Add(_child);
+				}
+			}
+		}
+	}
+
+	bool _hasInteractable = false;
+	for (UWidget* _w : _allWidgets)
+	{
+		if (Cast<UInteractableButton>(_w) != nullptr)
+		{
+			_hasInteractable = true;
+			break;
+		}
+	}
+
+	if (_hasInteractable)
+	{
+		_wc->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		_wc->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	}
 }
 
 void UUIBase::Close()

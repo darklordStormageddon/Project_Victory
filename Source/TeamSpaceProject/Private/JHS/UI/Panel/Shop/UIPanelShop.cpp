@@ -62,7 +62,7 @@ void UUIPanelShop::OnOpen()
 		_plateContainer->Open();
 	}
 
-	SelectCategory(E_PURCHASE_CATEGORY::Ammo);
+	SelectCategory(E_PURCHASE_CATEGORY(0));
 
 	_elementIndex = 0;
 	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &UUIPanelShop::AddElement, 3.0f, false);
@@ -98,7 +98,7 @@ void UUIPanelShop::CreatePurchaseCategories()
 			UE_LOG(LogTemp, Error, TEXT("UUIPanelShop: Failed to create PurchaseCategory widget for category %d"), i);
 			continue;
 		}
-		_categoryWidget->InitializeCategory(_category);
+		_categoryWidget->InitializeCategory(this, _category);
 
 		// HorizontalBox에 추가
 		UHorizontalBoxSlot* _slot = HB_Category->AddChildToHorizontalBox(_categoryWidget);
