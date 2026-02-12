@@ -93,7 +93,7 @@ public:
 	 * @param Event 실행할 이벤트 객체
 	 */
 	template<typename T>
-	void ExecuteEvent(T* Event)
+	static void ExecuteEvent(T* Event)
 	{
 		static_assert(std::is_base_of<UCommonEventBase, T>::value, "T must be derived from UCommonEventBase");
 
@@ -122,7 +122,7 @@ protected:
 
 private:
 	// 타입별 델리게이트 맵 (TMulticastDelegate는 UPROPERTY로 선언할 수 없음)
-	TMap<UClass*, TMulticastDelegate<void(UCommonEventBase*)>> _eventDelegates;
+	static TMap<UClass*, TMulticastDelegate<void(UCommonEventBase*)>> _eventDelegates;
 
 	// 델리게이트 핸들과 이벤트 클래스 매핑
 	TMap<FDelegateHandle, UClass*> _delegateLookup;

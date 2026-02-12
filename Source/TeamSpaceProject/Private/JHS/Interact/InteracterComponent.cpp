@@ -4,8 +4,10 @@
 #include "JHS/Interact/InteracterComponent.h"
 #include "JHS/Interact/InteractableComponent.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/PlayerStateGroup.h"
 #include "JHS/UI/UIManager.h"
-#include "JHS/UI/Panel/UIPanelPlayerFPS.h"
+#include "JHS/Event/EventManager.h"
 
 // Sets default values for this component's properties
 UInteracterComponent::UInteracterComponent()
@@ -25,14 +27,8 @@ void UInteracterComponent::BeginPlay()
 	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
 		return;
 
-	_uiPanelPlayer = Cast<UUIPanelPlayerFPS>(_outUIManager->OpenUI(_playerUI));
-	if (_uiPanelPlayer == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UInteracterComponent: Failed to cast UI to UUIPanelPlayerFPS"));
-		return;
-	}
-
-	_uiPanelPlayer->InitializeUI();
+	_uiManager = _outUIManager;
+	_uiManager->OpenUI(_playerUI);
 }
 
 void UInteracterComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -47,15 +43,15 @@ void UInteracterComponent::OnInteractable(TObjectPtr<UInteractableComponent> Int
 	_interactable = Interactable;
 	if (_interactable != nullptr)
 	{
-		_uiPanelPlayer->ChangeInteractable(InteractType);
+		ExecuteEventOnChangeInteractType(InteractType);
 	}
 }
 
 void UInteracterComponent::OnDisInteractable()
 {
-	UE_LOG(LogTemp, Warning, TEXT("DisInteractable"));
 	_interactable = nullptr;
-	_uiPanelPlayer->ChangeInteractable(E_INTERACT_TYPE::Idle);
+	_uiManager->OpenUI(_playerUI);
+	ExecuteEventOnChangeInteractType(E_INTERACT_TYPE::Idle);
 }
 
 bool UInteracterComponent::TryInteractInput(bool& OutIsInterupt, bool& OutIsInteractEnter)
@@ -66,17 +62,27 @@ bool UInteracterComponent::TryInteractInput(bool& OutIsInterupt, bool& OutIsInte
 	if (!_interactable->TryInteract(GetOwner(), OutIsInterupt, OutIsInteractEnter))
 		return false;
 
-	if (OutIsInterupt)
-		return true;
-
 	if (OutIsInteractEnter)
 	{
-		_uiPanelPlayer->Close();
+		_uiManager->CloseUI(_playerUI);
 	}
 	else
 	{
-		_uiPanelPlayer->Open();
+		_uiManager->OpenUI(_playerUI);
 	}
 
 	return true;
+}
+
+void UInteracterComponent::ExecuteEventOnChangeInteractType(E_INTERACT_TYPE InteractType)
+{
+	UEventOnChangeInteractType* _event = NewObject<UEventOnChangeInteractType>(this);
+	if (_event == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UInteracterComponent: Failed to create UEventOnChangeInteractType"));
+		return;
+	}
+
+	_event->InteractType = InteractType;
+	UEventManager::ExecuteEvent<UEventOnChangeInteractType>(_event);
 }

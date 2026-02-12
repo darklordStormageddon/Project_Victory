@@ -46,7 +46,7 @@ protected:
 	TObjectPtr<UPlayerStateGroup> _playerStateGroup = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "GameState|PlayerStateGroup")
-	float _maxPlayerRadiation = 100.0f;
+	FPurchaseData _playerRadiation;
 
 	// Collect
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|CollectStateGroup")
@@ -63,10 +63,6 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|TurretStateGroup")
 	TObjectPtr<UTurretStateGroup> _turretStateGroup = nullptr;
 #pragma endregion State Group
-
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Test")
-	int32 _testPlayerCount = 4;
 
 public:
 	int32 GetGoalDollar() { return _goalDollar; }
@@ -86,7 +82,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	void InitializeGameState(TArray<FPlayerStateData> PlayerStateArray);
+	void InitializeGameState();
 
 	void SendCurrentDataEvent();
 

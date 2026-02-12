@@ -150,8 +150,8 @@ void UInteractableComponent::OnTriggerExit(UPrimitiveComponent* OverlappedCompon
 		return;
 
 	// UInteracterComponent 컴포넌트와 UInteractableComponent 컴포넌트 연결 해제
+	_interacter->OnDisInteractable();
 	_interacter = nullptr;
-	_foundInteracter->OnDisInteractable();
 
 	if (_isWorldSpaceUI)
 		return;
@@ -174,25 +174,31 @@ void UInteractableComponent::InitializeUIInteractable(bool IsDebugDraw, float In
 	_worldUIScale = WorldUIScale;
 }
 
-bool UInteractableComponent::TryInteract(AActor* Caller, bool& OutIsInterupt, bool& OutIsInteractEnter)
+bool UInteractableComponent::TryInteract(AActor* Caller, bool& OutIsInterupt, bool& IsCloseUI)
 {
 	OutIsInterupt = false;
-	OutIsInteractEnter = false;
+	IsCloseUI = false;
 	if (_interacter == nullptr)
 		return false;
 
-	if (_isInterrupt && _isInteract)
-	{
-		// TODO : 작업자 집어 던지기 성공 체크
-		bool _isInterruptSuccess = false;
-		_InterruptInteracter->OnInteractable(this, E_INTERACT_TYPE::Seat);
-		OutIsInterupt = true;
-		return true;
-	}
+	//if (_isInterrupt && _isInteract)
+	//{
+	//	// TODO : 작업자 집어 던지기 성공 체크
+	//	bool _isInterruptSuccess = false;
+	//	_InterruptInteracter->OnInteractable(this, E_INTERACT_TYPE::Seat);
+	//	_OutIsInterupt = true;
+	//	return true;
+	//}
 
 	_isInteract = !_isInteract;
 	ChangeInteractState(_isInteract, Caller);
-	OutIsInteractEnter = _isInteract;
+
+	IsCloseUI = _isInteract;
+	if (IsCloseUI && _isWorldSpaceUI)
+	{
+		IsCloseUI = false;
+	}
+	
 	return true;
 }
 
@@ -215,7 +221,6 @@ void UInteractableComponent::ChangeInteractState(bool IsInteract, AActor* Caller
 			}
 			else
 			{
-				// 일반 뷰포트 UI
 				_openedUI = _uiManager->OpenUI(_interactUIType);
 			}
 		}

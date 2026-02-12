@@ -2,6 +2,7 @@
 
 #include "JHS/UI/Interact/InteractableButton.h"
 #include "Components/Button.h"
+#include "Components/Image.h"
 #include "Components/TextBlock.h"
 
 void UInteractableButton::NativeOnInitialized()
@@ -9,13 +10,18 @@ void UInteractableButton::NativeOnInitialized()
 	Super::NativeOnInitialized();
 
 	if (BTN_Button == nullptr)
-	{
 		return;
-	}
 
-	BTN_Button->OnHovered.AddDynamic(this, &UInteractableButton::HandleHovered);
-	BTN_Button->OnUnhovered.AddDynamic(this, &UInteractableButton::HandleUnhovered);
-	BTN_Button->OnClicked.AddDynamic(this, &UInteractableButton::HandleClicked);
+	BTN_Button->OnHovered.AddDynamic(this, &UInteractableButton::Focus);
+	BTN_Button->OnUnhovered.AddDynamic(this, &UInteractableButton::Unfocus);
+	BTN_Button->OnClicked.AddDynamic(this, &UInteractableButton::_OnButtonClicked);
+}
+
+void UInteractableButton::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	IMG_OnHover->SetVisibility(ESlateVisibility::Hidden);
 }
 
 void UInteractableButton::InitializeButton(FString Label)
@@ -23,51 +29,31 @@ void UInteractableButton::InitializeButton(FString Label)
 	TXT_Label->SetText(FText::FromString(Label));
 }
 
-void UInteractableButton::HandleHovered()
+void UInteractableButton::OnHover()
 {
-	Focus();
+	Super::OnHover();
+	IMG_OnHover->SetVisibility(ESlateVisibility::Visible);
 }
 
-void UInteractableButton::HandleUnhovered()
+void UInteractableButton::OnUnhover()
 {
-	Unfocus();
+	Super::OnUnhover();
+	IMG_OnHover->SetVisibility(ESlateVisibility::Hidden);
 }
 
-void UInteractableButton::HandleClicked()
+void UInteractableButton::_OnButtonClicked()
 {
-	Click();
+	ClickEnter();
+	ClickExit();
 }
 
-void UInteractableButton::Focus()
+void UInteractableButton::OnClickEnter()
 {
-	OnHovered();
-	Hovered.Broadcast();
+	Super::OnClickEnter();
 }
 
-void UInteractableButton::Unfocus()
+void UInteractableButton::OnClickExit()
 {
-	OnUnhovered();
-	Unhovered.Broadcast();
-}
-
-void UInteractableButton::Click()
-{
-	OnClicked();
-	Clicked.Broadcast();
-}
-
-void UInteractableButton::OnHovered_Implementation()
-{
-	// 블루프린트에서 포커스 연출 구현
-}
-
-void UInteractableButton::OnUnhovered_Implementation()
-{
-	// 블루프린트에서 포커스 해제 연출 구현
-}
-
-void UInteractableButton::OnClicked_Implementation()
-{
-	// 블루프린트에서 클릭 연출/로직 구현
+	Super::OnClickExit();
 }
 

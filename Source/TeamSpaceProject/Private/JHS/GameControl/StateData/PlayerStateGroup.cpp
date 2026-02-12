@@ -35,28 +35,85 @@ void UPlayerStateGroup::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 	// ...
 }
 
-void UPlayerStateGroup::InitializePlayerState(TObjectPtr<AJHSGameState> GameState, TArray<FPlayerStateData> PlayerStateArray, float MaxPlayerRadiation)
+void UPlayerStateGroup::InitializePlayerState(TObjectPtr<AJHSGameState> GameState, FPurchaseData PlayerRadiation)
 {
 	_gameState = GameState;
-
-	for (FPlayerStateData _playerState : PlayerStateArray)
-	{
-		_playerState.Radiation.MaxValue = MaxPlayerRadiation;
-		_playerState.Radiation.CurrentValue = 0.0f;
-
-		_playerStateMap.Add(_playerState.PlayerIdx, _playerState);
-	}
+	_playerRadiationData = PlayerRadiation;
 }
 
 void UPlayerStateGroup::UpdatePlayerState()
 {
-	if (_playerStateMap.Num() > 0)
+	for (auto& _playerState : _playerStateMap)
 	{
-		for (auto _playerState : _playerStateMap)
+		IncreasePlayerRadiation(_playerState.Key, 0.0f);
+	}
+}
+
+bool UPlayerStateGroup::TryRegistPlayer(TObjectPtr<AJHSPlayerState> PlayerState, FString PlayerName, E_REGIST_ERROR_TYPE& ErrorType)
+{
+	ErrorType = E_REGIST_ERROR_TYPE::NONE;
+
+	if (PlayerState == nullptr)
+	{
+		ErrorType = E_REGIST_ERROR_TYPE::NullPlayerState;
+		return false;
+	}
+
+	int32 _playerID = PlayerState->GetPlayerId();
+	if (_playerStateMap.Contains(_playerID))
+	{
+		ErrorType = E_REGIST_ERROR_TYPE::DuplicatedUID;
+		return false;
+	}
+
+	for (auto& _playerStateData : _playerStateMap)
+	{
+		if (_playerStateData.Value.PlayerName.Equals(PlayerName))
 		{
-			IncreasePlayerRadiation(_playerState.Key, 0.0f);
+			ErrorType = E_REGIST_ERROR_TYPE::DuplicatedName;
+			return false;
 		}
 	}
+
+	FPlayerStateData _newPlayerData;
+	_newPlayerData.PlayerState = PlayerState;
+	_newPlayerData.PlayerUID = _playerID;
+	_newPlayerData.PlayerName = PlayerName;
+
+	_newPlayerData.PlayerIndex = _playerStateMap.Num();
+	_newPlayerData.IsReady = false;
+
+	_newPlayerData.Radiation.MaxValue = _playerRadiationData.Value.MaxValue;
+	_newPlayerData.Radiation.CurrentValue = _newPlayerData.Radiation.MaxValue;
+	_playerStateMap.Add(_newPlayerData.PlayerUID, _newPlayerData);
+	return true;
+}
+
+void UPlayerStateGroup::ReadyPlayer(int32 PlayerUID)
+{
+	FPlayerStateData* _outPlayerStateData = nullptr;
+	if (!TryGetPlayerStateData(PlayerUID, _outPlayerStateData))
+		return;
+
+	_outPlayerStateData->IsReady = true;
+}
+
+bool UPlayerStateGroup::IsAllPlayerReady()
+{
+	for (auto& _element : _playerStateMap)
+	{
+		FPlayerStateData _playerStateData = _element.Value;
+		if (_playerStateData.PlayerState == nullptr)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("PlayerID [%d] is registered but PlayerState is nullptr"), _playerStateData.PlayerUID);
+			continue;
+		}
+
+		if (!_playerStateData.IsReady)
+			return false;
+	}
+
+	return true;
 }
 
 void UPlayerStateGroup::IncreasePlayerRadiation(int32 PlayerIdx, float IncreaseValue)
@@ -77,4 +134,16 @@ void UPlayerStateGroup::IncreasePlayerRadiation(int32 PlayerIdx, float IncreaseV
 
 	_event->PlayerStateData = *_playerState;
 	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangePlayerRadiation>(_event);
+}
+
+bool UPlayerStateGroup::TryGetPlayerStateData(int32 PlayerUID, FPlayerStateData*& OutPlayerStateData)
+{
+	if (!_playerStateMap.Contains(PlayerUID))
+	{
+		UE_LOG(LogTemp, Error, TEXT("UPlayerStateGroup: Invalid PlayerUID: [%d]"), PlayerUID);
+		return false;
+	}
+
+	OutPlayerStateData = _playerStateMap.Find(PlayerUID);
+	return OutPlayerStateData != nullptr;
 }

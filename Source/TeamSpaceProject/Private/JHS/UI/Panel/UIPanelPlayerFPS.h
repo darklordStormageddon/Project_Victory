@@ -3,9 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "JHS/GameControl/CommonEnums.h"
+#include "JHS/Event/CommonEventBase.h"
 #include "JHS/UI/UIBase.h"
 #include "Components/Image.h"
-#include "JHS/GameControl/CommonEnums.h"
 
 #include "UIPanelPlayerFPS.generated.h"
 
@@ -17,19 +18,21 @@ class UUIPanelPlayerFPS : public UUIBase
 private:
 	TMap<E_INTERACT_TYPE, TObjectPtr<UTexture2D>> _interactTextureMap;
 
+	FDelegateHandle _eventHandleOnChangeInteractType;
+
 private:
 	UPROPERTY(meta = (BindWidget))
 	UImage* IMG_Interact;
 
 protected:
-	void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
 
-	//void RegisterEvent() override;
+	void RegisterEvent() override;
 
-	//void UnregisterEvent() override;
+	void UnregisterEvent() override;
 
-public:
-	void InitializeUI();
+private:
+	void OnChangeInteractType(UEventOnChangeInteractType* Event);
 
 	void ChangeInteractable(E_INTERACT_TYPE InteractType);
 };

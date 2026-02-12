@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
+#include "JHS/GameControl/CommonEnums.h"
 
 #include "CommonEventBase.generated.h"
 
@@ -68,6 +69,21 @@ public:
 #pragma endregion SpaceShip
 
 #pragma region Player
+UCLASS(BlueprintType)
+class UEventOnChangeInteractType : public UCommonEventBase
+{
+	GENERATED_BODY()
+
+public:
+	UEventOnChangeInteractType(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{
+	}
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|SpaceShipData")
+	E_INTERACT_TYPE InteractType = E_INTERACT_TYPE::NONE;
+};
+
 UCLASS(BlueprintType)
 class UEventOnChangePlayerRadiation : public UCommonEventBase
 {

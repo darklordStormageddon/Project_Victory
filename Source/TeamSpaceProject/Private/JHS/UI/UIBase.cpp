@@ -5,7 +5,7 @@
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/Event/EventManager.h"
-#include "JHS/UI/Interact/InteractableButton.h"
+#include "JHS/UI/Interact/InteractableUIBase.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Widget.h"
 #include "Components/WidgetComponent.h"
@@ -82,9 +82,13 @@ void UUIBase::UpdateHostCollision()
 	TArray<UWidget*> _allWidgets;
 	UWidget* _treeRoot = (WidgetTree && WidgetTree->RootWidget) ? WidgetTree->RootWidget : this;
 	_allWidgets.Add(_treeRoot);
+	TSet<UWidget*> _seen;
+	_seen.Add(_treeRoot);
+
 	for (int32 _i = 0; _i < _allWidgets.Num(); ++_i)
 	{
-		if (UPanelWidget* _panel = Cast<UPanelWidget>(_allWidgets[_i]))
+		UWidget* _w = _allWidgets[_i];
+		if (UPanelWidget* _panel = Cast<UPanelWidget>(_w))
 		{
 			const int32 _childCount = _panel->GetChildrenCount();
 			for (int32 _c = 0; _c < _childCount; ++_c)
@@ -92,6 +96,19 @@ void UUIBase::UpdateHostCollision()
 				if (UWidget* _child = _panel->GetChildAt(_c))
 				{
 					_allWidgets.Add(_child);
+					_seen.Add(_child);
+				}
+			}
+		}
+		else if (UUserWidget* _userW = Cast<UUserWidget>(_w))
+		{
+			if (_userW->WidgetTree && _userW->WidgetTree->RootWidget)
+			{
+				UWidget* _innerRoot = _userW->WidgetTree->RootWidget;
+				if (!_seen.Contains(_innerRoot))
+				{
+					_allWidgets.Add(_innerRoot);
+					_seen.Add(_innerRoot);
 				}
 			}
 		}
@@ -100,7 +117,7 @@ void UUIBase::UpdateHostCollision()
 	bool _hasInteractable = false;
 	for (UWidget* _w : _allWidgets)
 	{
-		if (Cast<UInteractableButton>(_w) != nullptr)
+		if (Cast<UInteractableUIBase>(_w) != nullptr)
 		{
 			_hasInteractable = true;
 			break;

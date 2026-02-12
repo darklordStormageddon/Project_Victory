@@ -9,7 +9,6 @@
 #include "InteracterComponent.generated.h"
 
 class UUIManager;
-class UUIPanelPlayerFPS;
 class UInteractableComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -25,7 +24,7 @@ private:
 	const E_UI_TYPE _playerUI = E_UI_TYPE::UIPanelPlayerFPS;
 
 	UPROPERTY()
-	TObjectPtr<UUIPanelPlayerFPS> _uiPanelPlayer = nullptr;
+	TObjectPtr<UUIManager> _uiManager = nullptr;
 
 	UPROPERTY()
 	TObjectPtr<UInteractableComponent> _interactable = nullptr;
@@ -45,4 +44,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Interacter|Interact")
 	bool TryInteractInput(bool& OutIsInterupt, bool& OutIsInteractEnter);
+
+private:
+	void ExecuteEventOnChangeInteractType(E_INTERACT_TYPE InteractType);
 };

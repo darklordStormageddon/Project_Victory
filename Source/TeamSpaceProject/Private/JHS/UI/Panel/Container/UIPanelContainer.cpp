@@ -8,26 +8,21 @@ void UUIPanelContainer::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	if (SB_PlateContainer == nullptr || _plateContainerClass == nullptr)
-		return;
-
-	APlayerController* _playerController = GetOwningPlayer();
-	if (_playerController == nullptr)
-		return;
-
-	_plateContainer = CreateWidget<UPlateContainer>(_playerController, _plateContainerClass);
-	if (_plateContainer != nullptr)
+	if (SB_PlateContainer != nullptr && _plateContainerClass != nullptr)
 	{
-		SB_PlateContainer->AddChild(_plateContainer);
+		APlayerController* _playerController = GetOwningPlayer();
+		if (_playerController != nullptr)
+		{
+			_plateContainer = CreateWidget<UPlateContainer>(_playerController, _plateContainerClass);
+			if (_plateContainer != nullptr)
+			{
+				SB_PlateContainer->AddChild(_plateContainer);
+			}
+		}
 	}
 }
 
 void UUIPanelContainer::OnOpen()
 {
 	Super::OnOpen();
-
-	if (_plateContainer != nullptr)
-	{
-		_plateContainer->Open();
-	}
 }
