@@ -57,11 +57,6 @@ void UUIPanelShop::OnOpen()
 {
 	Super::OnOpen();
 
-	if (_plateContainer != nullptr)
-	{
-		_plateContainer->Open();
-	}
-
 	SelectCategory(E_PURCHASE_CATEGORY(0));
 
 	_elementIndex = 0;
@@ -144,7 +139,7 @@ void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
 	int32 _activeCount = _purchaseDataArray.Num();
 
 	TObjectPtr<UPurchaseRow> _rowWidget = nullptr;
-	for (int32 i = 0; i < _activeCount && i < _maxPurchaseRowCount; i++)
+	for (int32 i = 0; i < _activeCount; i++)
 	{
 		if (_purchaseRowMap.Contains(i))
 		{
@@ -237,5 +232,5 @@ void UUIPanelShop::AddElement()
 		return;
 	
 	_containerStateGroup->AddElement((E_ELEMENT_TYPE)_elementIndex, _elementIndex + 1);
-	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &UUIPanelShop::AddElement, 1.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &UUIPanelShop::AddElement, 2.0f, false);
 }

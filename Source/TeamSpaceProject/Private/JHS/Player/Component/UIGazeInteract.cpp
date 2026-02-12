@@ -6,11 +6,12 @@
 #include "Components/WidgetComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/PlayerController.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/PanelWidget.h"
 #include "Layout/Geometry.h"
-#include "JHS/UI/Interact/InteractableButton.h"
+#include "JHS/UI/Interact/InteractableUIBase.h"
 #include "TeamSpaceProject/TeamSpaceProjectCharacter.h"
 
 UIGazeInteract::UIGazeInteract(const FObjectInitializer& ObjectInitializer)
@@ -61,29 +62,105 @@ void UIGazeInteract::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 	}
 #endif
 
-	UInteractableButton* _hitButton = nullptr;
+	UInteractableUIBase* _hitInteractableUI = nullptr;
+	FVector2D _localHitLocation = FVector2D::ZeroVector;
+	bool _hitLocationValid = false;
+
 	if (_bHit)
 	{
-		_hitButton = _FindInteractableFromHit(_hitResult);
+		_hitInteractableUI = _FindInteractableFromHit(_hitResult);
+		if (UWidgetComponent* _widgetComp = Cast<UWidgetComponent>(_hitResult.GetComponent()))
+		{
+			_widgetComp->GetLocalHitLocation(_hitResult.ImpactPoint, _localHitLocation);
+			_hitLocationValid = true;
+		}
 	}
 
-	_UpdateFocus(_hitButton);
+	if (_hitLocationValid)
+	{
+		_lastHitLocationY = _localHitLocation.Y;
+		_lastHitValid = true;
+	}
+	else
+	{
+		_lastHitValid = false;
+	}
+
+	// InteractableUIBase가 Focus(클릭된 스크롤 모드) 상태일 때 Tick에서 마우스 휠 입력을 ProcessMouseWheelInput으로 연동
+	if (_clickedInteractableUI.IsValid())
+	{
+		UInteractableUIBase* _clicked = _clickedInteractableUI.Get();
+		if (_clicked != nullptr && _clicked->WantsScrollInput())
+		{
+			float _wheelDelta = 0.0f;
+			if (APlayerController* _pc = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+			{
+				_wheelDelta = _pc->GetInputAxisValue(FName("MouseWheelAxis"));
+			}
+			if (FMath::Abs(_wheelDelta) > KINDA_SMALL_NUMBER)
+			{
+				ProcessMouseWheelInput(_wheelDelta);
+			}
+		}
+	}
+
+	_UpdateFocus(_hitInteractableUI);
 }
 
-void UIGazeInteract::ClickFocused()
+void UIGazeInteract::ClickEnterFocused()
 {
 	if (!_enabled)
 	{
 		return;
 	}
 
-	UInteractableButton* _button = _focusedButton.Get();
-	if (_button == nullptr)
+	UInteractableUIBase* _interactableUI = _focusedInteractableUI.Get();
+	if (_interactableUI == nullptr)
 	{
 		return;
 	}
 
-	_button->Click();
+	_clickedInteractableUI = _interactableUI;
+	_interactableUI->ClickEnter();
+}
+
+void UIGazeInteract::ClickExitFocused()
+{
+	if (!_enabled)
+	{
+		return;
+	}
+
+	UInteractableUIBase* _interactableUI = _clickedInteractableUI.Get();
+	if (_interactableUI != nullptr)
+	{
+		_interactableUI->ClickExit();
+	}
+
+	_clickedInteractableUI.Reset();
+	_lastHitValid = false;
+}
+
+void UIGazeInteract::ClickFocused()
+{
+	ClickEnterFocused();
+	ClickExitFocused();
+}
+
+void UIGazeInteract::ProcessMouseWheelInput(float Delta)
+{
+	if (!_enabled || FMath::Abs(Delta) <= KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+
+	UInteractableUIBase* _target = _focusedInteractableUI.Get();
+	if (_target == nullptr)
+	{
+		return;
+	}
+
+	_target->ProcessScrollInput(Delta);
 }
 
 void UIGazeInteract::SetEnabled(bool bEnabled)
@@ -113,7 +190,7 @@ UCameraComponent* UIGazeInteract::_ResolveCamera() const
 	return _ownerActor->FindComponentByClass<UCameraComponent>();
 }
 
-UInteractableButton* UIGazeInteract::_FindInteractableFromHit(const FHitResult& HitResult) const
+UInteractableUIBase* UIGazeInteract::_FindInteractableFromHit(const FHitResult& HitResult) const
 {
 	UWidgetComponent* _widgetComponent = Cast<UWidgetComponent>(HitResult.GetComponent());
 
@@ -196,13 +273,13 @@ UInteractableButton* UIGazeInteract::_FindInteractableFromHit(const FHitResult& 
 	static constexpr float _slack = 2.0f;
 	for (int32 _i = _allWidgets.Num() - 1; _i >= 0; --_i)
 	{
-		UInteractableButton* _button = Cast<UInteractableButton>(_allWidgets[_i]);
-		if (_button == nullptr)
+		UInteractableUIBase* _interactableUI = Cast<UInteractableUIBase>(_allWidgets[_i]);
+		if (_interactableUI == nullptr)
 		{
 			continue;
 		}
 
-		const FGeometry& _geometry = _button->GetCachedGeometry();
+		const FGeometry& _geometry = _interactableUI->GetCachedGeometry();
 		const FVector2D _size = _geometry.GetLocalSize();
 		if (_size.X <= 0.0f || _size.Y <= 0.0f)
 		{
@@ -231,17 +308,17 @@ UInteractableButton* UIGazeInteract::_FindInteractableFromHit(const FHitResult& 
 		if (_localHitLocation.X >= _min.X && _localHitLocation.X <= _max.X &&
 		    _localHitLocation.Y >= _min.Y && _localHitLocation.Y <= _max.Y)
 		{
-			return _button;
+			return _interactableUI;
 		}
 	}
 
 	return nullptr;
 }
 
-void UIGazeInteract::_UpdateFocus(UInteractableButton* NewButton)
+void UIGazeInteract::_UpdateFocus(UInteractableUIBase* NewInteractableUI)
 {
-	UInteractableButton* _prev = _focusedButton.Get();
-	if (_prev == NewButton)
+	UInteractableUIBase* _prev = _focusedInteractableUI.Get();
+	if (_prev == NewInteractableUI)
 	{
 		return;
 	}
@@ -251,11 +328,11 @@ void UIGazeInteract::_UpdateFocus(UInteractableButton* NewButton)
 		_prev->Unfocus();
 	}
 
-	_focusedButton = NewButton;
+	_focusedInteractableUI = NewInteractableUI;
 
-	if (NewButton != nullptr)
+	if (NewInteractableUI != nullptr)
 	{
-		NewButton->Focus();
+		NewInteractableUI->Focus();
 	}
 }
 

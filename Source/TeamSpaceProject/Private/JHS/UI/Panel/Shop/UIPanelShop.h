@@ -48,16 +48,17 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UPlateContainer> _plateContainerClass;
 
+	UPROPERTY()
 	TMap<E_PURCHASE_CATEGORY, TObjectPtr<UPurchaseCategory>> _purchaseCategoryMap;
 
 	UPROPERTY()
 	TObjectPtr<UPlateContainer> _plateContainer = nullptr;
 
+	UPROPERTY()
 	TMap<int32, TObjectPtr<UPurchaseRow>> _purchaseRowMap;
 
+	UPROPERTY()
 	E_PURCHASE_CATEGORY _selectedCategory = E_PURCHASE_CATEGORY::SpaceShip;
-
-	static constexpr int32 _maxPurchaseRowCount = 50;
 
 protected:
 	void NativeOnInitialized() override;

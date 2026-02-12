@@ -1,43 +1,46 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "JHS/UI/Panel/Container/PlateContainer.h"
-#include "JHS/GameControl/CommonEnums.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
+#include "JHS/GameControl/CommonEnums.h"
+#include "Kismet/GameplayStatics.h"
 #include "JHS/UI/Panel/Container/ContainerItemSlot.h"
-#include "Components/ScrollBox.h"
+#include "JHS/UI/Interact/InteractableScrollBox.h"
 #include "Components/TextBlock.h"
 
 void UPlateContainer::NativeOnInitialized()
 {
 }
 
-void UPlateContainer::RegisterEvent()
+void UPlateContainer::NativeConstruct()
 {
-	_eventHandleOnChangeElementData = GetEventManager()->AddListener<UEventOnChangeElementData>(
+	UEventManager* _outEventManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetEventManager(_outEventManager))
+		return;
+
+	_eventHandleOnChangeElementData = _outEventManager->AddListener<UEventOnChangeElementData>(
 		[this](UEventOnChangeElementData* Event)
 		{
 			OnChangeElementData(Event);
 		}
 	);
-}
 
-void UPlateContainer::UnregisterEvent()
-{
-	if (_eventHandleOnChangeElementData.IsValid())
-	{
-		GetEventManager()->DelListener<UEventOnChangeElementData>(_eventHandleOnChangeElementData);
-		_eventHandleOnChangeElementData.Reset();
-	}
-}
-
-void UPlateContainer::OnOpen()
-{
 	_currentSlotCount = _elementSlotMap.Num();
 }
 
-void UPlateContainer::OnClose()
+void UPlateContainer::NativeDestruct()
 {
+	UEventManager* _outEventManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetEventManager(_outEventManager))
+		return;
+
+	if (_eventHandleOnChangeElementData.IsValid())
+	{
+		_outEventManager->DelListener<UEventOnChangeElementData>(_eventHandleOnChangeElementData);
+		_eventHandleOnChangeElementData.Reset();
+	}
 }
 
 void UPlateContainer::OnChangeElementData(UEventOnChangeElementData* Event)
@@ -46,11 +49,9 @@ void UPlateContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 		return;
 
 	const FElementData _elementData = Event->ElementData;
-	const int32 _cumulativePrice = Event->CumulativePrice;
-	const int32 _ownedDollar = Event->OwnedDollar;
-	const int32 _goalDollar = Event->GoalDollar;
 	const bool _isRemove = _elementData.Amount <= 0;
 
+	// Slot
 	if (_isRemove)
 	{
 		TObjectPtr<UContainerItemSlot> _removeSlot = nullptr;
@@ -85,17 +86,24 @@ void UPlateContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 		_slotWidget->UpdateItemInfo(_elementData);
 	}
 
-	TXT_CumulativePrice->SetText(FText::AsNumber(_cumulativePrice));
-	TXT_OwnedDollar->SetText(FText::AsNumber(_ownedDollar));
+	SortItemSlot();
 
-	const int32 _expectDollar = _cumulativePrice + _ownedDollar;
+	// Text
+	const int32 _goalDollar = Event->GoalDollar;
+
+	_targetCumulativePrice = Event->CumulativePrice;
+	_targetOwnedDollar = Event->OwnedDollar;
+
+	const int32 _expectDollar = _targetCumulativePrice + _targetOwnedDollar;
 	TXT_ExpectDollar->SetText(FText::AsNumber(_expectDollar));
 	FLinearColor _expectDollarColor = _expectDollar < _goalDollar ? _lessExpectDollarColor : _overExpectDollarColor;
 	TXT_ExpectDollar->SetColorAndOpacity(_expectDollarColor);
 
 	TXT_GoalDollar->SetText(FText::AsNumber(_goalDollar));
 
-	SortItemSlot();
+	// Start Update
+	ClearTimer();
+	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &UPlateContainer::UpdateText, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), false);
 }
 
 TObjectPtr<UContainerItemSlot> UPlateContainer::CreateAndRegisterElementSlot(E_ELEMENT_TYPE ElementType)
@@ -140,4 +148,55 @@ void UPlateContainer::SortItemSlot()
 			SB_Items->AddChild(_slot);
 		}
 	}
+}
+
+void UPlateContainer::ClearTimer()
+{
+	GetWorld()->GetTimerManager().ClearTimer(_timerHandle);
+	_currentEffectUpdateTime = 0.0f;
+}
+
+void UPlateContainer::UpdateText()
+{
+	float _deltaTime = UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
+
+	bool _isComplete = true;
+	// Cumulative Price
+	if (!UpdateValue(&_currentCumulativePrice, _targetCumulativePrice, TXT_CumulativePrice))
+	{
+		_isComplete = false;
+	}
+
+	// Owned Dollar
+	if (!UpdateValue(&_currentOwnedDollar, _targetOwnedDollar, TXT_OwnedDollar))
+	{
+		_isComplete = false;
+	}
+	
+	if (_isComplete)
+	{
+		ClearTimer();
+		return;
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &UPlateContainer::UpdateText, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), false);
+}
+
+bool UPlateContainer::UpdateValue(float* CurrentValue, float TargetValue, TObjectPtr<UTextBlock> TextBlock)
+{
+	if (TextBlock == nullptr)
+		return true;
+
+	_currentEffectUpdateTime += UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
+	if (_currentEffectUpdateTime >= _effectUpdateTime)
+	{
+		*CurrentValue = TargetValue;
+		TextBlock->SetText(FText::AsNumber((int32)*CurrentValue));
+		return true;
+	}
+	
+	const float _updateRate = _currentEffectUpdateTime / _effectUpdateTime;
+	*CurrentValue = FMath::Lerp(*CurrentValue, TargetValue, _updateRate);
+	TextBlock->SetText(FText::AsNumber((int32)*CurrentValue));
+	return false;
 }

@@ -8,7 +8,7 @@
 #include "UIGazeInteract.generated.h"
 
 class UCameraComponent;
-class UInteractableButton;
+class UInteractableUIBase;
 struct FHitResult;
 
 /**
@@ -30,9 +30,21 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	// 현재 포커스된 버튼을 클릭(입력 바인딩은 Pawn/Controller에서 이 함수를 호출하도록 구성)
+	// 클릭 입력 시작 (Press 시 호출 - 입력 바인딩은 Pawn/Controller에서 구성)
 	UFUNCTION(BlueprintCallable, Category = "UI|Gaze")
+	void ClickEnterFocused();
+
+	// 클릭 입력 종료 (Release 시 호출)
+	UFUNCTION(BlueprintCallable, Category = "UI|Gaze")
+	void ClickExitFocused();
+
+	// 구버전 호환: 한 번 호출 시 ClickEnter + ClickExit 순차 호출 (바인딩을 ClickEnterFocused/ClickExitFocused로 분리 권장)
+	UFUNCTION(BlueprintCallable, Category = "UI|Gaze", meta = (DeprecationMessage = "ClickEnterFocused와 ClickExitFocused로 분리 바인딩하세요"))
 	void ClickFocused();
+
+	/** 블루프린트에서 IA_Input(마우스 휠) 바인딩 시 호출. Delta를 InteractableUIBase::ProcessScrollInput으로 전달. Tick에서도 MouseWheelAxis를 읽어 자동 연동 */
+	UFUNCTION(BlueprintCallable, Category = "UI|Gaze")
+	void ProcessMouseWheelInput(float Delta);
 
 	UFUNCTION(BlueprintCallable, Category = "UI|Gaze")
 	void SetEnabled(bool bEnabled);
@@ -52,11 +64,17 @@ private:
 	// ---- Runtime state ----
 	bool _enabled = true;
 
-	TWeakObjectPtr<UInteractableButton> _focusedButton;
+	TWeakObjectPtr<UInteractableUIBase> _focusedInteractableUI;
+
+	TWeakObjectPtr<UInteractableUIBase> _clickedInteractableUI;
+
+	float _lastHitLocationY = 0.0f;
+
+	bool _lastHitValid = false;
 
 private:
 	UCameraComponent* _ResolveCamera() const;
-	UInteractableButton* _FindInteractableFromHit(const FHitResult& HitResult) const;
-	void _UpdateFocus(UInteractableButton* NewButton);
+	UInteractableUIBase* _FindInteractableFromHit(const FHitResult& HitResult) const;
+	void _UpdateFocus(UInteractableUIBase* NewInteractableUI);
 };
 
