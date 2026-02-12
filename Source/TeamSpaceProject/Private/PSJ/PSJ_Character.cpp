@@ -65,6 +65,11 @@ void APSJ_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APSJ_Character, ReplicatedRelativeData);
+
+	// [해설] COND_SkipOwner: "나는 내가 뭘 눌렀는지 이미 아니까, 서버 너는 나 뺴고 다른 애들한테만 알려줘" 
+	// (이렇게 해야 반응 속도가 빠르고 렉이 안 걸립니다.)
+	DOREPLIFETIME_CONDITION(APSJ_Character, CurrentInputVector, COND_SkipOwner);
+	DOREPLIFETIME_CONDITION(APSJ_Character, bIsSprinting, COND_SkipOwner);
 }
 
 void APSJ_Character::PossessedBy(AController* NewController)
@@ -464,6 +469,13 @@ void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &APSJ_Character::Input_Jump);
 		}
 
+		// 주의: 에디터의 BP_Character에서 SprintAction에 IA_Sprint를 꼭 넣어주세요!
+		if (SprintAction)
+		{
+			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &APSJ_Character::Input_SprintStart);
+			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &APSJ_Character::Input_SprintStop);
+		}
+
 		// [신규 추가] 강제 하차 (Force Eject - 마우스 우클릭 등)
 		if (ForceEjectAction)
 		{
@@ -557,6 +569,8 @@ void APSJ_Character::Interact(const FInputActionValue& Value)
 void APSJ_Character::Move(const FInputActionValue& Value)
 {
 	CurrentInputVector = Value.Get<FVector2D>();
+	// 2. [추가] 서버한테도 알려줌!
+	Server_SetInputVector(CurrentInputVector);
 
 	if (!CurrentInputVector.IsNearlyZero())
 	{
@@ -574,6 +588,8 @@ void APSJ_Character::Move(const FInputActionValue& Value)
 void APSJ_Character::StopMove(const FInputActionValue& Value)
 {
 	CurrentInputVector = FVector2D::ZeroVector;
+	// 2. [추가] 서버한테 멈췄다고 알려줌!
+	Server_SetInputVector(FVector2D::ZeroVector);
 }
 
 void APSJ_Character::Look(const FInputActionValue& Value)
@@ -1054,4 +1070,38 @@ void APSJ_Character::Server_StopRepair_Implementation()
 		ServerRepairTarget->RemoveRepairer(this);
 		ServerRepairTarget = nullptr;
 	}
+}
+
+// 2. 파일 맨 아래(혹은 편한 곳)에 구현부를 추가하세요.
+void APSJ_Character::Input_SprintStart(const FInputActionValue& Value)
+{
+	bIsSprinting = true;
+}
+
+void APSJ_Character::Input_SprintStop(const FInputActionValue& Value)
+{
+	bIsSprinting = false;
+}
+
+// --- 입력 벡터 동기화 RPC ---
+bool APSJ_Character::Server_SetInputVector_Validate(FVector2D NewInput)
+{
+	return true;
+}
+
+void APSJ_Character::Server_SetInputVector_Implementation(FVector2D NewInput)
+{
+	// 서버가 클라이언트의 입력값을 받아서 자기 변수에 업데이트
+	CurrentInputVector = NewInput;
+}
+
+// --- 달리기 동기화 RPC ---
+bool APSJ_Character::Server_SetSprinting_Validate(bool bNewSprinting)
+{
+	return true;
+}
+
+void APSJ_Character::Server_SetSprinting_Implementation(bool bNewSprinting)
+{
+	bIsSprinting = bNewSprinting;
 }
