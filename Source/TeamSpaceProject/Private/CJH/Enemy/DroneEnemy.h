@@ -9,15 +9,6 @@
 
 class ABullet;
 
-// ===== LOD 레벨 정의 =====
-UENUM(BlueprintType)
-enum class ELODLevel : uint8
-{
-	Close = 0,     // 0~250m (25,000 UU): 최고 품질
-	Far = 1,       // 250m~500m (25,000~50,000 UU): 중간 품질
-	VeryFar = 2    // 500m 이상 (50,000 UU 이상): 최저 품질
-};
-
 UCLASS()
 class ADroneEnemy : public AGarbageEnemyBase
 {
@@ -39,6 +30,7 @@ private:
 	float RotateSpeed = 50.0f;
 
 	// 타켓을 추격 중인지 여부
+	UPROPERTY(Replicated)
 	bool bIsChasing = false;
 
 	// 스핀 속도 (도/초)
@@ -46,83 +38,76 @@ private:
 	float SpinSpeed = 100.0f;
 
 	// --- Chase & Orbit 관련 ---
-	// 공전 곡선 기본 진폭(미터)
 	UPROPERTY(EditDefaultsOnly, Category = "Chase", meta = (ClampMin = "0.0"))
 	float ChaseCurveAmplitude = 300.0f;
 
-	// 공전 곡선 진동빈도(회/초)
 	UPROPERTY(EditDefaultsOnly, Category = "Chase", meta = (ClampMin = "0.0"))
 	float ChaseCurveFrequency = 0.5f;
 
-	// 위상 업데이트: 각도(rad)
+	UPROPERTY(Replicated)
 	float ChaseCurvePhase = 0.0f;
 
-	// 위상 업데이트: 방향 부호(sign, ±1)
 	float ChaseCurveSign = 1.0f;
 
-	// 공전 추격 거리(Detail모드 한정)
 	UPROPERTY(EditDefaultsOnly, Category = "Drone", meta = (ClampMin = "100.0", ClampMax = "10000.0"))
 	float ChaseDistance = 2000.0f;
 
-	// 회전축 벡터
 	FVector RotationAxis;
 
+	UPROPERTY(Replicated)
 	bool bOrbiting = false;
 
-	// 각속도 현재속도(라디안/초) 캐시/타겟, 천천한 보간으로 자연스러운 감소
+	UPROPERTY(Replicated)
 	float AngularSpeedCurrent = 0.0f;
+
 	float AngularSpeedTarget = 0.0f;
 	UPROPERTY(EditDefaultsOnly, Category = "Chase")
-	float AngularLerpSpeed = 1.0f; // 느린 가속 속도
+	float AngularLerpSpeed = 1.0f;
 
-	// 방향 변경 주기 & 확률
 	float TimeSinceDirChange = 0.0f;
 	UPROPERTY(EditDefaultsOnly, Category = "Chase")
 	float DirChangeInterval = 4.0f;
 	UPROPERTY(EditDefaultsOnly, Category = "Chase")
 	float DirReverseProbability = 0.25f;
 
-	// 공전축이 아닌 수직 방향의 tilt 각도/타겟 값
-	float TiltAngleCurrent = 0.0f;          // 현재 각도
-	float TiltAngleTarget = 0.0f;           // 목표 각도
+	UPROPERTY(Replicated)
+	float TiltAngleCurrent = 0.0f;
+
+	float TiltAngleTarget = 0.0f;
 	UPROPERTY(EditDefaultsOnly, Category = "Chase|Tilt", meta = (ClampMin = "0.0", ClampMax = "89.0"))
-	float TiltAngleRange = 45.0f;           // 범위선 (도)
+	float TiltAngleRange = 45.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Chase|Tilt")
-	float TiltLerpSpeed = 0.5f;             // 틸트 보간 속도(느림)
+	float TiltLerpSpeed = 0.5f;
 
-	float TiltAxisYaw = 0.0f;               // tilt axis를 정의하는 수평 Yaw (deg)
+	UPROPERTY(Replicated)
+	float TiltAxisYaw = 0.0f;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Chase|Tilt")
-	float TiltChangeInterval = 3.0f;        // tilt 타겟 변경 주기(sec)
+	float TiltChangeInterval = 3.0f;
 	float TimeSinceTiltChange = 0.0f;
 
-	// 진동하는 미세한 공전 (허브)
 	UPROPERTY(EditDefaultsOnly, Category = "Chase|Tilt")
-	float TiltOscAmplitude = 5.0f;          // 진폭
+	float TiltOscAmplitude = 5.0f;
 	UPROPERTY(EditDefaultsOnly, Category = "Chase|Tilt")
-	float TiltOscFrequency = 0.2f;          // Hz
+	float TiltOscFrequency = 0.2f;
 
-	float LoseTargetTime = 0.0f; 
+	float LoseTargetTime = 0.0f;
 	UPROPERTY(EditDefaultsOnly, Category = "Chase|Target")
 	float LoseTargetDelay = 1.2f;
 
-	UPROPERTY(ReplicatedUsing = OnRep_ServerTransform)
-	FTransform ServerTransform;
+	// 클라: 속도 기반 예측 이동
+	FVector ClientVelocity = FVector::ZeroVector;
+	FVector ClientTargetLoc = FVector::ZeroVector;
+	FRotator ClientTargetRot = FRotator::ZeroRotator;
+	bool bClientInitialized = false;
 
-	FTransform PrevTransform;
-	float InterpAlpha;
-	float InterpDuration = 0.05f;
-	float LastServerUpdateTime = 0.0f;
-	bool bHasServerTransform = false;
+	// 서버 위치 보정용
+	UPROPERTY(Replicated)
+	FVector_NetQuantize ServerLocation;
 
-	UFUNCTION()
-	void OnRep_ServerTransform();
-
-	// ===== LOD 관련 멤버 변수 =====
-	UPROPERTY()
-	ELODLevel CurrentLOD = ELODLevel::Close;
-
-	FTimerHandle LODTimerHandle;
+	UPROPERTY(Replicated)
+	FRotator ServerRotation;
 
 private:
 	void Move(float DeltaTime);
@@ -139,9 +124,23 @@ private:
 
 	void EnableFiring() { CanFire = true; }
 
-	// ===== LOD 함수 =====
-	void UpdateLOD();
-	void ApplyLODSettings();
+	// 클라이언트 로컬 이동 (ChaseMove의 공전 부분)
+	void ClientChaseMove(float DeltaTime);
+	void ClientCorrectPosition(float DeltaTime);
+
+protected:
+	// 서버 → 클라: 위치 + 속도
+	UPROPERTY(ReplicatedUsing = OnRep_ServerState)
+	FVector_NetQuantize RepLocation;
+
+	UPROPERTY(Replicated)
+	FRotator RepRotation;
+
+	UPROPERTY(Replicated)
+	FVector_NetQuantize RepVelocity;
+
+	UFUNCTION()
+	void OnRep_ServerState();
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastFireEffect();

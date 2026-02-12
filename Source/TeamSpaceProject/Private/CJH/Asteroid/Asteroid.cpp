@@ -10,6 +10,7 @@
 
 #include "JHS/SpaceObject/SpaceObjectComponent.h"
 
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 
@@ -18,9 +19,13 @@ AAsteroid::AAsteroid()
 	PrimaryActorTick.bCanEverTick = true;
 
 	bReplicates = true;
-	SetReplicateMovement(true);
-	NetUpdateFrequency = 30.0f;
-	MinNetUpdateFrequency = 15.0f;
+	SetReplicateMovement(false);
+	NetUpdateFrequency = 20.0f;
+	MinNetUpdateFrequency = 10.0f;
+	NetPriority = 1.0f;
+	bAlwaysRelevant = false;
+	SetNetDormancy(DORM_Awake);
+	NetCullDistanceSquared = 10000000000.0f; // 100000 UU radius
 
 	SpaceObjectComp = CreateDefaultSubobject<USpaceObjectComponent>(TEXT("SpaceObjectComponent"));
 
@@ -61,10 +66,10 @@ void AAsteroid::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	MoveAsteroid(DeltaTime);
+
 	if (!HasAuthority())
 		return;
-	
-	MoveAsteroid(DeltaTime);
 
 	float DestroyDist = FVector::Dist(SpaceStation->GetActorLocation(), GetActorLocation());
 	
@@ -250,4 +255,11 @@ bool AAsteroid::GetSpaceManager()
 	}
 
 	return true;
+}
+
+void AAsteroid::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AAsteroid, Direction);
 }
