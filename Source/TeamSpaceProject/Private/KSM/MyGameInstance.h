@@ -6,7 +6,7 @@
 #include "Engine/GameInstance.h"
 #include "OnlineSubsystem.h"
 #include "Interfaces/OnlineSessionInterface.h"
-#include "OnlineSessionSettings.h"
+
 #include "MyGameInstance.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSessionListUpdated);
@@ -15,13 +15,6 @@ USTRUCT(BlueprintType)
 struct FServerData
 {
 	GENERATED_BODY()
-
-	FServerData()
-		: Name(TEXT(""))
-		, CurrentPlayers(0)
-		, Accessibility(false)
-		, SearchResultIndex(-1)
-	{}
 public:
 	UPROPERTY(BlueprintReadWrite)
 	FString Name;
@@ -61,10 +54,7 @@ private:
 	void OnDestroySessioncomplete(FName InSessionName, bool IsSuccess);
 	void OnFindSessioncomplete(bool IsSuccess);
 	void OnJoinSessioncomplete(FName InSessionName, EOnJoinSessionCompleteResult::Type InResult);
-	void OnStartSessionComplete(FName SessionName, bool bWasSuccessful);
 	void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
-	
-	bool bPendingTravel = false;
 
 	void CreateSession();
 
