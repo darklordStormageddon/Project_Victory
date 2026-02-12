@@ -60,7 +60,7 @@ void UUIPanelShop::OnOpen()
 	SelectCategory(E_PURCHASE_CATEGORY(0));
 
 	_elementIndex = 0;
-	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &UUIPanelShop::AddElement, 3.0f, false);
+	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &UUIPanelShop::AddElement, 3.0f, false);
 }
 
 void UUIPanelShop::CreatePurchaseCategories()

@@ -459,6 +459,7 @@ void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APSJ_Character::Look);
 		}
 
+
 		// (3) 상호작용 (Interact - 탑승하기)
 		if (InteractAction)
 		{
