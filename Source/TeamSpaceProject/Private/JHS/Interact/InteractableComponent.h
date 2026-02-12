@@ -96,7 +96,7 @@ public:
 public:
 	void InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType, bool IsWorldSpaceUI, FVector WorldUIRelativeLocation, float WorldUIScale);
 
-	bool TryInteract(AActor* Caller, bool& OutIsInterupt, bool& OutIsInteractEnter);
+	bool TryInteract(AActor* Caller, bool& OutIsInterupt, bool& IsCloseUI);
 
 private:
 	void ChangeInteractState(bool IsInteract, AActor* Caller);

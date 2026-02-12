@@ -3,6 +3,8 @@
 
 #include "JHS/Event/EventManager.h"
 
+TMap<UClass*, TMulticastDelegate<void(UCommonEventBase*)>> UEventManager::_eventDelegates;
+
 UEventManager::UEventManager(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {

@@ -27,24 +27,48 @@ void UUIPanelCommonInfo::UnregisterEvent()
 	}
 }
 
-void UUIPanelCommonInfo::OnChangePlayerRadiation(UEventOnChangePlayerRadiation* Event)
+void UUIPanelCommonInfo::InitializeUI(int32 PlayerNum)
 {
-	if (Event == nullptr)
-		return;
-
-	if (_playerRadiationDoseMap.Num() <= 0)
+	if (!Plate_RadiationDose)
 	{
-		AJHSGameState* _outGameState = nullptr;
-		if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
-			return;
-
-		BuildRows(_outGameState->GetPlayerStateGroup()->GetPlayerCount());
+		UE_LOG(LogTemp, Error, TEXT("UIPanelPlayerFPS: Plate_RadiationDose or WBP_PlayerInfoRow is nullptr"));
+		return;
 	}
 
-	FPlayerStateData _maxCurrentData = Event->PlayerStateData;
+	ClearDynamicRows();
 
-	_playerRadiationDoseMap[_maxCurrentData.PlayerIdx]->UpdatePlayerRadiationDose(_maxCurrentData.Radiation);
+	UClass* _widgetClass = WBP_PlayerInfoRow->GetClass();
+	if (!_widgetClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UIPanelPlayerFPS: Failed to get widget class from WBP_PlayerInfoRow"));
+		return;
+	}
 
+	APlayerController* _playerController = GetOwningPlayer();
+	if (!_playerController)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UIPanelPlayerFPS: Failed to get PlayerController"));
+		return;
+	}
+
+	for (int32 _playerIndex = PlayerNum - 1; _playerIndex >= 0; --_playerIndex)
+	{
+		UPlayerInfoRow* _row = CreateWidget<UPlayerInfoRow>(_playerController, _widgetClass);
+		if (!_row)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UIPanelPlayerFPS: Failed to create widget for player %d"), _playerIndex);
+			continue;
+		}
+
+		_row->InitializeRaw(_playerIndex + 1);
+
+		_row->SetVisibility(ESlateVisibility::Visible);
+		Plate_RadiationDose->AddChild(_row);
+
+		_playerRadiationDoseMap.Add(_playerIndex, _row);
+
+		//UE_LOG(LogTemp, Warning, TEXT("UIPanelPlayerFPS: Created and added widget for player %d"), _playerIndex);
+	}
 }
 
 void UUIPanelCommonInfo::ClearDynamicRows()
@@ -60,50 +84,13 @@ void UUIPanelCommonInfo::ClearDynamicRows()
 	}
 }
 
-void UUIPanelCommonInfo::BuildRows(int32 InPlayerCount)
+void UUIPanelCommonInfo::OnChangePlayerRadiation(UEventOnChangePlayerRadiation* Event)
 {
-	if (!Plate_RadiationDose)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UIPanelPlayerFPS: Plate_RadiationDose or WBP_PlayerInfoRow is nullptr"));
+	if (Event == nullptr)
 		return;
-	}
 
-	ClearDynamicRows();
+	FPlayerStateData _maxCurrentData = Event->PlayerStateData;
 
-	// WBP_PlayerInfoRow�� ���� Ŭ���� �������� (��������Ʈ Ŭ������ �� ����)
-	UClass* _widgetClass = WBP_PlayerInfoRow->GetClass();
-	if (!_widgetClass)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UIPanelPlayerFPS: Failed to get widget class from WBP_PlayerInfoRow"));
-		return;
-	}
+	_playerRadiationDoseMap[_maxCurrentData.PlayerIndex]->UpdatePlayerRadiationDose(_maxCurrentData.Radiation);
 
-	// PlayerController �������� (CreateWidget�� �ʿ�)
-	APlayerController* _playerController = GetOwningPlayer();
-	if (!_playerController)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UIPanelPlayerFPS: Failed to get PlayerController"));
-		return;
-	}
-	for (int32 _playerIndex = InPlayerCount - 1; _playerIndex >= 0; --_playerIndex)
-	{
-		// GetClass()�� ����Ͽ� ��������Ʈ Ŭ������ �ùٸ��� ó��
-		UPlayerInfoRow* _row = CreateWidget<UPlayerInfoRow>(_playerController, _widgetClass);
-		if (!_row)
-		{
-			UE_LOG(LogTemp, Error, TEXT("UIPanelPlayerFPS: Failed to create widget for player %d"), _playerIndex);
-			continue;
-		}
-
-		// ���� �ʱ�ȭ
-		_row->InitializeRaw(_playerIndex + 1);
-
-		// Visibility Ȯ�� �� ����
-		_row->SetVisibility(ESlateVisibility::Visible);
-		Plate_RadiationDose->AddChild(_row);
-
-		_playerRadiationDoseMap.Add(_playerIndex, _row);
-
-		//UE_LOG(LogTemp, Warning, TEXT("UIPanelPlayerFPS: Created and added widget for player %d"), _playerIndex);
-	}
 }

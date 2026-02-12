@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
+#include "JHS/GameControl/JHSPlayerState.h"
 
 #include "PlayerStateGroup.generated.h"
 
@@ -26,8 +27,11 @@ private:
 	UPROPERTY()
 	TMap<int32, FPlayerStateData> _playerStateMap;
 
+	UPROPERTY()
+	FPurchaseData _playerRadiationData;
+
 public:
-	int32 GetPlayerCount() { return _playerStateMap.Num(); }
+	FPurchaseData GetPlayerRadiationData() { return _playerRadiationData; }
 
 protected:
 	// Called when the game starts
@@ -38,9 +42,18 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	void InitializePlayerState(TObjectPtr<AJHSGameState> GameState, TArray<FPlayerStateData> PlayerStateArray, float MaxPlayerRadiation);
+	void InitializePlayerState(TObjectPtr<AJHSGameState> GameState, FPurchaseData PlayerRadiation);
 
 	void UpdatePlayerState();
 
+	bool TryRegistPlayer(TObjectPtr<AJHSPlayerState> PlayerState, FString PlayerName, E_REGIST_ERROR_TYPE& ErrorType);
+
+	void ReadyPlayer(int32 PlayerUID);
+
+	bool IsAllPlayerReady();
+
 	void IncreasePlayerRadiation(int32 PlayerIdx, float IncreaseValue);
+
+private:
+	bool TryGetPlayerStateData(int32 PlayerUID, FPlayerStateData*& OutPlayerStateData);
 };

@@ -3,17 +3,32 @@
 
 #include "JHS/UI/Panel/UIPanelPlayerFPS.h"
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
+#include "JHS/Event/EventManager.h"
 
-void UUIPanelPlayerFPS::NativeConstruct()
+void UUIPanelPlayerFPS::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
 	ChangeInteractable(E_INTERACT_TYPE::Idle);
 }
 
-void UUIPanelPlayerFPS::InitializeUI()
+void UUIPanelPlayerFPS::RegisterEvent()
 {
-	ChangeInteractable(E_INTERACT_TYPE::Idle);
+	_eventHandleOnChangeInteractType = GetEventManager()->AddListener<UEventOnChangeInteractType>(
+		[this](UEventOnChangeInteractType* Event)
+		{
+			OnChangeInteractType(Event);
+		}
+	);
+}
+
+void UUIPanelPlayerFPS::UnregisterEvent()
+{
+	if (_eventHandleOnChangeInteractType.IsValid())
+	{
+		GetEventManager()->DelListener<UEventOnChangeInteractType>(_eventHandleOnChangeInteractType);
+		_eventHandleOnChangeInteractType.Reset();
+	}
 }
 
 void UUIPanelPlayerFPS::ChangeInteractable(E_INTERACT_TYPE InteractType)
@@ -44,4 +59,12 @@ void UUIPanelPlayerFPS::ChangeInteractable(E_INTERACT_TYPE InteractType)
 	}
 
 	IMG_Interact->SetBrushFromTexture(_texture);
+}
+
+void UUIPanelPlayerFPS::OnChangeInteractType(UEventOnChangeInteractType* Event)
+{
+	if (Event == nullptr)
+		return;
+
+	ChangeInteractable(Event->InteractType);
 }

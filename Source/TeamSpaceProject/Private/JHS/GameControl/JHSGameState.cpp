@@ -11,6 +11,7 @@
 #include "JHS/Event/EventManager.h"
 #include "JHS/UI/UIManager.h"
 #include "JHS/UI/UIBase.h"
+#include "Kismet/GameplayStatics.h"
 
 AJHSGameState::AJHSGameState()
 {
@@ -32,23 +33,14 @@ void AJHSGameState::BeginPlay()
 {
 	Super::BeginPlay();
 
-	TArray<FPlayerStateData> _playerStateArray;
-	for (int32 i = 0; i < _testPlayerCount; i++)
-	{
-		FPlayerStateData _new;
-		_new.PlayerUID = i;
-		_new.PlayerIdx = i;
-		_playerStateArray.Add(_new);
-	}
-
-	InitializeGameState(_playerStateArray);
+	InitializeGameState();
 }
 
-void AJHSGameState::InitializeGameState(TArray<FPlayerStateData> PlayerStateArray)
+void AJHSGameState::InitializeGameState()
 {
 	_spaceShipStateGroup->InitializeSpaceShipState(this);
 
-	_playerStateGroup->InitializePlayerState(this, PlayerStateArray, _maxPlayerRadiation);
+	_playerStateGroup->InitializePlayerState(this, _playerRadiation);
 
 	_collectStateGroup->InitializeCollectState(this);
 

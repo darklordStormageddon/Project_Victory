@@ -166,11 +166,7 @@ UUIBase* UUIManager::OpenUIInWorld(E_UI_TYPE UIType, AActor* OwnerActor, FVector
 
 	// UI 위젯 가져오기
 	UUserWidget* _widget = _widgetComponent->GetWidget();
-	if (_widget != nullptr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[UIManager] Widget created successfully"));
-	}
-	else
+	if (_widget == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[UIManager] Widget is null after InitWidget"));
 	}

@@ -59,10 +59,4 @@ public:
 	
 		return _enumName;
 	}
-
-	static bool TryGetInteractType(FString InEnumName, E_INTERACT_TYPE& OutInteractType);
-
-	static bool TryGetElementType(FString InEnumName, E_ELEMENT_TYPE& OutElementType);
-
-	static bool TryGetAmmoType(FString InEnumName, E_AMMO_TYPE& OutAmmoType);
 };

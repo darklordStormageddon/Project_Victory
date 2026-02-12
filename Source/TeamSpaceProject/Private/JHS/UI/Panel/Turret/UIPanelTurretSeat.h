@@ -83,6 +83,6 @@ protected:
 
 	void UnregisterEvent() override;
 
-public:
+private:
 	void OnChangeTurret(UEventOnChangeTurretData* Event);
 };

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "JHS/GameControl/JHSPlayerState.h"
 
 #include "GameStateStructs.generated.h"
 
@@ -98,13 +99,22 @@ struct FPlayerStateData
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerStateData")
+	UPROPERTY()
+	TObjectPtr<AJHSPlayerState> PlayerState = nullptr;
+
+	UPROPERTY()
 	int32 PlayerUID = 0;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerStateData")
-	int32 PlayerIdx = 0;
+	UPROPERTY()
+	FString PlayerName = "";
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerStateData")
+	UPROPERTY()
+	int32 PlayerIndex = -1;
+
+	UPROPERTY()
+	bool IsReady = false;
+
+	UPROPERTY()
 	FMaxCurrentData Radiation;
 };
 #pragma endregion Player

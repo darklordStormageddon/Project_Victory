@@ -40,13 +40,10 @@ protected:
 	void UnregisterEvent() override;
 
 public:
-	void OnChangePlayerRadiation(UEventOnChangePlayerRadiation* Event);
-
-	void InitializeUI();
-
-public:
-	void BuildRows(int32 InPlayerCount);
+	void InitializeUI(int32 PlayerNum);
 
 private:
 	void ClearDynamicRows();
+
+	void OnChangePlayerRadiation(UEventOnChangePlayerRadiation* Event);
 };
