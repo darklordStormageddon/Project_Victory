@@ -13,7 +13,7 @@
 #include "JHS/UI/Panel/Container/PlateContainer.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
-#include "Components/ScrollBox.h"
+#include "JHS/UI/Interact/InteractableScrollBox.h"
 #include "Components/SizeBox.h"
 #include "Blueprint/UserWidget.h"
 #include "JHS/UI/Interact/InteractableButton.h"
@@ -30,7 +30,7 @@ void UUIPanelShop::NativeOnInitialized()
 	_gameState = _outGameState;
 
 	CreatePurchaseCategories();
-	SB_ItemRow->ClearChildren();
+	SB_ScrollBox->ClearChildren();
 	_purchaseRowMap.Empty();
 
 	if (SB_PlateContainer != nullptr && _plateContainerClass != nullptr)
@@ -132,7 +132,7 @@ void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
 	if (_gameState == nullptr || _gameState->GetCollectStateGroup() == nullptr)
 		return;
 
-	if (SB_ItemRow == nullptr || _purchaseRowClass == nullptr)
+	if (SB_ScrollBox == nullptr || _purchaseRowClass == nullptr)
 		return;
 
 	TArray<FPurchaseData> _purchaseDataArray = GetPurchaseDataArray(SelectedCategory);
@@ -154,7 +154,7 @@ void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
 				UE_LOG(LogTemp, Error, TEXT("UUIPanelShop: Failed to create PurchaseRow widget for index %d"), i);
 				break;
 			}
-			SB_ItemRow->AddChild(_rowWidget);
+			SB_ScrollBox->AddChild(_rowWidget);
 			_purchaseRowMap.Add(i, _rowWidget);
 		}
 		

@@ -12,7 +12,7 @@ class AJHSGameState;
 class UPurchaseCategory;
 class UPurchaseRow;
 class UHorizontalBox;
-class UScrollBox;
+class UInteractableScrollBox;
 class USizeBox;
 class UPlateContainer;
 class UInteractableButton;
@@ -27,7 +27,7 @@ private:
 	TObjectPtr<UHorizontalBox> HB_Category = nullptr;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UScrollBox> SB_ItemRow = nullptr;
+	TObjectPtr<UInteractableScrollBox> SB_ScrollBox = nullptr;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<USizeBox> SB_PlateContainer = nullptr;
