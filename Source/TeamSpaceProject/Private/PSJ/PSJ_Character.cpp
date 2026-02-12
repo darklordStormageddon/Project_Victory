@@ -102,6 +102,7 @@ void APSJ_Character::Tick(float DeltaTime)
 
 	if (IsLocallyControlled())
 	{
+		UpdateRepairLogic();
 		UCharacterMovementComponent* CMC = GetCharacterMovement();
 
 		// [기획 확정] Walking 절대 금지 로직
@@ -467,6 +468,15 @@ void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		if (ForceEjectAction)
 		{
 			EnhancedInputComponent->BindAction(ForceEjectAction, ETriggerEvent::Started, this, &APSJ_Character::Input_ForceEject);
+		}
+
+		// [신규] 수리 (Left Mouse Button)
+		if (RepairAction)
+		{
+			// 누르는 순간 -> bIsRepairingInputDown = true
+			EnhancedInputComponent->BindAction(RepairAction, ETriggerEvent::Started, this, &APSJ_Character::Input_StartRepair);
+			// 떼는 순간 -> bIsRepairingInputDown = false
+			EnhancedInputComponent->BindAction(RepairAction, ETriggerEvent::Completed, this, &APSJ_Character::Input_StopRepair);
 		}
 	}
 }
@@ -900,4 +910,148 @@ void APSJ_Character::Client_RestoreInputRPC_Implementation()
 
 	// 로그로 확인
 	// UE_LOG(LogTemp, Warning, TEXT("[RPC] Client Input Restored via Blueprint Request!"));
+}
+
+// =========================================================
+// [신규] 수리 로직 구현부
+// =========================================================
+
+void APSJ_Character::Input_StartRepair(const FInputActionValue& Value)
+{
+	bIsRepairingInputDown = true;
+}
+
+void APSJ_Character::Input_StopRepair(const FInputActionValue& Value)
+{
+	bIsRepairingInputDown = false;
+
+	// 버튼을 뗐으므로 즉시 수리 중단 요청
+	if (ClientRepairTarget)
+	{
+		Server_StopRepair();
+		ClientRepairTarget = nullptr;
+	}
+}
+
+void APSJ_Character::UpdateRepairLogic()
+{
+	// 1. 버튼을 안 누르고 있으면 아무것도 안 함
+	if (!bIsRepairingInputDown) return;
+
+	// 2. 시선 트레이스 (RepairTraceLength 사용)
+	FVector TraceStart;
+	FRotator TraceRot;
+	if (FPSCamera)
+	{
+		TraceStart = FPSCamera->GetComponentLocation();
+		TraceRot = FPSCamera->GetComponentRotation();
+	}
+	else
+	{
+		GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
+	}
+
+	FVector TraceEnd = TraceStart + (TraceRot.Vector() * RepairTraceLength);
+
+	FHitResult HitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	// 가시성(Visibility) 채널로 체크
+	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams);
+
+	// =========================================================
+	// [신규] 비주얼 디버그 라인 그리기 (좌클릭 유지 시 보임)
+	// =========================================================
+	if (bHit)
+	{
+		// 충돌 지점까지 초록색 선
+		DrawDebugLine(GetWorld(), TraceStart, HitResult.ImpactPoint, FColor::Green, false, 0.1f, 0, 1.0f);
+		// 충돌 위치에 점 찍기
+		DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 10.0f, FColor::Green, false, 0.1f);
+	}
+	else
+	{
+		// 허공에 빨간색 선
+		DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 0.1f, 0, 1.0f);
+	}
+	// =========================================================
+
+	APSJ_ShipCockpit* HitCockpit = nullptr;
+	if (bHit && HitResult.GetActor())
+	{
+		HitCockpit = Cast<APSJ_ShipCockpit>(HitResult.GetActor());
+	}
+
+	// 3. 수리 가능 여부 판단
+	bool bCanRepair = false;
+
+	if (HitCockpit)
+	{
+		// (1) 고장난 상태인가?
+		if (HitCockpit->bIsMalfunctioning)
+		{
+			// (2) 거리가 가까운가? (RepairMaxDistance 체크)
+			float Dist = FVector::Dist(GetActorLocation(), HitCockpit->GetActorLocation());
+			if (Dist <= RepairMaxDistance)
+			{
+				bCanRepair = true;
+			}
+			else
+			{
+				// [선택 사항] 화면에 "너무 멀음!" 메시지 띄우기 가능
+				// PrintString: Too Far to Repair!
+			}
+		}
+	}
+
+	// 4. 상태 변화 처리
+	if (bCanRepair)
+	{
+		// 타겟이 바뀌었거나, 새로 수리를 시작하는 경우
+		if (ClientRepairTarget != HitCockpit)
+		{
+			// 기존 타겟이 있었다면 중단
+			if (ClientRepairTarget) Server_StopRepair();
+
+			// 새 타겟 수리 시작
+			Server_StartRepair(HitCockpit);
+			ClientRepairTarget = HitCockpit;
+		}
+	}
+	else
+	{
+		// 조준 실패, 거리 멀어짐, 혹은 고장 수리 완료됨 -> 수리 중단
+		if (ClientRepairTarget != nullptr)
+		{
+			Server_StopRepair();
+			ClientRepairTarget = nullptr;
+		}
+	}
+}
+
+// [서버] 수리 시작
+bool APSJ_Character::Server_StartRepair_Validate(APSJ_ShipCockpit* TargetCockpit) { return true; }
+void APSJ_Character::Server_StartRepair_Implementation(APSJ_ShipCockpit* TargetCockpit)
+{
+	if (TargetCockpit)
+	{
+		// 콕핏에 나를 등록 (수리 인원 +1)
+		TargetCockpit->AddRepairer(this);
+
+		// 서버도 내가 누굴 수리하는지 기억해둠 (나중에 끊길 때 대비)
+		ServerRepairTarget = TargetCockpit;
+	}
+}
+
+// [서버] 수리 중단
+bool APSJ_Character::Server_StopRepair_Validate() { return true; }
+void APSJ_Character::Server_StopRepair_Implementation()
+{
+	// 내가 기억하고 있는 콕핏에게서 나를 제거
+	if (ServerRepairTarget)
+	{
+		ServerRepairTarget->RemoveRepairer(this);
+		ServerRepairTarget = nullptr;
+	}
 }

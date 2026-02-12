@@ -210,6 +210,13 @@ void APSJ_ShipCockpit::ReceiveForceEjectRequest()
 
 void APSJ_ShipCockpit::AttemptBoarding(APSJ_Character* RequestingChar)
 {
+    // [1] 고장 났으면 탑승 시도 자체를 차단 (이 코드가 없어서 뚫렸던 것입니다)
+    if (bIsMalfunctioning)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[Cockpit] System Error! Repair required before boarding."));
+        return;
+    }
+
     if (!RequestingChar) return;
     if (!TargetSpaceship)
     {
@@ -273,20 +280,45 @@ void APSJ_ShipCockpit::Tick(float DeltaTime)
     }
 
 
-    // 테스트용: F키를 누르기 전에 이미 변수가 들어왔는지 눈으로 확인
-    if (GetWorld()->IsNetMode(NM_Client))
+    // [클라이언트 디버깅용 텍스트 표시]
+    if (GetWorld()->IsNetMode(NM_Client) || GetWorld()->IsPlayInEditor())
     {
+        FVector ActorLoc = GetActorLocation();
+
+        // 1. [기존] 연결 상태 표시 (위치: 기본)
         if (TargetSpaceship)
         {
-            // 초록색: 연결 성공
-            DrawDebugString(GetWorld(), GetActorLocation(), TEXT("Link OK"), nullptr, FColor::Green, 0.0f);
+            DrawDebugString(GetWorld(), ActorLoc, TEXT("Link OK"), nullptr, FColor::Green, 0.0f);
         }
         else
         {
-            // 빨간색: 아직 변수 안 넘어옴 (이 상태면 탑승 불가)
-            DrawDebugString(GetWorld(), GetActorLocation(), TEXT("Link NULL"), nullptr, FColor::Red, 0.0f);
+            DrawDebugString(GetWorld(), ActorLoc, TEXT("Link NULL"), nullptr, FColor::White, 0.0f);
+        }
+
+        // 2. [신규] 고장 상태 표시 (위치: Z축으로 50cm 위)
+        FVector StatusLoc = ActorLoc + FVector(0, 0, 50.0f); // 글자 겹치지 않게 위로 띄움
+
+        if (bIsMalfunctioning)
+        {
+            // 고장났을 때: 빨간색으로 남은 시간 표시
+            FString StatusMsg = FString::Printf(TEXT("MALFUNCTION! (Time: %.1f)"), CurrentMalfunctionTimer);
+            DrawDebugString(GetWorld(), StatusLoc, StatusMsg, nullptr, FColor::Red, 0.0f);
+        }
+        else
+        {
+            // 정상일 때: 파란색으로 Normal 표시
+            DrawDebugString(GetWorld(), StatusLoc, TEXT("STATUS: NORMAL"), nullptr, FColor::Cyan, 0.0f);
+        }
+
+        // 3. [신규] 수리 중인 인원 표시 (위치: Z축으로 80cm 위)
+        if (RepairingCharacters.Num() > 0)
+        {
+            FVector RepairLoc = ActorLoc + FVector(0, 0, 80.0f);
+            FString RepairMsg = FString::Printf(TEXT("Repairing... (%d People)"), RepairingCharacters.Num());
+            DrawDebugString(GetWorld(), RepairLoc, RepairMsg, nullptr, FColor::Yellow, 0.0f);
         }
     }
+
 }
 
 // [5] 수리 인원 관리 (Character에서 호출됨)

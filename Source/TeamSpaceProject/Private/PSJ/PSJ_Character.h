@@ -108,6 +108,51 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_TryForceEject(APSJ_ShipCockpit* TargetCockpit);
 
+	// =========================================================
+	// [신규] 수리(Repair) 시스템 추가
+	// =========================================================
+
+	// [설정] 수리(좌클릭) 입력 액션 (에디터에서 IA_Fire 또는 IA_Repair 할당)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* RepairAction;
+
+	// [설정] 트레이스 길이 (시선이 닿는 거리, 예: 2000.0f)
+	// 멀리 있는 콕핏의 상태를 확인하는 용도
+	UPROPERTY(EditAnywhere, Category = "Interaction | Repair")
+	float RepairTraceLength = 2000.0f;
+
+	// [설정] 실제 수리가 가능한 유효 거리 (예: 300.0f)
+	// 이 거리 안으로 들어가야만 수리 게이지가 차오름
+	UPROPERTY(EditAnywhere, Category = "Interaction | Repair")
+	float RepairMaxDistance = 300.0f;
+
+protected:
+	// 좌클릭 입력 상태 플래그
+	bool bIsRepairingInputDown = false;
+
+	// [클라이언트용] 현재 내가 수리를 시도하고 있는 대상
+	UPROPERTY()
+	class APSJ_ShipCockpit* ClientRepairTarget = nullptr;
+
+	// [서버용] 현재 이 캐릭터가 수리 중인 대상 (연결 끊길 때 제거용)
+	UPROPERTY()
+	class APSJ_ShipCockpit* ServerRepairTarget = nullptr;
+
+	// 입력 바인딩 함수
+	void Input_StartRepair(const FInputActionValue& Value);
+	void Input_StopRepair(const FInputActionValue& Value);
+
+	// 매 프레임 수리 가능 여부를 판단하는 로직
+	void UpdateRepairLogic();
+
+	// 서버에 "나 얘 수리 시작할래" 요청
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_StartRepair(APSJ_ShipCockpit* TargetCockpit);
+
+	// 서버에 "나 수리 그만할래" 요청
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_StopRepair();
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* InteractAction;
