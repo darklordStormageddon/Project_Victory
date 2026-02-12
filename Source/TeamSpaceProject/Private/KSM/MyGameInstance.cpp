@@ -2,22 +2,12 @@
 
 
 #include "MyGameInstance.h"
+#include "OnlineSessionSettings.h"
 #include <Kismet/GameplayStatics.h>
-#include "Engine/NetConnection.h"
-#include "Net/Core/Connection/NetCloseResult.h"
-#include <Online/OnlineSessionNames.h>
-#include "GameFramework/PlayerState.h"
 
 //초보채널,중수채널
 const static FName SESSION_NAME = TEXT("GameSession"); //채널명
 const static FName SESSION_SETTINGS_KEY = TEXT("FREE");//게임모드
-
-// Steam 호환 세션 키 정의
-static const FName SETTING_SERVER_NAME = FName(TEXT("SERVER_NAME_KEY"));
-static const FName SETTING_GAME_TAG = FName(TEXT("GAME_TAG_KEY"));
-static const FName SETTING_IS_PUBLIC = FName(TEXT("IS_PUBLIC_KEY"));
-static const FName SETTING_ROOM_NAME = FName(TEXT("ROOM_NAME_KEY"));
-static const FName SETTING_PASSWORD = FName(TEXT("PASSWORD_KEY"));
 
 UMyGameInstance::UMyGameInstance()
 {
@@ -49,9 +39,6 @@ void UMyGameInstance::Init()
 
 			SessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this,
 				&UMyGameInstance::OnJoinSessioncomplete);
-
-			SessionInterface->OnStartSessionCompleteDelegates.AddUObject(this,
-				&UMyGameInstance::OnStartSessionComplete);
 		}
 	}
 	else
@@ -85,7 +72,6 @@ void UMyGameInstance::Host(FString ServerName)
 		}
 	}
 }
-
 void UMyGameInstance::CreateSession()
 {
 	if (SessionInterface.IsValid())
@@ -97,33 +83,25 @@ void UMyGameInstance::CreateSession()
 		else
 			SessionSettings.bIsLANMatch = false;
 
+
 		SessionSettings.NumPublicConnections = 4;
-		SessionSettings.bUsesPresence = true;
-		SessionSettings.bShouldAdvertise = true;
+		SessionSettings.bUsesPresence = SessionSettings.bShouldAdvertise = true;
 		SessionSettings.bAllowJoinInProgress = true;
 		SessionSettings.bAllowJoinViaPresence = true;
-		SessionSettings.bUseLobbiesIfAvailable = true;
-
-		//빌드 체크 비활성화
-		SessionSettings.bAntiCheatProtected = false;
-		SessionSettings.BuildUniqueId = 0;
-
-		//나머지 설정
-		SessionSettings.Set(FName("SERVER_NAME_KEY"), DesiredServerName,
-			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-		SessionSettings.Set(FName("GAME_TAG_KEY"), GameUniqueTag,
-			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-		SessionSettings.Set(FName("IS_PUBLIC_KEY"), bIsPublic,
-			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-		SessionSettings.Set(FName("ROOM_NAME_KEY"), RoomName,
+		SessionSettings.Set(
+			SESSION_SETTINGS_KEY, DesiredServerName,
 			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
-		if (!Password.IsEmpty())
-		{
-			SessionSettings.Set(FName("PASSWORD_KEY"), Password,
-				EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-		}
+		//게임 식별 태그
+		SessionSettings.Set(FName("GameUniqueTag"), GameUniqueTag, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		//게임 접근 태그
+		SessionSettings.Set(TEXT("Public"), bIsPublic, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		//세션 이름과 비밀번호
+		SessionSettings.Set(TEXT("SessionName"), RoomName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		SessionSettings.Set(TEXT("Password"), Password, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
+
+		//방생성
 		SessionInterface->CreateSession(0, SESSION_NAME, SessionSettings);
 	}
 }
@@ -136,15 +114,7 @@ void UMyGameInstance::RefreshServerList()
 		UE_LOG(LogTemp, Warning, TEXT("Finding Session"));
 		//세션 100개 최대 찾아온다.
 		SessionSearch->MaxSearchResults = 100;
-
-		// Steam을 사용할 때는 false, NULL 서브시스템일 때는 true
-		if (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL")
-			SessionSearch->bIsLanQuery = true;
-		else
-			SessionSearch->bIsLanQuery = false;
-
-		//SessionSearch->QuerySettings.Set(FName(TEXT("PRESENCESEARCH")), true, EOnlineComparisonOp::Equals);
-		SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
+		SessionSearch->QuerySettings.Set(FName(TEXT("PRESENCESEARCH")), true, EOnlineComparisonOp::Equals);
 		SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
 	}
 }
@@ -160,341 +130,117 @@ void UMyGameInstance::Join(int32 Index)
 		UE_LOG(LogTemp, Warning, TEXT("Empty Session"));
 }
 
+void UMyGameInstance::OnCreateSessioncomplete(FName InSessionName, bool IsSuccess)
+{
+	if (!IsSuccess)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Could not Createsession"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Session name is %s"), *InSessionName.ToString());
+
+	UEngine* Engine = GetEngine();
+	if (!Engine) return;
+
+	Engine->AddOnScreenDebugMessage(0, 2, FColor::Green, TEXT("Host complete!"));
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	//레벨(맵)
+	//World->ServerTravel("/Game/Import/Maps/Lobby?listen");
+	World->ServerTravel("/Game/Import/Maps/Lobby?listen?game=/Game/Main/PS_KSM/GameSettings/BP_TempGameMode_C");
+}
+
+
 void UMyGameInstance::StartSession()
 {
 	if (SessionInterface.IsValid())
 		SessionInterface->StartSession(SESSION_NAME);
 }
 
-void UMyGameInstance::OnStartSessionComplete(FName SessionName, bool bWasSuccessful)
-{
-	UE_LOG(LogTemp, Warning, TEXT("OnStartSessionComplete: %s, Success=%d"),
-		*SessionName.ToString(), bWasSuccessful ? 1 : 0);
-
-	if (!bWasSuccessful)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to start session!"));
-		return;
-	}
-
-	// 세션 상태 확인
-	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(SessionName);
-	if (Session)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Session State: %d (0=Pending, 1=Starting, 2=InProgress, 3=Ending, 4=Ended, 5=Destroying)"),
-			(int32)Session->SessionState);
-	}
-
-	// RegisterPlayer
-	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	if (PC && PC->PlayerState)
-	{
-		TSharedPtr<const FUniqueNetId> UserId = PC->PlayerState->GetUniqueId().GetUniqueNetId();
-		if (UserId.IsValid())
-		{
-			bool bRegistered = SessionInterface->RegisterPlayer(SessionName, *UserId, false);
-			UE_LOG(LogTemp, Warning, TEXT("RegisterPlayer result: %d"), bRegistered ? 1 : 0);
-
-			// 등록 후 세션 상태 다시 확인
-			Session = SessionInterface->GetNamedSession(SessionName);
-			if (Session)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("After RegisterPlayer - State: %d, Players: %d"),
-					(int32)Session->SessionState, Session->RegisteredPlayers.Num());
-
-				// 세션을 InProgress로 강제 전환
-				if (Session->SessionState == EOnlineSessionState::Pending)
-				{
-					UE_LOG(LogTemp, Warning, TEXT("Session still Pending! Trying to update session..."));
-
-					// 세션 설정을 다시 업데이트하여 InProgress로 전환
-					FOnlineSessionSettings UpdatedSettings = Session->SessionSettings;
-					UpdatedSettings.bAllowJoinInProgress = true;
-
-					SessionInterface->UpdateSession(SessionName, UpdatedSettings);
-				}
-			}
-		}
-	}
-}
-
-void UMyGameInstance::OnCreateSessioncomplete(FName InSessionName, bool IsSuccess)
-{
-	UE_LOG(LogTemp, Warning, TEXT("=== OnCreateSessionComplete ==="));
-	UE_LOG(LogTemp, Warning, TEXT("SessionName: %s, Success: %d"), *InSessionName.ToString(), IsSuccess ? 1 : 0);
-
-	if (!IsSuccess)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to create session!"));
-		return;
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("Session created successfully."));
-
-	// World 확인
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		UE_LOG(LogTemp, Error, TEXT("World is NULL!"));
-		return;
-	}
-
-	// PlayerController 확인
-	APlayerController* PC = World->GetFirstPlayerController();
-	if (!PC)
-	{
-		UE_LOG(LogTemp, Error, TEXT("PlayerController is NULL!"));
-		return;
-	}
-	UE_LOG(LogTemp, Warning, TEXT("PlayerController found"));
-
-	// PlayerState 확인
-	if (!PC->PlayerState)
-	{
-		UE_LOG(LogTemp, Error, TEXT("PlayerState is NULL!"));
-		return;
-	}
-	UE_LOG(LogTemp, Warning, TEXT("PlayerState found"));
-
-	// UniqueNetId 확인
-	TSharedPtr<const FUniqueNetId> UserId = PC->PlayerState->GetUniqueId().GetUniqueNetId();
-	if (!UserId.IsValid())
-	{
-		UE_LOG(LogTemp, Error, TEXT("UniqueNetId is INVALID!"));
-		return;
-	}
-	UE_LOG(LogTemp, Warning, TEXT("UniqueNetId: %s"), *UserId->ToString());
-
-	// RegisterPlayer 시도
-	UE_LOG(LogTemp, Warning, TEXT("Calling RegisterPlayer..."));
-	bool bRegistered = SessionInterface->RegisterPlayer(InSessionName, *UserId, false);
-	UE_LOG(LogTemp, Warning, TEXT("RegisterPlayer returned: %d"), bRegistered ? 1 : 0);
-
-	// 세션 상태 확인
-	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(InSessionName);
-	if (Session)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("After RegisterPlayer:"));
-		UE_LOG(LogTemp, Warning, TEXT("  SessionState: %d (0=Pending, 1=Starting, 2=InProgress, 3=Ending, 4=Ended, 5=Destroying)"),
-			(int32)Session->SessionState);
-		UE_LOG(LogTemp, Warning, TEXT("  RegisteredPlayers: %d"), Session->RegisteredPlayers.Num());
-
-		// 등록된 플레이어 목록 출력
-		for (int32 i = 0; i < Session->RegisteredPlayers.Num(); i++)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("    Player %d: %s"), i, *Session->RegisteredPlayers[i]->ToString());
-		}
-
-		// UpdateSession 시도
-		UE_LOG(LogTemp, Warning, TEXT("Calling UpdateSession..."));
-		FOnlineSessionSettings UpdatedSettings = Session->SessionSettings;
-		bool bUpdated = SessionInterface->UpdateSession(InSessionName, UpdatedSettings, true);
-		UE_LOG(LogTemp, Warning, TEXT("UpdateSession returned: %d"), bUpdated ? 1 : 0);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Session not found after RegisterPlayer!"));
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("================================="));
-}
-
 void UMyGameInstance::OnDestroySessioncomplete(FName InSessionName, bool IsSuccess)
 {
-	if (IsSuccess && bRecreateAfterDestroy)
-	{
-		bRecreateAfterDestroy = false;
+	if (IsSuccess == true && bRecreateAfterDestroy == false)
 		CreateSession();
-	}
 }
 
 void UMyGameInstance::OnFindSessioncomplete(bool IsSuccess)
 {
-	UE_LOG(LogTemp, Warning, TEXT("=== Find Session Complete ==="));
-	UE_LOG(LogTemp, Warning, TEXT("Success: %s"), IsSuccess ? TEXT("true") : TEXT("false"));
-
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Search Complete!");
 	if (IsSuccess && SessionSearch.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Total Sessions Found: %d"), SessionSearch->SearchResults.Num());
-
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, *FString::Printf(TEXT("Session Found : %d"), SessionSearch->SearchResults.Num()));
 		ServerNames.Empty();
 		int32 SessionIndex = 0;
 
 		for (const FOnlineSessionSearchResult& SearchResult : SessionSearch->SearchResults)
 		{
-			if (!SearchResult.IsValid())
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Session %d is invalid"), SessionIndex);
-				SessionIndex++;
-				continue;
-			}
+			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, *FString::Printf(TEXT("Session Index : %d"), SessionIndex));
 
-			// 빌드 ID 체크 주석 처리 또는 제거
-			/*
-			// 빌드 버전 체크
-			if (SearchResult.Session.SessionSettings.BuildUniqueId != GetBuildUniqueId())
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Session %d: Build mismatch - Server: 0x%08x, Client: 0x%08x"),
-					SessionIndex,
-					SearchResult.Session.SessionSettings.BuildUniqueId,
-					GetBuildUniqueId());
-				SessionIndex++;
-				continue;
-			}
-			*/
-
-			//GameTag 체크
 			FString Temp_GameTag;
-			bool bFoundTag = SearchResult.Session.SessionSettings.Get(FName("GAME_TAG_KEY"), Temp_GameTag);
+			SearchResult.Session.SessionSettings.Get(FName("GameUniqueTag"), Temp_GameTag);
 
-			UE_LOG(LogTemp, Warning, TEXT("Session %d: GameTag = %s"), SessionIndex, *Temp_GameTag);
-
-			if (!bFoundTag || (!Temp_GameTag.IsEmpty() && Temp_GameTag != GameUniqueTag))
+			if (Temp_GameTag != GameUniqueTag || Temp_GameTag.IsEmpty())
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Session %d: GameTag mismatch or empty"), SessionIndex);
-				SessionIndex++;
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Different Game!");
 				continue;
 			}
 
-			// 나머지 로직
 			FString Temp_SessionName;
-			SearchResult.Session.SessionSettings.Get(FName("ROOM_NAME_KEY"), Temp_SessionName);
-
+			SearchResult.Session.SessionSettings.Get(FName("SessionName"), Temp_SessionName);
 			if (!SearchName.IsEmpty() && SearchName != Temp_SessionName)
-			{
-				SessionIndex++;
 				continue;
-			}
 
-			bool Temp_bIsPublic = true;
-			SearchResult.Session.SessionSettings.Get(FName("IS_PUBLIC_KEY"), Temp_bIsPublic);
+			bool Temp_bIsPublic;
+			SearchResult.Session.SessionSettings.Get(FName("Public"), Temp_bIsPublic);
 
 			FString Temp_Password;
-			SearchResult.Session.SessionSettings.Get(FName("PASSWORD_KEY"), Temp_Password);
+			SearchResult.Session.SessionSettings.Get(FName("Password"), Temp_Password);
+
+
 
 			FServerData ServerData;
 			ServerData.Accessibility = Temp_bIsPublic;
 			ServerData.Password = Temp_Password;
 			ServerData.HostUserName = SearchResult.Session.OwningUserName;
-			ServerData.Name = Temp_SessionName;
-			ServerData.CurrentPlayers = SearchResult.Session.SessionSettings.NumPublicConnections
-				- SearchResult.Session.NumOpenPublicConnections;
-			ServerData.SearchResultIndex = SessionIndex;
+			ServerData.Name = NickName;
+
+			ServerData.CurrentPlayers = SearchResult.Session.SessionSettings.NumPublicConnections - SearchResult.Session.NumOpenPublicConnections;
 
 			FString ServerName;
-			if (SearchResult.Session.SessionSettings.Get(FName("SERVER_NAME_KEY"), ServerName))
-			{
+			if (SearchResult.Session.SessionSettings.Get(SESSION_SETTINGS_KEY, ServerName))
 				ServerData.Name = ServerName;
-			}
+			else
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "SessionName not found!");
+			ServerData.SearchResultIndex = SessionIndex;
+			++SessionIndex;
 
 			ServerNames.Add(ServerData);
-			UE_LOG(LogTemp, Warning, TEXT("? Session added: %s"), *ServerData.Name);
-
-			SessionIndex++;
+			OnSessionListUpdated.Broadcast();
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Session Added to list!");
 		}
 
-		UE_LOG(LogTemp, Warning, TEXT("=== Final session count: %d ==="), ServerNames.Num());
-		OnSessionListUpdated.Broadcast();
 	}
+	else GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Search invalid!");
 }
-
 void UMyGameInstance::OnJoinSessioncomplete(FName InSessionName, EOnJoinSessionCompleteResult::Type InResult)
 {
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Cyan,
-			TEXT("=========== OnJoinSessionComplete ==========="), true, FVector2D(2.0f, 2.0f));
-	}
+	if (SessionInterface.IsValid() == false) return;
 
-	// 결과 타입 확인
-	FString ResultString;
-	FColor ResultColor;
-
-	switch (InResult)
-	{
-	case EOnJoinSessionCompleteResult::Success:
-		ResultString = TEXT("SUCCESS");
-		ResultColor = FColor::Green;
-		break;
-	case EOnJoinSessionCompleteResult::SessionIsFull:
-		ResultString = TEXT("Session is Full");
-		ResultColor = FColor::Red;
-		break;
-	case EOnJoinSessionCompleteResult::SessionDoesNotExist:
-		ResultString = TEXT("Session Does Not Exist");
-		ResultColor = FColor::Red;
-		break;
-	case EOnJoinSessionCompleteResult::CouldNotRetrieveAddress:
-		ResultString = TEXT("Could Not Retrieve Address");
-		ResultColor = FColor::Red;
-		break;
-	case EOnJoinSessionCompleteResult::AlreadyInSession:
-		ResultString = TEXT("Already In Session");
-		ResultColor = FColor::Red;
-		break;
-	default:
-		ResultString = TEXT("Unknown Error");
-		ResultColor = FColor::Red;
-		break;
-	}
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 30.0f, ResultColor,
-			FString::Printf(TEXT("Join Result: %s"), *ResultString),
-			true, FVector2D(2.0f, 2.0f));
-	}
-
-	if (InResult != EOnJoinSessionCompleteResult::Success)
-	{
-		return;
-	}
-
-	if (!SessionInterface.IsValid())
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Red,
-				TEXT("SessionInterface is NOT VALID!"), true, FVector2D(2.0f, 2.0f));
-		}
-		return;
-	}
-
-	FString Address;
+	FString Address;//해당 방의 아이피주소
 	if (!SessionInterface->GetResolvedConnectString(InSessionName, Address))
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Red,
-				TEXT("Could not get connect string!"), true, FVector2D(2.0f, 2.0f));
-		}
+		UE_LOG(LogTemp, Error, TEXT("Could not convert IP Address"));
 		return;
 	}
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Yellow,
-			FString::Printf(TEXT("Connect Address: %s"), *Address),
-			true, FVector2D(1.5f, 1.5f));
-	}
+	UEngine* Engine = GetEngine();
+	if (!Engine) return;
+	Engine->AddOnScreenDebugMessage(0, 5, FColor::Green, FString::Printf(TEXT("Joining To %s"), *Address));
 
 	APlayerController* PC = GetFirstLocalPlayerController();
-	if (PC == nullptr)
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Red,
-				TEXT("PlayerController is NULL!"), true, FVector2D(2.0f, 2.0f));
-		}
-		return;
-	}
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Magenta,
-			TEXT(">>> Calling ClientTravel() <<<"), true, FVector2D(2.0f, 2.0f));
-	}
-
+	if (PC == nullptr) return;
 	PC->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 }
 
