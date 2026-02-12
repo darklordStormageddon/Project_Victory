@@ -55,6 +55,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "SpaceObject")
 	USpaceObjectComponent* SpaceObjectComp;
 
+	UPROPERTY(Replicated)
 	FVector Direction;
 
 	FRotator ConstRotaion;
@@ -106,6 +107,10 @@ public:
 
 		SpaceStation = InSpaceStation;
 	}
+
+	virtual void GetLifetimeReplicatedProps(
+		TArray<FLifetimeProperty>& OutLifetimeProps
+	) const override;
 
 protected:
 	// Called when the game starts or when spawned
