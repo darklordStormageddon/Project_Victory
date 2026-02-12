@@ -126,6 +126,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Interaction | Repair")
 	float RepairMaxDistance = 300.0f;
 
+	// [신규] 입력값을 서버로 전송하는 RPC 함수 선언
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SetInputVector(FVector2D NewInput);
+
+	// [신규] 달리기 상태를 서버로 전송하는 RPC 함수 선언
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SetSprinting(bool bNewSprinting);
+
 protected:
 	// 좌클릭 입력 상태 플래그
 	bool bIsRepairingInputDown = false;
@@ -197,7 +205,21 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Movement Stats")
 	float FlyModeMaxSpeed = 600.0f;
 
+	// [수정] 기존 변수에 'BlueprintReadOnly' 속성을 추가해야 애니메이션 BP에서 읽을 수 있습니다.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement Input", Replicated)
 	FVector2D CurrentInputVector = FVector2D::ZeroVector;
+
+	// [신규] 달리기 상태 확인용 변수 (블루프린트에서 읽기 가능)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement Input", Replicated)
+	bool bIsSprinting = false;
+
+	// [신규] 달리기 입력 액션 (에디터 할당 필요)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* SprintAction;
+
+	// [신규] 입력 바인딩 함수 선언
+	void Input_SprintStart(const FInputActionValue& Value);
+	void Input_SprintStop(const FInputActionValue& Value);
 
 	UPROPERTY(Replicated)
 	FRelativeSpaceData ReplicatedRelativeData;
