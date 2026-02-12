@@ -127,11 +127,11 @@ public:
 	float RepairMaxDistance = 300.0f;
 
 	// [신규] 입력값을 서버로 전송하는 RPC 함수 선언
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Unreliable, WithValidation)
 	void Server_SetInputVector(FVector2D NewInput);
 
 	// [신규] 달리기 상태를 서버로 전송하는 RPC 함수 선언
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Unreliable, WithValidation)
 	void Server_SetSprinting(bool bNewSprinting);
 
 protected:

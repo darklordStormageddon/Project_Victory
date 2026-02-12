@@ -21,6 +21,9 @@ APSJ_Character::APSJ_Character()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickGroup = TG_PostPhysics;
+
+	// [필수 추가] 이 한 줄이 없으면 변수 동기화가 안 될 수 있습니다.
+	bReplicates = true;
 }
 
 void APSJ_Character::BeginPlay()
@@ -66,10 +69,9 @@ void APSJ_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APSJ_Character, ReplicatedRelativeData);
 
-	// [해설] COND_SkipOwner: "나는 내가 뭘 눌렀는지 이미 아니까, 서버 너는 나 뺴고 다른 애들한테만 알려줘" 
-	// (이렇게 해야 반응 속도가 빠르고 렉이 안 걸립니다.)
-	DOREPLIFETIME_CONDITION(APSJ_Character, CurrentInputVector, COND_SkipOwner);
-	DOREPLIFETIME_CONDITION(APSJ_Character, bIsSprinting, COND_SkipOwner);
+	// [수정 후] 조건을 제거하여 모든 클라이언트가 확실하게 받도록 변경
+	DOREPLIFETIME(APSJ_Character, CurrentInputVector);
+	DOREPLIFETIME(APSJ_Character, bIsSprinting);
 }
 
 void APSJ_Character::PossessedBy(AController* NewController)
