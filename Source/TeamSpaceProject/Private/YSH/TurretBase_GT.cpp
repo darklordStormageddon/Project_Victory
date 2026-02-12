@@ -57,7 +57,7 @@ ATurretBase_GT::ATurretBase_GT()
 
 	// 카메라 설정
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	SpringArm->SetupAttachment(PitchPivot);
+	SpringArm->SetupAttachment(Root);
 	SpringArm->TargetArmLength = 400.0f;
 	SpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
 	SpringArm->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
@@ -123,7 +123,7 @@ void ATurretBase_GT::BeginPlay()
 	if (SpringArm)
 	{
 		FRotator InitialRotation = SpringArm->GetRelativeRotation();
-		InitialSpringArmRoll = InitialRotation.Roll;
+		InitialSpringArmRoll = InitialRotation.Pitch;
 		CurrentCameraYaw = InitialRotation.Yaw;
 	}
 
@@ -216,20 +216,20 @@ void ATurretBase_GT::Tick(float DeltaTime)
 		CurrentSpringArmRotation.Yaw = CurrentCameraYaw;
 
 		// Roll 업데이트
-		float CameraTargetRoll = InitialSpringArmRoll + (TargetPitchRoll * CameraPitchFollowRatio);
+		float CameraTargetPitch = InitialSpringArmRoll - (TargetPitchRoll * CameraPitchFollowRatio);
 
 		if (bSmoothCameraFollow)
 		{
-			CurrentSpringArmRotation.Roll = FMath::FInterpTo(
-				CurrentSpringArmRotation.Roll,
-				CameraTargetRoll,
+			CurrentSpringArmRotation.Pitch = FMath::FInterpTo(
+				CurrentSpringArmRotation.Pitch,
+				CameraTargetPitch,
 				DeltaTime,
 				CameraPitchFollowSpeed
 			);
 		}
 		else
 		{
-			CurrentSpringArmRotation.Roll = CameraTargetRoll;
+			CurrentSpringArmRotation.Pitch = CameraTargetPitch;
 		}
 
 		SpringArm->SetRelativeRotation(CurrentSpringArmRotation);
@@ -377,21 +377,57 @@ void ATurretBase_GT::TryFire()
 	}
 
 	// 발사 성공 - 실제 발사 로직 실행
-	if (MainMuzzle && ProjectileClass)
+	if (MainMuzzle && ProjectileClass && Camera)
 	{
-		// 기본 위치와 회전
+		// 카메라 중앙에서 레이캐스트로 조준점 찾기
+		FVector CameraLocation = Camera->GetComponentLocation();
+		FVector CameraForward = Camera->GetForwardVector();
+
+		// 레이캐스트 최대 거리
+		float TraceDistance = 10000.0f;
+		FVector TraceEnd = CameraLocation + (CameraForward * TraceDistance);
+
+		// 충돌 검사 설정
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(this);
+		if (CurrentPilot)
+		{
+			QueryParams.AddIgnoredActor(CurrentPilot);
+		}
+
+		FHitResult HitResult;
+		bool bHit = GetWorld()->LineTraceSingleByChannel(
+			HitResult,
+			CameraLocation,
+			TraceEnd,
+			ECC_Visibility,
+			QueryParams
+		);
+
+		// 조준점 결정 (충돌하면 충돌 지점, 아니면 최대 거리 지점)
+		FVector TargetPoint = bHit ? HitResult.ImpactPoint : TraceEnd;
+
+		// 머즐 위치와 회전
 		FVector MuzzleLocation = MainMuzzle->GetComponentLocation();
-		FRotator MuzzleRotation = MainMuzzle->GetComponentRotation();
 
-		// ↓↓↓ 이펙트용 회전 및 위치 계산 ↓↓↓
-		FRotator EffectRotation = MuzzleRotation + MuzzleFlashRotationOffset;
-		FVector EffectLocation = MuzzleLocation + MuzzleRotation.RotateVector(MuzzleFlashLocationOffset);
+		// 머즐에서 조준점을 향하는 방향 계산
+		FVector FireDirection = (TargetPoint - MuzzleLocation).GetSafeNormal();
+		FRotator FireRotation = FireDirection.Rotation();
 
-		// 발사체 스폰
+		// 이펙트용 회전 및 위치 계산 (머즐 기준)
+		FRotator EffectRotation = FireRotation + MuzzleFlashRotationOffset;
+		FVector EffectLocation = MuzzleLocation + FireRotation.RotateVector(MuzzleFlashLocationOffset);
+
+		// 발사체 스폰 (카메라 조준 방향으로)
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 		SpawnParams.Instigator = GetInstigator();
-		AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(ProjectileClass, MuzzleLocation, MuzzleRotation, SpawnParams);
+		AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(
+			ProjectileClass,
+			MuzzleLocation,
+			FireRotation,  // ← 카메라 조준 방향 사용
+			SpawnParams
+		);
 
 		bIsLeftMuzzleNext = !bIsLeftMuzzleNext;
 
