@@ -136,7 +136,7 @@ void APSJ_Spaceship::BeginPlay()
 		TestDelay,
 		[this]() {
 			UUIManager* _outUIManager = nullptr;
-			if (UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
+			if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
 				return;
 			_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
 		},
