@@ -9,6 +9,13 @@
 const static FName SESSION_NAME = TEXT("GameSession"); //채널명
 const static FName SESSION_SETTINGS_KEY = TEXT("FREE");//게임모드
 
+// Steam 호환 세션 키 정의
+static const FName SETTING_SERVER_NAME = FName(TEXT("SERVER_NAME_KEY"));
+static const FName SETTING_GAME_TAG = FName(TEXT("GAME_TAG_KEY"));
+static const FName SETTING_IS_PUBLIC = FName(TEXT("IS_PUBLIC_KEY"));
+static const FName SETTING_ROOM_NAME = FName(TEXT("ROOM_NAME_KEY"));
+static const FName SETTING_PASSWORD = FName(TEXT("PASSWORD_KEY"));
+
 UMyGameInstance::UMyGameInstance()
 {
 }
@@ -72,6 +79,7 @@ void UMyGameInstance::Host(FString ServerName)
 		}
 	}
 }
+
 void UMyGameInstance::CreateSession()
 {
 	if (SessionInterface.IsValid())
@@ -88,17 +96,30 @@ void UMyGameInstance::CreateSession()
 		SessionSettings.bUsesPresence = SessionSettings.bShouldAdvertise = true;
 		SessionSettings.bAllowJoinInProgress = true;
 		SessionSettings.bAllowJoinViaPresence = true;
+
+		// Steam 호환 키를 사용한 세션 설정
 		SessionSettings.Set(
-			SESSION_SETTINGS_KEY, DesiredServerName,
+			SETTING_SERVER_NAME, DesiredServerName,
 			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 		//게임 식별 태그
-		SessionSettings.Set(FName("GameUniqueTag"), GameUniqueTag, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		SessionSettings.Set(
+			SETTING_GAME_TAG, GameUniqueTag,
+			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+
 		//게임 접근 태그
-		SessionSettings.Set(TEXT("Public"), bIsPublic, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		SessionSettings.Set(
+			SETTING_IS_PUBLIC, bIsPublic,
+			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+
 		//세션 이름과 비밀번호
-		SessionSettings.Set(TEXT("SessionName"), RoomName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-		SessionSettings.Set(TEXT("Password"), Password, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		SessionSettings.Set(
+			SETTING_ROOM_NAME, RoomName,
+			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+
+		SessionSettings.Set(
+			SETTING_PASSWORD, Password,
+			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 
 		//방생성
@@ -149,8 +170,7 @@ void UMyGameInstance::OnCreateSessioncomplete(FName InSessionName, bool IsSucces
 	if (!World) return;
 
 	//레벨(맵)
-	//World->ServerTravel("/Game/Import/Maps/Lobby?listen");
-	World->ServerTravel("/Game/Import/Maps/Lobby?listen?game=/Game/Main/PS_KSM/GameSettings/BP_TempGameMode_C");
+	World->ServerTravel("/Game/Import/Maps/Lobby?listen");
 }
 
 
@@ -179,8 +199,9 @@ void UMyGameInstance::OnFindSessioncomplete(bool IsSuccess)
 		{
 			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, *FString::Printf(TEXT("Session Index : %d"), SessionIndex));
 
+			// Steam 호환 키를 사용한 GameTag 파싱
 			FString Temp_GameTag;
-			SearchResult.Session.SessionSettings.Get(FName("GameUniqueTag"), Temp_GameTag);
+			SearchResult.Session.SessionSettings.Get(SETTING_GAME_TAG, Temp_GameTag);
 
 			if (Temp_GameTag != GameUniqueTag || Temp_GameTag.IsEmpty())
 			{
@@ -188,18 +209,19 @@ void UMyGameInstance::OnFindSessioncomplete(bool IsSuccess)
 				continue;
 			}
 
+			// Steam 호환 키를 사용한 SessionName 파싱
 			FString Temp_SessionName;
-			SearchResult.Session.SessionSettings.Get(FName("SessionName"), Temp_SessionName);
+			SearchResult.Session.SessionSettings.Get(SETTING_ROOM_NAME, Temp_SessionName);
 			if (!SearchName.IsEmpty() && SearchName != Temp_SessionName)
 				continue;
 
+			// Steam 호환 키를 사용한 Public 여부 파싱
 			bool Temp_bIsPublic;
-			SearchResult.Session.SessionSettings.Get(FName("Public"), Temp_bIsPublic);
+			SearchResult.Session.SessionSettings.Get(SETTING_IS_PUBLIC, Temp_bIsPublic);
 
+			// Steam 호환 키를 사용한 Password 파싱
 			FString Temp_Password;
-			SearchResult.Session.SessionSettings.Get(FName("Password"), Temp_Password);
-
-
+			SearchResult.Session.SessionSettings.Get(SETTING_PASSWORD, Temp_Password);
 
 			FServerData ServerData;
 			ServerData.Accessibility = Temp_bIsPublic;
@@ -209,11 +231,13 @@ void UMyGameInstance::OnFindSessioncomplete(bool IsSuccess)
 
 			ServerData.CurrentPlayers = SearchResult.Session.SessionSettings.NumPublicConnections - SearchResult.Session.NumOpenPublicConnections;
 
+			// Steam 호환 키를 사용한 ServerName 파싱
 			FString ServerName;
-			if (SearchResult.Session.SessionSettings.Get(SESSION_SETTINGS_KEY, ServerName))
+			if (SearchResult.Session.SessionSettings.Get(SETTING_SERVER_NAME, ServerName))
 				ServerData.Name = ServerName;
 			else
 				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "SessionName not found!");
+
 			ServerData.SearchResultIndex = SessionIndex;
 			++SessionIndex;
 
@@ -225,6 +249,7 @@ void UMyGameInstance::OnFindSessioncomplete(bool IsSuccess)
 	}
 	else GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Search invalid!");
 }
+
 void UMyGameInstance::OnJoinSessioncomplete(FName InSessionName, EOnJoinSessionCompleteResult::Type InResult)
 {
 	if (SessionInterface.IsValid() == false) return;
