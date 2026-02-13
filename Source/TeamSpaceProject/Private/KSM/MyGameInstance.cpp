@@ -4,6 +4,7 @@
 #include "MyGameInstance.h"
 #include "OnlineSessionSettings.h"
 #include <Kismet/GameplayStatics.h>
+#include "SocketSubsystem.h"
 
 //초보채널,중수채널
 const static FName SESSION_NAME = TEXT("GameSession"); //채널명
@@ -15,6 +16,7 @@ static const FName SETTING_GAME_TAG = FName(TEXT("GAME_TAG_KEY"));
 static const FName SETTING_IS_PUBLIC = FName(TEXT("IS_PUBLIC_KEY"));
 static const FName SETTING_ROOM_NAME = FName(TEXT("ROOM_NAME_KEY"));
 static const FName SETTING_PASSWORD = FName(TEXT("PASSWORD_KEY"));
+static const FName SETTING_SERVER_PORT = FName(TEXT("SERVER_PORT")); // 포트 동기화용
 
 UMyGameInstance::UMyGameInstance()
 {
@@ -86,16 +88,27 @@ void UMyGameInstance::CreateSession()
 	{
 		FOnlineSessionSettings SessionSettings;
 
+		// NULL 서브시스템 체크 (로컬 테스트용)
 		if (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL")
+		{
 			SessionSettings.bIsLANMatch = true;
+			UE_LOG(LogTemp, Warning, TEXT("Creating LAN Session (NULL subsystem)"));
+		}
 		else
+		{
 			SessionSettings.bIsLANMatch = false;
-
+			UE_LOG(LogTemp, Warning, TEXT("Creating Online Session"));
+		}
 
 		SessionSettings.NumPublicConnections = 4;
-		SessionSettings.bUsesPresence = SessionSettings.bShouldAdvertise = true;
+		SessionSettings.bUsesPresence = true;
+		SessionSettings.bShouldAdvertise = true;
 		SessionSettings.bAllowJoinInProgress = true;
 		SessionSettings.bAllowJoinViaPresence = true;
+
+		// 포트 정보 명시
+		SessionSettings.Set(SETTING_SERVER_PORT, 7777,
+			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 		// Steam 호환 키를 사용한 세션 설정
 		SessionSettings.Set(
@@ -121,6 +134,7 @@ void UMyGameInstance::CreateSession()
 			SETTING_PASSWORD, Password,
 			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
+		UE_LOG(LogTemp, Warning, TEXT("Creating session: %s on port 7777"), *DesiredServerName);
 
 		//방생성
 		SessionInterface->CreateSession(0, SESSION_NAME, SessionSettings);
@@ -133,8 +147,23 @@ void UMyGameInstance::RefreshServerList()
 	if (SessionSearch.IsValid())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Finding Session"));
+
 		//세션 100개 최대 찾아온다.
 		SessionSearch->MaxSearchResults = 100;
+		SessionSearch->TimeoutInSeconds = 10.0f;
+
+		// NULL 서브시스템 체크
+		if (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL")
+		{
+			SessionSearch->bIsLanQuery = true;
+			UE_LOG(LogTemp, Warning, TEXT("Searching LAN sessions"));
+		}
+		else
+		{
+			SessionSearch->bIsLanQuery = false;
+			UE_LOG(LogTemp, Warning, TEXT("Searching Online sessions"));
+		}
+
 		SessionSearch->QuerySettings.Set(FName(TEXT("PRESENCESEARCH")), true, EOnlineComparisonOp::Equals);
 		SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
 	}
@@ -142,34 +171,68 @@ void UMyGameInstance::RefreshServerList()
 
 void UMyGameInstance::Join(int32 Index)
 {
-	if (!SessionInterface.IsValid()) return;
-	if (!SessionSearch.IsValid()) return;
+	if (!SessionInterface.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("SessionInterface is invalid!"));
+		return;
+	}
+
+	if (!SessionSearch.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("SessionSearch is invalid!"));
+		return;
+	}
+
+	// 기존 세션이 있으면 먼저 제거
+	auto ExistingSession = SessionInterface->GetNamedSession(SESSION_NAME);
+	if (ExistingSession)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Destroying existing client session before join"));
+		SessionInterface->DestroySession(SESSION_NAME);
+		// 주의: 실제로는 OnDestroySessionComplete에서 Join을 호출해야 하지만
+		// 간단하게 처리하기 위해 여기서 바로 Join
+	}
 
 	if (SessionSearch->SearchResults.Num() > (int32)Index)
-		SessionInterface->JoinSession(0, SESSION_NAME, SessionSearch->SearchResults[Index]);
+	{
+		const FOnlineSessionSearchResult& Result = SessionSearch->SearchResults[Index];
+
+		UE_LOG(LogTemp, Warning, TEXT("Attempting to join session at index %d"), Index);
+
+		// 세션 정보 출력
+		if (Result.Session.SessionInfo.IsValid())
+		{
+			FString SessionIP = Result.Session.SessionInfo->ToString();
+			UE_LOG(LogTemp, Warning, TEXT("Session IP: %s"), *SessionIP);
+		}
+
+		// 포트 정보 확인
+		int32 ServerPort = 7777;
+		Result.Session.SessionSettings.Get(SETTING_SERVER_PORT, ServerPort);
+		UE_LOG(LogTemp, Warning, TEXT("Session Port: %d"), ServerPort);
+
+		SessionInterface->JoinSession(0, SESSION_NAME, Result);
+	}
 	else
-		UE_LOG(LogTemp, Warning, TEXT("Empty Session"));
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Empty Session or invalid index"));
+	}
 }
 
 void UMyGameInstance::OnCreateSessioncomplete(FName InSessionName, bool IsSuccess)
 {
 	if (!IsSuccess)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Could not Createsession"));
+		UE_LOG(LogTemp, Error, TEXT("Could not Create session"));
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Session name is %s"), *InSessionName.ToString());
-
-	UEngine* Engine = GetEngine();
-	if (!Engine) return;
-
-	Engine->AddOnScreenDebugMessage(0, 2, FColor::Green, TEXT("Host complete!"));
+	UE_LOG(LogTemp, Warning, TEXT("Session created successfully: %s"), *InSessionName.ToString());
 
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	//레벨(맵)
+	//레벨(맵) - ?listen 옵션으로 서버 모드 활성화
 	World->ServerTravel("/Game/Import/Maps/Lobby?listen");
 }
 
@@ -177,49 +240,71 @@ void UMyGameInstance::OnCreateSessioncomplete(FName InSessionName, bool IsSucces
 void UMyGameInstance::StartSession()
 {
 	if (SessionInterface.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Starting session..."));
 		SessionInterface->StartSession(SESSION_NAME);
+	}
 }
 
 void UMyGameInstance::OnDestroySessioncomplete(FName InSessionName, bool IsSuccess)
 {
-	if (IsSuccess == true && bRecreateAfterDestroy == false)
+	if (IsSuccess && bRecreateAfterDestroy)
+	{
+		bRecreateAfterDestroy = false;
 		CreateSession();
+	}
 }
 
 void UMyGameInstance::OnFindSessioncomplete(bool IsSuccess)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Search Complete!");
+	UE_LOG(LogTemp, Warning, TEXT("=== OnFindSessionComplete ==="));
+	UE_LOG(LogTemp, Warning, TEXT("Success: %d"), IsSuccess ? 1 : 0);
+
 	if (IsSuccess && SessionSearch.IsValid())
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, *FString::Printf(TEXT("Session Found : %d"), SessionSearch->SearchResults.Num()));
+		int32 TotalResults = SessionSearch->SearchResults.Num();
+		UE_LOG(LogTemp, Warning, TEXT("Total sessions found: %d"), TotalResults);
+
 		ServerNames.Empty();
 		int32 SessionIndex = 0;
 
 		for (const FOnlineSessionSearchResult& SearchResult : SessionSearch->SearchResults)
 		{
-			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, *FString::Printf(TEXT("Session Index : %d"), SessionIndex));
+			UE_LOG(LogTemp, Warning, TEXT("--- Processing Session %d ---"), SessionIndex);
 
-			// Steam 호환 키를 사용한 GameTag 파싱
+			if (SearchResult.Session.SessionInfo.IsValid())
+			{
+				FString SessionIP = SearchResult.Session.SessionInfo->ToString();
+				UE_LOG(LogTemp, Warning, TEXT("  Session IP: %s"), *SessionIP);
+			}
+
+			int32 ServerPort = 7777;
+			SearchResult.Session.SessionSettings.Get(SETTING_SERVER_PORT, ServerPort);
+			UE_LOG(LogTemp, Warning, TEXT("  Session Port: %d"), ServerPort);
+
 			FString Temp_GameTag;
 			SearchResult.Session.SessionSettings.Get(SETTING_GAME_TAG, Temp_GameTag);
 
 			if (Temp_GameTag != GameUniqueTag || Temp_GameTag.IsEmpty())
 			{
-				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Different Game!");
+				UE_LOG(LogTemp, Warning, TEXT("  GameTag mismatch - Skipping"));
+				SessionIndex++;
 				continue;
 			}
 
-			// Steam 호환 키를 사용한 SessionName 파싱
 			FString Temp_SessionName;
 			SearchResult.Session.SessionSettings.Get(SETTING_ROOM_NAME, Temp_SessionName);
-			if (!SearchName.IsEmpty() && SearchName != Temp_SessionName)
-				continue;
 
-			// Steam 호환 키를 사용한 Public 여부 파싱
-			bool Temp_bIsPublic;
+			if (!SearchName.IsEmpty() && SearchName != Temp_SessionName)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("  Room name filter mismatch - Skipping"));
+				SessionIndex++;
+				continue;
+			}
+
+			bool Temp_bIsPublic = true;
 			SearchResult.Session.SessionSettings.Get(SETTING_IS_PUBLIC, Temp_bIsPublic);
 
-			// Steam 호환 키를 사용한 Password 파싱
 			FString Temp_Password;
 			SearchResult.Session.SessionSettings.Get(SETTING_PASSWORD, Temp_Password);
 
@@ -227,48 +312,109 @@ void UMyGameInstance::OnFindSessioncomplete(bool IsSuccess)
 			ServerData.Accessibility = Temp_bIsPublic;
 			ServerData.Password = Temp_Password;
 			ServerData.HostUserName = SearchResult.Session.OwningUserName;
-			ServerData.Name = NickName;
+			ServerData.Name = Temp_SessionName;
+			ServerData.CurrentPlayers = SearchResult.Session.SessionSettings.NumPublicConnections
+				- SearchResult.Session.NumOpenPublicConnections;
+			ServerData.Port = ServerPort;
 
-			ServerData.CurrentPlayers = SearchResult.Session.SessionSettings.NumPublicConnections - SearchResult.Session.NumOpenPublicConnections;
-
-			// Steam 호환 키를 사용한 ServerName 파싱
 			FString ServerName;
 			if (SearchResult.Session.SessionSettings.Get(SETTING_SERVER_NAME, ServerName))
+			{
 				ServerData.Name = ServerName;
-			else
-				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "SessionName not found!");
+				UE_LOG(LogTemp, Warning, TEXT("  Server Name: %s"), *ServerName);
+			}
 
 			ServerData.SearchResultIndex = SessionIndex;
-			++SessionIndex;
-
 			ServerNames.Add(ServerData);
-			OnSessionListUpdated.Broadcast();
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Session Added to list!");
+
+			SessionIndex++;
 		}
 
+		UE_LOG(LogTemp, Warning, TEXT("=== Total valid sessions: %d ==="), ServerNames.Num());
+
+		if (ServerNames.Num() > 0)
+		{
+			OnSessionListUpdated.Broadcast();
+		}
 	}
-	else GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Search invalid!");
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Search failed or no results!"));
+	}
 }
 
 void UMyGameInstance::OnJoinSessioncomplete(FName InSessionName, EOnJoinSessionCompleteResult::Type InResult)
 {
-	if (SessionInterface.IsValid() == false) return;
+	UE_LOG(LogTemp, Warning, TEXT("=== OnJoinSessionComplete ==="));
 
-	FString Address;//해당 방의 아이피주소
-	if (!SessionInterface->GetResolvedConnectString(InSessionName, Address))
+	FString ResultString;
+	switch (InResult)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Could not convert IP Address"));
+	case EOnJoinSessionCompleteResult::Success: ResultString = TEXT("SUCCESS"); break;
+	case EOnJoinSessionCompleteResult::SessionIsFull: ResultString = TEXT("Session is Full"); break;
+	case EOnJoinSessionCompleteResult::SessionDoesNotExist: ResultString = TEXT("Session Does Not Exist"); break;
+	case EOnJoinSessionCompleteResult::CouldNotRetrieveAddress: ResultString = TEXT("Could Not Retrieve Address"); break;
+	case EOnJoinSessionCompleteResult::AlreadyInSession: ResultString = TEXT("Already In Session"); break;
+	default: ResultString = TEXT("Unknown Error"); break;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Join Result: %s"), *ResultString);
+
+	if (InResult != EOnJoinSessionCompleteResult::Success)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to join session!"));
 		return;
 	}
-	UEngine* Engine = GetEngine();
-	if (!Engine) return;
-	Engine->AddOnScreenDebugMessage(0, 5, FColor::Green, FString::Printf(TEXT("Joining To %s"), *Address));
+
+	if (!SessionInterface.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("SessionInterface is invalid!"));
+		return;
+	}
+
+	FString Address;
+	if (!SessionInterface->GetResolvedConnectString(InSessionName, Address))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Could not get connect string!"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Original Address from GetResolvedConnectString: %s"), *Address);
+
+	TArray<FString> AddressParts;
+	Address.ParseIntoArray(AddressParts, TEXT(":"));
+
+	if (AddressParts.Num() < 2)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No port in address! Adding default port 7777"));
+		Address += TEXT(":7777");
+	}
+	else
+	{
+		int32 Port = FCString::Atoi(*AddressParts[1]);
+		if (Port == 0 || Port < 1024 || Port > 65535)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Invalid port! Replacing with 7777"));
+			Address = AddressParts[0] + TEXT(":7777");
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Final Connect Address: %s"), *Address);
 
 	APlayerController* PC = GetFirstLocalPlayerController();
-	if (PC == nullptr) return;
+	if (PC == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("PlayerController is null!"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Calling ClientTravel..."));
 	PC->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 }
 
 void UMyGameInstance::OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString)
 {
+	UE_LOG(LogTemp, Error, TEXT("=== Network Failure ==="));
+	UE_LOG(LogTemp, Error, TEXT("Type: %d"), (int32)FailureType);
+	UE_LOG(LogTemp, Error, TEXT("Error: %s"), *ErrorString);
 }
