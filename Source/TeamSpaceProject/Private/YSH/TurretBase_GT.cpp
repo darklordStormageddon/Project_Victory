@@ -589,7 +589,7 @@ void ATurretBase_GT::DisembarkCharacter()
 	}
 
 	// 하차 위치 계산 (콕핏 앞이나 터렛 주변, 여기서는 임시로 현재 위치)
-	FVector SpawnLoc = GetActorLocation() + (GetActorUpVector() * -5.0f); // 우측 하차 예시
+	FVector SpawnLoc = GetActorLocation() + (GetActorUpVector() * -100.0f); // 우측 하차 예시
 	FRotator SpawnRot = FRotator(0.0f, GetActorRotation().Yaw, 0.0f);
 
 	// 1. 부착 해제
