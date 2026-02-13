@@ -101,6 +101,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Ship Stats")
 	float RotateSpeed = 1.0f;
 
+	// [신규] 우주선 최대 속도 제한 (에디터 수정 가능)
+	UPROPERTY(EditAnywhere, Category = "Ship Stats")
+	float MaxSpeed = 4000.0f;
+
 	// [추가] 현재 조종사를 반환하는 Getter 함수
 	UFUNCTION(BlueprintPure, Category = "Pilot")
 	APSJ_Character* GetCurrentPilot() const { return CurrentPilot; }

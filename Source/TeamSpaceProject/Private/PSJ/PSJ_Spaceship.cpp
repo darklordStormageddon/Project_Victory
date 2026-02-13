@@ -208,6 +208,25 @@ void APSJ_Spaceship::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// [신규] 속도 제한 로직 추가
+	// ShipRootComponent가 유효하고, 물리 시뮬레이션 중일 때만 동작
+	if (ShipRootComponent && ShipRootComponent->IsSimulatingPhysics())
+	{
+		// 1. 현재 속도 가져오기
+		FVector CurrentVelocity = ShipRootComponent->GetComponentVelocity();
+		float CurrentSpeed = CurrentVelocity.Size();
+
+		// 2. 현재 속도가 제한 속도보다 빠르다면?
+		if (CurrentSpeed > MaxSpeed)
+		{
+			// 3. 방향은 유지한 채, 크기만 MaxSpeed로 조절 (Clamping)
+			FVector ClampedVelocity = CurrentVelocity.GetSafeNormal() * MaxSpeed;
+
+			// 4. 조절된 속도를 물리 엔진에 강제 적용
+			ShipRootComponent->SetPhysicsLinearVelocity(ClampedVelocity);
+		}
+	}
+
 	if (GEngine)
 	{
 		FVector Velocity = GetVelocity();
