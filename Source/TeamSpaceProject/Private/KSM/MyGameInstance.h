@@ -26,8 +26,12 @@ public:
 	FString Password;
 	UPROPERTY(BlueprintReadWrite)
 	bool Accessibility;
+
 	UPROPERTY(BlueprintReadWrite)
 	int32 SearchResultIndex;
+
+	UPROPERTY(BlueprintReadWrite)
+	int32 Port;
 };
 
 UCLASS()
