@@ -57,7 +57,7 @@ ATurretBase_GT::ATurretBase_GT()
 
 	// 카메라 설정
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	SpringArm->SetupAttachment(Root);
+	SpringArm->SetupAttachment(PitchPivot);
 	SpringArm->TargetArmLength = 400.0f;
 	SpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
 	SpringArm->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
@@ -123,7 +123,7 @@ void ATurretBase_GT::BeginPlay()
 	if (SpringArm)
 	{
 		FRotator InitialRotation = SpringArm->GetRelativeRotation();
-		InitialSpringArmRoll = InitialRotation.Pitch;
+		InitialSpringArmRoll = InitialRotation.Roll; 
 		CurrentCameraYaw = InitialRotation.Yaw;
 	}
 
@@ -175,7 +175,6 @@ void ATurretBase_GT::Tick(float DeltaTime)
 		if (YawPivot)
 		{
 			FRotator CurrentYawRotation = YawPivot->GetRelativeRotation();
-			// 최단 경로로 보간하기 위해 FInterpTo 대신 직접 계산
 			float CurrentYaw = CurrentYawRotation.Yaw;
 			float DeltaYaw = FRotator::NormalizeAxis(TargetYaw - CurrentYaw);
 			CurrentYawRotation.Yaw = CurrentYaw + (DeltaYaw * FMath::Min(1.0f, DeltaTime * BarrelFollowSpeed));
@@ -204,7 +203,6 @@ void ATurretBase_GT::Tick(float DeltaTime)
 		// Yaw 업데이트
 		if (bSmoothCameraFollow)
 		{
-			// 최단 경로로 보간
 			float DeltaYaw = FRotator::NormalizeAxis(TargetYaw - CurrentCameraYaw);
 			CurrentCameraYaw = CurrentCameraYaw + (DeltaYaw * FMath::Min(1.0f, DeltaTime * CameraYawFollowSpeed));
 			CurrentCameraYaw = FRotator::NormalizeAxis(CurrentCameraYaw);
@@ -215,27 +213,27 @@ void ATurretBase_GT::Tick(float DeltaTime)
 		}
 		CurrentSpringArmRotation.Yaw = CurrentCameraYaw;
 
-		// Roll 업데이트
-		float CameraTargetPitch = InitialSpringArmRoll - (TargetPitchRoll * CameraPitchFollowRatio);
+		// Roll 업데이트 - 음수를 양수로 변경!
+		float CameraTargetRoll = InitialSpringArmRoll + (TargetPitchRoll * CameraPitchFollowRatio);
 
 		if (bSmoothCameraFollow)
 		{
-			CurrentSpringArmRotation.Pitch = FMath::FInterpTo(
-				CurrentSpringArmRotation.Pitch,
-				CameraTargetPitch,
+			CurrentSpringArmRotation.Roll = FMath::FInterpTo(
+				CurrentSpringArmRotation.Roll,
+				CameraTargetRoll,
 				DeltaTime,
 				CameraPitchFollowSpeed
 			);
 		}
 		else
 		{
-			CurrentSpringArmRotation.Pitch = CameraTargetPitch;
+			CurrentSpringArmRotation.Roll = CameraTargetRoll;
 		}
 
 		SpringArm->SetRelativeRotation(CurrentSpringArmRotation);
 	}
 
-	// 연속 발사 로직 - GameState 기반으로 수정
+	// 연속 발사 로직
 	if (bIsFiring && _cachedGameState)
 	{
 		TimeSinceLastFire += DeltaTime;
@@ -245,7 +243,6 @@ void ATurretBase_GT::Tick(float DeltaTime)
 
 		if (TurretStateGroup && TurretStateGroup->TryGetTurretFireInterval(TurretPosition, &CurrentFireCoolTime))
 		{
-			// FireRateMultiplier 적용
 			float AdjustedFireCoolTime = CurrentFireCoolTime / FireRateMultiplier;
 
 			if (TimeSinceLastFire >= AdjustedFireCoolTime)
@@ -314,7 +311,7 @@ void ATurretBase_GT::Look(const FInputActionValue& Value)
 		}
 	}
 
-	// Pitch (상하 회전)
+	// Pitch (상하 회전) - Y축에 음수 적용
 	if (FMath::Abs(LookAxisVector.Y) > 0.01f)
 	{
 		if (bEnableBarrelLag)
