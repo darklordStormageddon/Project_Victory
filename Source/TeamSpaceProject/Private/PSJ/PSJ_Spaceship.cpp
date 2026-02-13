@@ -138,7 +138,7 @@ void APSJ_Spaceship::BeginPlay()
 			UUIManager* _outUIManager = nullptr;
 			if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
 				return;
-			_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
+			//_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
 		},
 		1.f,
 		false);
