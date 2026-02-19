@@ -28,10 +28,13 @@ void UAsteroidComponent::BeginPlay()
 	// ...
 	_ownerActor = GetOwner();
 
+	InGameMode = Cast<AJHSGameMode>(GetWorld()->GetAuthGameMode());
+
 	if (!_ownerActor || !_ownerActor->HasAuthority())
 		return;
 
-	UEventManager* EventManager = nullptr;
+	TargetShip = Cast<AActor>(UGameplayStatics::GetActorOfClass(GetWorld(), _asteroidInfo.TargetShip));
+
 	if (!UStaticFunctionLibrary::TryGetEventManager(EventManager) || !EventManager)
 		return;
 
@@ -114,8 +117,6 @@ void UAsteroidComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 	// 이미 생성 중이면 아무것도 하지 않음
 	if (bIsSpawning)
 		return;
-
-	CanSpawn();
 }
 
 void UAsteroidComponent::CanSpawn()
@@ -126,14 +127,12 @@ void UAsteroidComponent::CanSpawn()
 	if (Asteroids.Num() >= MaxSpawn)
 		return;
 
-	UWorld* World = GetWorld();
+	if (!TargetShip)
+		return;
 
-	AActor* Owner = Cast<AActor>(UGameplayStatics::GetActorOfClass(World, _asteroidInfo.TargetShip));
-	if (!World || !Owner) return;
+	ShipSpeed = TargetShip->GetVelocity();
 
-	ShipSpeed = Owner->GetVelocity();
-
-	FTimerManager& TimerManager = World->GetTimerManager();
+	FTimerManager& TimerManager = GetWorld()->GetTimerManager();
 
 	if (!TimerManager.IsTimerActive(SpawnTimerHandle))
 		TimerManager.SetTimer(SpawnTimerHandle, this, &UAsteroidComponent::SpawnAsteroid, FMath::RandRange(_asteroidInfo.MinSpawnDelay, _asteroidInfo.MaxSpawnDelay), true);
@@ -141,15 +140,10 @@ void UAsteroidComponent::CanSpawn()
 
 void UAsteroidComponent::SpawnAsteroid()
 {
-	UWorld* World = GetWorld();
-	AActor* Owner = GetOwner();
-	AActor* Target = Cast<AActor>(UGameplayStatics::GetActorOfClass(World, _asteroidInfo.TargetShip));
+	if (!_ownerActor || !TargetShip) return;
 
-	if (!World || !Owner || !Target) return;
-
-	AJHSGameMode* InGameMode;
-
-	if (!UStaticFunctionLibrary::TryGetGameMode(InGameMode)) return;
+	if (!UStaticFunctionLibrary::TryGetGameMode(InGameMode))
+		return;
 
 	// 스폰 플래그 설정
 	bIsSpawning = true;
@@ -184,7 +178,7 @@ void UAsteroidComponent::SpawnAsteroid()
 		return;
 	}
 
-	AAsteroid* Asteroid = World->SpawnActor<AAsteroid>(
+	AAsteroid* Asteroid = GetWorld()->SpawnActor<AAsteroid>(
 		AsteroidClass,
 		SpawnLocation,
 		SpawnRotation,
@@ -208,7 +202,7 @@ void UAsteroidComponent::SpawnAsteroid()
 
 		Asteroid->SetAsteroidInfo(
 			Info, // 운석의 속도, 크기, 체력, 대미지
-			Target->GetActorLocation(),
+			TargetShip->GetActorLocation(),
 			ShipSpeed // 이 컴포넌트의 주인인 우주선 속도
 		);
 
@@ -242,8 +236,7 @@ void UAsteroidComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (_ownerActor && _ownerActor->HasAuthority())
 	{
-		UEventManager* EventManager = nullptr;
-		if (UStaticFunctionLibrary::TryGetEventManager(EventManager) && EventManager)
+		if (EventManager)
 		{
 			if (OnStartStageHandle.IsValid())
 			{
