@@ -12,9 +12,8 @@ class ABullet;
 UCLASS()
 class ADroneEnemy : public AGarbageEnemyBase
 {
-private:
 	GENERATED_BODY()
-
+private:
 	UPROPERTY(VisibleAnywhere, Category = "Base")
 	UArrowComponent* MuzzleArrow;
 

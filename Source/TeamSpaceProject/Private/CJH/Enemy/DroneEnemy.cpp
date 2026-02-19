@@ -511,4 +511,12 @@ void ADroneEnemy::GetLifetimeReplicatedProps(
 	DOREPLIFETIME_CONDITION_NOTIFY(ADroneEnemy, RepLocation, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME(ADroneEnemy, RepRotation);
 	DOREPLIFETIME(ADroneEnemy, RepVelocity);
+	DOREPLIFETIME(ADroneEnemy, bIsChasing);
+	DOREPLIFETIME(ADroneEnemy, ChaseCurvePhase);
+	DOREPLIFETIME(ADroneEnemy, bOrbiting);
+	DOREPLIFETIME(ADroneEnemy, AngularSpeedCurrent);
+	DOREPLIFETIME(ADroneEnemy, TiltAngleCurrent);
+	DOREPLIFETIME(ADroneEnemy, TiltAxisYaw);
+	DOREPLIFETIME(ADroneEnemy, ServerLocation);
+	DOREPLIFETIME(ADroneEnemy, ServerRotation);
 }
