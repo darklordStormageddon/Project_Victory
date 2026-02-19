@@ -62,6 +62,7 @@ void APSJ_Character::BeginPlay()
 		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 		SetReplicateMovement(false);
 	}
+
 }
 
 void APSJ_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -101,40 +102,28 @@ void APSJ_Character::PossessedBy(AController* NewController)
 	}
 }
 
-// [PSJ_Character.cpp]
-
 void APSJ_Character::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// 1. 로컬 컨트롤러 전용 로직 (수리, 무브먼트 모드 복구)
 	if (IsLocallyControlled())
 	{
 		UpdateRepairLogic();
 		UCharacterMovementComponent* CMC = GetCharacterMovement();
 
-		// [기획 확정] Walking 절대 금지 로직
-		// Walking이나 Falling이 감지되면 즉시 올바른 모드로 강제 복구
 		if (CMC->MovementMode == MOVE_Walking || CMC->MovementMode == MOVE_Falling)
 		{
-			// 앵커링 상태면 Custom, 아니면 무조건 Flying
-			if (ReplicatedRelativeData.bIsAnchored)
-			{
-				CMC->SetMovementMode(MOVE_Custom);
-			}
-			else
-			{
-				CMC->SetMovementMode(MOVE_Flying);
-			}
-
-			// 관성으로 인한 미끄러짐 방지
+			if (ReplicatedRelativeData.bIsAnchored) CMC->SetMovementMode(MOVE_Custom);
+			else CMC->SetMovementMode(MOVE_Flying);
 			CMC->Velocity = FVector::ZeroVector;
 		}
 	}
 
-	// 1. 공용 예외 처리
+	// 2. 공용 예외 처리 (컨트롤러 없거나, 로컬이면서 우주선 조종 중이면 리턴)
 	if (!Controller || (IsLocallyControlled() && CurrentSpaceship)) return;
 
-	// 2. 앵커링(부착) 상태 동기화
+	// 3. 앵커링(부착) 상태 동기화 (부모 액터 변경 감지)
 	AActor* ParentActor = GetAttachParentActor();
 	if (ReplicatedRelativeData.BaseActor && ParentActor != ReplicatedRelativeData.BaseActor)
 	{
@@ -150,53 +139,37 @@ void APSJ_Character::Tick(float DeltaTime)
 		SetReplicateMovement(true);
 	}
 
-	// 3. 로컬 컨트롤러 이동 로직
+	// 4. 이동 로직 구분
 	if (IsLocallyControlled())
 	{
+		// [Local] 내가 직접 조종하는 경우: 입력에 따라 실제로 위치를 옮김
 		if (!CurrentInputVector.IsNearlyZero())
 		{
-			// 입력 벡터 -> 월드 이동 벡터 변환
 			FVector LocalDir = FVector(CurrentInputVector.Y, CurrentInputVector.X, 0.0f);
 			FVector WorldDir = GetActorQuat().RotateVector(LocalDir);
 
-			// =================================================================================
-			// [핵심 기능 복구] 경사면 이동 투영 (Slope Projection)
-			// 바닥에 붙어있다면, 이동 방향을 바닥 경사면에 맞춰서 '비행기 이륙하듯' 꺾어줍니다.
-			// 이렇게 하면 계단을 들이받지 않고 타고 올라갑니다.
-			// =================================================================================
 			if (ReplicatedRelativeData.bIsAnchored && !CurrentFloorNormal.IsZero())
 			{
-				FVector SlopeDir = FVector::VectorPlaneProject(WorldDir, CurrentFloorNormal);
-				WorldDir = SlopeDir.GetSafeNormal();
+				WorldDir = FVector::VectorPlaneProject(WorldDir, CurrentFloorNormal).GetSafeNormal();
 			}
 
 			FVector MoveDelta = WorldDir * FlyModeMaxSpeed * DeltaTime;
-
 			FHitResult MoveHit;
-			GetCharacterMovement()->SafeMoveUpdatedComponent(
-				MoveDelta,
-				GetActorRotation(),
-				true,
-				MoveHit
-			);
+
+			// 실제로 위치를 이동시키는 핵심 함수
+			GetCharacterMovement()->SafeMoveUpdatedComponent(MoveDelta, GetActorRotation(), true, MoveHit);
 
 			if (MoveHit.IsValidBlockingHit())
 			{
 				FVector SlideVector = FVector::VectorPlaneProject(MoveDelta, MoveHit.Normal);
-				float RemainingPercent = 1.0f - MoveHit.Time;
-				GetCharacterMovement()->SafeMoveUpdatedComponent(
-					SlideVector * RemainingPercent,
-					GetActorRotation(),
-					true,
-					MoveHit
-				);
+				GetCharacterMovement()->SafeMoveUpdatedComponent(SlideVector * (1.0f - MoveHit.Time), GetActorRotation(), true, MoveHit);
 			}
 		}
 
-		// 4. 자석 부츠 (바닥 감지 및 높이 보정)
+		// 바닥 감지 및 높이 보정
 		UpdateMagBoots(DeltaTime);
 
-		// 5. 서버 동기화
+		// 서버에 현재 나의 상대 좌표를 보고 (이 값이 서버를 거쳐 다른 클라의 ReplicatedRelativeData가 됨)
 		if (!HasAuthority())
 		{
 			Server_UpdateRelativeTransform(GetRootComponent()->GetRelativeLocation(), GetRootComponent()->GetRelativeRotation());
@@ -209,11 +182,33 @@ void APSJ_Character::Tick(float DeltaTime)
 	}
 	else
 	{
-		// [Simulated Proxy]
+		// [Simulated Proxy] 서버나 다른 클라이언트가 나를 볼 때: 전달받은 좌표로 강제 고정
 		if (ReplicatedRelativeData.BaseActor)
 		{
+			FVector OldRelLocation = GetRootComponent()->GetRelativeLocation();
+
+			// 상대 좌표 동기화
 			SetActorRelativeLocation(ReplicatedRelativeData.RelativeLocation);
 			SetActorRelativeRotation(ReplicatedRelativeData.RelativeRotation);
+
+			// 속도 역산 (애니메이션 재생용)
+			if (DeltaTime > KINDA_SMALL_NUMBER)
+			{
+				FVector RelDelta = (FVector(ReplicatedRelativeData.RelativeLocation) - OldRelLocation) / DeltaTime;
+				GetCharacterMovement()->Velocity = RelDelta;
+			}
+
+			// 최후의 수단: 메쉬 강제 갱신 (서버 화면 A-Pose 방지)
+			if (GetMesh())
+			{
+				GetMesh()->TickAnimation(DeltaTime, false);
+				GetMesh()->RefreshBoneTransforms();
+			}
+
+			if (GetCharacterMovement()->MovementMode != MOVE_Custom)
+			{
+				GetCharacterMovement()->SetMovementMode(MOVE_Custom);
+			}
 		}
 	}
 }
