@@ -17,6 +17,7 @@ static const FName SETTING_IS_PUBLIC = FName(TEXT("IS_PUBLIC_KEY"));
 static const FName SETTING_ROOM_NAME = FName(TEXT("ROOM_NAME_KEY"));
 static const FName SETTING_PASSWORD = FName(TEXT("PASSWORD_KEY"));
 static const FName SETTING_SERVER_PORT = FName(TEXT("SERVER_PORT")); // 포트 동기화용
+static const FName SETTING_MAP_PATH = FName(TEXT("MAP_PATH_KEY")); //맵 동기화용
 
 UMyGameInstance::UMyGameInstance()
 {
@@ -134,6 +135,11 @@ void UMyGameInstance::CreateSession()
 			SETTING_PASSWORD, Password,
 			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
+		//맵
+		SessionSettings.Set(
+			SETTING_MAP_PATH, FString(TEXT("/Game/Main/PS_CJH/BuildObjects/Main")),
+			EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+
 		UE_LOG(LogTemp, Warning, TEXT("Creating session: %s on port 7777"), *DesiredServerName);
 
 		//방생성
@@ -188,34 +194,15 @@ void UMyGameInstance::Join(int32 Index)
 	if (ExistingSession)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Destroying existing client session before join"));
+		PendingJoinIndex = Index; // 인덱스 저장
 		SessionInterface->DestroySession(SESSION_NAME);
-		// 주의: 실제로는 OnDestroySessionComplete에서 Join을 호출해야 하지만
-		// 간단하게 처리하기 위해 여기서 바로 Join
+		return; // 여기서 리턴! Destroy 완료 후 콜백에서 처리
 	}
 
-	if (SessionSearch->SearchResults.Num() > (int32)Index)
+	// 기존 세션 없을 때는 바로 Join
+	if (SessionSearch->SearchResults.Num() > Index)
 	{
-		const FOnlineSessionSearchResult& Result = SessionSearch->SearchResults[Index];
-
-		UE_LOG(LogTemp, Warning, TEXT("Attempting to join session at index %d"), Index);
-
-		// 세션 정보 출력
-		if (Result.Session.SessionInfo.IsValid())
-		{
-			FString SessionIP = Result.Session.SessionInfo->ToString();
-			UE_LOG(LogTemp, Warning, TEXT("Session IP: %s"), *SessionIP);
-		}
-
-		// 포트 정보 확인
-		int32 ServerPort = 7777;
-		Result.Session.SessionSettings.Get(SETTING_SERVER_PORT, ServerPort);
-		UE_LOG(LogTemp, Warning, TEXT("Session Port: %d"), ServerPort);
-
-		SessionInterface->JoinSession(0, SESSION_NAME, Result);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Empty Session or invalid index"));
+		SessionInterface->JoinSession(0, SESSION_NAME, SessionSearch->SearchResults[Index]);
 	}
 }
 
@@ -233,7 +220,7 @@ void UMyGameInstance::OnCreateSessioncomplete(FName InSessionName, bool IsSucces
 	if (!World) return;
 
 	//레벨(맵) - ?listen 옵션으로 서버 모드 활성화
-	World->ServerTravel("/Game/Import/Maps/Lobby?listen");
+	World->ServerTravel("/Game/Main/PS_CJH/BuildObjects/Main?listen");
 }
 
 
@@ -248,10 +235,18 @@ void UMyGameInstance::StartSession()
 
 void UMyGameInstance::OnDestroySessioncomplete(FName InSessionName, bool IsSuccess)
 {
-	if (IsSuccess && bRecreateAfterDestroy)
+	if (!IsSuccess) return;
+
+	if (bRecreateAfterDestroy)
 	{
 		bRecreateAfterDestroy = false;
 		CreateSession();
+	}
+	else if (PendingJoinIndex >= 0)
+	{
+		int32 IndexToJoin = PendingJoinIndex;
+		PendingJoinIndex = -1;
+		Join(IndexToJoin); // 안전하게 재호출
 	}
 }
 
@@ -401,6 +396,8 @@ void UMyGameInstance::OnJoinSessioncomplete(FName InSessionName, EOnJoinSessionC
 
 	UE_LOG(LogTemp, Warning, TEXT("Final Connect Address: %s"), *Address);
 
+
+
 	APlayerController* PC = GetFirstLocalPlayerController();
 	if (PC == nullptr)
 	{
@@ -408,7 +405,31 @@ void UMyGameInstance::OnJoinSessioncomplete(FName InSessionName, EOnJoinSessionC
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Calling ClientTravel..."));
+	// Address 확정 후, ClientTravel 직전에 추가
+	FString MapPath;
+	FName SessionName = InSessionName;
+
+	// SearchResults에서 맵 경로 읽기
+	if (SessionSearch.IsValid())
+	{
+		for (const FOnlineSessionSearchResult& Result : SessionSearch->SearchResults)
+		{
+			FString Tag;
+			Result.Session.SessionSettings.Get(SETTING_GAME_TAG, Tag);
+			if (Tag == GameUniqueTag)
+			{
+				Result.Session.SessionSettings.Get(SETTING_MAP_PATH, MapPath);
+				break;
+			}
+		}
+	}
+
+	if (!MapPath.IsEmpty())
+	{
+		Address = Address + MapPath; // "192.168.0.152:7777/Game/Main/PS_CJH/BuildObjects/Main"
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Final Connect Address: %s"), *Address);
 	PC->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 }
 
