@@ -80,8 +80,6 @@ private:
 
 	bool bRecreateAfterDestroy;
 
-	int32 PendingJoinIndex = -1;
-
 public:
 	UPROPERTY(BlueprintReadWrite)
 	TArray<FServerData> ServerNames;
