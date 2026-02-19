@@ -194,6 +194,9 @@ private:
 	float CurrentCameraYaw = 0.0f;
 	float InitialSpringArmRoll = 0.0f;
 
+	// 카메라의 포탑 대비 Yaw 오프셋
+	float CameraYawOffset = 0.0f;
+
 	// 발사 관련 내부 변수
 	bool bIsLeftMuzzleNext = true;
 	bool bIsFiring = false;
