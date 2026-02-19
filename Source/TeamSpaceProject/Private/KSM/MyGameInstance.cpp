@@ -233,7 +233,7 @@ void UMyGameInstance::OnCreateSessioncomplete(FName InSessionName, bool IsSucces
 	if (!World) return;
 
 	//레벨(맵) - ?listen 옵션으로 서버 모드 활성화
-	World->ServerTravel("/Game/Import/Maps/Lobby?listen");
+	World->ServerTravel("/Game/Main/PS_CJH/BuildObjects/Main?listen");
 }
 
 
