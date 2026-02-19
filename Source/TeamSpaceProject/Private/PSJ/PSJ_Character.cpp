@@ -304,9 +304,22 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		if (bFoundValidFloor)
 		{
 			FRotator CurrentRot = GetActorRotation();
-			FRotator TargetRot = FRotationMatrix::MakeFromZX(Hit.Normal, GetActorForwardVector()).Rotator();
+			// [수정] 점프 중에도 계단(Stairs)인지 확인해서 기준 위쪽(Up)을 보정
+			FVector JumpAlignUpDir = Hit.Normal; // 기본은 바닥의 쌩 노말
+
+			if (Hit.GetActor()->ActorHasTag(TEXT("Stairs")))
+			{
+				AActor* HitParent = Hit.GetActor()->GetAttachParentActor();
+				// 부모가 있으면 부모의 위쪽, 월드 단독 배치는 월드의 위쪽(Z-Up)
+				JumpAlignUpDir = HitParent ? HitParent->GetActorUpVector() : FVector::UpVector;
+			}
+
+			//  Hit.Normal 대신 보정된 JumpAlignUpDir 사용
+			FRotator TargetRot = FRotationMatrix::MakeFromZX(JumpAlignUpDir, GetActorForwardVector()).Rotator();
 			SetActorRotation(FMath::QInterpTo(CurrentRot.Quaternion(), TargetRot.Quaternion(), DeltaTime, AlignSpeed));
-			CurrentFloorNormal = Hit.Normal;
+
+			//  다음 틱을 위해 저장하는 노말값도 JumpAlignUpDir 사용
+			CurrentFloorNormal = JumpAlignUpDir;
 		}
 
 		// 4. 착지 판정 (속도가 음수이고, 바닥이 가까울 때)
