@@ -218,7 +218,26 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 	if (!IsLocallyControlled()) return;
 
 	FVector GravityUpDir = FVector::UpVector;
-	if (GetAttachParentActor()) GravityUpDir = GetAttachParentActor()->GetActorUpVector();
+	AActor* AttachedActor = GetAttachParentActor();
+
+	if (AttachedActor)
+	{
+		// 부착된 바닥이 '계단(Stairs)' 태그를 가지고 있는가?
+		if (AttachedActor->ActorHasTag(TEXT("Stairs")))
+		{
+			AActor* ParentActor = AttachedActor->GetAttachParentActor();
+			// 계단의 상위 부모(우주선 등)가 있다면 그 부모의 수직을 따르고,
+			// 부모가 없다면(월드에 단독으로 배치된 경사면) 월드의 절대 수직(Z-Up)을 따름
+			GravityUpDir = ParentActor ? ParentActor->GetActorUpVector() : FVector::UpVector;
+		}
+		else
+		{
+			// 계단이 아닌 일반 바닥(우주선 자체 등)이면 해당 바닥의 수직을 그대로 따름
+			GravityUpDir = AttachedActor->GetActorUpVector();
+		}
+	}
+
+
 	FVector DownDir = -GravityUpDir;
 
 	float MyHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
@@ -344,6 +363,31 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		SetActorLocation(NewLoc);
 
 		FRotator CurrentRot = GetActorRotation();
+
+		// 1. 방금 밟은 바닥을 기준으로 진짜 기준 위쪽(UpVector)을 다시 결정
+		FVector FinalUpDir = GravityUpDir; // 일단 기존 중력 방향을 기본으로 둠
+		AActor* FloorActor = Hit.GetActor();
+
+		if (FloorActor->ActorHasTag(TEXT("Stairs")))
+		{
+			AActor* FloorParent = FloorActor->GetAttachParentActor();
+			if (FloorParent)
+			{
+				// 우주선 내부에 종속된 계단이면 부모(우주선)의 UpVector를 따름 (회전하는 우주선 대응 완벽 보장)
+				FinalUpDir = FloorParent->GetActorUpVector();
+			}
+			else
+			{
+				// 최상위 부모가 없다? = 월드에 덩그러니 놓인 단독 계단 -> 월드 정방향 Z-Up 고정
+				FinalUpDir = FVector::UpVector;
+			}
+		}
+		else
+		{
+			// 계단이 아닌 일반 우주선 바닥이면 해당 액터의 UpVector를 따름
+			FinalUpDir = FloorActor->GetActorUpVector();
+		}
+
 		FRotator TargetRot = FRotationMatrix::MakeFromZX(GravityUpDir, GetActorForwardVector()).Rotator();
 		FQuat NewQuat = FMath::QInterpTo(CurrentRot.Quaternion(), TargetRot.Quaternion(), DeltaTime, AlignSpeed);
 		SetActorRotation(NewQuat);
