@@ -55,21 +55,21 @@ ATurretBase_GT::ATurretBase_GT()
 	MainMuzzle = CreateDefaultSubobject<USceneComponent>(TEXT("MainMuzzle"));
 	MainMuzzle->SetupAttachment(BarrelMesh);
 
-	// 카메라 설정
+	// 카메라 설정 - BarrelMesh에 직접 부착
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	SpringArm->SetupAttachment(PitchPivot);
+	SpringArm->SetupAttachment(BarrelMesh);  // PitchPivot에서 BarrelMesh로 변경
 	SpringArm->TargetArmLength = 400.0f;
-	SpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
+	SpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	SpringArm->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 
 	SpringArm->bUsePawnControlRotation = false;
-	SpringArm->bInheritPitch = false;
-	SpringArm->bInheritYaw = false;
-	SpringArm->bInheritRoll = false;
+	SpringArm->bInheritPitch = true;
+	SpringArm->bInheritYaw = true;
+	SpringArm->bInheritRoll = true;
 
 	SpringArm->bEnableCameraLag = true;
 	SpringArm->CameraLagSpeed = 3.0f;
-	SpringArm->bEnableCameraRotationLag = false;
+	SpringArm->bEnableCameraRotationLag = true;
 	SpringArm->CameraRotationLagSpeed = 10.0f;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
@@ -123,7 +123,7 @@ void ATurretBase_GT::BeginPlay()
 	if (SpringArm)
 	{
 		FRotator InitialRotation = SpringArm->GetRelativeRotation();
-		InitialSpringArmRoll = InitialRotation.Roll; 
+		InitialSpringArmRoll = InitialRotation.Roll;
 		CurrentCameraYaw = InitialRotation.Yaw;
 	}
 
@@ -196,42 +196,8 @@ void ATurretBase_GT::Tick(float DeltaTime)
 		}
 	}
 
-	if (SpringArm)
-	{
-		FRotator CurrentSpringArmRotation = SpringArm->GetRelativeRotation();
-
-		// Yaw 업데이트
-		if (bSmoothCameraFollow)
-		{
-			float DeltaYaw = FRotator::NormalizeAxis(TargetYaw - CurrentCameraYaw);
-			CurrentCameraYaw = CurrentCameraYaw + (DeltaYaw * FMath::Min(1.0f, DeltaTime * CameraYawFollowSpeed));
-			CurrentCameraYaw = FRotator::NormalizeAxis(CurrentCameraYaw);
-		}
-		else
-		{
-			CurrentCameraYaw = TargetYaw;
-		}
-		CurrentSpringArmRotation.Yaw = CurrentCameraYaw;
-
-		// Roll 업데이트 - 음수를 양수로 변경!
-		float CameraTargetRoll = InitialSpringArmRoll + (TargetPitchRoll * CameraPitchFollowRatio);
-
-		if (bSmoothCameraFollow)
-		{
-			CurrentSpringArmRotation.Roll = FMath::FInterpTo(
-				CurrentSpringArmRotation.Roll,
-				CameraTargetRoll,
-				DeltaTime,
-				CameraPitchFollowSpeed
-			);
-		}
-		else
-		{
-			CurrentSpringArmRotation.Roll = CameraTargetRoll;
-		}
-
-		SpringArm->SetRelativeRotation(CurrentSpringArmRotation);
-	}
+	// 카메라는 SpringArm이 BarrelMesh에 부착되어 있으므로 자동으로 포신을 따라감
+	// 추가적인 카메라 회전 로직 제거됨
 
 	// 연속 발사 로직
 	if (bIsFiring && _cachedGameState)
@@ -306,7 +272,6 @@ void ATurretBase_GT::Look(const FInputActionValue& Value)
 				CurrentRotation.Normalize();
 				YawPivot->SetRelativeRotation(CurrentRotation);
 				TargetYaw = CurrentRotation.Yaw;
-				CurrentCameraYaw = TargetYaw;
 			}
 		}
 	}
@@ -483,7 +448,6 @@ void ATurretBase_GT::AddYawInput(float YawInputDegPerSec, float DeltaTime)
 			R.Yaw += YawInputDegPerSec * DeltaTime;
 			YawPivot->SetRelativeRotation(R);
 			TargetYaw = R.Yaw;
-			CurrentCameraYaw = TargetYaw;
 		}
 	}
 }
@@ -537,6 +501,23 @@ void ATurretBase_GT::SetPilot(APSJ_Character* NewPilot, APSJ_ShipCockpit* Cockpi
 // [신규] 클라이언트 탑승 성공 처리 (UI, IMC)
 void ATurretBase_GT::Client_BoardingSuccess_Implementation()
 {
+	// 탑승 시 포탑 회전 초기화
+	if (YawPivot)
+	{
+		FRotator ResetYaw = YawPivot->GetRelativeRotation();
+		ResetYaw.Yaw = 0.0f;  // Yaw를 0도로 초기화 (정면)
+		YawPivot->SetRelativeRotation(ResetYaw);
+		TargetYaw = 0.0f;
+	}
+
+	if (PitchPivot)
+	{
+		FRotator ResetPitch = PitchPivot->GetRelativeRotation();
+		ResetPitch.Roll = 0.0f;  // Roll을 0으로 초기화 (수평)
+		PitchPivot->SetRelativeRotation(ResetPitch);
+		TargetPitchRoll = 0.0f;
+	}
+
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
