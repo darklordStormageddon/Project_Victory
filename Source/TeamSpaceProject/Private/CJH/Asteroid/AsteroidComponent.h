@@ -54,6 +54,7 @@ struct FSpawnAsteroidInfo
 class UEventManager;
 class UEventOnStartStage;
 class UEventOnEndStage;
+class AJHSGameMode;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 
@@ -67,6 +68,10 @@ private:
 	FDelegateHandle OnEndStageHandle;
 
 	AActor* _ownerActor = nullptr;
+
+	AJHSGameMode* InGameMode = nullptr;
+
+	UEventManager* EventManager = nullptr;
 
 	bool bIsSpawning = false;
 	bool bSpawningEnabled = false;
@@ -84,6 +89,8 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn", meta = (ClampMin = "1"))
 	int32 AutoStartStage = 1;
+
+	AActor* TargetShip;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
