@@ -38,16 +38,13 @@ struct FDroneOrbitData
 	float AngularSpeed;
 };
 
-UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class UGarbageEnemySpawnComponent : public UEnemySpawnComponent
 {
 	GENERATED_BODY()
 
 protected:
 	TArray<AGarbageEnemyBase*> GarbageEnemies;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
-	TArray<TSubclassOf<AGarbageEnemyBase>> _Enemy;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Orbit", meta = (ClampMin = "100.0", ClampMax = "5000.0"))
 	float OrbitMinDistance = 800.0f;
