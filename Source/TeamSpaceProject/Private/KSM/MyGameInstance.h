@@ -88,14 +88,14 @@ public:
 	FString Password;
 
 	UPROPERTY(BlueprintReadWrite)
-	bool bIsGameStarted;
+	bool bIsGameStarted = false;
 
 	UPROPERTY(BlueprintReadWrite)
 	FString NickName;
 
 	//게임 접근성
 	UPROPERTY(BlueprintReadWrite)
-	bool bIsPublic;
+	bool bIsPublic = false;
 
 	// 블루프린트에서 이벤트 바인딩 가능
 	UPROPERTY(BlueprintAssignable, Category = "Session")
