@@ -32,29 +32,6 @@ void UASManagerComponent::BeginPlay()
 
 	GetSetting();
 
-	UEventManager* EventManager = nullptr;
-	if (UStaticFunctionLibrary::TryGetEventManager(EventManager) && EventManager)
-	{
-		OnStartStageHandle = EventManager->AddListener<UEventOnStartStage>(
-			[this](UEventOnStartStage* Event)
-			{
-				if (!Event)
-					return;
-
-				StartSpawn();
-			}
-		);
-
-		OnEndStageHandle = EventManager->AddListener<UEventOnEndStage>(
-			[this](UEventOnEndStage* Event)
-			{
-				if (!Event)
-					return;
-				ClearSpawnedSatellites();
-			}
-		);
-	}
-
 	if (bAutoStart)
 		Artifical_Satellite_Spawn();
 }
@@ -63,21 +40,7 @@ void UASManagerComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (GetOwner() && GetOwner()->HasAuthority())
 	{
-		UEventManager* EventManager = nullptr;
-		if (UStaticFunctionLibrary::TryGetEventManager(EventManager) && EventManager)
-		{
-			if (OnStartStageHandle.IsValid())
-			{
-				EventManager->DelListener<UEventOnStartStage>(OnStartStageHandle);
-				OnStartStageHandle.Reset();
-			}
-
-			if (OnEndStageHandle.IsValid())
-			{
-				EventManager->DelListener<UEventOnEndStage>(OnEndStageHandle);
-				OnEndStageHandle.Reset();
-			}
-		}
+		StopSpawn();
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -161,12 +124,14 @@ void UASManagerComponent::SpawnNextArtificialSatellite()
 	if (!spaceStation || Artifical_Satellite.Num() <= 0 || !GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(Spawn_TimerHandle);
+		OnAllSatellitesSpawnComplete.Broadcast();
 		return;
 	}
 
 	if (Spawned_Count >= Target_Spawn_Count)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(Spawn_TimerHandle);
+		OnAllSatellitesSpawnComplete.Broadcast();
 		return;
 	}
 
