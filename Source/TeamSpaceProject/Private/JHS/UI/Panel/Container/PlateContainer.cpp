@@ -2,6 +2,7 @@
 
 #include "JHS/UI/Panel/Container/PlateContainer.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameState.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
 #include "JHS/GameControl/CommonEnums.h"
@@ -27,7 +28,20 @@ void UPlateContainer::NativeConstruct()
 		}
 	);
 
+	_eventHandleOnChangeOwnedDollar = _outEventManager->AddListener<UEventOnChangeOwnedDollar>(
+		[this](UEventOnChangeOwnedDollar* Event)
+		{
+			OnChangeOwnedDollar(Event);
+		}
+	);
+
 	_currentSlotCount = _elementSlotMap.Num();
+
+	AJHSGameState* _outGameState = nullptr;
+	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+		return;
+
+	_outGameState->SendCurrentDataEvent();
 }
 
 void UPlateContainer::NativeDestruct()
@@ -40,6 +54,12 @@ void UPlateContainer::NativeDestruct()
 	{
 		_outEventManager->DelListener<UEventOnChangeElementData>(_eventHandleOnChangeElementData);
 		_eventHandleOnChangeElementData.Reset();
+	}
+
+	if (_eventHandleOnChangeOwnedDollar.IsValid())
+	{
+		_outEventManager->DelListener<UEventOnChangeElementData>(_eventHandleOnChangeOwnedDollar);
+		_eventHandleOnChangeOwnedDollar.Reset();
 	}
 }
 
@@ -89,11 +109,19 @@ void UPlateContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 	SortItemSlot();
 
 	// Text
-	const int32 _goalDollar = Event->GoalDollar;
-
 	_targetCumulativePrice = Event->CumulativePrice;
-	_targetOwnedDollar = Event->OwnedDollar;
+	_goalDollar = Event->GoalDollar;
+	UpdateDollar();
+}
 
+void UPlateContainer::OnChangeOwnedDollar(UEventOnChangeOwnedDollar* Event)
+{
+	_targetOwnedDollar = Event->OwnedDollar;
+	UpdateDollar();
+}
+
+void UPlateContainer::UpdateDollar()
+{
 	const int32 _expectDollar = _targetCumulativePrice + _targetOwnedDollar;
 	TXT_ExpectDollar->SetText(FText::AsNumber(_expectDollar));
 	FLinearColor _expectDollarColor = _expectDollar < _goalDollar ? _lessExpectDollarColor : _overExpectDollarColor;
@@ -101,7 +129,6 @@ void UPlateContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 
 	TXT_GoalDollar->SetText(FText::AsNumber(_goalDollar));
 
-	// Start Update
 	ClearTimer();
 	GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &UPlateContainer::UpdateText, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), false);
 }

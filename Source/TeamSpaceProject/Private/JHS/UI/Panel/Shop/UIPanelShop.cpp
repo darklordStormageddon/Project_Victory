@@ -135,7 +135,7 @@ void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
 	if (SB_ScrollBox == nullptr || _purchaseRowClass == nullptr)
 		return;
 
-	TArray<FPurchaseData> _purchaseDataArray = GetPurchaseDataArray(SelectedCategory);
+	TArray<FPurchaseData*> _purchaseDataArray = GetPurchaseDataArray(SelectedCategory);
 	int32 _activeCount = _purchaseDataArray.Num();
 
 	TObjectPtr<UPurchaseRow> _rowWidget = nullptr;
@@ -158,7 +158,7 @@ void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
 			_purchaseRowMap.Add(i, _rowWidget);
 		}
 		
-		FPurchaseData _purchaseData = _purchaseDataArray[i];
+		FPurchaseData* _purchaseData = _purchaseDataArray[i];
 		_rowWidget->UpdateRow(_purchaseData);
 		_rowWidget->SetVisibility(ESlateVisibility::Visible);
 	}
@@ -174,9 +174,9 @@ void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
 	}
 }
 
-TArray<FPurchaseData> UUIPanelShop::GetPurchaseDataArray(E_PURCHASE_CATEGORY SelectedCategory)
+TArray<FPurchaseData*> UUIPanelShop::GetPurchaseDataArray(E_PURCHASE_CATEGORY SelectedCategory)
 {
-	TArray<FPurchaseData> _purchaseDataArray;
+	TArray<FPurchaseData*> _purchaseDataArray;
 
 	switch (SelectedCategory)
 	{

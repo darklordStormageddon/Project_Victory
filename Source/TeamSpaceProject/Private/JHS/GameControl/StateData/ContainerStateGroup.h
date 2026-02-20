@@ -48,7 +48,10 @@ public:
 	void AddElement(E_ELEMENT_TYPE ElementType, int32 Amount);
 
 	void SaleAllElement();
-	
+
+	/** 보유 달러에서 차감 시도. 성공 시 true 및 차감, 실패 시 false. */
+	bool TryConsumeDollar(int32 Amount);
+
 	bool TryGetElementData(E_ELEMENT_TYPE ElementType, FElementData*& OutElementData);
 
 private:
@@ -57,4 +60,6 @@ private:
 	void SaleElementInternal(int32 ElementTypeIndex);
 
 	void ExecuteEventOnChangeElement(FElementData ElementData);
+
+	void ExecuteEventOnChangeOwnedDollar(int32 OwnedDollar);
 };

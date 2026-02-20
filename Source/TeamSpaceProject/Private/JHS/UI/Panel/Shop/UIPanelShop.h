@@ -73,7 +73,7 @@ private:
 
 	void UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory);
 
-	TArray<FPurchaseData> GetPurchaseDataArray(E_PURCHASE_CATEGORY SelectedCategory);
+	TArray<FPurchaseData*> GetPurchaseDataArray(E_PURCHASE_CATEGORY SelectedCategory);
 
 	bool TryGetPurchaseCategory(E_PURCHASE_CATEGORY Category, TObjectPtr<UPurchaseCategory>& OutPurchaseCategory);
 

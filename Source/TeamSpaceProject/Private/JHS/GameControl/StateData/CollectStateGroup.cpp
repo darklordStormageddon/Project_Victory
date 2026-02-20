@@ -3,6 +3,7 @@
 
 #include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/ShopManager.h"
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "KSM/DataTable/ToolDataTable.h"
 #include "JHS/Event/CommonEventBase.h"
@@ -53,9 +54,9 @@ void UCollectStateGroup::UpdateCollectState()
 	}
 }
 
-TArray<FPurchaseData> UCollectStateGroup::GetPurchaseDataArray()
+TArray<FPurchaseData*> UCollectStateGroup::GetPurchaseDataArray()
 {
-	TArray<FPurchaseData> _purchaseDataArray;
+	TArray<FPurchaseData*> _purchaseDataArray;
 	for (int32 i = 0; i < (int32)E_COLLECT_TOOL_TYPE::NONE; i++)
 	{
 		E_COLLECT_TOOL_TYPE _collectToolType = (E_COLLECT_TOOL_TYPE)i;
@@ -66,11 +67,30 @@ TArray<FPurchaseData> UCollectStateGroup::GetPurchaseDataArray()
 		if (!TryGetCollectToolData(_collectToolType, _outCollectToolData))
 			continue;
 
-		_purchaseDataArray.Add(_outCollectToolData->Durability);
-		_purchaseDataArray.Add(_outCollectToolData->ToolDamage);
+		FPurchaseData* _durabilityData = &_outCollectToolData->Durability;
+		_durabilityData->OnPurchaseRequested.BindLambda([this, _collectToolType]() { TryPurchaseCollectTool(_collectToolType, true); });
+		_purchaseDataArray.Add(_durabilityData);
+
+		FPurchaseData* _toolDamageData = &_outCollectToolData->ToolDamage;
+		_toolDamageData->OnPurchaseRequested.BindLambda([this, _collectToolType]() { TryPurchaseCollectTool(_collectToolType, false); });
+		_purchaseDataArray.Add(_toolDamageData);
 	}
 
 	return _purchaseDataArray;
+}
+
+void UCollectStateGroup::TryPurchaseCollectTool(E_COLLECT_TOOL_TYPE ToolType, bool IsDurability)
+{
+	FCollectToolData* _outCollectToolData = nullptr;
+	if (!TryGetCollectToolData(ToolType, _outCollectToolData) || _gameState == nullptr)
+		return;
+
+	FPurchaseData* _data = IsDurability ? &_outCollectToolData->Durability : &_outCollectToolData->ToolDamage;
+	TObjectPtr<UShopManager> _shopManager = _gameState->GetShopManager();
+	if (_shopManager == nullptr || !_shopManager->TryPurchase(_data))
+		return;
+
+	ExecuteEventToolDurability(*_outCollectToolData);
 }
 
 void UCollectStateGroup::RepairAllTool()
@@ -144,7 +164,6 @@ void UCollectStateGroup::LoadCollectToolDataTable()
 		if (_toolInfo)
 		{
 			FCollectToolData _newCollectToolData;
-			// ���� ����
 			_newCollectToolData.CollectToolType = _toolInfo->ToolType;
 			TObjectPtr<UTexture2D> _outTexture = nullptr;
 			FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_COLLECT_TOOL_TYPE>(_newCollectToolData.CollectToolType);
@@ -153,10 +172,8 @@ void UCollectStateGroup::LoadCollectToolDataTable()
 				_newCollectToolData.CollectToolImage = _outTexture;
 			}
 
-			// ������
 			_newCollectToolData.Durability = AJHSGameState::ParseFromDataRow(_newCollectToolData.CollectToolImage, _toolInfo->Durability);
 
-			// ���� ������
 			_newCollectToolData.ToolDamage = AJHSGameState::ParseFromDataRow(_newCollectToolData.CollectToolImage, _toolInfo->Damage);
 
 			_collectToolDataMap.Add(_newCollectToolData.CollectToolType, _newCollectToolData);

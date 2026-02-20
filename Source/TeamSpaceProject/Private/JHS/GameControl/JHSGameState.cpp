@@ -8,6 +8,7 @@
 #include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "JHS/GameControl/StateData/ContainerStateGroup.h"
+#include "JHS/GameControl/ShopManager.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/UI/UIManager.h"
 #include "JHS/UI/UIBase.h"
@@ -27,6 +28,8 @@ AJHSGameState::AJHSGameState()
 	_containerStateGroup = CreateDefaultSubobject<UContainerStateGroup>(TEXT("ContainerStateGroup"));
 
 	_turretStateGroup = CreateDefaultSubobject<UTurretStateGroup>(TEXT("TurretStateGroup"));
+
+	_shopManager = CreateDefaultSubobject<UShopManager>(TEXT("ShopManager"));
 }
 
 void AJHSGameState::BeginPlay()
@@ -47,6 +50,8 @@ void AJHSGameState::InitializeGameState()
 	_containerStateGroup->InitializeContainerState(this, _initContainerState);
 	
 	_turretStateGroup->InitializeTurretState(this);
+
+	_shopManager->InitializeShop(_containerStateGroup);
 
 	UUIManager* _outUIManager = nullptr;
 	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
@@ -112,10 +117,12 @@ FPurchaseData AJHSGameState::ParseFromDataRow(UTexture2D* Image, FPurchaseDataFo
 
 	_newPurchaseData.Value.MaxValue = PurchaseDataFormat.InitValue;
 	_newPurchaseData.Value.CurrentValue = _newPurchaseData.Value.MaxValue;
+	_newPurchaseData.InitValue = _newPurchaseData.Value.MaxValue;
 
 	_newPurchaseData.IncreasePerValue = PurchaseDataFormat.IncreasePerValue;
 	_newPurchaseData.PurchaseDollar = PurchaseDataFormat.InitDollar;
 	_newPurchaseData.IncreasePerDollar = PurchaseDataFormat.IncreasePerDollar;
+	_newPurchaseData.InitDollar = _newPurchaseData.PurchaseDollar;
 
 	return _newPurchaseData;
 }

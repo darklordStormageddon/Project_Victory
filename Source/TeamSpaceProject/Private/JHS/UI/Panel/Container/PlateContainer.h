@@ -13,6 +13,7 @@ class UInteractableScrollBox;
 class UContainerItemSlot;
 class UTextBlock;
 class UEventOnChangeElementData;
+class UEventOnChangeOwnedDollar;
 
 UCLASS()
 class UPlateContainer : public UUserWidget
@@ -21,6 +22,8 @@ class UPlateContainer : public UUserWidget
 
 private:
 	FDelegateHandle _eventHandleOnChangeElementData;
+
+	FDelegateHandle _eventHandleOnChangeOwnedDollar;
 
 	TMap<E_ELEMENT_TYPE, TObjectPtr<UContainerItemSlot>> _elementSlotMap;
 
@@ -62,6 +65,9 @@ private:
 	float _currentEffectUpdateTime = 0.0f;
 
 	UPROPERTY()
+	int32 _goalDollar = 0;
+
+	UPROPERTY()
 	float _targetCumulativePrice = 0;
 
 	UPROPERTY()
@@ -89,6 +95,10 @@ protected:
 
 private:
 	void OnChangeElementData(UEventOnChangeElementData* Event);
+
+	void OnChangeOwnedDollar(UEventOnChangeOwnedDollar* Event);
+
+	void UpdateDollar();
 
 	TObjectPtr<UContainerItemSlot> CreateAndRegisterElementSlot(E_ELEMENT_TYPE ElementType);
 
