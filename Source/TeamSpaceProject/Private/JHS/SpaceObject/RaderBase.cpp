@@ -91,20 +91,37 @@ void ARaderBase::RenderSpaceObjectToRader()
 			TSubclassOf<AActor> _raderObjectMesh = _raderObjectData.RaderObjectMesh;
 			if (_world != nullptr && _raderObjectMesh != nullptr)
 			{
-				_raderObject = _world->SpawnActor<AActor>(_raderObjectMesh, FVector(_spawnPosition, _spawnPosition, _spawnPosition), FRotator::ZeroRotator);
+				_raderObject = _world->SpawnActor<AActor>(
+					_raderObjectMesh,
+					FVector(_spawnPosition, _spawnPosition, _spawnPosition),
+					FRotator::ZeroRotator
+				);
+
+				// SpawnActor 실패 체크를 먼저
+				if (_raderObject == nullptr)
+				{
+					UE_LOG(LogTemp, Error, TEXT("ARaderBase: SpawnActor failed"));
+					continue; // return 대신 continue로 다음 객체 처리
+				}
+
 				_raderObject->AttachToComponent(_raderCenter, FAttachmentTransformRules::KeepWorldTransform);
 				_raderObject->SetActorScale3D(FVector(_raderMeshSize, _raderMeshSize, _raderMeshSize));
 				_raderObjectData.RaderObjectArray.Add(_raderObject);
 			}
+			else
+			{
+				continue; // world나 mesh가 null이면 스킵
+			}
 		}
 
 		_raderObject = _raderObjectData.RaderObjectArray[_raderObjectData.LastRaderObjectIndex];
-		_raderObjectData.LastRaderObjectIndex++;
 
-		if (_raderObject == nullptr)
+		// 배열에서 꺼낸 후에도 유효성 검사 (GC로 인한 dangling 방어)
+		if (!IsValid(_raderObject))
 		{
-			UE_LOG(LogTemp, Error, TEXT("ARaderBase: RaderObject is nullptr"));
-			return;
+			UE_LOG(LogTemp, Error, TEXT("ARaderBase: RaderObject is invalid"));
+			_raderObjectData.RaderObjectArray.RemoveAt(_raderObjectData.LastRaderObjectIndex);
+			continue;
 		}
 
 		_raderObject->SetActorHiddenInGame(false);

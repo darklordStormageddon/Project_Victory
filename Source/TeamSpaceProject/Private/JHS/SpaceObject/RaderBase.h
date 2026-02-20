@@ -33,6 +33,7 @@ struct FRaderData
 	GENERATED_BODY()
 
 public:
+	UPROPERTY()
 	TObjectPtr<AActor> StandardActor = nullptr;
 
 	float RaderRenderRadius = 0.0f;
@@ -48,10 +49,13 @@ public:
 	ARaderBase();
 
 private:
+	UPROPERTY()
 	TObjectPtr<USpaceManager> _spaceManager = nullptr;
 
+	UPROPERTY()
 	TMap<E_SPACE_OBJECT_TYPE, FRaderObjectData> _raderObjectDataMap;
 
+	UPROPERTY()
 	FRaderData _raderData;
 
 	UPROPERTY()
