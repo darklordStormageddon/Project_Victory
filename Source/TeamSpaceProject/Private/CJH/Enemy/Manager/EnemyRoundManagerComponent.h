@@ -18,7 +18,7 @@ struct FEnemySpawnGroup
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly, Category = "Round")
-	TArray<TSubclassOf<AEnemyBase>> EnemyTypes;
+	TSubclassOf<AEnemyBase> EnemyTypes;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Round")
 	int32 MinCount = 0;
@@ -39,7 +39,7 @@ struct FRoundEnemySettings
 	int32 MaxTotal = 5;
 };
 
-UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class UEnemyManagerComponent : public UActorComponent
 {
 	GENERATED_BODY()

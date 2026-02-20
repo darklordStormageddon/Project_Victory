@@ -145,14 +145,13 @@ void UEnemyManagerComponent::BuildSpawnList(const FRoundEnemySettings& Settings,
 
 	for (const FEnemySpawnGroup& Group : Settings.Groups)
 	{
-		if (Group.EnemyTypes.Num() <= 0)
+		if (!Group.EnemyTypes)
 			continue;
 
 		const int32 Count = FMath::RandRange(Group.MinCount, Group.MaxCount);
 		for (int32 i = 0; i < Count; ++i)
 		{
-			const int32 TypeIndex = FMath::RandRange(0, Group.EnemyTypes.Num() - 1);
-			OutSpawnList.Add(Group.EnemyTypes[TypeIndex]);
+			OutSpawnList.Add(Group.EnemyTypes);
 		}
 	}
 
@@ -169,7 +168,12 @@ void UEnemyManagerComponent::BuildSpawnList(const FRoundEnemySettings& Settings,
 	{
 		TArray<TSubclassOf<AEnemyBase>> AllTypes;
 		for (const FEnemySpawnGroup& Group : Settings.Groups)
-			AllTypes.Append(Group.EnemyTypes);
+		{
+			if (Group.EnemyTypes)
+			{
+				AllTypes.Add(Group.EnemyTypes);
+			}
+		}
 
 		if (AllTypes.Num() > 0)
 		{
