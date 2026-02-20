@@ -87,10 +87,14 @@ void ARaderBase::RenderSpaceObjectToRader()
 		if (_raderObjectData.RaderObjectArray.Num() <= _raderObjectData.LastRaderObjectIndex)
 		{
 			float _spawnPosition = _raderObjectData.LastRaderObjectIndex * 100.0f;
-			_raderObject = GetWorld()->SpawnActor<AActor>(_raderObjectData.RaderObjectMesh, FVector(_spawnPosition, _spawnPosition, _spawnPosition), FRotator::ZeroRotator);
-			_raderObject->AttachToComponent(_raderCenter, FAttachmentTransformRules::KeepWorldTransform);
-			_raderObject->SetActorScale3D(FVector(_raderMeshSize, _raderMeshSize, _raderMeshSize));
-			_raderObjectData.RaderObjectArray.Add(_raderObject);
+			UWorld* _world = GetWorld();
+			if (_world != nullptr)
+			{
+				_raderObject = GetWorld()->SpawnActor<AActor>(_raderObjectData.RaderObjectMesh, FVector(_spawnPosition, _spawnPosition, _spawnPosition), FRotator::ZeroRotator);
+				_raderObject->AttachToComponent(_raderCenter, FAttachmentTransformRules::KeepWorldTransform);
+				_raderObject->SetActorScale3D(FVector(_raderMeshSize, _raderMeshSize, _raderMeshSize));
+				_raderObjectData.RaderObjectArray.Add(_raderObject);
+			}
 		}
 
 		_raderObject = _raderObjectData.RaderObjectArray[_raderObjectData.LastRaderObjectIndex];
