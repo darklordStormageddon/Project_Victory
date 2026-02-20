@@ -13,6 +13,7 @@ class UEventOnStartStage;
 class UEventOnEndStage;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSatelliteSpawned, ASatellite_Base*, Satellite);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAllSatellitesSpawnComplete);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UASManagerComponent : public UActorComponent
@@ -35,6 +36,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Artifical_Satellite_Spawn")
 	FOnSatelliteSpawned OnSatelliteSpawned;
+
+	UPROPERTY(BlueprintAssignable, Category = "Artifical_Satellite_Spawn")
+	FOnAllSatellitesSpawnComplete OnAllSatellitesSpawnComplete;
 
 protected:
 	virtual void BeginPlay() override;

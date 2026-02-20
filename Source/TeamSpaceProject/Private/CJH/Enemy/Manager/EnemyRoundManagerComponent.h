@@ -55,18 +55,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
-	FDelegateHandle OnStartStageHandle;
-	FDelegateHandle OnEndStageHandle;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Round")
-	bool bAutoStart = true;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Round", meta = (ClampMin = "1"))
-	int32 AutoStartStage = 1;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Round")
 	TArray<FRoundEnemySettings> RoundSettings;
 
@@ -75,6 +65,7 @@ private:
 
 	int32 CurrentRound = 0;
 
+	UPROPERTY()
 	UASManagerComponent* SatelliteManager = nullptr;
 
 	TArray<TWeakObjectPtr<ASatellite_Base>> SpawnedSatellites;
