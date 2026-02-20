@@ -8,21 +8,29 @@
 
 void UUIPanelDriveSeat::RegisterEvent()
 {
-	_eventHandle = GetEventManager()->AddListener<UEventOnChangeSpaceShipData>(
-		[this](UEventOnChangeSpaceShipData* Event)
-		{
-			OnChangeSpaceShipData(Event);
-		}
-	);
+	TObjectPtr<UEventManager> EventManager = GetEventManager();
+	if (EventManager != nullptr)
+	{
+		_eventHandle = EventManager->AddListener<UEventOnChangeSpaceShipData>(
+			[this](UEventOnChangeSpaceShipData* Event)
+			{
+				OnChangeSpaceShipData(Event);
+			}
+		);
+	}
 }
 
 void UUIPanelDriveSeat::UnregisterEvent()
 {
-	if (_eventHandle.IsValid())
-    {
-        GetEventManager()->DelListener<UEventOnChangeSpaceShipData>(_eventHandle);
-        _eventHandle.Reset();
-    }
+	TObjectPtr<UEventManager> EventManager = GetEventManager();
+	if (EventManager != nullptr)
+	{
+		if (_eventHandle.IsValid())
+		{
+			EventManager->DelListener<UEventOnChangeSpaceShipData>(_eventHandle);
+			_eventHandle.Reset();
+		}
+	}
 }
 
 void UUIPanelDriveSeat::OnChangeSpaceShipData(UEventOnChangeSpaceShipData* Event)

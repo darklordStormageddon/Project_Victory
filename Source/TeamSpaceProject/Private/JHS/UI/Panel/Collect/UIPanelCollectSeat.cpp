@@ -45,33 +45,45 @@ void UUIPanelCollectSeat::OnClose()
 
 void UUIPanelCollectSeat::RegisterEvent()
 {
-	_eventHandleOnChangeDurability = GetEventManager()->AddListener<UEventOnChangeToolDurability>(
-        [this](UEventOnChangeToolDurability* Event)
-        {
-			OnChangeDurability(Event);
-        }
-    );
+	TObjectPtr<UEventManager> EventManager = GetEventManager();
+	if (EventManager != nullptr)
+	{
+		EventManager->AddListener<UEventOnChangeToolDurability>(
+			[this](UEventOnChangeToolDurability* Event)
+			{
+				OnChangeDurability(Event);
+			}
+		);
 
-	_eventHandleOnChangeTool = GetEventManager()->AddListener<UEventOnChangeTool>(
-		[this](UEventOnChangeTool* Event)
-		{
-			OnChangeTool(Event);
-		}
-	);
+		_eventHandleOnChangeTool = EventManager->AddListener<UEventOnChangeTool>(
+			[this](UEventOnChangeTool* Event)
+			{
+				OnChangeTool(Event);
+			}
+		);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("UIPanelCollectSeat: EventManager is NULL!"));
+	}
 }
 
 void UUIPanelCollectSeat::UnregisterEvent()
 {
-	if (_eventHandleOnChangeDurability.IsValid())
-    {
-        GetEventManager()->DelListener<UEventOnChangeToolDurability>(_eventHandleOnChangeDurability);
-		_eventHandleOnChangeDurability.Reset();
-    }
-
-	if (_eventHandleOnChangeTool.IsValid())
+	TObjectPtr<UEventManager> EventManager = GetEventManager();
+	if (EventManager != nullptr) 
 	{
-		GetEventManager()->DelListener<UEventOnChangeTool>(_eventHandleOnChangeTool);
-		_eventHandleOnChangeTool.Reset();
+		if (_eventHandleOnChangeDurability.IsValid())
+		{
+			EventManager->DelListener<UEventOnChangeToolDurability>(_eventHandleOnChangeDurability);
+			_eventHandleOnChangeDurability.Reset();
+		}
+
+		if (_eventHandleOnChangeTool.IsValid())
+		{
+			EventManager->DelListener<UEventOnChangeTool>(_eventHandleOnChangeTool);
+			_eventHandleOnChangeTool.Reset();
+		}
 	}
 }
 
