@@ -56,9 +56,13 @@ public:
 
 	void UpdateTurretState();
 
-	TArray<FPurchaseData> GetTurretPurchaseDataArray();
+	TArray<FPurchaseData*> GetTurretPurchaseDataArray();
 
-	TArray<FPurchaseData> GetAmmoPurchaseDataArray();
+	TArray<FPurchaseData*> GetAmmoPurchaseDataArray();
+
+	void TryPurchaseTurret(bool IsMainPosition, E_AMMO_TYPE AmmoType, int32 FieldIndex);
+
+	void TryPurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex);
 
 	void SetInfiniteMagMode(bool IsInfiniteMagMode);
 

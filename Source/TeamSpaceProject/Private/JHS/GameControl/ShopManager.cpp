@@ -2,6 +2,7 @@
 
 
 #include "JHS/GameControl/ShopManager.h"
+#include "JHS/GameControl/StateData/ContainerStateGroup.h"
 
 // Sets default values for this component's properties
 UShopManager::UShopManager()
@@ -32,14 +33,45 @@ void UShopManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorCom
 	// ...
 }
 
-void UShopManager::InitializeShop()
+void UShopManager::InitializeShop(TObjectPtr<UContainerStateGroup> ContainerStateGroup)
 {
-	_purchaseDataGroupMap.Empty();
+	_containerStateGroup = ContainerStateGroup;
+}
 
-	// SpaceShip
+bool UShopManager::TryPurchase(FPurchaseData* PurchaseData)
+{
+	FPurchaseData _purchaseData = *PurchaseData;
 
-	// Collect Tool
+	// 레벨 비교
+	FMaxCurrentData* _level = &_purchaseData.Level;
+	if (_level->MaxValue != -1 && _level->CurrentValue >= _level->MaxValue)
+		return false;
 
-	// Turret
-	// Ammp
+	if (_containerStateGroup == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UShopManager::TryPurchase: ContainerStateGroup is null"));
+		return false;
+	}
+
+	// 가격 비교
+	if (!_containerStateGroup->TryConsumeDollar((int32)_purchaseData.PurchaseDollar))
+		return false;
+
+	// 레벨 증가
+	_level->CurrentValue++;
+
+	// 값 증가
+	_purchaseData.Value.MaxValue = CalculateValue(_purchaseData.InitValue, _purchaseData.IncreasePerValue, _level->CurrentValue);
+	_purchaseData.Value.CurrentValue = _purchaseData.Value.MaxValue;
+
+	// 가격 증가
+	_purchaseData.PurchaseDollar = (int32)CalculateValue(_purchaseData.InitDollar, _purchaseData.IncreasePerDollar, _level->CurrentValue);
+
+	*PurchaseData = _purchaseData;
+	return true;
+}
+
+float UShopManager::CalculateValue(float InitValue, float IncreasePerValue, int32 Level)
+{
+	return InitValue * (1.0f + IncreasePerValue * 0.01f * --Level);
 }

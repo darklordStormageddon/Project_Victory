@@ -8,6 +8,8 @@
 
 #include "ShopManager.generated.h"
 
+class UContainerStateGroup;
+
 USTRUCT(BlueprintType)
 struct FPurchaseDataGroup
 {
@@ -32,7 +34,7 @@ public:
 
 private:
 	UPROPERTY()
-	TMap<E_PURCHASE_CATEGORY, FPurchaseDataGroup> _purchaseDataGroupMap;
+	TObjectPtr<UContainerStateGroup> _containerStateGroup = nullptr;
 
 protected:
 	// Called when the game starts
@@ -43,5 +45,10 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	void InitializeShop();
+	void InitializeShop(TObjectPtr<UContainerStateGroup> ContainerStateGroup);
+
+	bool TryPurchase(FPurchaseData* PurchaseData);
+
+public:
+	static float CalculateValue(float InitValue, float IncreasePerValue, int32 Level);
 };

@@ -34,6 +34,9 @@ public:
 	float CurrentValue = 0.0f;
 };
 
+/** C# Action과 같이 구매 시 실행할 콜백. 각 StateGroup에서 GetPurchaseDataArray() 호출 시 할당. */
+DECLARE_DELEGATE(FOnPurchaseRequested);
+
 USTRUCT(BlueprintType)
 struct FPurchaseData
 {
@@ -49,17 +52,28 @@ public:
 	UPROPERTY()
 	FMaxCurrentData Level;
 
+	// Value
+	UPROPERTY()
+	float InitValue = 0.0f;
+
 	UPROPERTY()
 	FMaxCurrentData Value;
 
 	UPROPERTY()
 	float IncreasePerValue = 0.0f;
 
+	// Dollar
+	UPROPERTY()
+	int32 InitDollar = 0;
+
 	UPROPERTY()
 	int32 PurchaseDollar = 0;
 
 	UPROPERTY()
 	float IncreasePerDollar = 0.0f;
+
+	/** 구매 버튼 클릭 시 실행할 콜백. UPROPERTY 미지원이므로 직렬화/복제되지 않음. */
+	FOnPurchaseRequested OnPurchaseRequested;
 };
 
 #pragma region SpaceShip

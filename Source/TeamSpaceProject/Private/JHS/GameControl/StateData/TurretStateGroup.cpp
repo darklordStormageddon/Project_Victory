@@ -8,7 +8,8 @@
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
 #include "JHS/GameControl/CommonEnums.h"
-#include "JHS/GameControl/StateData/ContainerStateGroup.h"
+#include "JHS/GameControl/ShopManager.h"
+#include "Math/UnrealMathUtility.h"
 #include "Kismet/GameplayStatics.h"
 #include "JHS/Turret/TurretStand.h"
 #include "YSH/TurretChair.h"
@@ -105,31 +106,35 @@ void UTurretStateGroup::UpdateTurretState()
 	}
 }
 
-TArray<FPurchaseData> UTurretStateGroup::GetTurretPurchaseDataArray()
+TArray<FPurchaseData*> UTurretStateGroup::GetTurretPurchaseDataArray()
 {
-	TArray<FPurchaseData> _purchaseDataArray;
+	TArray<FPurchaseData*> _purchaseDataArray;
 	for (int32 i = 1; i >= 0; i--)
 	{
 		for (int32 j = 0; j < (int32)E_AMMO_TYPE::NONE; j++)
 		{
 			E_AMMO_TYPE _ammoType = (E_AMMO_TYPE)j;
+			bool _isMain = (bool)i;
 
 			FTurretData* _outTurretData = nullptr;
-			if (!TryGetTurretData((bool)i, _ammoType, _outTurretData))
+			if (!TryGetTurretData(_isMain, _ammoType, _outTurretData))
 				continue;
 
-			_purchaseDataArray.Add(_outTurretData->Price);
-			_purchaseDataArray.Add(_outTurretData->Mag);
-			_purchaseDataArray.Add(_outTurretData->FireInterval);
+			for (int32 _fieldIndex = 0; _fieldIndex < 3; _fieldIndex++)
+			{
+				FPurchaseData *_data = _fieldIndex == 0 ? &_outTurretData->Price : (_fieldIndex == 1 ? &_outTurretData->Mag : &_outTurretData->FireInterval);
+				_data->OnPurchaseRequested.BindLambda([this, _isMain, _ammoType, _fieldIndex]() { TryPurchaseTurret(_isMain, _ammoType, _fieldIndex); });
+				_purchaseDataArray.Add(_data);
+			}
 		}
 	}
 
 	return _purchaseDataArray;
 }
 
-TArray<FPurchaseData> UTurretStateGroup::GetAmmoPurchaseDataArray()
+TArray<FPurchaseData*> UTurretStateGroup::GetAmmoPurchaseDataArray()
 {
-	TArray<FPurchaseData> _purchaseDataArray;
+	TArray<FPurchaseData*> _purchaseDataArray;
 	for (int8 i = 0; i < (int8)E_AMMO_TYPE::NONE; i++)
 	{
 		E_AMMO_TYPE _ammoType = (E_AMMO_TYPE)i;
@@ -138,12 +143,41 @@ TArray<FPurchaseData> UTurretStateGroup::GetAmmoPurchaseDataArray()
 		if (!TryGetAmmoData(_ammoType, _outAmmoData))
 			continue;
 
-		_purchaseDataArray.Add(_outAmmoData->Price);
-		_purchaseDataArray.Add(_outAmmoData->ReloadCapacity);
-		_purchaseDataArray.Add(_outAmmoData->AmmoDamage);
+		for (int32 _fieldIndex = 0; _fieldIndex < 3; _fieldIndex++)
+		{
+			FPurchaseData* _data = _fieldIndex == 0 ? &_outAmmoData->Price : (_fieldIndex == 1 ? &_outAmmoData->ReloadCapacity : &_outAmmoData->AmmoDamage);
+			_data->OnPurchaseRequested.BindLambda([this, _ammoType, _fieldIndex]() { TryPurchaseAmmo(_ammoType, _fieldIndex); });
+			_purchaseDataArray.Add(_data);
+		}
 	}
 
 	return _purchaseDataArray;
+}
+
+void UTurretStateGroup::TryPurchaseTurret(bool IsMainPosition, E_AMMO_TYPE AmmoType, int32 FieldIndex)
+{
+	FTurretData* _outTurretData = nullptr;
+	if (!TryGetTurretData(IsMainPosition, AmmoType, _outTurretData) || _gameState == nullptr)
+		return;
+
+	FPurchaseData* _data = FieldIndex == 0 ? &_outTurretData->Price : (FieldIndex == 1 ? &_outTurretData->Mag : &_outTurretData->FireInterval);
+	TObjectPtr<UShopManager> _shopManager = _gameState->GetShopManager();
+	if (_shopManager == nullptr || !_shopManager->TryPurchase(_data))
+		return;
+
+	ExecuteTurretEvent(IsMainPosition ? E_TURRET_POSITION::Main : E_TURRET_POSITION::Left, *_outTurretData);
+}
+
+void UTurretStateGroup::TryPurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex)
+{
+	FAmmoData* _outAmmoData = nullptr;
+	if (!TryGetAmmoData(AmmoType, _outAmmoData) || _gameState == nullptr)
+		return;
+
+	FPurchaseData* _data = FieldIndex == 0 ? &_outAmmoData->Price : (FieldIndex == 1 ? &_outAmmoData->ReloadCapacity : &_outAmmoData->AmmoDamage);
+	TObjectPtr<UShopManager> _shopManager = _gameState->GetShopManager();
+	if (_shopManager == nullptr || !_shopManager->TryPurchase(_data))
+		return;
 }
 
 void UTurretStateGroup::SetInfiniteMagMode(bool IsInfiniteMagMode)

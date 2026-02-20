@@ -76,6 +76,16 @@ void UContainerStateGroup::SaleAllElement()
 	SaleElementInternal(0);
 }
 
+bool UContainerStateGroup::TryConsumeDollar(int32 Amount)
+{
+	if (Amount <= 0 || _containerState.OwnedDollar < Amount)
+		return false;
+
+	_containerState.OwnedDollar -= Amount;
+	ExecuteEventOnChangeOwnedDollar(_containerState.OwnedDollar);
+	return true;
+}
+
 void UContainerStateGroup::SaleElementInternal(int32 ElementTypeIndex)
 {
 	if (!GetWorld())
@@ -172,9 +182,15 @@ void UContainerStateGroup::ExecuteEventOnChangeElement(FElementData ElementData)
 	}
 	_event->CumulativePrice = _cumulativePrice;
 
-	_event->OwnedDollar = _containerState.OwnedDollar;
-
 	_event->GoalDollar = _gameState->GetGoalDollar();
 
-	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangeElementData>(_event);
+	UEventManager::ExecuteEvent<UEventOnChangeElementData>(_event);
+	ExecuteEventOnChangeOwnedDollar(_containerState.OwnedDollar);
+}
+
+void UContainerStateGroup::ExecuteEventOnChangeOwnedDollar(int32 OwnedDollar)
+{
+	UEventOnChangeOwnedDollar* _event = NewObject<UEventOnChangeOwnedDollar>(this);
+	_event->OwnedDollar = OwnedDollar;
+	UEventManager::ExecuteEvent<UEventOnChangeOwnedDollar>(_event);
 }

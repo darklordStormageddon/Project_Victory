@@ -14,6 +14,7 @@ class UPlayerStateGroup;
 class UCollectStateGroup;
 class UContainerStateGroup;
 class UTurretStateGroup;
+class UShopManager;
 
 UCLASS()
 class AJHSGameState : public AGameState
@@ -36,33 +37,36 @@ protected:
 	TObjectPtr<USceneComponent> _rootComponent = nullptr;
 
 #pragma region State Group
-protected:
+private:
 	// SpaceShip
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|SpaceShipStateGroup")
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|SpaceShipStateGroup")
 	TObjectPtr<USpaceShipStateGroup> _spaceShipStateGroup = nullptr;
 
 	// Player
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|PlayerStateGroup")
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|PlayerStateGroup")
 	TObjectPtr<UPlayerStateGroup> _playerStateGroup = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "GameState|PlayerStateGroup")
 	FPurchaseData _playerRadiation;
 
 	// Collect
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|CollectStateGroup")
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|CollectStateGroup")
 	TObjectPtr<UCollectStateGroup> _collectStateGroup = nullptr;
 
 	// Container
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|ContainerStateGroup")
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|ContainerStateGroup")
 	TObjectPtr<UContainerStateGroup> _containerStateGroup = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameState|ContainerStateGroup")
+	UPROPERTY(EditAnywhere, Category = "GameState|ContainerStateGroup")
 	FContainerState _initContainerState;
 
 	// Turret
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|TurretStateGroup")
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|TurretStateGroup")
 	TObjectPtr<UTurretStateGroup> _turretStateGroup = nullptr;
 #pragma endregion State Group
+
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|ShopManager")
+	TObjectPtr<UShopManager> _shopManager = nullptr;
 
 public:
 	int32 GetGoalDollar() { return _goalDollar; }
@@ -77,6 +81,8 @@ public:
 	TObjectPtr<UContainerStateGroup> GetContainerStateGroup() { return _containerStateGroup; }
 
 	TObjectPtr<UTurretStateGroup> GetTurretStateGroup() { return _turretStateGroup; }
+
+	TObjectPtr<UShopManager> GetShopManager() { return _shopManager; }
 
 protected:
 	virtual void BeginPlay() override;

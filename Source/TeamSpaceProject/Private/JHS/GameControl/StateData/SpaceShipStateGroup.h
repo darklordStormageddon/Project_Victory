@@ -39,7 +39,9 @@ public:
 
 	void UpdateSpaceShipState();
 
-	TArray<FPurchaseData> GetPurchaseDataArray();
+	TArray<FPurchaseData*> GetPurchaseDataArray();
+
+	void TryPurchaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType);
 
 	void RepairSpaceShip();
 

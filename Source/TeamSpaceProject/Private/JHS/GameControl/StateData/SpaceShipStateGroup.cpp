@@ -3,6 +3,7 @@
 
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/ShopManager.h"
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "PSJ/SpaceShipDataTable.h"
 #include "JHS/Event/EventManager.h"
@@ -58,9 +59,9 @@ void USpaceShipStateGroup::UpdateSpaceShipState()
 	}
 }
 
-TArray<FPurchaseData> USpaceShipStateGroup::GetPurchaseDataArray()
+TArray<FPurchaseData*> USpaceShipStateGroup::GetPurchaseDataArray()
 {
-	TArray<FPurchaseData> _purchaseDataArray;
+	TArray<FPurchaseData*> _purchaseDataArray;
 	for (int8 i = 0; i < (int8)E_SPACE_SHIP_DATA_TYPE::NONE; i++)
 	{
 		E_SPACE_SHIP_DATA_TYPE _dataType = (E_SPACE_SHIP_DATA_TYPE)i;
@@ -69,10 +70,25 @@ TArray<FPurchaseData> USpaceShipStateGroup::GetPurchaseDataArray()
 		if (!TryGetSpaceShipData(_dataType, _outSpaceShipData))
 			continue;
 
-		_purchaseDataArray.Add(_outSpaceShipData->Data);
+		FPurchaseData* _data = &_outSpaceShipData->Data;
+		_data->OnPurchaseRequested.BindLambda([this, _dataType]() { TryPurchaseSpaceShipData(_dataType); });
+		_purchaseDataArray.Add(_data);
 	}
 
 	return _purchaseDataArray;
+}
+
+void USpaceShipStateGroup::TryPurchaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType)
+{
+	FSpaceShipData* _outSpaceShipData = nullptr;
+	if (!TryGetSpaceShipData(DataType, _outSpaceShipData) || _gameState == nullptr)
+		return;
+
+	TObjectPtr<UShopManager> _shopManager = _gameState->GetShopManager();
+	if (_shopManager == nullptr || !_shopManager->TryPurchase(&_outSpaceShipData->Data))
+		return;
+
+	ChangeMaxData(_outSpaceShipData, _outSpaceShipData->Data.Value.MaxValue, true);
 }
 
 void USpaceShipStateGroup::RepairSpaceShip()
@@ -130,7 +146,6 @@ void USpaceShipStateGroup::LoadSpaceShipData()
 		if (_spaceShipDataRow)
 		{
 			FSpaceShipData _newSpaceShipData;
-			// 터렛 정보
 			_newSpaceShipData.DataType = _spaceShipDataRow->SpaceShipDataType;
 			TObjectPtr<UTexture2D> _outTexture = nullptr;
 			FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_SPACE_SHIP_DATA_TYPE>(_newSpaceShipData.DataType);
@@ -139,7 +154,6 @@ void USpaceShipStateGroup::LoadSpaceShipData()
 				_newSpaceShipData.SpaceShipDataImage = _outTexture;
 			}
 
-			// 데이터
 			_newSpaceShipData.Data = AJHSGameState::ParseFromDataRow(_newSpaceShipData.SpaceShipDataImage, _spaceShipDataRow->Data);
 
 			_spaceShipDataMap.Add(_newSpaceShipData.DataType, _newSpaceShipData);
