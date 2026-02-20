@@ -304,14 +304,26 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		if (bFoundValidFloor)
 		{
 			FRotator CurrentRot = GetActorRotation();
-			// [수정] 점프 중에도 계단(Stairs)인지 확인해서 기준 위쪽(Up)을 보정
-			FVector JumpAlignUpDir = Hit.Normal; // 기본은 바닥의 쌩 노말
+			FVector JumpAlignUpDir = FVector::UpVector; // 기본값은 월드 절대 수직
 
-			if (Hit.GetActor()->ActorHasTag(TEXT("Stairs")))
+			AActor* HitActor = Hit.GetActor();
+			if (HitActor)
 			{
-				AActor* HitParent = Hit.GetActor()->GetAttachParentActor();
-				// 부모가 있으면 부모의 위쪽, 월드 단독 배치는 월드의 위쪽(Z-Up)
-				JumpAlignUpDir = HitParent ? HitParent->GetActorUpVector() : FVector::UpVector;
+				if (HitActor->ActorHasTag(TEXT("Stairs")))
+				{
+					AActor* HitParent = HitActor->GetAttachParentActor();
+
+					// [수정] 부모가 APSJ_Spaceship(우주선)인지 명확히 캐스팅하여 확인
+					APSJ_Spaceship* ParentShip = Cast<APSJ_Spaceship>(HitParent);
+
+					// 부모가 우주선이면 우주선의 Z축, 우주선이 아니면(부모가 없거나 다른 액터면) 무조건 월드 수직 고정
+					JumpAlignUpDir = ParentShip ? ParentShip->GetActorUpVector() : FVector::UpVector;
+				}
+				else
+				{
+					// 일반 바닥/우주선 자체인 경우
+					JumpAlignUpDir = HitActor->GetActorUpVector();
+				}
 			}
 
 			//  Hit.Normal 대신 보정된 JumpAlignUpDir 사용
