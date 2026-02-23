@@ -116,6 +116,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* RepairAction;
 
+	// 애니메이션 및 BP 로직 분기용 상태 변수
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction | Repair", Replicated)
+	bool bIsActivelyRepairing = false;
+
 	// [설정] 트레이스 길이 (시선이 닿는 거리, 예: 2000.0f)
 	// 멀리 있는 콕핏의 상태를 확인하는 용도
 	UPROPERTY(EditAnywhere, Category = "Interaction | Repair")
