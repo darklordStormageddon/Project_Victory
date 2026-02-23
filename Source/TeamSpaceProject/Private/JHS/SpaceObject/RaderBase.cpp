@@ -11,7 +11,7 @@
 // Sets default values
 ARaderBase::ARaderBase()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	_rootComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RootComponent"));
@@ -97,7 +97,7 @@ void ARaderBase::RenderSpaceObjectToRader()
 					FRotator::ZeroRotator
 				);
 
-				// SpawnActor 실패 체크를 먼저
+				 //SpawnActor 실패 체크를 먼저
 				if (_raderObject == nullptr)
 				{
 					UE_LOG(LogTemp, Error, TEXT("ARaderBase: SpawnActor failed"));
@@ -115,8 +115,8 @@ void ARaderBase::RenderSpaceObjectToRader()
 		}
 
 		_raderObject = _raderObjectData.RaderObjectArray[_raderObjectData.LastRaderObjectIndex];
-
-		// 배열에서 꺼낸 후에도 유효성 검사 (GC로 인한 dangling 방어)
+		_raderObjectData.LastRaderObjectIndex++;
+		 //배열에서 꺼낸 후에도 유효성 검사 (GC로 인한 dangling 방어)
 		if (!IsValid(_raderObject))
 		{
 			UE_LOG(LogTemp, Error, TEXT("ARaderBase: RaderObject is invalid"));
