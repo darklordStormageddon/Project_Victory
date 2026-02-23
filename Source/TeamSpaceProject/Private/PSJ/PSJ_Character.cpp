@@ -1,6 +1,7 @@
 #include "PSJ_Character.h"
 #include "PSJ_Spaceship.h"
 #include "PSJ_ShipCockpit.h"
+#include "PSJ_ToolBase.h"
 #include "YSH/TurretBase_GT.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameMode.h"
@@ -66,6 +67,19 @@ void APSJ_Character::BeginPlay()
 		SetReplicateMovement(false);
 	}
 
+	// [신규] 서버에서 툴을 생성하고 소켓에 부착합니다.
+	if (HasAuthority() && ToolClassToSpawn)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		EquippedTool = GetWorld()->SpawnActor<APSJ_ToolBase>(ToolClassToSpawn, GetActorLocation(), GetActorRotation(), SpawnParams);
+
+		if (EquippedTool)
+		{
+			EquippedTool->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("toollocation_1"));
+		}
+	}
+
 }
 
 void APSJ_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -79,6 +93,8 @@ void APSJ_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 	// [추가] 수리 상태도 동기화!
 	DOREPLIFETIME(APSJ_Character, bIsActivelyRepairing);
+
+	DOREPLIFETIME(APSJ_Character, EquippedTool); // 추가
 }
 
 void APSJ_Character::PossessedBy(AController* NewController)
@@ -900,15 +916,29 @@ void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
 	FVector TraceStart;
 	FRotator TraceRot;
 
-	// 카메라 위치 기준
-	if (FPSCamera)
+	// [핵심 분기] 툴이 존재하고 쿨다운이 아닐 때만 툴 총구에서 트레이스 발사
+	if (EquippedTool)
 	{
-		TraceStart = FPSCamera->GetComponentLocation();
-		TraceRot = FPSCamera->GetComponentRotation();
+		if (EquippedTool->bIsOnCooldown)
+		{
+			// 쿨다운 중이면 실패 처리용으로 서버에 빈 요청 전송
+			Server_TryForceEject(nullptr);
+			return;
+		}
+		// 쿨다운이 아니면 툴에서 트레이스 발사
+		TraceStart = EquippedTool->TraceMuzzle->GetComponentLocation();
+		TraceRot = EquippedTool->TraceMuzzle->GetComponentRotation();
 	}
 	else
 	{
-		GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
+		// 툴이 없을 때의 예비 동작 (카메라 기준)
+		if (FPSCamera) {
+			TraceStart = FPSCamera->GetComponentLocation();
+			TraceRot = FPSCamera->GetComponentRotation();
+		}
+		else {
+			GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
+		}
 	}
 
 	FVector TraceEnd = TraceStart + (TraceRot.Vector() * ForceEjectRange);
@@ -961,10 +991,25 @@ bool APSJ_Character::Server_TryForceEject_Validate(APSJ_ShipCockpit* TargetCockp
 
 void APSJ_Character::Server_TryForceEject_Implementation(APSJ_ShipCockpit* TargetCockpit)
 {
-	if (TargetCockpit)
+	if (EquippedTool)
 	{
-		// 콕핏에게 하차 요청 전달
-		TargetCockpit->ReceiveForceEjectRequest();
+		if (EquippedTool->bIsOnCooldown)
+		{
+			// [실패] 쿨다운 중: 실패 이펙트 재생 (강제 하차 안 함)
+			EquippedTool->Multicast_PlayEjectEffect(false, this);
+			return;
+		}
+		else
+		{
+			// [성공] 정상 상태: 이펙트 재생 및 타이머 시작
+			EquippedTool->Multicast_PlayEjectEffect(true, this);
+			EquippedTool->StartCooldownTimer();
+
+			// 실제 강제 하차 로직 실행
+			if (TargetCockpit) {
+				TargetCockpit->ReceiveForceEjectRequest();
+			}
+		}
 	}
 }
 
@@ -1037,14 +1082,24 @@ void APSJ_Character::UpdateRepairLogic()
 	// 2. 시선 트레이스 (RepairTraceLength 사용)
 	FVector TraceStart;
 	FRotator TraceRot;
-	if (FPSCamera)
+
+	// [핵심 분기] 수리 트레이스 위치 결정
+	if (EquippedTool && !EquippedTool->bIsOnCooldown)
 	{
-		TraceStart = FPSCamera->GetComponentLocation();
-		TraceRot = FPSCamera->GetComponentRotation();
+		// 타이머 안 도는 중: 툴 앞부분에서 발사
+		TraceStart = EquippedTool->TraceMuzzle->GetComponentLocation();
+		TraceRot = EquippedTool->TraceMuzzle->GetComponentRotation();
 	}
 	else
 	{
-		GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
+		// 타이머 도는 중 (또는 툴 없음): 캐릭터 정면(카메라)에서 발사
+		if (FPSCamera) {
+			TraceStart = FPSCamera->GetComponentLocation();
+			TraceRot = FPSCamera->GetComponentRotation();
+		}
+		else {
+			GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
+		}
 	}
 
 	FVector TraceEnd = TraceStart + (TraceRot.Vector() * RepairTraceLength);
