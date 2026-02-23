@@ -76,6 +76,9 @@ void APSJ_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	// [수정 후] 조건을 제거하여 모든 클라이언트가 확실하게 받도록 변경
 	DOREPLIFETIME(APSJ_Character, CurrentInputVector);
 	DOREPLIFETIME(APSJ_Character, bIsSprinting);
+
+	// [추가] 수리 상태도 동기화!
+	DOREPLIFETIME(APSJ_Character, bIsActivelyRepairing);
 }
 
 void APSJ_Character::PossessedBy(AController* NewController)
@@ -638,6 +641,13 @@ void APSJ_Character::Interact(const FInputActionValue& Value)
 
 void APSJ_Character::Move(const FInputActionValue& Value)
 {
+
+	// [추가] 수리 중이면 이동 입력을 무시하고 빠져나감
+	if (bIsActivelyRepairing)
+	{
+		return;
+	}
+
 	CurrentInputVector = Value.Get<FVector2D>();
 	// 2. [추가] 서버한테도 알려줌!
 	Server_SetInputVector(CurrentInputVector);
@@ -1010,8 +1020,8 @@ void APSJ_Character::Input_StartRepair(const FInputActionValue& Value)
 void APSJ_Character::Input_StopRepair(const FInputActionValue& Value)
 {
 	bIsRepairingInputDown = false;
+	bIsActivelyRepairing = false; // 수리 중지 시 false
 
-	// 버튼을 뗐으므로 즉시 수리 중단 요청
 	if (ClientRepairTarget)
 	{
 		Server_StopRepair();
@@ -1094,20 +1104,30 @@ void APSJ_Character::UpdateRepairLogic()
 	// 4. 상태 변화 처리
 	if (bCanRepair)
 	{
-		// 타겟이 바뀌었거나, 새로 수리를 시작하는 경우
+		// [추가] 방금 막 수리를 시작한 참이라면 이동 강제 정지
+		if (!bIsActivelyRepairing)
+		{
+			// 입력 벡터 초기화 및 서버 전송
+			CurrentInputVector = FVector2D::ZeroVector;
+			Server_SetInputVector(FVector2D::ZeroVector);
+
+			// 물리적인 이동 가속도(관성) 즉시 제거
+			GetCharacterMovement()->Velocity = FVector::ZeroVector;
+		}
+
+		bIsActivelyRepairing = true; // 수리 상태 활성화
+
 		if (ClientRepairTarget != HitCockpit)
 		{
-			// 기존 타겟이 있었다면 중단
 			if (ClientRepairTarget) Server_StopRepair();
-
-			// 새 타겟 수리 시작
 			Server_StartRepair(HitCockpit);
 			ClientRepairTarget = HitCockpit;
 		}
 	}
 	else
 	{
-		// 조준 실패, 거리 멀어짐, 혹은 고장 수리 완료됨 -> 수리 중단
+		bIsActivelyRepairing = false;
+
 		if (ClientRepairTarget != nullptr)
 		{
 			Server_StopRepair();
@@ -1128,6 +1148,8 @@ void APSJ_Character::Server_StartRepair_Implementation(APSJ_ShipCockpit* TargetC
 		// 서버도 내가 누굴 수리하는지 기억해둠 (나중에 끊길 때 대비)
 		ServerRepairTarget = TargetCockpit;
 	}
+	// [추가] 서버가 "얘 수리 중임"이라고 도장 찍어서 모두에게 전송
+	bIsActivelyRepairing = true;
 }
 
 // [서버] 수리 중단
@@ -1140,6 +1162,8 @@ void APSJ_Character::Server_StopRepair_Implementation()
 		ServerRepairTarget->RemoveRepairer(this);
 		ServerRepairTarget = nullptr;
 	}
+	// [추가] 수리 끝났다고 모두에게 전송
+	bIsActivelyRepairing = false;
 }
 
 // 2. 파일 맨 아래(혹은 편한 곳)에 구현부를 추가하세요.
