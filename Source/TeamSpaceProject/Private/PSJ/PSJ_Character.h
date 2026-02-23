@@ -17,6 +17,7 @@ class APawn;
 class APSJ_Spaceship;
 // 전방 선언 추가
 class ATurretBase_GT;
+class APSJ_ToolBase;
 
 // [필수 구조체] 상대 좌표 동기화용 데이터
 USTRUCT()
@@ -94,6 +95,12 @@ public:
 
 	// [신규] 타이머를 통해 호출될 최종 입력 복구 함수
 	void Client_LateInputRestore();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tool")
+	TSubclassOf<APSJ_ToolBase> ToolClassToSpawn; // 에디터에서 생성할 툴 블루프린트 지정
+
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Tool")
+	APSJ_ToolBase* EquippedTool;
 
 	// [추가] 하차 시 서버/클라 양쪽에서 변수를 세팅할 함수
 	void SetBaseActorData(AActor* NewBase);

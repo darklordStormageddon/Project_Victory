@@ -3,6 +3,7 @@
 #include "Kismet/GameplayStatics.h" // 매니저 찾기용
 #include "PSJ_Character.h" 
 #include "PSJ_Spaceship.h"
+#include "PSJ_ToolBase.h"
 #include "YSH/TurretBase_GT.h"
 #include "Net/UnrealNetwork.h" // [필수] 이 헤더가 맨 위에 있어야 합니다
 #include "GameFramework/Pawn.h" // APawn 사용을 위해 필요
@@ -247,13 +248,24 @@ void APSJ_ShipCockpit::Tick(float DeltaTime)
     // 서버이고, 고장난 상태일 때만 타이머가 돌아갑니다.
     if (HasAuthority() && bIsMalfunctioning)
     {
-        // === [합연산 수리 속도 공식] ===
-        // 기본 감소 속도: 1.0 (초당 1초 감소)
-        // 추가 가속도: (RepairSpeedRate - 1.0)
-        // 최종 속도 = 1.0 + (수리인원 * 추가 가속도)
+        // [수정] 수리 가속도 이원화 반영
+              // 기본적으로 시간이 흐르므로 1.0f 베이스
+        float TotalSpeed = 1.0f;
 
-        float BonusRatePerPerson = FMath::Max(1.0f, RepairSpeedRate) - 1.0f;
-        float TotalSpeed = 1.0f + (RepairingCharacters.Num() * BonusRatePerPerson);
+        for (APSJ_Character* Mechanic : RepairingCharacters)
+        {
+            if (Mechanic && Mechanic->EquippedTool)
+            {
+                // 캐릭터의 툴 상태에 따라 Normal(1.5) 혹은 Cooldown(0.5) 속도 합산
+                TotalSpeed += Mechanic->EquippedTool->GetCurrentRepairSpeed();
+            }
+            else
+            {
+                // 혹시 툴을 못 든 상태라면 최소한의 속도만 보장
+                TotalSpeed += 0.5f;
+            }
+        }
+
 
         // 시간 감소
         CurrentMalfunctionTimer -= (DeltaTime * TotalSpeed);
