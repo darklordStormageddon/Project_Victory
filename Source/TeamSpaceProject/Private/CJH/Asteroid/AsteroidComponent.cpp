@@ -167,10 +167,6 @@ void UAsteroidComponent::SpawnAsteroid()
 
 	int Index = FMath::RandRange(0, _asteroidInfo.AsteroidClasses.Num() - 1);
 		
-	FActorSpawnParameters Params;
-	Params.SpawnCollisionHandlingOverride =
-		ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
 	TSubclassOf<AAsteroid> AsteroidClass = _asteroidInfo.AsteroidClasses[Index];
 	if (!AsteroidClass)
 	{
@@ -181,8 +177,7 @@ void UAsteroidComponent::SpawnAsteroid()
 	AAsteroid* Asteroid = GetWorld()->SpawnActor<AAsteroid>(
 		AsteroidClass,
 		SpawnLocation,
-		SpawnRotation,
-		Params
+		SpawnRotation
 	);
 
 	bIsSpawning = false;
