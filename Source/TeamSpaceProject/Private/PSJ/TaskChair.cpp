@@ -3,8 +3,9 @@
 
 #include "PSJ/TaskChair.h"
 #include "JHS/UI/UIBase.h"
-#include "GameFramework/Pawn.h"
+#include "PSJ/TaskPawnBase.h"
 #include "Net/UnrealNetwork.h"
+#include "PSJ_Character.h" 
 
 void ATaskChair::BeginPlay()
 {
@@ -20,6 +21,19 @@ void ATaskChair::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 void ATaskChair::OnInteractEnter(int32 CallerPlayerId, TObjectPtr<UUIBase> OpenedUI)
 {
 	Super::OnInteractEnter(CallerPlayerId, OpenedUI);
+
+	if (TargetTaskPawn == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ATaskChair: TargetTaskPawn is nullptr"));
+		return;
+	}
+
+	APawn* PlayerPawn = GetWorld()->GetFirstPlayerController()->GetPawn();
+	APSJ_Character* MyChar = Cast<APSJ_Character>(PlayerPawn);
+
+	if (!MyChar) return;
+
+	MyChar->Server_RequestBoarding(TargetTaskPawn);
 }
 
 void ATaskChair::OnInteractExit(int32 CallerPlayerId, TObjectPtr<UUIBase> ClosedUI)
