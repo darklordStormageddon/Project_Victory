@@ -4,6 +4,8 @@
 #include "PSJ/TaskPawnBase.h"
 #include "InputActionValue.h"
 #include "Components/ArrowComponent.h"
+#include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "PSJ_Spaceship.generated.h"
 
 class USphereComponent;
@@ -23,7 +25,21 @@ class TEAMSPACEPROJECT_API APSJ_Spaceship : public ATaskPawnBase
 	GENERATED_BODY()
 
 private:
+	FTimerHandle ShieldAlphaTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Shield")
+	float ShieldDisplayDuration = 0.1f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Shield")
+	USceneComponent* ShieldRoot = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Shield")
+	UStaticMeshComponent* ShieldMesh = nullptr;
+
+private:
 	AJHSGameState* _outGameState = nullptr;
+
+private:
+	void HideShield();
 
 public:
 	APSJ_Spaceship();

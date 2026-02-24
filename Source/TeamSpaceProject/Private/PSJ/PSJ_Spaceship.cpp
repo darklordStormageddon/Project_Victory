@@ -1,7 +1,6 @@
 #include "PSJ_Spaceship.h"
 #include "PSJ_ShipCockpit.h"
 #include "PSJ_Character.h"
-#include "Components/SphereComponent.h"
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -29,6 +28,15 @@ APSJ_Spaceship::APSJ_Spaceship()
 	PilotCamera = nullptr;
 	PilotSphere = nullptr;
 	ExitPoint = nullptr;
+
+	ShieldRoot = CreateDefaultSubobject<USceneComponent>(TEXT("ShieldRoot"));
+	ShieldRoot->SetupAttachment(RootComponent);
+
+	ShieldMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShieldMesh"));
+	ShieldMesh->SetupAttachment(ShieldRoot);
+
+	ShieldMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ShieldMesh->SetHiddenInGame(true);
 
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
@@ -254,6 +262,25 @@ void APSJ_Spaceship::Tick(float DeltaTime)
 
 void APSJ_Spaceship::OnTakeDamage(float Damage)
 {
+	//Super::OnTakeDamage(Damage);
+
+	if (!ShieldMesh)
+		return;
+
+	ShieldMesh->SetHiddenInGame(false);
+
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(ShieldAlphaTimerHandle);
+		GetWorld()->GetTimerManager().SetTimer(
+			ShieldAlphaTimerHandle,
+			this,
+			&APSJ_Spaceship::HideShield,
+			ShieldDisplayDuration,
+			false
+		);
+	}
+
 	if (GetSpaceShipStateGroup())
 		_spaceShipStateGroup->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, Damage);
 }
@@ -432,4 +459,10 @@ void APSJ_Spaceship::EnableCollisionWithPassenger(APSJ_Character* ExitedChar)
 		this->MoveIgnoreActorRemove(ExitedChar);
 		ExitedChar->MoveIgnoreActorRemove(this);
 	}
+}
+
+void APSJ_Spaceship::HideShield()
+{
+	if (ShieldMesh)
+		ShieldMesh->SetHiddenInGame(true);
 }

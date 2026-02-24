@@ -53,44 +53,54 @@ void USpaceObjectComponent::InitializeSpaceObject()
 
 void USpaceObjectComponent::Send()
 {
-	FSpaceObjectData _spaceObjectData = GetSpaceObjectData();
-	UpdateSpaceObjectData(_spaceObjectData);
-
-	if (!_owner->HasAuthority())
+	if (!_owner || !_spaceManager)
 		return;
 
-	// Manager에 업데이트
-	_spaceManager->UpdateSpaceObject(_spaceObjectData);
+	FSpaceObjectData _spaceObjectData = GetSpaceObjectData();
 
-	GetWorld()->GetTimerManager().SetTimer(
-		_updateTimerHandle,
-		FTimerDelegate::CreateUObject(this, &USpaceObjectComponent::Send),
-		_updateInterval,
-		false
-	);
+	if (_owner->HasAuthority())
+	{
+		_spaceManager->UpdateSpaceObject(_spaceObjectData);
+		Multicast_UpdateSpaceObjectData(_spaceObjectData);
+
+		GetWorld()->GetTimerManager().SetTimer(
+			_updateTimerHandle,
+			FTimerDelegate::CreateUObject(this, &USpaceObjectComponent::Send),
+			_updateInterval,
+			false
+		);
+	}
+	else if (_owner->GetOwner() != nullptr)
+	{
+		Server_UpdateSpaceObjectData(_spaceObjectData);
+
+		GetWorld()->GetTimerManager().SetTimer(
+			_updateTimerHandle,
+			FTimerDelegate::CreateUObject(this, &USpaceObjectComponent::Send),
+			_updateInterval,
+			false
+		);
+	}
 }
 
 void USpaceObjectComponent::UpdateSpaceObjectData(FSpaceObjectData NewSpaceObjectData)
 {
+	if (!_spaceManager)
+		return;
+
 	if (GetNetMode() == NM_Standalone)
 	{
-		// Standalone 모드에서는 Manager에만 업데이트 (로컬에서 위치 관리)
 		_spaceManager->UpdateSpaceObject(NewSpaceObjectData);
 		return;
 	}
 
-	// Authority 일 때는 서버의 위치와 회전을 모든 클라이언트에 동기화
-	if (_owner->HasAuthority())
+	if (_owner && _owner->HasAuthority())
 	{
-		// Manager에 업데이트
 		_spaceManager->UpdateSpaceObject(NewSpaceObjectData);
-		
-		// 모든 클라이언트에 위치와 회전 동기화
 		Multicast_UpdateSpaceObjectData(NewSpaceObjectData);
 	}
-	else
+	else if (_owner && _owner->GetOwner() != nullptr)
 	{
-		// 클라이언트의 위치와 회전을 서버에 전송
 		Server_UpdateSpaceObjectData(NewSpaceObjectData);
 	}
 }
