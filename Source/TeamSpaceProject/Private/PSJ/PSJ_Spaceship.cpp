@@ -11,7 +11,6 @@
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "KSM/HealthComponent.h"
-#include "JHS/UI/UIManager.h"
 
 #include "Components/CapsuleComponent.h"
 
@@ -48,15 +47,6 @@ void APSJ_Spaceship::Client_BoardingSuccess_Implementation()
 				Subsystem->AddMappingContext(ShipMappingContext, 0);
 			}
 		}
-	}
-
-	UUIManager* _outUIManager = nullptr;
-	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
-		return;
-	APlayerController* _pc = CurrentPilot ? Cast<APlayerController>(CurrentPilot->GetController()) : nullptr;
-	if (_pc && _outUIManager)
-	{
-		_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
 	}
 }
 
@@ -157,22 +147,8 @@ void APSJ_Spaceship::BeginPlay()
 	if (_outGameState == nullptr)
 		UStaticFunctionLibrary::TryGetGameState(_outGameState);
 
-	FTimerHandle TestDelay;
-	GetWorld()->GetTimerManager().SetTimer(
-		TestDelay,
-		[this]() {
-			UUIManager* _outUIManager = nullptr;
-			if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
-				return;
+	ShipRootComponent = Cast<UPrimitiveComponent>(RootComponent);
 
-			_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
-		},
-		1.f,
-		false);
-
-	{
-		ShipRootComponent = Cast<UPrimitiveComponent>(RootComponent);
-	}
 	PilotCamera = FindComponentByClass<UCameraComponent>();
 	if (!PilotCamera)
 	{
