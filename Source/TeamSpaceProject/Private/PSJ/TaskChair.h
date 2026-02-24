@@ -7,7 +7,7 @@
 
 #include "TaskChair.generated.h"
 
-class APawn;
+class ATaskPawnBase;
 class UUIBase;
 
 UCLASS()
@@ -17,10 +17,11 @@ class ATaskChair : public AInteractableActorBase
 
 private:
 	UPROPERTY(EditAnywhere, Replicated, Category = "Link")
-	TObjectPtr<APawn> TargetTaskPawn = nullptr;
+	TObjectPtr<ATaskPawnBase> TargetTaskPawn = nullptr;
 	
 protected:
 	virtual void BeginPlay() override;
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void OnInteractEnter(int32 CallerPlayerId, TObjectPtr<UUIBase> OpenedUI) override;
@@ -28,5 +29,7 @@ protected:
 	void OnInteractExit(int32 CallerPlayerId, TObjectPtr<UUIBase> ClosedUI) override;
 
 public:
+	ATaskPawnBase* GetTargetTaskPawn() const { return TargetTaskPawn; }
+
 	virtual void Tick(float DeltaTime) override;
 };

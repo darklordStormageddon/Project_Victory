@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
+#include "PSJ/TaskPawnBase.h"
 #include "InputActionValue.h"
 #include "Components/ArrowComponent.h"
 #include "PSJ_Spaceship.generated.h"
@@ -18,7 +18,7 @@ class USpaceShipStateGroup;
 class AJHSGameState;
 
 UCLASS()
-class TEAMSPACEPROJECT_API APSJ_Spaceship : public APawn
+class TEAMSPACEPROJECT_API APSJ_Spaceship : public ATaskPawnBase
 {
 	GENERATED_BODY()
 
@@ -51,6 +51,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
+	virtual void Client_BoardingSuccess_Implementation() override;
 
 public:
 	virtual void Tick(float DeltaTime) override;
@@ -130,10 +132,6 @@ public:
 	void Input_MouseLook(const FInputActionValue& Value);
 	void Input_Roll(const FInputActionValue& Value);
 	void Input_Exit(const FInputActionValue& Value);
-
-	// [추가] 탑승 성공 시 클라이언트에게 설정(입력, UI)을 지시하는 RPC
-	UFUNCTION(Client, Reliable)
-	void Client_BoardingSuccess();
 
 	// [변경] 인자를 3개로 수정 (APSJ_Character* ExitingPilot 추가)
 	UFUNCTION(Client, Reliable)

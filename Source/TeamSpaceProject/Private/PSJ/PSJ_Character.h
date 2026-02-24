@@ -9,6 +9,7 @@
 #include "Engine/NetSerialization.h" // [추가] 이것이 있어야 NetQuantize100 사용 가능
 #include "PSJ_Character.generated.h"
 
+class UInteracterComponent;
 class UCameraComponent;
 class UInputAction;
 class UInputComponent;
@@ -18,6 +19,7 @@ class APSJ_Spaceship;
 // 전방 선언 추가
 class ATurretBase_GT;
 class APSJ_ToolBase;
+class ATaskPawnBase;
 
 // [필수 구조체] 상대 좌표 동기화용 데이터
 USTRUCT()
@@ -46,6 +48,10 @@ class TEAMSPACEPROJECT_API APSJ_Character : public ACharacter
 public:
 	APSJ_Character();
 
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
+	TObjectPtr<UInteracterComponent> InteracterComponent = nullptr;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -63,7 +69,8 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestBoarding(ATaskPawnBase* TaskPawn);
 
 private:
 	// 하차 직후 상태 관리를 위한 변수 추가
@@ -78,11 +85,6 @@ public:
 	UFUNCTION(Client, Reliable, BlueprintCallable)
 	void Client_RestoreInputRPC();
 
-	// [중요] 위에서 class APSJ_Spaceship; 을 선언했기 때문에 이제 에러가 나지 않습니다.BlueprintCallable 추가!
-	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
-	void Server_RequestBoarding(APSJ_Spaceship* ShipToBoard);
-
-	// ▼ [신규 추가] 범용 탑승 요청 (패널, 의자 등 아무 폰이나 조종 요청)
 	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
 	void Server_RequestPawnPossess(APawn* TargetPawn);
 

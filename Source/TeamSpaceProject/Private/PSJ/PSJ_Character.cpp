@@ -1,4 +1,6 @@
 #include "PSJ_Character.h"
+#include "JHS/Interact/InteracterComponent.h"
+#include "PSJ/TaskPawnBase.h"
 #include "PSJ_Spaceship.h"
 #include "PSJ_ShipCockpit.h"
 #include "PSJ_ToolBase.h"
@@ -23,8 +25,10 @@ APSJ_Character::APSJ_Character()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickGroup = TG_PostPhysics;
 
-	// [ÇÊ¼ö Ãß°¡] ÀÌ ÇÑ ÁÙÀÌ ¾øÀ¸¸é º¯¼ö µ¿±âÈ­°¡ ¾È µÉ ¼ö ÀÖ½À´Ï´Ù.
+	// [ï¿½Ê¼ï¿½ ï¿½ß°ï¿½] ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½È­ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö½ï¿½ï¿½Ï´ï¿½.
 	bReplicates = true;
+
+	InteracterComponent = CreateDefaultSubobject<UInteracterComponent>(TEXT("InteracterComponent"));
 }
 
 void APSJ_Character::BeginPlay()
@@ -44,9 +48,9 @@ void APSJ_Character::BeginPlay()
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 
-	// 1. ÂøÁö ½Ã ±âº» ¸ğµå¸¦ '°È±â'°¡ ¾Æ´Ñ 'ºñÇà'À¸·Î º¯°æ
+	// 1. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½âº» ï¿½ï¿½å¸¦ 'ï¿½È±ï¿½'ï¿½ï¿½ ï¿½Æ´ï¿½ 'ï¿½ï¿½ï¿½ï¿½'ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	GetCharacterMovement()->DefaultLandMovementMode = MOVE_Flying;
-	// 2. °ÈÀ» ¼ö ÀÖ´Â °æ»ç°¢À» 0À¸·Î ¼³Á¤ (¾î¶² ¹Ù´Úµµ °È´Â ¹Ù´ÚÀ¸·Î ÀÎ½Ä ¾È ÇÔ)
+	// 2. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ç°¢ï¿½ï¿½ 0ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½î¶² ï¿½Ù´Úµï¿½ ï¿½È´ï¿½ ï¿½Ù´ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Î½ï¿½ ï¿½ï¿½ ï¿½ï¿½)
 	GetCharacterMovement()->SetWalkableFloorAngle(0.0f);
 
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
@@ -58,7 +62,7 @@ void APSJ_Character::BeginPlay()
 		DefaultMeshZ = GetMesh()->GetRelativeLocation().Z;
 	}
 
-	// [Ãß°¡] ¾ŞÄ¿¸µ µ¥ÀÌÅÍ Áï½Ã Àû¿ë
+	// [ï¿½ß°ï¿½] ï¿½ï¿½Ä¿ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (ReplicatedRelativeData.BaseActor)
 	{
 		AttachToActor(ReplicatedRelativeData.BaseActor, FAttachmentTransformRules::KeepWorldTransform);
@@ -67,7 +71,7 @@ void APSJ_Character::BeginPlay()
 		SetReplicateMovement(false);
 	}
 
-	// [½Å±Ô] ¼­¹ö¿¡¼­ ÅøÀ» »ı¼ºÇÏ°í ¼ÒÄÏ¿¡ ºÎÂøÇÕ´Ï´Ù.
+	// [ï¿½Å±ï¿½] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
 	if (HasAuthority() && ToolClassToSpawn)
 	{
 		FActorSpawnParameters SpawnParams;
@@ -87,21 +91,21 @@ void APSJ_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APSJ_Character, ReplicatedRelativeData);
 
-	// [¼öÁ¤ ÈÄ] Á¶°ÇÀ» Á¦°ÅÇÏ¿© ¸ğµç Å¬¶óÀÌ¾ğÆ®°¡ È®½ÇÇÏ°Ô ¹Şµµ·Ï º¯°æ
+	// [ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®ï¿½ï¿½ È®ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½Şµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	DOREPLIFETIME(APSJ_Character, CurrentInputVector);
 	DOREPLIFETIME(APSJ_Character, bIsSprinting);
 
-	// [Ãß°¡] ¼ö¸® »óÅÂµµ µ¿±âÈ­!
+	// [ï¿½ß°ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Âµï¿½ ï¿½ï¿½ï¿½ï¿½È­!
 	DOREPLIFETIME(APSJ_Character, bIsActivelyRepairing);
 
-	DOREPLIFETIME(APSJ_Character, EquippedTool); // Ãß°¡
+	DOREPLIFETIME(APSJ_Character, EquippedTool); // ï¿½ß°ï¿½
 }
 
 void APSJ_Character::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	// ÀÌ¹Ì ¿ìÁÖ¼±¿¡ ºÙ¾îÀÖ´Â »óÅÂ¶ó¸é ¸®¼Â ±İÁö
+	// ï¿½Ì¹ï¿½ ï¿½ï¿½ï¿½Ö¼ï¿½ï¿½ï¿½ ï¿½Ù¾ï¿½ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½Â¶ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (ReplicatedRelativeData.BaseActor && ReplicatedRelativeData.bIsAnchored)
 	{
 		AttachToActor(ReplicatedRelativeData.BaseActor, FAttachmentTransformRules::KeepWorldTransform);
@@ -128,7 +132,7 @@ void APSJ_Character::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// 1. ·ÎÄÃ ÄÁÆ®·Ñ·¯ Àü¿ë ·ÎÁ÷ (¼ö¸®, ¹«ºê¸ÕÆ® ¸ğµå º¹±¸)
+	// 1. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	if (IsLocallyControlled())
 	{
 		UpdateRepairLogic();
@@ -142,10 +146,10 @@ void APSJ_Character::Tick(float DeltaTime)
 		}
 	}
 
-	// 2. °ø¿ë ¿¹¿Ü Ã³¸® (ÄÁÆ®·Ñ·¯ ¾ø°Å³ª, ·ÎÄÃÀÌ¸é¼­ ¿ìÁÖ¼± Á¶Á¾ ÁßÀÌ¸é ¸®ÅÏ)
+	// 2. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ (ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ ï¿½ï¿½ï¿½Å³ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½Ì¸é¼­ ï¿½ï¿½ï¿½Ö¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	if (!Controller || (IsLocallyControlled() && CurrentSpaceship)) return;
 
-	// 3. ¾ŞÄ¿¸µ(ºÎÂø) »óÅÂ µ¿±âÈ­ (ºÎ¸ğ ¾×ÅÍ º¯°æ °¨Áö)
+	// 3. ï¿½ï¿½Ä¿ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½) ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½È­ (ï¿½Î¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	AActor* ParentActor = GetAttachParentActor();
 	if (ReplicatedRelativeData.BaseActor && ParentActor != ReplicatedRelativeData.BaseActor)
 	{
@@ -161,10 +165,10 @@ void APSJ_Character::Tick(float DeltaTime)
 		SetReplicateMovement(true);
 	}
 
-	// 4. ÀÌµ¿ ·ÎÁ÷ ±¸ºĞ
+	// 4. ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (IsLocallyControlled())
 	{
-		// [Local] ³»°¡ Á÷Á¢ Á¶Á¾ÇÏ´Â °æ¿ì: ÀÔ·Â¿¡ µû¶ó ½ÇÁ¦·Î À§Ä¡¸¦ ¿Å±è
+		// [Local] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½: ï¿½Ô·Â¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½Å±ï¿½
 		if (!CurrentInputVector.IsNearlyZero())
 		{
 			FVector LocalDir = FVector(CurrentInputVector.Y, CurrentInputVector.X, 0.0f);
@@ -178,7 +182,7 @@ void APSJ_Character::Tick(float DeltaTime)
 			FVector MoveDelta = WorldDir * FlyModeMaxSpeed * DeltaTime;
 			FHitResult MoveHit;
 
-			// ½ÇÁ¦·Î À§Ä¡¸¦ ÀÌµ¿½ÃÅ°´Â ÇÙ½É ÇÔ¼ö
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½Ìµï¿½ï¿½ï¿½Å°ï¿½ï¿½ ï¿½Ù½ï¿½ ï¿½Ô¼ï¿½
 			GetCharacterMovement()->SafeMoveUpdatedComponent(MoveDelta, GetActorRotation(), true, MoveHit);
 
 			if (MoveHit.IsValidBlockingHit())
@@ -188,10 +192,10 @@ void APSJ_Character::Tick(float DeltaTime)
 			}
 		}
 
-		// ¹Ù´Ú °¨Áö ¹× ³ôÀÌ º¸Á¤
+		// ï¿½Ù´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		UpdateMagBoots(DeltaTime);
 
-		// ¼­¹ö¿¡ ÇöÀç ³ªÀÇ »ó´ë ÁÂÇ¥¸¦ º¸°í (ÀÌ °ªÀÌ ¼­¹ö¸¦ °ÅÃÄ ´Ù¸¥ Å¬¶óÀÇ ReplicatedRelativeData°¡ µÊ)
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ù¸ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ ReplicatedRelativeDataï¿½ï¿½ ï¿½ï¿½)
 		if (!HasAuthority())
 		{
 			Server_UpdateRelativeTransform(GetRootComponent()->GetRelativeLocation(), GetRootComponent()->GetRelativeRotation());
@@ -204,23 +208,23 @@ void APSJ_Character::Tick(float DeltaTime)
 	}
 	else
 	{
-		// [Simulated Proxy] ¼­¹ö³ª ´Ù¸¥ Å¬¶óÀÌ¾ğÆ®°¡ ³ª¸¦ º¼ ¶§: Àü´Ş¹ŞÀº ÁÂÇ¥·Î °­Á¦ °íÁ¤
+		// [Simulated Proxy] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ù¸ï¿½ Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½: ï¿½ï¿½ï¿½Ş¹ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		if (ReplicatedRelativeData.BaseActor)
 		{
 			FVector OldRelLocation = GetRootComponent()->GetRelativeLocation();
 
-			// »ó´ë ÁÂÇ¥ µ¿±âÈ­
+			// ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥ ï¿½ï¿½ï¿½ï¿½È­
 			SetActorRelativeLocation(ReplicatedRelativeData.RelativeLocation);
 			SetActorRelativeRotation(ReplicatedRelativeData.RelativeRotation);
 
-			// ¼Óµµ ¿ª»ê (¾Ö´Ï¸ŞÀÌ¼Ç Àç»ı¿ë)
+			// ï¿½Óµï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½)
 			if (DeltaTime > KINDA_SMALL_NUMBER)
 			{
 				FVector RelDelta = (FVector(ReplicatedRelativeData.RelativeLocation) - OldRelLocation) / DeltaTime;
 				GetCharacterMovement()->Velocity = RelDelta;
 			}
 
-			// ÃÖÈÄÀÇ ¼ö´Ü: ¸Ş½¬ °­Á¦ °»½Å (¼­¹ö È­¸é A-Pose ¹æÁö)
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: ï¿½Ş½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ È­ï¿½ï¿½ A-Pose ï¿½ï¿½ï¿½ï¿½)
 			if (GetMesh())
 			{
 				GetMesh()->TickAnimation(DeltaTime, false);
@@ -235,6 +239,18 @@ void APSJ_Character::Tick(float DeltaTime)
 	}
 }
 
+void APSJ_Character::Server_RequestBoarding_Implementation(ATaskPawnBase* TaskPawn)
+{
+	if (!TaskPawn) return;
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		TaskPawn->SetPilot(this);
+		PC->Possess(TaskPawn);
+		TaskPawn->Client_BoardingSuccess();
+	}
+}
+
 void APSJ_Character::UpdateMagBoots(float DeltaTime)
 {
 	if (!IsLocallyControlled()) return;
@@ -244,17 +260,17 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 
 	if (AttachedActor)
 	{
-		// ºÎÂøµÈ ¹Ù´ÚÀÌ '°è´Ü(Stairs)' ÅÂ±×¸¦ °¡Áö°í ÀÖ´Â°¡?
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ù´ï¿½ï¿½ï¿½ 'ï¿½ï¿½ï¿½(Stairs)' ï¿½Â±×¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Â°ï¿½?
 		if (AttachedActor->ActorHasTag(TEXT("Stairs")))
 		{
 			AActor* ParentActor = AttachedActor->GetAttachParentActor();
-			// °è´ÜÀÇ »óÀ§ ºÎ¸ğ(¿ìÁÖ¼± µî)°¡ ÀÖ´Ù¸é ±× ºÎ¸ğÀÇ ¼öÁ÷À» µû¸£°í,
-			// ºÎ¸ğ°¡ ¾ø´Ù¸é(¿ùµå¿¡ ´Üµ¶À¸·Î ¹èÄ¡µÈ °æ»ç¸é) ¿ùµåÀÇ Àı´ë ¼öÁ÷(Z-Up)À» µû¸§
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Î¸ï¿½(ï¿½ï¿½ï¿½Ö¼ï¿½ ï¿½ï¿½)ï¿½ï¿½ ï¿½Ö´Ù¸ï¿½ ï¿½ï¿½ ï¿½Î¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,
+			// ï¿½Î¸ï¿½ ï¿½ï¿½ï¿½Ù¸ï¿½(ï¿½ï¿½ï¿½å¿¡ ï¿½Üµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(Z-Up)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 			GravityUpDir = ParentActor ? ParentActor->GetActorUpVector() : FVector::UpVector;
 		}
 		else
 		{
-			// °è´ÜÀÌ ¾Æ´Ñ ÀÏ¹İ ¹Ù´Ú(¿ìÁÖ¼± ÀÚÃ¼ µî)ÀÌ¸é ÇØ´ç ¹Ù´ÚÀÇ ¼öÁ÷À» ±×´ë·Î µû¸§
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Æ´ï¿½ ï¿½Ï¹ï¿½ ï¿½Ù´ï¿½(ï¿½ï¿½ï¿½Ö¼ï¿½ ï¿½ï¿½Ã¼ ï¿½ï¿½)ï¿½Ì¸ï¿½ ï¿½Ø´ï¿½ ï¿½Ù´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½×´ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 			GravityUpDir = AttachedActor->GetActorUpVector();
 		}
 	}
@@ -310,23 +326,23 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		}
 	}
 
-	// [½Å±Ô] Á¡ÇÁ ·ÎÁ÷ ½ÃÀÛ
+	// [ï¿½Å±ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (bIsJumping)
 	{
-		// 1. ÀÚ·Â °¨¼Ó (Deceleration) Àû¿ë - CMC ¸ğµå º¯°æ ¾øÀ½
+		// 1. ï¿½Ú·ï¿½ ï¿½ï¿½ï¿½ï¿½ (Deceleration) ï¿½ï¿½ï¿½ï¿½ - CMC ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		CurrentVerticalSpeed -= JumpDeceleration * DeltaTime;
 
-		// 2. ZÃà ÀÌµ¿ (¹Ù´Ú Normal ±âÁØ)
-		// Á¡ÇÁ Áß¿¡´Â CurrentFloorNormalÀ» ¾²µÇ, ¾øÀ¸¸é GravityUpDir »ç¿ë
+		// 2. Zï¿½ï¿½ ï¿½Ìµï¿½ (ï¿½Ù´ï¿½ Normal ï¿½ï¿½ï¿½ï¿½)
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½ß¿ï¿½ï¿½ï¿½ CurrentFloorNormalï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ GravityUpDir ï¿½ï¿½ï¿½
 		FVector JumpUpDir = !CurrentFloorNormal.IsZero() ? CurrentFloorNormal : GravityUpDir;
 		FVector JumpDelta = JumpUpDir * CurrentVerticalSpeed * DeltaTime;
 		AddActorWorldOffset(JumpDelta, true);
 
-		// 3. È¸Àü º¸Á¤ (Á¡ÇÁ Áß¿¡µµ ¹ß¹Ù´Ú °¢µµ À¯Áö)
+		// 3. È¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ß¿ï¿½ï¿½ï¿½ ï¿½ß¹Ù´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 		if (bFoundValidFloor)
 		{
 			FRotator CurrentRot = GetActorRotation();
-			FVector JumpAlignUpDir = FVector::UpVector; // ±âº»°ªÀº ¿ùµå Àı´ë ¼öÁ÷
+			FVector JumpAlignUpDir = FVector::UpVector; // ï¿½âº»ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
 			AActor* HitActor = Hit.GetActor();
 			if (HitActor)
@@ -335,28 +351,28 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 				{
 					AActor* HitParent = HitActor->GetAttachParentActor();
 
-					// [¼öÁ¤] ºÎ¸ğ°¡ APSJ_Spaceship(¿ìÁÖ¼±)ÀÎÁö ¸íÈ®È÷ Ä³½ºÆÃÇÏ¿© È®ÀÎ
+					// [ï¿½ï¿½ï¿½ï¿½] ï¿½Î¸ï¿½ APSJ_Spaceship(ï¿½ï¿½ï¿½Ö¼ï¿½)ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È®ï¿½ï¿½ Ä³ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ È®ï¿½ï¿½
 					APSJ_Spaceship* ParentShip = Cast<APSJ_Spaceship>(HitParent);
 
-					// ºÎ¸ğ°¡ ¿ìÁÖ¼±ÀÌ¸é ¿ìÁÖ¼±ÀÇ ZÃà, ¿ìÁÖ¼±ÀÌ ¾Æ´Ï¸é(ºÎ¸ğ°¡ ¾ø°Å³ª ´Ù¸¥ ¾×ÅÍ¸é) ¹«Á¶°Ç ¿ùµå ¼öÁ÷ °íÁ¤
+					// ï¿½Î¸ï¿½ ï¿½ï¿½ï¿½Ö¼ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½Ö¼ï¿½ï¿½ï¿½ Zï¿½ï¿½, ï¿½ï¿½ï¿½Ö¼ï¿½ï¿½ï¿½ ï¿½Æ´Ï¸ï¿½(ï¿½Î¸ï¿½ ï¿½ï¿½ï¿½Å³ï¿½ ï¿½Ù¸ï¿½ ï¿½ï¿½ï¿½Í¸ï¿½) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 					JumpAlignUpDir = ParentShip ? ParentShip->GetActorUpVector() : FVector::UpVector;
 				}
 				else
 				{
-					// ÀÏ¹İ ¹Ù´Ú/¿ìÁÖ¼± ÀÚÃ¼ÀÎ °æ¿ì
+					// ï¿½Ï¹ï¿½ ï¿½Ù´ï¿½/ï¿½ï¿½ï¿½Ö¼ï¿½ ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½
 					JumpAlignUpDir = HitActor->GetActorUpVector();
 				}
 			}
 
-			//  Hit.Normal ´ë½Å º¸Á¤µÈ JumpAlignUpDir »ç¿ë
+			//  Hit.Normal ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ JumpAlignUpDir ï¿½ï¿½ï¿½
 			FRotator TargetRot = FRotationMatrix::MakeFromZX(JumpAlignUpDir, GetActorForwardVector()).Rotator();
 			SetActorRotation(FMath::QInterpTo(CurrentRot.Quaternion(), TargetRot.Quaternion(), DeltaTime, AlignSpeed));
 
-			//  ´ÙÀ½ Æ½À» À§ÇØ ÀúÀåÇÏ´Â ³ë¸»°ªµµ JumpAlignUpDir »ç¿ë
+			//  ï¿½ï¿½ï¿½ï¿½ Æ½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ë¸»ï¿½ï¿½ï¿½ï¿½ JumpAlignUpDir ï¿½ï¿½ï¿½
 			CurrentFloorNormal = JumpAlignUpDir;
 		}
 
-		// 4. ÂøÁö ÆÇÁ¤ (¼Óµµ°¡ À½¼öÀÌ°í, ¹Ù´ÚÀÌ °¡±î¿ï ¶§)
+		// 4. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½Óµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ì°ï¿½, ï¿½Ù´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½)
 		if (CurrentVerticalSpeed <= 0.0f && bFoundValidFloor)
 		{
 			if (Hit.Distance <= FloorHeightOffset + 5.0f)
@@ -374,7 +390,7 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 			}
 		}
 
-		// Á¡ÇÁ Áß¿¡´Â ±âÁ¸ ÀÚ¼® ºÎÃ÷ ·ÎÁ÷À» ¼öÇàÇÏÁö ¾Ê°í ¸®ÅÏ
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½ß¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ú¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê°ï¿½ ï¿½ï¿½ï¿½ï¿½
 		return;
 	}
 
@@ -411,8 +427,8 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 
 		FRotator CurrentRot = GetActorRotation();
 
-		// 1. ¹æ±İ ¹âÀº ¹Ù´ÚÀ» ±âÁØÀ¸·Î ÁøÂ¥ ±âÁØ À§ÂÊ(UpVector)À» ´Ù½Ã °áÁ¤
-		FVector FinalUpDir = GravityUpDir; // ÀÏ´Ü ±âÁ¸ Áß·Â ¹æÇâÀ» ±âº»À¸·Î µÒ
+		// 1. ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ù´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Â¥ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(UpVector)ï¿½ï¿½ ï¿½Ù½ï¿½ ï¿½ï¿½ï¿½ï¿½
+		FVector FinalUpDir = GravityUpDir; // ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½âº»ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
 		AActor* FloorActor = Hit.GetActor();
 
 		if (FloorActor->ActorHasTag(TEXT("Stairs")))
@@ -420,18 +436,18 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 			AActor* FloorParent = FloorActor->GetAttachParentActor();
 			if (FloorParent)
 			{
-				// ¿ìÁÖ¼± ³»ºÎ¿¡ Á¾¼ÓµÈ °è´ÜÀÌ¸é ºÎ¸ğ(¿ìÁÖ¼±)ÀÇ UpVector¸¦ µû¸§ (È¸ÀüÇÏ´Â ¿ìÁÖ¼± ´ëÀÀ ¿Ïº® º¸Àå)
+				// ï¿½ï¿½ï¿½Ö¼ï¿½ ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½Óµï¿½ ï¿½ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½Î¸ï¿½(ï¿½ï¿½ï¿½Ö¼ï¿½)ï¿½ï¿½ UpVectorï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (È¸ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½Ö¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ïºï¿½ ï¿½ï¿½ï¿½ï¿½)
 				FinalUpDir = FloorParent->GetActorUpVector();
 			}
 			else
 			{
-				// ÃÖ»óÀ§ ºÎ¸ğ°¡ ¾ø´Ù? = ¿ùµå¿¡ µ¢±×·¯´Ï ³õÀÎ ´Üµ¶ °è´Ü -> ¿ùµå Á¤¹æÇâ Z-Up °íÁ¤
+				// ï¿½Ö»ï¿½ï¿½ï¿½ ï¿½Î¸ï¿½ ï¿½ï¿½ï¿½ï¿½? = ï¿½ï¿½ï¿½å¿¡ ï¿½ï¿½ï¿½×·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Üµï¿½ ï¿½ï¿½ï¿½ -> ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Z-Up ï¿½ï¿½ï¿½ï¿½
 				FinalUpDir = FVector::UpVector;
 			}
 		}
 		else
 		{
-			// °è´ÜÀÌ ¾Æ´Ñ ÀÏ¹İ ¿ìÁÖ¼± ¹Ù´ÚÀÌ¸é ÇØ´ç ¾×ÅÍÀÇ UpVector¸¦ µû¸§
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Æ´ï¿½ ï¿½Ï¹ï¿½ ï¿½ï¿½ï¿½Ö¼ï¿½ ï¿½Ù´ï¿½ï¿½Ì¸ï¿½ ï¿½Ø´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ UpVectorï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 			FinalUpDir = FloorActor->GetActorUpVector();
 		}
 
@@ -459,26 +475,26 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 }
 
 
-// [½Å±Ô] º¯¼ö ¼¼ÆÃ ÇÔ¼ö
+// [ï¿½Å±ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
 void APSJ_Character::SetBaseActorData(AActor* NewBase)
 {
 	ReplicatedRelativeData.BaseActor = NewBase;
 	ReplicatedRelativeData.bIsAnchored = (NewBase != nullptr);
 
-	// ÀÔ·Â º¤ÅÍ´Â ÃÊ±âÈ­ÇÏµÇ, ÀÌµ¿ ±â´É ÀÚÃ¼´Â ²ôÁö ¾ÊÀ½
+	// ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½Í´ï¿½ ï¿½Ê±ï¿½È­ï¿½Ïµï¿½, ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	CurrentInputVector = FVector2D::ZeroVector;
 }
 
-// [½Å±Ô] ÀÔ·Â °­Á¦ º¹±¸ ÇÔ¼ö (ÇÙ½É ÇØ°áÃ¥)
+// [ï¿½Å±ï¿½] ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ (ï¿½Ù½ï¿½ ï¿½Ø°ï¿½Ã¥)
 void APSJ_Character::ForceInputRecovery()
 {
-	// ³» ÄÄÇ»ÅÍÀÇ 0¹ø ÄÁÆ®·Ñ·¯(ÇÃ·¹ÀÌ¾î)¸¦ Ã£À½
+	// ï¿½ï¿½ ï¿½ï¿½Ç»ï¿½ï¿½ï¿½ï¿½ 0ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½Ñ·ï¿½(ï¿½Ã·ï¿½ï¿½Ì¾ï¿½)ï¿½ï¿½ Ã£ï¿½ï¿½
 	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
 	{
-		// 1. ÀÔ·Â ½Ã½ºÅÛ(Enhanced Input) °¡Á®¿À±â
+		// 1. ï¿½Ô·ï¿½ ï¿½Ã½ï¿½ï¿½ï¿½(Enhanced Input) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
 		{
-			// ±âÁ¸ ¸ÅÇÎ(¿ìÁÖ¼± Å° µî) Á¦°ÅÇÏ°í ³» Å°(WASD) Ãß°¡
+			// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½Ö¼ï¿½ Å° ï¿½ï¿½) ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ Å°(WASD) ï¿½ß°ï¿½
 			Subsystem->ClearAllMappings();
 			if (DefaultMappingContext)
 			{
@@ -486,17 +502,17 @@ void APSJ_Character::ForceInputRecovery()
 			}
 		}
 
-		// 2. [Áß¿ä] ¿£Áø¿¡°Ô "ÀÌ ÄÁÆ®·Ñ·¯ÀÇ ÀÔ·ÂÀ» ÀÌ ¾×ÅÍ°¡ ¹Ş°Ú´Ù"°í ¼±¾ğ
-		// ³»ºÎÀûÀ¸·Î InputComponent¸¦ »ı¼ºÇÏ°í ÄÁÆ®·Ñ·¯ ½ºÅÃ¿¡ Çª½ÃÇÕ´Ï´Ù.
+		// 2. [ï¿½ß¿ï¿½] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ "ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ï¿½ï¿½ ï¿½Ô·ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Í°ï¿½ ï¿½Ş°Ú´ï¿½"ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ InputComponentï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ ï¿½ï¿½ï¿½Ã¿ï¿½ Çªï¿½ï¿½ï¿½Õ´Ï´ï¿½.
 		EnableInput(PC);
 
-		// 3. [Áß¿ä] Å° ¹ÙÀÎµù(Jump, Move µî) ¿¬°á
+		// 3. [ï¿½ß¿ï¿½] Å° ï¿½ï¿½ï¿½Îµï¿½(Jump, Move ï¿½ï¿½) ï¿½ï¿½ï¿½ï¿½
 		if (InputComponent)
 		{
 			SetupPlayerInputComponent(InputComponent);
 		}
 
-		// 4. ÀÔ·Â ¸ğµå °­Á¦ ¼³Á¤ (UI ´İ±â Æ÷ÇÔ)
+		// 4. ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (UI ï¿½İ±ï¿½ ï¿½ï¿½ï¿½ï¿½)
 		PC->SetInputMode(FInputModeGameOnly());
 		PC->bShowMouseCursor = false;
 
@@ -507,7 +523,7 @@ void APSJ_Character::ForceInputRecovery()
 void APSJ_Character::StartDisembarkState()
 {
 	bJustDisembarked = true;
-	DisembarkGraceTimer = 0.2f; // 0.2ÃÊ°£ À¯¿¹ (¿ìÁÖ¼± ¼Óµµ¿¡ µû¶ó Á¶Àı °¡´É)
+	DisembarkGraceTimer = 0.2f; // 0.2ï¿½Ê°ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½Ö¼ï¿½ ï¿½Óµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	LastFloorActor = nullptr;
 }
 
@@ -516,7 +532,7 @@ void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	// [1] ¸ÅÇÎ ÄÁÅØ½ºÆ®(IMC) µî·Ï ·ÎÁ÷
+	// [1] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ø½ï¿½Æ®(IMC) ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -529,54 +545,54 @@ void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		}
 	}
 
-	// [2] ¾×¼Ç ¹ÙÀÎµù ·ÎÁ÷
+	// [2] ï¿½×¼ï¿½ ï¿½ï¿½ï¿½Îµï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		// (1) ÀÌµ¿ (Move)
+		// (1) ï¿½Ìµï¿½ (Move)
 		if (MoveAction)
 		{
 			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APSJ_Character::Move);
 			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &APSJ_Character::StopMove);
 		}
 
-		// (2) ½ÃÁ¡ È¸Àü (Look)
+		// (2) ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½ (Look)
 		if (LookAction)
 		{
 			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APSJ_Character::Look);
 		}
 
 
-		// (3) »óÈ£ÀÛ¿ë (Interact - Å¾½ÂÇÏ±â)
+		// (3) ï¿½ï¿½È£ï¿½Û¿ï¿½ (Interact - Å¾ï¿½ï¿½ï¿½Ï±ï¿½)
 		if (InteractAction)
 		{
 			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APSJ_Character::Interact);
 		}
 
-		// (4) Á¡ÇÁ (Jump)
+		// (4) ï¿½ï¿½ï¿½ï¿½ (Jump)
 		if (JumpAction)
 		{
 			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &APSJ_Character::Input_Jump);
 		}
 
-		// ÁÖÀÇ: ¿¡µğÅÍÀÇ BP_Character¿¡¼­ SprintAction¿¡ IA_Sprint¸¦ ²À ³Ö¾îÁÖ¼¼¿ä!
+		// ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ BP_Characterï¿½ï¿½ï¿½ï¿½ SprintActionï¿½ï¿½ IA_Sprintï¿½ï¿½ ï¿½ï¿½ ï¿½Ö¾ï¿½ï¿½Ö¼ï¿½ï¿½ï¿½!
 		if (SprintAction)
 		{
 			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &APSJ_Character::Input_SprintStart);
 			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &APSJ_Character::Input_SprintStop);
 		}
 
-		// [½Å±Ô Ãß°¡] °­Á¦ ÇÏÂ÷ (Force Eject - ¸¶¿ì½º ¿ìÅ¬¸¯ µî)
+		// [ï¿½Å±ï¿½ ï¿½ß°ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (Force Eject - ï¿½ï¿½ï¿½ì½º ï¿½ï¿½Å¬ï¿½ï¿½ ï¿½ï¿½)
 		if (ForceEjectAction)
 		{
 			EnhancedInputComponent->BindAction(ForceEjectAction, ETriggerEvent::Started, this, &APSJ_Character::Input_ForceEject);
 		}
 
-		// [½Å±Ô] ¼ö¸® (Left Mouse Button)
+		// [ï¿½Å±ï¿½] ï¿½ï¿½ï¿½ï¿½ (Left Mouse Button)
 		if (RepairAction)
 		{
-			// ´©¸£´Â ¼ø°£ -> bIsRepairingInputDown = true
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ -> bIsRepairingInputDown = true
 			EnhancedInputComponent->BindAction(RepairAction, ETriggerEvent::Started, this, &APSJ_Character::Input_StartRepair);
-			// ¶¼´Â ¼ø°£ -> bIsRepairingInputDown = false
+			// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ -> bIsRepairingInputDown = false
 			EnhancedInputComponent->BindAction(RepairAction, ETriggerEvent::Completed, this, &APSJ_Character::Input_StopRepair);
 		}
 	}
@@ -592,80 +608,32 @@ void APSJ_Character::Interact(const FInputActionValue& Value)
 {
 	if (!Controller) return;
 
-	// 1. ½Ã¼± ÃßÀû (Line Trace) - "³» ´«¾Õ¿¡ ÁÂ¼®ÀÌ ÀÖ´Â°¡?"
-	FVector TraceStart;
-	FRotator TraceRot;
+	if (!InteracterComponent)
+		return;
 
-	if (FPSCamera)
+	bool OutIsInterrupt = false;			// ìƒí˜¸ì‘ìš© ì‹¤íŒ¨, ì´ë¯¸ ëˆ„ê°€ ì•‰ì•„ìˆìŒ
+	bool OutIsInteractEnter = false;		// ìƒí˜¸ì‘ìš© ì„±ê³µ, ì•‰ê¸° ì„±ê³µ/ì‹¤íŒ¨
+	if (InteracterComponent->TryInteractInput(OutIsInterrupt, OutIsInteractEnter))
 	{
-		TraceStart = FPSCamera->GetComponentLocation();
-		TraceRot = FPSCamera->GetComponentRotation();
+		// ìƒí˜¸ì‘ìš© ì„±ê³µ
 	}
 	else
 	{
-		GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
-	}
-
-	FVector TraceEnd = TraceStart + (TraceRot.Vector() * 300.0f); // 3m °Å¸® Ã¼Å©
-
-	FHitResult HitResult;
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this); // ³ª´Â ¹«½Ã
-
-	// Trace Ã¤³ÎÀº ÇÁ·ÎÁ§Æ® ¼³Á¤¿¡ ¸Â°Ô (Visibility or Interaction)
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
-		HitResult,
-		TraceStart,
-		TraceEnd,
-		ECC_Visibility,
-		QueryParams
-	);
-
-	// µğ¹ö±× ¶óÀÎ (Å×½ºÆ® ÈÄ ÁÖ¼® Ã³¸®)
-	// DrawDebugLine(GetWorld(), TraceStart, TraceEnd, bHit ? FColor::Green : FColor::Red, false, 1.0f);
-
-	if (bHit && HitResult.GetActor())
-	{
-		// 2. ÄÛÇÍ(ÁÂ¼®)ÀÎÁö È®ÀÎ
-		if (APSJ_ShipCockpit* HitCockpit = Cast<APSJ_ShipCockpit>(HitResult.GetActor()))
-		{
-			// [ÇÙ½É ÇØ°á] ÄÛÇÍ¿¡°Ô Å¾½Â Ã³¸®¸¦ À§ÀÓÇÕ´Ï´Ù.
-			// ÄÛÇÍÀÌ ¾Ë¾Æ¼­ TargetPawnÀ» È®ÀÎÇÏ°í CharacterÀÇ RPC¸¦ ºÒ·¯Áİ´Ï´Ù.
-			HitCockpit->AttemptBoarding(this);
-			return; // Å¾½Â ½ÃµµÇßÀ¸¸é ÇÔ¼ö Á¾·á
-		}
-	}
-
-	// 3. [¿¹¿Ü Ã³¸®] ´«¾Õ¿¡ ÁÂ¼®Àº ¾øÁö¸¸, ÀÌ¹Ì ¿ìÁÖ¼± ³»ºÎ¿¡ Å¾½ÂÇÑ »óÅÂ¶ó¸é?
-	// (ÀÌ ºÎºĞÀº ±âÈ¹ ÀÇµµ¿¡ µû¶ó ³²°ÜµÎ°Å³ª »èÁ¦ÇÏ¼¼¿ä. 
-	//  ¿¹: ¿ìÁÖ¼± ¾È¿¡¼­ Çã°ø¿¡ ´ë°í F ´©¸£¸é Á¶Á¾¼®À¸·Î ¼ø°£ÀÌµ¿ ½ÃÅ³ °ÍÀÎ°¡?)
-	if (CurrentSpaceship)
-	{
-		// ¸¸¾à Á¶Á¾¼®À» Á÷Á¢ ¹Ù¶óº¸Áö ¾Ê°íµµ Å¾½ÂÇÏ°Ô ÇÏ·Á¸é ÀÌ ·ÎÁ÷ À¯Áö.
-		// ÇÏÁö¸¸ ¸ÖÆ¼ÇÃ·¹ÀÌ¾î È¯°æ¿¡¼­ ¿ÀÀÛµ¿ °¡´É¼ºÀÌ ÀÖ¾î ±ÇÀåÇÏÁø ¾Ê½À´Ï´Ù.
-		/*
-		if (APlayerController* PC = Cast<APlayerController>(Controller))
-		{
-			if (APSJ_Spaceship* TargetShip = Cast<APSJ_Spaceship>(CurrentSpaceship))
-			{
-				Server_RequestBoarding(TargetShip);
-			}
-		}
-		*/
+		// ìƒí˜¸ì‘ìš© ì‹¤íŒ¨
 	}
 }
 
 void APSJ_Character::Move(const FInputActionValue& Value)
 {
 
-	// [Ãß°¡] ¼ö¸® ÁßÀÌ¸é ÀÌµ¿ ÀÔ·ÂÀ» ¹«½ÃÇÏ°í ºüÁ®³ª°¨
+	// [ï¿½ß°ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½Ìµï¿½ ï¿½Ô·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (bIsActivelyRepairing)
 	{
 		return;
 	}
 
 	CurrentInputVector = Value.Get<FVector2D>();
-	// 2. [Ãß°¡] ¼­¹öÇÑÅ×µµ ¾Ë·ÁÁÜ!
+	// 2. [ï¿½ß°ï¿½] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×µï¿½ ï¿½Ë·ï¿½ï¿½ï¿½!
 	Server_SetInputVector(CurrentInputVector);
 
 	if (!CurrentInputVector.IsNearlyZero())
@@ -684,7 +652,7 @@ void APSJ_Character::Move(const FInputActionValue& Value)
 void APSJ_Character::StopMove(const FInputActionValue& Value)
 {
 	CurrentInputVector = FVector2D::ZeroVector;
-	// 2. [Ãß°¡] ¼­¹öÇÑÅ× ¸ØÃè´Ù°í ¾Ë·ÁÁÜ!
+	// 2. [ï¿½ß°ï¿½] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ù°ï¿½ ï¿½Ë·ï¿½ï¿½ï¿½!
 	Server_SetInputVector(FVector2D::ZeroVector);
 }
 
@@ -708,15 +676,15 @@ void APSJ_Character::Look(const FInputActionValue& Value)
 
 void APSJ_Character::Input_Jump(const FInputActionValue& Value)
 {
-	// ¾ŞÄ¿¸µ »óÅÂÀÌ°í, ÀÌ¹Ì Á¡ÇÁ ÁßÀÌ ¾Æ´Ò ¶§¸¸ ¹ßµ¿
+	// ï¿½ï¿½Ä¿ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ì°ï¿½, ï¿½Ì¹ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Æ´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ßµï¿½
 	if (ReplicatedRelativeData.bIsAnchored && !bIsJumping)
 	{
 		bIsJumping = true;
 		CurrentVerticalSpeed = JumpInitialSpeed;
-		// Á¡ÇÁ Áï½Ã ¹Ù´Ú ºÎÂø ÇØÁ¦ Ã³¸®³ª Mode º¯°æÀ» ÇÏÁö ¾ÊÀ½ (User Request)
-		// ¿ÀÁ÷ bIsJumping ÇÃ·¡±×·Î¸¸ Á¦¾î
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ù´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½ï¿½ Mode ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (User Request)
+		// ï¿½ï¿½ï¿½ï¿½ bIsJumping ï¿½Ã·ï¿½ï¿½×·Î¸ï¿½ ï¿½ï¿½ï¿½ï¿½
 
-		// µğ¹ö±ë¿ë ·Î±×
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Î±ï¿½
 		// UE_LOG(LogTemp, Log, TEXT("Jump Started! Speed: %f"), CurrentVerticalSpeed);
 	}
 }
@@ -731,8 +699,8 @@ void APSJ_Character::Server_UpdateRelativeTransform_Implementation(FVector NewRe
 	ReplicatedRelativeData.RelativeLocation = NewRelLoc;
 	ReplicatedRelativeData.RelativeRotation = NewRelRot;
 
-	// ÀÌÁ¦ ¼­¹öµµ BaseActor°¡ ´©±ºÁö ¾Ë±â ¶§¹®¿¡ ÀÌ Á¶°Ç¹®ÀÌ Åë°úµË´Ï´Ù!
-	// -> ¼­¹ö Ä³¸¯ÅÍµµ È¸ÀüÇÏ±â ½ÃÀÛÇÔ.
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ BaseActorï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ë±ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Ç¹ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ë´Ï´ï¿½!
+	// -> ï¿½ï¿½ï¿½ï¿½ Ä³ï¿½ï¿½ï¿½Íµï¿½ È¸ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
 	if (ReplicatedRelativeData.BaseActor && GetAttachParentActor() == ReplicatedRelativeData.BaseActor)
 	{
 		SetActorRelativeLocation(NewRelLoc);
@@ -750,21 +718,9 @@ void APSJ_Character::CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutRes
 	}
 }
 
-bool APSJ_Character::Server_RequestBoarding_Validate(APSJ_Spaceship* ShipToBoard)
+bool APSJ_Character::Server_RequestBoarding_Validate(ATaskPawnBase* TaskPawn)
 {
-	return true;
-}
-
-void APSJ_Character::Server_RequestBoarding_Implementation(APSJ_Spaceship* ShipToBoard)
-{
-	if (!ShipToBoard) return;
-
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		ShipToBoard->SetPilot(this);
-		PC->Possess(ShipToBoard);
-		ShipToBoard->Client_BoardingSuccess();
-	}
+	return TaskPawn != nullptr;
 }
 
 void APSJ_Character::ForceClearAnchoring()
@@ -816,7 +772,7 @@ void APSJ_Character::OnRep_Controller()
 
 	if (IsLocallyControlled() && Controller)
 	{
-		// ¿£Áø Ç¥ÁØ ÇÔ¼ö·Î ÀÔ·Â ½Ã½ºÅÛ Àç½Ãµ¿
+		// ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ ï¿½Ô·ï¿½ ï¿½Ã½ï¿½ï¿½ï¿½ ï¿½ï¿½Ãµï¿½
 		PawnClientRestart();
 
 		if (APlayerController* PC = Cast<APlayerController>(Controller))
@@ -834,7 +790,7 @@ void APSJ_Character::OnRep_Controller()
 			}
 		}
 
-		// È¤½Ã ¸ğ¸¦ ¾ÈÀüÀåÄ¡: °­Á¦ ÀÎÇ² º¹±¸ È£Ãâ
+		// È¤ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¡: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ç² ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½
 		ForceInputRecovery();
 
 		//UE_LOG(LogTemp, Warning, TEXT("[Debug] OnRep_Controller: PawnClientRestart Called. Input Restored."));
@@ -859,16 +815,10 @@ bool APSJ_Character::Server_RequestTurretBoarding_Validate(ATurretBase_GT* Turre
 void APSJ_Character::Server_RequestTurretBoarding_Implementation(ATurretBase_GT* TurretToBoard, APSJ_ShipCockpit* LinkedCockpit)
 {
 	if (!TurretToBoard) return;
-
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		// 1. ÅÍ·¿¿¡ Á¶Á¾»ç Á¤º¸ µî·Ï
 		TurretToBoard->SetPilot(this, LinkedCockpit);
-
-		// 2. ÄÁÆ®·Ñ·¯ ºùÀÇ (Possess) - ÀÌÁ¦ Ä³¸¯ÅÍ°¡ ¾Æ´Ñ ÅÍ·¿À» Á¶Á¾
 		PC->Possess(TurretToBoard);
-
-		// 3. Å¬¶óÀÌ¾ğÆ® È­¸é/ÀÔ·Â ÀüÈ¯ Áö½Ã
 		TurretToBoard->Client_BoardingSuccess();
 	}
 }
@@ -882,56 +832,56 @@ bool APSJ_Character::Server_SetAnchoring_Validate(AActor* NewBase)
 
 void APSJ_Character::Server_SetAnchoring_Implementation(AActor* NewBase)
 {
-	// 1. µ¥ÀÌÅÍ °»½Å (ÀÌÁ¦ ¼­¹öµµ BaseActor°¡ ´©±ºÁö ¾Ë°Ô µÊ)
+	// 1. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ BaseActorï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ë°ï¿½ ï¿½ï¿½)
 	ReplicatedRelativeData.BaseActor = NewBase;
 	ReplicatedRelativeData.bIsAnchored = (NewBase != nullptr);
 
 	if (NewBase)
 	{
-		// 2. ¼­¹ö Â÷¿ø¿¡¼­ ¹°¸®Àû ºÎÂø ¼öÇà
+		// 2. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		AttachToActor(NewBase, FAttachmentTransformRules::KeepWorldTransform);
 
-		// 3. [ÇÙ½É] ¼­¹ö ¹°¸® ¿£ÁøÀÇ °£¼· Â÷´Ü
-		// DisableMovement()´Â ¾²Áö ¸¶¼¼¿ä. ´ë½Å Custom ¸ğµå·Î ÀüÈ¯.
+		// 3. [ï¿½Ù½ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+		// DisableMovement()ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½. ï¿½ï¿½ï¿½ Custom ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯.
 		GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 
-		// 4. [ÇÙ½É] "ÀÌÁ¦ºÎÅÍ À§Ä¡ µ¿±âÈ­´Â RPC·Î ¼öµ¿À¸·Î ÇÒ Å×´Ï, ¿£Áø ³Ê´Â ºüÁ®"
+		// 4. [ï¿½Ù½ï¿½] "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½È­ï¿½ï¿½ RPCï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½×´ï¿½, ï¿½ï¿½ï¿½ï¿½ ï¿½Ê´ï¿½ ï¿½ï¿½ï¿½ï¿½"
 		SetReplicateMovement(false);
 	}
 	else
 	{
-		// ºÎÂø ÇØÁ¦ ½Ã º¹±¸
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 		SetReplicateMovement(true);
 	}
 }
 
-// ÀÔ·Â Ã³¸® ÇÔ¼ö (Å¬¶óÀÌ¾ğÆ®)
+// ï¿½Ô·ï¿½ Ã³ï¿½ï¿½ ï¿½Ô¼ï¿½ (Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®)
 void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
 {
-	// ³»°¡ Å¾½Â ÁßÀÌ¸é ½ÇÇà ºÒ°¡ (³»ºÎ¿¡¼­ ³»¸®´Â °Ç Interact Å°·Î)
+	// ï¿½ï¿½ï¿½ï¿½ Å¾ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ò°ï¿½ (ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Interact Å°ï¿½ï¿½)
 	if (CurrentSpaceship) return;
 
 	FVector TraceStart;
 	FRotator TraceRot;
 
-	// [ÇÙ½É ºĞ±â] ÅøÀÌ Á¸ÀçÇÏ°í Äğ´Ù¿îÀÌ ¾Æ´Ò ¶§¸¸ Åø ÃÑ±¸¿¡¼­ Æ®·¹ÀÌ½º ¹ß»ç
+	// [ï¿½Ù½ï¿½ ï¿½Ğ±ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½Ù¿ï¿½ï¿½ï¿½ ï¿½Æ´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ñ±ï¿½ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½Ì½ï¿½ ï¿½ß»ï¿½
 	if (EquippedTool)
 	{
 		if (EquippedTool->bIsOnCooldown)
 		{
-			// Äğ´Ù¿î ÁßÀÌ¸é ½ÇÆĞ Ã³¸®¿ëÀ¸·Î ¼­¹ö¿¡ ºó ¿äÃ» Àü¼Û
+			// ï¿½ï¿½Ù¿ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Ã» ï¿½ï¿½ï¿½ï¿½
 			Server_TryForceEject(nullptr);
 			return;
 		}
-		// Äğ´Ù¿îÀÌ ¾Æ´Ï¸é Åø¿¡¼­ Æ®·¹ÀÌ½º ¹ß»ç
+		// ï¿½ï¿½Ù¿ï¿½ï¿½ï¿½ ï¿½Æ´Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½Ì½ï¿½ ï¿½ß»ï¿½
 		TraceStart = EquippedTool->TraceMuzzle->GetComponentLocation();
 		TraceRot = EquippedTool->TraceMuzzle->GetComponentRotation();
 	}
 	else
 	{
-		// ÅøÀÌ ¾øÀ» ¶§ÀÇ ¿¹ºñ µ¿ÀÛ (Ä«¸Ş¶ó ±âÁØ)
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (Ä«ï¿½Ş¶ï¿½ ï¿½ï¿½ï¿½ï¿½)
 		if (FPSCamera) {
 			TraceStart = FPSCamera->GetComponentLocation();
 			TraceRot = FPSCamera->GetComponentRotation();
@@ -947,7 +897,7 @@ void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 
-	// [Áß¿ä] ÄÛÇÍÀÇ ¸Ş½¬(Mesh)³ª Äİ¸®Àü ¹Ú½º°¡ 'Visibility' Ã¤³ÎÀ» 'Block' ÇÏ°í ÀÖ¾î¾ß °¨ÁöµË´Ï´Ù.
+	// [ï¿½ß¿ï¿½] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ş½ï¿½(Mesh)ï¿½ï¿½ ï¿½İ¸ï¿½ï¿½ï¿½ ï¿½Ú½ï¿½ï¿½ï¿½ 'Visibility' Ã¤ï¿½ï¿½ï¿½ï¿½ 'Block' ï¿½Ï°ï¿½ ï¿½Ö¾ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ë´Ï´ï¿½.
 	bool bHit = GetWorld()->LineTraceSingleByChannel(
 		HitResult,
 		TraceStart,
@@ -957,28 +907,28 @@ void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
 	);
 
 #if WITH_EDITOR
-	// µğ¹ö±× ¶óÀÎ È®ÀÎ: ÃÊ·Ï»öÀÌ¸é È÷Æ® ¼º°ø, »¡°£»öÀÌ¸é Çã°ø
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½: ï¿½Ê·Ï»ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½
 	if (bHit) DrawDebugLine(GetWorld(), TraceStart, HitResult.ImpactPoint, FColor::Green, false, 1.0f);
 	else DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 1.0f);
 #endif
 
 	if (bHit && HitResult.GetActor())
 	{
-		// ÄÛÇÍ Å¬·¡½º·Î Ä³½ºÆÃ (»ó¼Ó¹ŞÀº ¸ğµç ºí·çÇÁ¸°Æ® Æ÷ÇÔ)
+		// ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ä³ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½Ó¹ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½)
 		if (APSJ_ShipCockpit* HitCockpit = Cast<APSJ_ShipCockpit>(HitResult.GetActor()))
 		{
-			// ¼­¹ö¿¡ ¿äÃ»
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã»
 			Server_TryForceEject(HitCockpit);
 		}
 	}
 }
 
-// 3. ¼­¹ö RPC ±¸Çö
+// 3. ï¿½ï¿½ï¿½ï¿½ RPC ï¿½ï¿½ï¿½ï¿½
 bool APSJ_Character::Server_TryForceEject_Validate(APSJ_ShipCockpit* TargetCockpit)
 {
 	if (TargetCockpit)
 	{
-		// °Å¸® °ËÁõ (¾à°£ÀÇ ¿©À¯ Çã¿ë)
+		// ï¿½Å¸ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½à°£ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½)
 		float DistanceSq = FVector::DistSquared(GetActorLocation(), TargetCockpit->GetActorLocation());
 		float AllowedRangeSq = FMath::Square(ForceEjectRange * 1.5f);
 		if (DistanceSq > AllowedRangeSq)
@@ -995,17 +945,17 @@ void APSJ_Character::Server_TryForceEject_Implementation(APSJ_ShipCockpit* Targe
 	{
 		if (EquippedTool->bIsOnCooldown)
 		{
-			// [½ÇÆĞ] Äğ´Ù¿î Áß: ½ÇÆĞ ÀÌÆåÆ® Àç»ı (°­Á¦ ÇÏÂ÷ ¾È ÇÔ)
+			// [ï¿½ï¿½ï¿½ï¿½] ï¿½ï¿½Ù¿ï¿½ ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½)
 			EquippedTool->Multicast_PlayEjectEffect(false, this);
 			return;
 		}
 		else
 		{
-			// [¼º°ø] Á¤»ó »óÅÂ: ÀÌÆåÆ® Àç»ı ¹× Å¸ÀÌ¸Ó ½ÃÀÛ
+			// [ï¿½ï¿½ï¿½ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ ï¿½ï¿½ Å¸ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½
 			EquippedTool->Multicast_PlayEjectEffect(true, this);
 			EquippedTool->StartCooldownTimer();
 
-			// ½ÇÁ¦ °­Á¦ ÇÏÂ÷ ·ÎÁ÷ ½ÇÇà
+			// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 			if (TargetCockpit) {
 				TargetCockpit->ReceiveForceEjectRequest();
 			}
@@ -1022,39 +972,39 @@ void APSJ_Character::Server_RequestPawnPossess_Implementation(APawn* TargetPawn)
 {
 	if (!TargetPawn) return;
 
-	// ÄÁÆ®·Ñ·¯ °¡Á®¿À±â
+	// ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		// 1. Ä³¸¯ÅÍ ¿òÁ÷ÀÓ ¸ØÃß±â (¼±ÅÃ»çÇ×)
+		// 1. Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ß±ï¿½ (ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½)
 		if (GetCharacterMovement())
 		{
 			GetCharacterMovement()->StopMovementImmediately();
 			GetCharacterMovement()->DisableMovement();
 		}
 
-		// 2. ÆĞ³Î(TargetPawn) Á¶Á¾ ½ÃÀÛ!
+		// 2. ï¿½Ğ³ï¿½(TargetPawn) ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½!
 		PC->Possess(TargetPawn);
 
-		// (Âü°í) ¸¸¾à ÆĞ³Î ÂÊ¿¡¼­ "Å¾½Â ¿Ï·áµÇ¾ú½À´Ï´Ù" °°Àº Ã³¸®°¡ ÇÊ¿äÇÏ¸é
-		// ¿©±â¼­ TargetPawn->OnBoarded() °°Àº ÇÔ¼ö¸¦ È£ÃâÇØÁÙ ¼öµµ ÀÖ½À´Ï´Ù.
+		// (ï¿½ï¿½ï¿½ï¿½) ï¿½ï¿½ï¿½ï¿½ ï¿½Ğ³ï¿½ ï¿½Ê¿ï¿½ï¿½ï¿½ "Å¾ï¿½ï¿½ ï¿½Ï·ï¿½Ç¾ï¿½ï¿½ï¿½ï¿½Ï´ï¿½" ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½ï¿½Ï¸ï¿½
+		// ï¿½ï¿½ï¿½â¼­ TargetPawn->OnBoarded() ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ È£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö½ï¿½ï¿½Ï´ï¿½.
 	}
 }
 
 void APSJ_Character::Client_RestoreInputRPC_Implementation()
 {
-	// ÀÌ ÄÚµå´Â Å¬¶óÀÌ¾ğÆ® ÄÄÇ»ÅÍ¿¡¼­ ½ÇÇàµË´Ï´Ù.
-	// ±âÁ¸¿¡ ¸¸µé¾îµĞ "ÀÔ·Â °­Á¦ º¹±¸ ÇÔ¼ö"¸¦ ½ÇÇàÇÏ¿© ¸¶¿ì½º/Å°º¸µå¸¦ È°¼ºÈ­ÇÕ´Ï´Ù.
+	// ï¿½ï¿½ ï¿½Úµï¿½ï¿½ Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ® ï¿½ï¿½Ç»ï¿½Í¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ë´Ï´ï¿½.
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ "ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½"ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ì½º/Å°ï¿½ï¿½ï¿½å¸¦ È°ï¿½ï¿½È­ï¿½Õ´Ï´ï¿½.
 	ForceInputRecovery();
 
-	// È¤½Ã ¸ğ¸¦ ¾ÈÀüÀåÄ¡: ¿£Áø Ç¥ÁØ ÀÔ·Â Àç½ÃÀÛ ÇÔ¼öµµ °°ÀÌ È£Ãâ
+	// È¤ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¡: ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½ ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½
 	PawnClientRestart();
 
-	// ·Î±×·Î È®ÀÎ
+	// ï¿½Î±×·ï¿½ È®ï¿½ï¿½
 	// UE_LOG(LogTemp, Warning, TEXT("[RPC] Client Input Restored via Blueprint Request!"));
 }
 
 // =========================================================
-// [½Å±Ô] ¼ö¸® ·ÎÁ÷ ±¸ÇöºÎ
+// [ï¿½Å±ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 // =========================================================
 
 void APSJ_Character::Input_StartRepair(const FInputActionValue& Value)
@@ -1065,7 +1015,7 @@ void APSJ_Character::Input_StartRepair(const FInputActionValue& Value)
 void APSJ_Character::Input_StopRepair(const FInputActionValue& Value)
 {
 	bIsRepairingInputDown = false;
-	bIsActivelyRepairing = false; // ¼ö¸® ÁßÁö ½Ã false
+	bIsActivelyRepairing = false; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ false
 
 	if (ClientRepairTarget)
 	{
@@ -1076,23 +1026,23 @@ void APSJ_Character::Input_StopRepair(const FInputActionValue& Value)
 
 void APSJ_Character::UpdateRepairLogic()
 {
-	// 1. ¹öÆ°À» ¾È ´©¸£°í ÀÖÀ¸¸é ¾Æ¹«°Íµµ ¾È ÇÔ
+	// 1. ï¿½ï¿½Æ°ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Æ¹ï¿½ï¿½Íµï¿½ ï¿½ï¿½ ï¿½ï¿½
 	if (!bIsRepairingInputDown) return;
 
-	// 2. ½Ã¼± Æ®·¹ÀÌ½º (RepairTraceLength »ç¿ë)
+	// 2. ï¿½Ã¼ï¿½ Æ®ï¿½ï¿½ï¿½Ì½ï¿½ (RepairTraceLength ï¿½ï¿½ï¿½)
 	FVector TraceStart;
 	FRotator TraceRot;
 
-	// [ÇÙ½É ºĞ±â] ¼ö¸® Æ®·¹ÀÌ½º À§Ä¡ °áÁ¤
+	// [ï¿½Ù½ï¿½ ï¿½Ğ±ï¿½] ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½Ì½ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½
 	if (EquippedTool && !EquippedTool->bIsOnCooldown)
 	{
-		// Å¸ÀÌ¸Ó ¾È µµ´Â Áß: Åø ¾ÕºÎºĞ¿¡¼­ ¹ß»ç
+		// Å¸ï¿½Ì¸ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½: ï¿½ï¿½ ï¿½ÕºÎºĞ¿ï¿½ï¿½ï¿½ ï¿½ß»ï¿½
 		TraceStart = EquippedTool->TraceMuzzle->GetComponentLocation();
 		TraceRot = EquippedTool->TraceMuzzle->GetComponentRotation();
 	}
 	else
 	{
-		// Å¸ÀÌ¸Ó µµ´Â Áß (¶Ç´Â Åø ¾øÀ½): Ä³¸¯ÅÍ Á¤¸é(Ä«¸Ş¶ó)¿¡¼­ ¹ß»ç
+		// Å¸ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ (ï¿½Ç´ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½): Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(Ä«ï¿½Ş¶ï¿½)ï¿½ï¿½ï¿½ï¿½ ï¿½ß»ï¿½
 		if (FPSCamera) {
 			TraceStart = FPSCamera->GetComponentLocation();
 			TraceRot = FPSCamera->GetComponentRotation();
@@ -1108,22 +1058,22 @@ void APSJ_Character::UpdateRepairLogic()
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 
-	// °¡½Ã¼º(Visibility) Ã¤³Î·Î Ã¼Å©
+	// ï¿½ï¿½ï¿½Ã¼ï¿½(Visibility) Ã¤ï¿½Î·ï¿½ Ã¼Å©
 	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams);
 
 	// =========================================================
-	// [½Å±Ô] ºñÁÖ¾ó µğ¹ö±× ¶óÀÎ ±×¸®±â (ÁÂÅ¬¸¯ À¯Áö ½Ã º¸ÀÓ)
+	// [ï¿½Å±ï¿½] ï¿½ï¿½ï¿½Ö¾ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½ (ï¿½ï¿½Å¬ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	// =========================================================
 	if (bHit)
 	{
-		// Ãæµ¹ ÁöÁ¡±îÁö ÃÊ·Ï»ö ¼±
+		// ï¿½æµ¹ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê·Ï»ï¿½ ï¿½ï¿½
 		DrawDebugLine(GetWorld(), TraceStart, HitResult.ImpactPoint, FColor::Green, false, 0.1f, 0, 1.0f);
-		// Ãæµ¹ À§Ä¡¿¡ Á¡ Âï±â
+		// ï¿½æµ¹ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½
 		DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 10.0f, FColor::Green, false, 0.1f);
 	}
 	else
 	{
-		// Çã°ø¿¡ »¡°£»ö ¼±
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
 		DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 0.1f, 0, 1.0f);
 	}
 	// =========================================================
@@ -1134,15 +1084,15 @@ void APSJ_Character::UpdateRepairLogic()
 		HitCockpit = Cast<APSJ_ShipCockpit>(HitResult.GetActor());
 	}
 
-	// 3. ¼ö¸® °¡´É ¿©ºÎ ÆÇ´Ü
+	// 3. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ç´ï¿½
 	bool bCanRepair = false;
 
 	if (HitCockpit)
 	{
-		// (1) °íÀå³­ »óÅÂÀÎ°¡?
+		// (1) ï¿½ï¿½ï¿½å³­ ï¿½ï¿½ï¿½ï¿½ï¿½Î°ï¿½?
 		if (HitCockpit->bIsMalfunctioning)
 		{
-			// (2) °Å¸®°¡ °¡±î¿î°¡? (RepairMaxDistance Ã¼Å©)
+			// (2) ï¿½Å¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½î°¡? (RepairMaxDistance Ã¼Å©)
 			float Dist = FVector::Dist(GetActorLocation(), HitCockpit->GetActorLocation());
 			if (Dist <= RepairMaxDistance)
 			{
@@ -1150,27 +1100,27 @@ void APSJ_Character::UpdateRepairLogic()
 			}
 			else
 			{
-				// [¼±ÅÃ »çÇ×] È­¸é¿¡ "³Ê¹« ¸ÖÀ½!" ¸Ş½ÃÁö ¶ç¿ì±â °¡´É
+				// [ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½] È­ï¿½é¿¡ "ï¿½Ê¹ï¿½ ï¿½ï¿½ï¿½ï¿½!" ï¿½Ş½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 				// PrintString: Too Far to Repair!
 			}
 		}
 	}
 
-	// 4. »óÅÂ º¯È­ Ã³¸®
+	// 4. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È­ Ã³ï¿½ï¿½
 	if (bCanRepair)
 	{
-		// [Ãß°¡] ¹æ±İ ¸· ¼ö¸®¸¦ ½ÃÀÛÇÑ ÂüÀÌ¶ó¸é ÀÌµ¿ °­Á¦ Á¤Áö
+		// [ï¿½ß°ï¿½] ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¶ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		if (!bIsActivelyRepairing)
 		{
-			// ÀÔ·Â º¤ÅÍ ÃÊ±âÈ­ ¹× ¼­¹ö Àü¼Û
+			// ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 			CurrentInputVector = FVector2D::ZeroVector;
 			Server_SetInputVector(FVector2D::ZeroVector);
 
-			// ¹°¸®ÀûÀÎ ÀÌµ¿ °¡¼Óµµ(°ü¼º) Áï½Ã Á¦°Å
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½ï¿½Óµï¿½(ï¿½ï¿½ï¿½ï¿½) ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 			GetCharacterMovement()->Velocity = FVector::ZeroVector;
 		}
 
-		bIsActivelyRepairing = true; // ¼ö¸® »óÅÂ È°¼ºÈ­
+		bIsActivelyRepairing = true; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È°ï¿½ï¿½È­
 
 		if (ClientRepairTarget != HitCockpit)
 		{
@@ -1191,37 +1141,37 @@ void APSJ_Character::UpdateRepairLogic()
 	}
 }
 
-// [¼­¹ö] ¼ö¸® ½ÃÀÛ
+// [ï¿½ï¿½ï¿½ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 bool APSJ_Character::Server_StartRepair_Validate(APSJ_ShipCockpit* TargetCockpit) { return true; }
 void APSJ_Character::Server_StartRepair_Implementation(APSJ_ShipCockpit* TargetCockpit)
 {
 	if (TargetCockpit)
 	{
-		// ÄÛÇÍ¿¡ ³ª¸¦ µî·Ï (¼ö¸® ÀÎ¿ø +1)
+		// ï¿½ï¿½ï¿½Í¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½Î¿ï¿½ +1)
 		TargetCockpit->AddRepairer(this);
 
-		// ¼­¹öµµ ³»°¡ ´©±¼ ¼ö¸®ÇÏ´ÂÁö ±â¾ïÇØµÒ (³ªÁß¿¡ ²÷±æ ¶§ ´ëºñ)
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Øµï¿½ (ï¿½ï¿½ï¿½ß¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½)
 		ServerRepairTarget = TargetCockpit;
 	}
-	// [Ãß°¡] ¼­¹ö°¡ "¾ê ¼ö¸® ÁßÀÓ"ÀÌ¶ó°í µµÀå Âï¾î¼­ ¸ğµÎ¿¡°Ô Àü¼Û
+	// [ï¿½ß°ï¿½] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ "ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½"ï¿½Ì¶ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½î¼­ ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	bIsActivelyRepairing = true;
 }
 
-// [¼­¹ö] ¼ö¸® Áß´Ü
+// [ï¿½ï¿½ï¿½ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ß´ï¿½
 bool APSJ_Character::Server_StopRepair_Validate() { return true; }
 void APSJ_Character::Server_StopRepair_Implementation()
 {
-	// ³»°¡ ±â¾ïÇÏ°í ÀÖ´Â ÄÛÇÍ¿¡°Ô¼­ ³ª¸¦ Á¦°Å
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½Í¿ï¿½ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (ServerRepairTarget)
 	{
 		ServerRepairTarget->RemoveRepairer(this);
 		ServerRepairTarget = nullptr;
 	}
-	// [Ãß°¡] ¼ö¸® ³¡³µ´Ù°í ¸ğµÎ¿¡°Ô Àü¼Û
+	// [ï¿½ß°ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ù°ï¿½ ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	bIsActivelyRepairing = false;
 }
 
-// 2. ÆÄÀÏ ¸Ç ¾Æ·¡(È¤Àº ÆíÇÑ °÷)¿¡ ±¸ÇöºÎ¸¦ Ãß°¡ÇÏ¼¼¿ä.
+// 2. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Æ·ï¿½(È¤ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Î¸ï¿½ ï¿½ß°ï¿½ï¿½Ï¼ï¿½ï¿½ï¿½.
 void APSJ_Character::Input_SprintStart(const FInputActionValue& Value)
 {
 	bIsSprinting = true;
@@ -1232,7 +1182,7 @@ void APSJ_Character::Input_SprintStop(const FInputActionValue& Value)
 	bIsSprinting = false;
 }
 
-// --- ÀÔ·Â º¤ÅÍ µ¿±âÈ­ RPC ---
+// --- ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½È­ RPC ---
 bool APSJ_Character::Server_SetInputVector_Validate(FVector2D NewInput)
 {
 	return true;
@@ -1240,11 +1190,11 @@ bool APSJ_Character::Server_SetInputVector_Validate(FVector2D NewInput)
 
 void APSJ_Character::Server_SetInputVector_Implementation(FVector2D NewInput)
 {
-	// ¼­¹ö°¡ Å¬¶óÀÌ¾ğÆ®ÀÇ ÀÔ·Â°ªÀ» ¹Ş¾Æ¼­ ÀÚ±â º¯¼ö¿¡ ¾÷µ¥ÀÌÆ®
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®ï¿½ï¿½ ï¿½Ô·Â°ï¿½ï¿½ï¿½ ï¿½Ş¾Æ¼ï¿½ ï¿½Ú±ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
 	CurrentInputVector = NewInput;
 }
 
-// --- ´Ş¸®±â µ¿±âÈ­ RPC ---
+// --- ï¿½Ş¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½È­ RPC ---
 bool APSJ_Character::Server_SetSprinting_Validate(bool bNewSprinting)
 {
 	return true;

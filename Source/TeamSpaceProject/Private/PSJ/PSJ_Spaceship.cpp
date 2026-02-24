@@ -34,6 +34,32 @@ APSJ_Spaceship::APSJ_Spaceship()
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
+void APSJ_Spaceship::Client_BoardingSuccess_Implementation()
+{
+	Super::Client_BoardingSuccess_Implementation();
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+		{
+			Subsystem->ClearAllMappings();
+			if (ShipMappingContext)
+			{
+				Subsystem->AddMappingContext(ShipMappingContext, 0);
+			}
+		}
+	}
+
+	UUIManager* _outUIManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
+		return;
+	APlayerController* _pc = CurrentPilot ? Cast<APlayerController>(CurrentPilot->GetController()) : nullptr;
+	if (_pc && _outUIManager)
+	{
+		_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
+	}
+}
+
 void APSJ_Spaceship::Input_ThrustForward(const FInputActionValue& Value)
 {
 	Server_ThrustForward(Value.Get<float>());
@@ -304,30 +330,6 @@ void APSJ_Spaceship::SetPilot(APSJ_Character* NewPilot)
 				CMC->DisableMovement();
 			}
 		}
-	}
-}
-
-void APSJ_Spaceship::Client_BoardingSuccess_Implementation()
-{
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
-		{
-			Subsystem->ClearAllMappings();
-			if (ShipMappingContext)
-			{
-				Subsystem->AddMappingContext(ShipMappingContext, 0);
-			}
-		}
-	}
-
-	UUIManager* _outUIManager = nullptr;
-	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
-		return;
-	APlayerController* _pc = CurrentPilot ? Cast<APlayerController>(CurrentPilot->GetController()) : nullptr;
-	if (_pc && _outUIManager)
-	{
-		_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
 	}
 }
 

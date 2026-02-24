@@ -2,6 +2,7 @@
 
 
 #include "PSJ/TaskPawnBase.h"
+#include "PSJ_Character.h" 
 
 // Sets default values
 ATaskPawnBase::ATaskPawnBase()
@@ -32,3 +33,24 @@ void ATaskPawnBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 }
 
+void ATaskPawnBase::SetPilot(ACharacter* Character)
+{
+	/*CurrentPilot = NewPilot;
+	if (CurrentPilot)
+	{
+		if (RidePoint)
+		{
+			CurrentPilot->SetActorEnableCollision(false);
+			CurrentPilot->AttachToComponent(RidePoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+			if (auto* CMC = CurrentPilot->GetCharacterMovement())
+			{
+				CMC->StopMovementImmediately();
+				CMC->DisableMovement();
+			}
+		}
+	}*/
+}
+
+void ATaskPawnBase::Client_BoardingSuccess_Implementation()
+{
+}
