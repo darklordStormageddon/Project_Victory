@@ -11,7 +11,7 @@
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 
 #include "JHS/Player/SpaceStation.h"
-
+#include "PSJ/PSJ_Spaceship.h"
 // Sets default values for this component's properties
 UDistanceComponent::UDistanceComponent()
 {
@@ -27,7 +27,7 @@ void UDistanceComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	OwnerActor = GetOwner();
+	OwnerActor = Cast<APSJ_Spaceship>(GetOwner());
 
 	if (UStaticFunctionLibrary::TryGetGameMode(InGameMode) && InGameMode)
 	{
@@ -98,4 +98,9 @@ double UDistanceComponent::CalculateDistance(const FVector& FromTarget, const FV
 	return (ToTarget - FromTarget).Size();
 }
 
+//void UDistanceComponent::OverDistance()
+//{
+//	OwnerActor->
+//
+//}
 //SpaceShip이 해줘야 하는 일은 구독 될 함수를 구현하기(피 다는 것)

@@ -14,6 +14,7 @@ class UEventOnStartStage;
 class UEventOnEndStage;
 
 class ASpaceStation;
+class APSJ_Spaceship;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDistanceDamaged);
 
@@ -25,7 +26,7 @@ class UDistanceComponent : public UActorComponent
 private:
 	TObjectPtr<ASpaceStation> SpaceStation = nullptr;
 
-	AActor* OwnerActor = nullptr;
+	APSJ_Spaceship* OwnerActor = nullptr;
 
 private:
 	AJHSGameMode* InGameMode = nullptr;
