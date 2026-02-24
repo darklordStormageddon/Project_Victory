@@ -127,23 +127,21 @@ void USpawnSequenceComponent::EndSequence()
 
 void USpawnSequenceComponent::OnStaticAsteroidComplete()
 {
-	// 2단계: 인공위성 스폰
+	// 드론 라운드를 먼저 시작 (CurrentRound 설정)
+	// → HandleSatelliteSpawned에서 위성 하나마다 드론 생성됨
+	if (EnemyManager)
+	{
+		EnemyManager->StartRound(CurrentRound);
+	}
+
+	// 인공위성 스폰 시작
 	if (SatelliteManager)
 	{
 		SatelliteManager->StartSpawn();
-	}
-	else
-	{
-		// 없으면 3단계로
-		OnAllSatellitesComplete();
 	}
 }
 
 void USpawnSequenceComponent::OnAllSatellitesComplete()
 {
-	// 3단계: 드론 스폰
-	if (EnemyManager)
-	{
-		EnemyManager->StartRound(CurrentRound);
-	}
+	// 위성이 다 생성된 시점 (필요하면 여기서 추가 로직)
 }

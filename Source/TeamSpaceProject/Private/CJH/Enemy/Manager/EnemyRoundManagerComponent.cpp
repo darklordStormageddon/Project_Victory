@@ -34,7 +34,6 @@ void UEnemyManagerComponent::StartRound(int32 Round)
 		return;
 
 	CurrentRound = Round;
-	SpawnForExistingSatellites();
 }
 
 void UEnemyManagerComponent::EndRound()
