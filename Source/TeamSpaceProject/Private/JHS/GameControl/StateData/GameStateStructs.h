@@ -74,6 +74,9 @@ public:
 
 	/** 구매 버튼 클릭 시 실행할 콜백. UPROPERTY 미지원이므로 직렬화/복제되지 않음. */
 	FOnPurchaseRequested OnPurchaseRequested;
+
+	UPROPERTY()
+	bool IsPurchaseable = true;
 };
 
 #pragma region SpaceShip
@@ -107,6 +110,7 @@ public:
 #pragma endregion SpaceShip
 
 #pragma region Player
+/** 서버에서 접속 시 발급·복제하는 플레이어 ID. UI/Interact 호출자 구별용. */
 USTRUCT(BlueprintType)
 struct FPlayerStateData
 {
@@ -118,6 +122,10 @@ public:
 
 	UPROPERTY()
 	int32 PlayerUID = 0;
+
+	/** 서버에서 접속 시 발급한 ID (복제되어 서버/클라이언트 동일). 호출자 구별·Interact 필터에 사용. */
+	UPROPERTY()
+	int32 AssignedPlayerId = -1;
 
 	UPROPERTY()
 	FString PlayerName = "";

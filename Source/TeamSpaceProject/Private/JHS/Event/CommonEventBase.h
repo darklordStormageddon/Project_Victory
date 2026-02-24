@@ -82,6 +82,9 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|SpaceShipData")
 	E_INTERACT_TYPE InteractType = E_INTERACT_TYPE::NONE;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|SpaceShipData")
+	int32 PlayerID = -1;
 };
 
 UCLASS(BlueprintType)

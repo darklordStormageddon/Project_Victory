@@ -7,6 +7,7 @@
 #include "StaticFunctionLibrary.generated.h"
 
 class AJHSGameMode;
+class AJHSPlayerController;
 class AJHSGameState;
 class USpaceObjectManager;
 class UUIManager;
@@ -20,6 +21,9 @@ class UStaticFunctionLibrary : public UBlueprintFunctionLibrary
 public:
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|GameMode")
     static bool TryGetGameMode(AJHSGameMode*& OutGameMode);
+
+    UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|GameMode")
+    static bool TryGetPlayerController(AJHSPlayerController*& OutPlayerController);
 
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|GameState")
     static bool TryGetGameState(AJHSGameState*& OutGameState);

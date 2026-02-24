@@ -44,6 +44,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UIManager")
 	UUIBase* GetUI(E_UI_TYPE UIType) const;
 
+private:
+	UUIBase* OpenUIInternal(E_UI_TYPE UIType);
+
 	template<typename T>
 	T* LoadUI(E_UI_TYPE UIType)
 	{

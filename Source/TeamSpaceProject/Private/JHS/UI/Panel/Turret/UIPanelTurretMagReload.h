@@ -37,5 +37,5 @@ protected:
 public:
 	void OnChangeTurret(UEventOnChangeTurretData* Event);
 
-	void Initialize(E_TURRET_POSITION TurretPosition);
+	void InitializeMagReload(E_TURRET_POSITION TurretPosition);
 };

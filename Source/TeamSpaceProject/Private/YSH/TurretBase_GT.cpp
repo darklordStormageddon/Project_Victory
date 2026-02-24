@@ -565,7 +565,10 @@ void ATurretBase_GT::DisembarkCharacter()
 	// 연결된 콕핏에 하차 알림 (필요하다면)
 	if (LinkedCockpit)
 	{
-		LinkedCockpit->OnInteractExit(ExitingChar, nullptr);
+		APlayerController* _callerPC = ExitingChar ? Cast<APlayerController>(ExitingChar->GetController()) : nullptr;
+		APlayerState* _callerPS = _callerPC ? _callerPC->GetPlayerState<APlayerState>() : nullptr;
+		int32 _callerPlayerId = _callerPS ? _callerPS->GetPlayerId() : -1;
+		LinkedCockpit->OnInteractExit(_callerPlayerId, nullptr);
 		LinkedCockpit = nullptr;
 	}
 

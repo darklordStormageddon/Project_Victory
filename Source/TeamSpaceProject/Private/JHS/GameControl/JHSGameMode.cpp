@@ -2,18 +2,19 @@
 
 
 #include "JHS/GameControl/JHSGameMode.h"
-#include "JHS/UI/UIManager.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
 #include "JHS/GameControl/SpaceManager.h"
-
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/JHSPlayerController.h"
+#include "JHS/GameControl/JHSPlayerState.h"
+#include "JHS/GameControl/StateData/PlayerStateGroup.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
+#include "GameFramework/PlayerState.h"
 
 AJHSGameMode::AJHSGameMode()
 {
-	_uiManager = CreateDefaultSubobject<UUIManager>(TEXT("UIManager"));
 	_eventManager = CreateDefaultSubobject<UEventManager>(TEXT("EventManager"));
 	_spaceManager = CreateDefaultSubobject<USpaceManager>(TEXT("SpaceManager"));
 }
@@ -26,6 +27,46 @@ void AJHSGameMode::InitGame(const FString& MapName, const FString& Options, FStr
 void AJHSGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void AJHSGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	if (NewPlayer == nullptr)
+		return;
+
+	AJHSPlayerState* _jhsPS = NewPlayer->GetPlayerState<AJHSPlayerState>();
+	if (_jhsPS == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AJHSGameMode::PostLogin - NewPlayer has no AJHSPlayerState, skip TryRegistPlayer"));
+		return;
+	}
+
+	AJHSGameState* _gameState = GetGameState<AJHSGameState>();
+	if (_gameState == nullptr || _gameState->GetPlayerStateGroup() == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AJHSGameMode::PostLogin - GameState or PlayerStateGroup is null, skip TryRegistPlayer"));
+		return;
+	}
+
+	FString _playerName = _jhsPS->GetPlayerName();
+	if (_playerName.IsEmpty())
+		_playerName = TEXT("Player");
+
+	E_REGIST_ERROR_TYPE _errorType = E_REGIST_ERROR_TYPE::NONE;
+	if (!_gameState->GetPlayerStateGroup()->TryRegistPlayer(_jhsPS, _playerName, _errorType))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AJHSGameMode::PostLogin - TryRegistPlayer failed for %s, ErrorType=%d"), *_playerName, (int32)_errorType);
+		return;
+	}
+
+	const int32 _assignedId = _jhsPS->GetAssignedPlayerId();
+	AJHSPlayerController* _jhsPC = Cast<AJHSPlayerController>(NewPlayer);
+	if (_jhsPC != nullptr)
+		_jhsPC->SetAssignedPlayerId(_assignedId);
+
+	UE_LOG(LogTemp, Log, TEXT("AJHSGameMode::PostLogin - TryRegistPlayer ok, AssignedPlayerId=%d Name=%s (PC에도 저장)"), _assignedId, *_playerName);
 }
 
 void AJHSGameMode::StartGame(AActor* Caller)

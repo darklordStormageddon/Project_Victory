@@ -124,7 +124,7 @@ void APSJ_Spaceship::BeginPlay()
 	if (HealthComp)
 	{
 		HealthComp->OnDamaged.AddDynamic(this, &APSJ_Spaceship::OnTakeDamage);
-		////ÀÓ½Ã Á×À½(³ªÁß¿¡ Á¦°Å)
+		//ì‚¬ë§ êµ¬í˜„(ë‚˜ì¤‘ì— êµ¬í˜„)
 		//HealthComp->OnDeath.AddDynamic(this, &APSJ_Spaceship::OnDeath);
 	}
 
@@ -138,7 +138,8 @@ void APSJ_Spaceship::BeginPlay()
 			UUIManager* _outUIManager = nullptr;
 			if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
 				return;
-			//_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
+
+			_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
 		},
 		1.f,
 		false);
@@ -208,21 +209,21 @@ void APSJ_Spaceship::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// [½Å±Ô] ¼Óµµ Á¦ÇÑ ·ÎÁ÷ Ãß°¡
-	// ShipRootComponent°¡ À¯È¿ÇÏ°í, ¹°¸® ½Ã¹Ä·¹ÀÌ¼Ç ÁßÀÏ ¶§¸¸ µ¿ÀÛ
+	// [ì¤‘ìš”] ìµœëŒ€ ì†ë„ ì œí•œ ë¡œì§
+	// ShipRootComponentê°€ ì¡´ìž¬í•˜ê³ , ë¬¼ë¦¬ ì‹œë®¬ë ˆì´ì…˜ ì¤‘ì´ë©´ ì†ë„ ì œí•œ ì ìš©
 	if (ShipRootComponent && ShipRootComponent->IsSimulatingPhysics())
 	{
-		// 1. ÇöÀç ¼Óµµ °¡Á®¿À±â
+		// 1. í˜„ìž¬ ì†ë„ ë²¡í„°ë¥¼ê°€ì ¸ì˜´
 		FVector CurrentVelocity = ShipRootComponent->GetComponentVelocity();
 		float CurrentSpeed = CurrentVelocity.Size();
 
-		// 2. ÇöÀç ¼Óµµ°¡ Á¦ÇÑ ¼Óµµº¸´Ù ºü¸£´Ù¸é?
+		// 2. í˜„ìž¬ ì†ë„ê°€ ìµœëŒ€ ì†ë„ë³´ë‹¤ í¬ë©´ ì œí•œí•¨
 		if (CurrentSpeed > MaxSpeed)
 		{
-			// 3. ¹æÇâÀº À¯ÁöÇÑ Ã¤, Å©±â¸¸ MaxSpeed·Î Á¶Àý (Clamping)
+			// 3. ë°©í–¥ì€ ìœ ì§€í•œ ì±„, í¬ê¸°ë¥¼ MaxSpeedë¡œ ê³ ì • (Clamping)
 			FVector ClampedVelocity = CurrentVelocity.GetSafeNormal() * MaxSpeed;
 
-			// 4. Á¶ÀýµÈ ¼Óµµ¸¦ ¹°¸® ¿£Áø¿¡ °­Á¦ Àû¿ë
+			// 4. ì œí•œëœ ì†ë„ë¡œ ë¬¼ë¦¬ ì†ë„ë¥¼ ì§ì ‘ ì„¤ì •
 			ShipRootComponent->SetPhysicsLinearVelocity(ClampedVelocity);
 		}
 	}
@@ -321,7 +322,10 @@ void APSJ_Spaceship::Client_BoardingSuccess_Implementation()
 	}
 
 	UUIManager* _outUIManager = nullptr;
-	if (UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
+	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
+		return;
+	APlayerController* _pc = CurrentPilot ? Cast<APlayerController>(CurrentPilot->GetController()) : nullptr;
+	if (_pc && _outUIManager)
 	{
 		_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
 	}
@@ -337,27 +341,30 @@ void APSJ_Spaceship::DisembarkCharacter()
 	CurrentPilot = nullptr;
 	if (LinkedCockpit)
 	{
-		LinkedCockpit->OnInteractExit(ExitingChar, nullptr);
+		APlayerController* _callerPC = ExitingChar ? Cast<APlayerController>(ExitingChar->GetController()) : nullptr;
+		APlayerState* _callerPS = _callerPC ? _callerPC->GetPlayerState<APlayerState>() : nullptr;
+		int32 _callerPlayerId = _callerPS ? _callerPS->GetPlayerId() : -1;
+		LinkedCockpit->OnInteractExit(_callerPlayerId, nullptr);
 		LinkedCockpit = nullptr;
 	}
 
 	FVector SpawnLoc = ExitPoint ? ExitPoint->GetComponentLocation() : GetActorLocation();
 	FRotator SpawnRot = ExitPoint ? ExitPoint->GetComponentRotation() : GetActorRotation();
 
-	// 1. ±âÁ¸ ¿¬°á ÇØÁ¦
+	// 1. ê¸°ì¡´ ë¶€ì°© í•´ì œ
 	ExitingChar->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
-	// 2. À§Ä¡ ÀÌµ¿
+	// 2. ìœ„ì¹˜ ì„¤ì •
 	ExitingChar->SetActorLocationAndRotation(SpawnLoc, SpawnRot, false, nullptr, ETeleportType::TeleportPhysics);
 
-	// 3. [Á¤»óÈ­] Attach¸¸ ¼öÇà (¿ëÁ¢ X)
+	// 3. [ì¤‘ìš”í•¨] Attachë¥¼ ìœ ì§€ (ìœ„ì¹˜ëŠ” X)
 	ExitingChar->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 
-	// 4. ÀÌµ¿ ¸ðµå Custom ¼³Á¤ (Àý´ë DisableMovement ±ÝÁö)
+	// 4. ì´ë™ ëª¨ë“œ Custom ì„¤ì • (ì›ëž˜ëŠ” DisableMovement ì˜€ìŒ)
 	ExitingChar->GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 	ExitingChar->SetReplicateMovement(false);
 
-	// 5. ¼­¹ö µ¥ÀÌÅÍ °»½Å
+	// 5. ë² ì´ìŠ¤ ì•¡í„°ë¡œ ì„¤ì •
 	ExitingChar->SetBaseActorData(this);
 
 	ExitingChar->SetActorEnableCollision(true);
@@ -366,7 +373,7 @@ void APSJ_Spaceship::DisembarkCharacter()
 	// 6. Client RPC
 	Client_DisembarkSuccess(ExitingChar, SpawnLoc, SpawnRot);
 
-	// 7. Á¦¾î±Ç ¹ÝÈ¯
+	// 7. ìºë¦­í„° ë¹™ì˜
 	if (ShipController)
 	{
 		ShipController->Possess(ExitingChar);
@@ -377,21 +384,21 @@ void APSJ_Spaceship::Client_DisembarkSuccess_Implementation(APSJ_Character* Exit
 {
 	if (!ExitingPilot) return;
 
-	// 1. ¹°¸® µ¥ÀÌÅÍ ÃÊ±âÈ­ (E0265 ¿¡·¯ ÇØ°á: StopMovementImmediately »ç¿ë)
+	// 1. ë¨¼ì € ì›€ì§ìž„ì„ ì •ì§€ (E0265 ë²„ê·¸ í•´ê²°: StopMovementImmediately ì‚¬ìš©)
 	if (UCharacterMovementComponent* CMC = ExitingPilot->GetCharacterMovement())
 	{
-		CMC->StopMovementImmediately(); // ¼Óµµ¿Í °¡¼Óµµ¸¦ ¸ðµÎ 0À¸·Î ¸¸µì´Ï´Ù.
-		CMC->SetMovementMode(MOVE_Custom); // ¿£ÁøÀÌ WalkingÀ¸·Î ¹Ù²ÙÁö ¸øÇÏ°Ô Áï½Ã ´Ù½Ã ¼³Á¤
+		CMC->StopMovementImmediately(); // ì†ë„ì™€ ê°€ì†ë„ë¥¼ ëª¨ë‘ 0ìœ¼ë¡œ ì´ˆê¸°í™”í•¨.
+		CMC->SetMovementMode(MOVE_Custom); // ëª¨ë“œë¥¼ Walkingìœ¼ë¡œ ë°”ë¡œ ë°”ê¾¸ë©´ ì†ë„ê°€ ê³„ì† ë‚¨ì•„ìžˆìŒ
 	}
 
-	// 2. Ãæµ¹ ¹«½Ã ¹× À§Ä¡ ¹èÄ¡
+	// 2. ì„œë¡œ ì¶©ëŒ ì•ˆ ë˜ê²Œ ì„¤ì •
 	ExitingPilot->MoveIgnoreActorRemove(this);
 	this->MoveIgnoreActorRemove(ExitingPilot);
 
 	FVector SafeExitLoc = ExitLoc + GetActorUpVector() * 15.0f;
 	ExitingPilot->SetActorLocationAndRotation(SafeExitLoc, ExitRot, false, nullptr, ETeleportType::TeleportPhysics);
 
-	// 3. ¿ìÁÖ¼± ºÎÂø ¹× µ¥ÀÌÅÍ °»½Å
+	// 3. ìš°ì£¼ì„ ì— ë¶™ì¸ í›„ í•˜ì„ ìƒíƒœ ì‹œìž‘
 	ExitingPilot->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 	ExitingPilot->StartDisembarkState();
 	ExitingPilot->SetBaseActorData(this);

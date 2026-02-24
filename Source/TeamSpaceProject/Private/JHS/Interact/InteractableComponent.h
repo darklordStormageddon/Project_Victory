@@ -10,11 +10,13 @@
 
 #include "InteractableComponent.generated.h"
 
+class APlayerController;
+class AJHSPlayerController;
 class UInteracterComponent;
 class UUIManager;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInteractEnterAction, AActor*, Caller, UUIBase*, OpenedUI);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInteractExitAction, AActor*, Caller, UUIBase*, ClosedUI);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInteractEnterAction, int32, CallerPlayerId, UUIBase*, OpenedUI);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInteractExitAction, int32, CallerPlayerId, UUIBase*, ClosedUI);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractInterruptAction);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -28,18 +30,21 @@ public:
 
 private:
 	UPROPERTY()
+	TObjectPtr<UUIManager> _uiManager = nullptr;
+
+	UPROPERTY()
 	TObjectPtr<USphereComponent> _collisionComponent = nullptr;
 
 	UPROPERTY()
 	TObjectPtr<UInteracterComponent> _interacter = nullptr;
 
+	/** 로컬 PlayerController 캐시 (GetPlayerController 호출 최소화). */
+	TWeakObjectPtr<AJHSPlayerController> _cachedLocalPlayerController;
+
 	bool _isInteract = false;
 
 	UPROPERTY()
 	TObjectPtr<UInteracterComponent> _InterruptInteracter = nullptr;
-
-	UPROPERTY()
-	TObjectPtr<UUIManager> _uiManager = nullptr;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact|Debug")
@@ -94,10 +99,49 @@ public:
 	void OnTriggerExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 public:
-	void InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType, bool IsWorldSpaceUI, FVector WorldUIRelativeLocation, float WorldUIScale);
+	/** Client RPC 수신 측에서 호출. 로컬 Pawn의 Interacter에 OnInteractable 호출 (복제 타이밍 무관). */
+	void ExecuteTriggerEnterForLocalPlayer(E_INTERACT_TYPE InteractType);
 
-	bool TryInteract(AActor* Caller, bool& OutIsInterupt, bool& IsCloseUI);
+	/** Client RPC 수신 측에서 호출. 로컬 Pawn의 Interacter에 OnDisInteractable 호출 (복제 타이밍 무관). */
+	void ExecuteTriggerExitForLocalPlayer();
+
+	// 서버 전용: 트리거 진입/이탈 로직 (InteracterComponent의 Server RPC에서 호출, 레벨 액터는 owning connection 없어 직접 Server RPC 불가)
+	void ExecuteServerTriggerEnter(AActor* OtherActor);
+	void ExecuteServerTriggerExit(AActor* OtherActor);
 
 private:
-	void ChangeInteractState(bool IsInteract, AActor* Caller);
+	/** 호출자 구별: 서버에서 발급·복제한 AssignedPlayerId (FPlayerStateData와 동일). */
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastOnTriggerEnter(int32 CallerAssignedPlayerId, E_INTERACT_TYPE InteractType);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastOnTriggerExit(int32 CallerAssignedPlayerId);
+
+	/** 캐시된 로컬 PlayerController 반환 또는 조회 후 캐시. */
+	bool GetOrCacheLocalPlayerController(AJHSPlayerController*& OutController);
+
+	/** 멀티캐스트 수신 측: AssignedPlayerId에 해당하는 PC를 찾고, 그 PC가 로컬일 때만 반환. (로컬 PC 우선 조회에 의존하지 않음) */
+	bool FindLocalPlayerControllerByAssignedId(UWorld* World, int32 AssignedPlayerId, AJHSPlayerController*& OutController);
+
+public:
+	void InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType, bool IsWorldSpaceUI, FVector WorldUIRelativeLocation, float WorldUIScale);
+
+	bool TryInteract(APlayerController* CallerController, bool& OutIsInterupt, bool& IsCloseUI);
+
+private:
+	UFUNCTION(Server, Reliable)
+	void ServerOpenWorldUI(int32 CallerPlayerId, E_UI_TYPE UIType);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastOpenWorldUI(int32 CallerPlayerId, E_UI_TYPE UIType);
+
+	UFUNCTION(Server, Reliable)
+	void ServerCloseWorldUI(int32 CallerPlayerId, E_UI_TYPE UIType);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastCloseWorldUI(int32 CallerPlayerId, E_UI_TYPE UIType);
+
+	void ChangeInteractState(bool IsInteract, int32 CallerPlayerId);
+
+	bool TryGetUIManager(UUIManager*& OutUIManager);
 };
