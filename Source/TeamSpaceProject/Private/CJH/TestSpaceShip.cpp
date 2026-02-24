@@ -3,48 +3,55 @@
 
 #include "CJH/TestSpaceShip.h"
 
-#include "JHS/GameControl/StaticFunctionLibrary.h"
-#include "JHS/GameControl/JHSGameState.h"
-#include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
-
-#include "KSM/HealthComponent.h"
-
-#include "JHS/UI/UIManager.h"
-
 // Sets default values
 ATestSpaceShip::ATestSpaceShip()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+	ShieldRoot = CreateDefaultSubobject<USceneComponent>(TEXT("ShieldRoot"));
+	ShieldRoot->SetupAttachment(RootComponent);
+
+	ShieldMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShieldMesh"));
+	ShieldMesh->SetupAttachment(ShieldRoot);
+
+	ShieldMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ShieldMesh->SetHiddenInGame(true);
 }
 
 // Called when the game starts or when spawned
 void ATestSpaceShip::BeginPlay()
 {
 	Super::BeginPlay();
-	// ...
 
+}
 
-	HealthComp->OnDamaged.AddDynamic(this, &ATestSpaceShip::OnTakeDamage);
-	HealthComp->OnDeath.AddDynamic(this, &ATestSpaceShip::OnDeath);
+void ATestSpaceShip::OnTakeDamage(float Damage)
+{
+	//Super::OnTakeDamage(Damage);
 
-	FTimerHandle TestDelay;
+	if (!ShieldMesh)
+		return;
 
-	GetWorld()->GetTimerManager().SetTimer(
-		TestDelay, 
-		[this]() {
-			UUIManager* _outUIManager = nullptr;
+	ShieldMesh->SetHiddenInGame(false);
 
-			if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
-			return;
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(ShieldAlphaTimerHandle);
+		GetWorld()->GetTimerManager().SetTimer(
+			ShieldAlphaTimerHandle,
+			this,
+			&ATestSpaceShip::HideShield,
+			ShieldDisplayDuration,
+			false
+		);
+	}
+}
 
-			_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
-		}, 
-		1.f, 
-		false);
-
+void ATestSpaceShip::HideShield()
+{
+	if (ShieldMesh)
+		ShieldMesh->SetHiddenInGame(true);
 }
 
 // Called every frame
@@ -52,30 +59,4 @@ void ATestSpaceShip::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-}
-
-void ATestSpaceShip::OnTakeDamage(float Damage)
-{
-	if(GetSpaceShipStateGroup())
-		_spaceShipStateGroup->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, Damage);
-}
-
-void ATestSpaceShip::OnDeath()
-{
-	this->Destroy();
-}
-
-USpaceShipStateGroup* ATestSpaceShip::GetSpaceShipStateGroup()
-{
-	if (_spaceShipStateGroup)
-		return _spaceShipStateGroup;
-
-	AJHSGameState* _outGameState = nullptr;
-
-	if (UStaticFunctionLibrary::TryGetGameState(_outGameState))
-	{
-		_spaceShipStateGroup = _outGameState->GetSpaceShipStateGroup();
-	}
-
-	return _spaceShipStateGroup;
 }
