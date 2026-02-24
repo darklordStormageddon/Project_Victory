@@ -76,7 +76,7 @@ void APSJ_Character::BeginPlay()
 
 		if (EquippedTool)
 		{
-			EquippedTool->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("toollocation_1"));
+			EquippedTool->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("Gun"));
 		}
 	}
 
@@ -910,67 +910,67 @@ void APSJ_Character::Server_SetAnchoring_Implementation(AActor* NewBase)
 // 입력 처리 함수 (클라이언트)
 void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
 {
-	// 내가 탑승 중이면 실행 불가 (내부에서 내리는 건 Interact 키로)
 	if (CurrentSpaceship) return;
 
-	FVector TraceStart;
-	FRotator TraceRot;
-
-	// [핵심 분기] 툴이 존재하고 쿨다운이 아닐 때만 툴 총구에서 트레이스 발사
-	if (EquippedTool)
+	if (EquippedTool && EquippedTool->bIsOnCooldown)
 	{
-		if (EquippedTool->bIsOnCooldown)
-		{
-			// 쿨다운 중이면 실패 처리용으로 서버에 빈 요청 전송
-			Server_TryForceEject(nullptr);
-			return;
-		}
-		// 쿨다운이 아니면 툴에서 트레이스 발사
-		TraceStart = EquippedTool->TraceMuzzle->GetComponentLocation();
-		TraceRot = EquippedTool->TraceMuzzle->GetComponentRotation();
-	}
-	else
-	{
-		// 툴이 없을 때의 예비 동작 (카메라 기준)
-		if (FPSCamera) {
-			TraceStart = FPSCamera->GetComponentLocation();
-			TraceRot = FPSCamera->GetComponentRotation();
-		}
-		else {
-			GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
-		}
+		Server_TryForceEject(nullptr);
+		return;
 	}
 
-	FVector TraceEnd = TraceStart + (TraceRot.Vector() * ForceEjectRange);
+	// 1. 트레이스 시작점: 캐릭터 중심 위치 + 캐릭터가 바라보는 방향 기준 오프셋 적용
+	FVector StartLoc = GetActorLocation() + GetActorRotation().RotateVector(ForceEjectSphereOffset);
+
+	// 2. 트레이스 끝점: 시작점에서 정면(Forward)으로 Range만큼 이동
+	FVector EndLoc = StartLoc + (GetActorForwardVector() * ForceEjectRange);
 
 	FHitResult HitResult;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 
-	// [중요] 콕핏의 메쉬(Mesh)나 콜리전 박스가 'Visibility' 채널을 'Block' 하고 있어야 감지됩니다.
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
+	// 3. 스피어 형태(CollisionShape) 생성
+	FCollisionShape SphereShape = FCollisionShape::MakeSphere(ForceEjectSphereRadius);
+
+	// 4. LineTrace 대신 SweepSingleByChannel 사용
+	bool bHit = GetWorld()->SweepSingleByChannel(
 		HitResult,
-		TraceStart,
-		TraceEnd,
+		StartLoc,
+		EndLoc,
+		FQuat::Identity,
 		ECC_Visibility,
+		SphereShape,
 		QueryParams
 	);
 
 #if WITH_EDITOR
-	// 디버그 라인 확인: 초록색이면 히트 성공, 빨간색이면 허공
-	if (bHit) DrawDebugLine(GetWorld(), TraceStart, HitResult.ImpactPoint, FColor::Green, false, 1.0f);
-	else DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 1.0f);
+	// 디버그 드로잉: 트레이스가 지나간 궤적을 캡슐 모양으로 그려서 직관적으로 확인 가능하게 함
+	FVector TraceVec = EndLoc - StartLoc;
+	float TraceLen = TraceVec.Size();
+	FVector CenterLoc = StartLoc + TraceVec * 0.5f;
+	FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();
+
+	// 히트 성공하면 초록색, 허공이면 빨간색 캡슐
+	DrawDebugCapsule(GetWorld(), CenterLoc, TraceLen * 0.5f + ForceEjectSphereRadius, ForceEjectSphereRadius, CapsuleRot, bHit ? FColor::Green : FColor::Red, false, 2.0f);
+
+	if (bHit)
+	{
+		// 정확히 어디에 맞았는지 초록색 점으로 표시
+		DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 10.0f, FColor::Green, false, 2.0f);
+	}
 #endif
 
+	// 1. 대상을 담을 임시 변수를 nullptr로 초기화합니다. (허공에 쏜 상태를 기본값으로 둠)
+	APSJ_ShipCockpit* HitCockpit = nullptr;
+
+	// 2. 무언가에 맞았고, 그게 콕핏이라면 변수에 담아줍니다.
 	if (bHit && HitResult.GetActor())
 	{
-		// 콕핏 클래스로 캐스팅 (상속받은 모든 블루프린트 포함)
-		if (APSJ_ShipCockpit* HitCockpit = Cast<APSJ_ShipCockpit>(HitResult.GetActor()))
-		{
-			// 서버에 요청
-			Server_TryForceEject(HitCockpit);
-		}
+		HitCockpit = Cast<APSJ_ShipCockpit>(HitResult.GetActor());
 	}
+
+	// 3. [핵심] if문 밖으로 꺼냅니다! 
+	// 타겟을 찾았든(HitCockpit), 못 찾았든(nullptr) 무조건 서버에 보고하여 타이머를 돌립니다.
+	Server_TryForceEject(HitCockpit);
 }
 
 // 3. 서버 RPC 구현
@@ -978,12 +978,15 @@ bool APSJ_Character::Server_TryForceEject_Validate(APSJ_ShipCockpit* TargetCockp
 {
 	if (TargetCockpit)
 	{
-		// 거리 검증 (약간의 여유 허용)
 		float DistanceSq = FVector::DistSquared(GetActorLocation(), TargetCockpit->GetActorLocation());
-		float AllowedRangeSq = FMath::Square(ForceEjectRange * 1.5f);
+
+		// 허용 거리 = 기본 Range + 스피어 반지름 + 오프셋 길이 + 서버 지연 보정 여유값(200.0f)
+		float MaxAllowedDistance = ForceEjectRange + ForceEjectSphereRadius + ForceEjectSphereOffset.Size() + 200.0f;
+		float AllowedRangeSq = FMath::Square(MaxAllowedDistance);
+
 		if (DistanceSq > AllowedRangeSq)
 		{
-			return false;
+			return false; // 핵 쟁이나 비정상적인 위치에서의 요청 차단
 		}
 	}
 	return true;
@@ -1083,23 +1086,15 @@ void APSJ_Character::UpdateRepairLogic()
 	FVector TraceStart;
 	FRotator TraceRot;
 
-	// [핵심 분기] 수리 트레이스 위치 결정
-	if (EquippedTool && !EquippedTool->bIsOnCooldown)
+	// [수정] 수리 트레이스도 무조건 캐릭터 정면(카메라)에서 발사
+	if (FPSCamera)
 	{
-		// 타이머 안 도는 중: 툴 앞부분에서 발사
-		TraceStart = EquippedTool->TraceMuzzle->GetComponentLocation();
-		TraceRot = EquippedTool->TraceMuzzle->GetComponentRotation();
+		TraceStart = FPSCamera->GetComponentLocation();
+		TraceRot = FPSCamera->GetComponentRotation();
 	}
 	else
 	{
-		// 타이머 도는 중 (또는 툴 없음): 캐릭터 정면(카메라)에서 발사
-		if (FPSCamera) {
-			TraceStart = FPSCamera->GetComponentLocation();
-			TraceRot = FPSCamera->GetComponentRotation();
-		}
-		else {
-			GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
-		}
+		GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
 	}
 
 	FVector TraceEnd = TraceStart + (TraceRot.Vector() * RepairTraceLength);

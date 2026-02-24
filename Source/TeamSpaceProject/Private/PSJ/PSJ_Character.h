@@ -264,9 +264,17 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* ForceEjectAction;
 
-	// [필수 추가 2] 감지 거리 (기본값 500.0f)
+	// [필수 추가 2] 감지 거리 
 	UPROPERTY(EditAnywhere, Category = "Interaction | Force Eject")
-	float ForceEjectRange = 500.0f;
+	float ForceEjectSphereRadius = 40.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Interaction | Force Eject")
+	float ForceEjectRange = 100.0f;
+
+
+	// [신규] 캐릭터 중심(Capsule)을 기준으로 스피어 트레이스가 시작될 위치 (X: 앞, Y: 우, Z: 위)
+	UPROPERTY(EditAnywhere, Category = "Interaction | Force Eject")
+	FVector ForceEjectSphereOffset = FVector(50.0f, 0.0f, 20.0f);
 
 	// [수정] 중력(Gravity) 용어 제거 -> 자력에 의한 감속(Deceleration)으로 변경
 	UPROPERTY(EditAnywhere, Category = "Mag Boots | Jump")
