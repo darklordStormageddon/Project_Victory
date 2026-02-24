@@ -52,14 +52,13 @@ public:
 
 private:
 	UFUNCTION()
-	void InteractEnter(AActor* Caller, UUIBase* OpenedUI);
+	void InteractEnter(int32 CallerPlayerId, UUIBase* OpenedUI);
 
 	UFUNCTION()
-	void InteractExit(AActor* Caller, UUIBase* ClosedUI);
+	void InteractExit(int32 CallerPlayerId, UUIBase* ClosedUI);
 
 protected:
-	virtual void OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> OpenedUI) { }
+	virtual void OnInteractEnter(int32 CallerPlayerId, TObjectPtr<UUIBase> OpenedUI) { }
 	
-	virtual void OnInteractExit(AActor* Caller, TObjectPtr<UUIBase> ClosedUI) { }
-
+	virtual void OnInteractExit(int32 CallerPlayerId, TObjectPtr<UUIBase> ClosedUI) { }
 };

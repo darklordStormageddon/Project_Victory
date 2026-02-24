@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/JHSPlayerController.h"
 #include "JHS/Event/EventManager.h"
 #include "Engine/Engine.h"
 
@@ -27,6 +28,29 @@ bool UStaticFunctionLibrary::TryGetGameMode(AJHSGameMode*& OutGameMode)
         UE_LOG(LogTemp, Error, TEXT("TryGetGameMode: GameMode is nullptr, GameModeBase class: %s"), *_gameModeBase->GetClass()->GetName());
         return false;
     }
+
+	return true;
+}
+
+bool UStaticFunctionLibrary::TryGetPlayerController(AJHSPlayerController*& OutPlayerController)
+{
+	UWorld* _world = nullptr;
+	if (!TryGetWorld(_world))
+		return false;
+
+	APlayerController* _playerController = UGameplayStatics::GetPlayerController(_world, 0);
+	if (_playerController == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TryGetPlayerController:: PlayerController is nullptr"));
+		return false;
+	}
+
+	OutPlayerController = Cast<AJHSPlayerController>(_playerController);
+	if (OutPlayerController == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TryGetPlayerController:: PlayerController is not AJHSPlayerController"));
+		return false;
+	}
 
 	return true;
 }
@@ -72,11 +96,11 @@ bool UStaticFunctionLibrary::TryGetSpaceManager(USpaceManager*& OutSpaceManager)
 
 bool UStaticFunctionLibrary::TryGetUIManager(UUIManager*& OutUIManager)
 {
-	AJHSGameMode* _gameMode = nullptr;
-	if (!TryGetGameMode(_gameMode))
+	AJHSPlayerController* _jhsPlayerController = nullptr;
+	if (!TryGetPlayerController(_jhsPlayerController))
 		return false;
 
-	OutUIManager = _gameMode->GetUIManager();
+	OutUIManager = _jhsPlayerController->GetUIManager();
 	if (OutUIManager == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("TryGetUIManager: UIManager is nullptr"));
@@ -88,17 +112,22 @@ bool UStaticFunctionLibrary::TryGetUIManager(UUIManager*& OutUIManager)
 
 bool UStaticFunctionLibrary::TryGetEventManager(UEventManager*& OutEventManager)
 {
-	AJHSGameMode* _gameMode = nullptr;
-	if (!TryGetGameMode(_gameMode))
-		return false;
-
-	OutEventManager = _gameMode->GetEventManager();
-	if (OutEventManager == nullptr)
+	// GameState는 서버·클라이언트 모두 존재하므로 EventManager를 여기서 제공 (GameMode는 클라이언트에 없음)
+	AJHSGameState* _gameState = nullptr;
+	if (!TryGetGameState(_gameState))
 	{
-		UE_LOG(LogTemp, Error, TEXT("TryGetEventManager: EventManager is nullptr"));
+		UE_LOG(LogTemp, Warning, TEXT("[InteractFlow] TryGetEventManager: TryGetGameState failed"));
 		return false;
 	}
 
+	OutEventManager = _gameState->GetEventManager();
+	if (OutEventManager == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[InteractFlow] TryGetEventManager: GameState->GetEventManager() is nullptr"));
+		return false;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[InteractFlow] TryGetEventManager: OK (from GameState)"));
 	return true;
 }
 

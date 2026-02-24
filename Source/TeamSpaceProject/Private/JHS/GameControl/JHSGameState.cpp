@@ -10,9 +10,6 @@
 #include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/GameControl/ShopManager.h"
 #include "JHS/Event/EventManager.h"
-#include "JHS/UI/UIManager.h"
-#include "JHS/UI/UIBase.h"
-#include "Kismet/GameplayStatics.h"
 
 AJHSGameState::AJHSGameState()
 {
@@ -30,6 +27,9 @@ AJHSGameState::AJHSGameState()
 	_turretStateGroup = CreateDefaultSubobject<UTurretStateGroup>(TEXT("TurretStateGroup"));
 
 	_shopManager = CreateDefaultSubobject<UShopManager>(TEXT("ShopManager"));
+
+	// EventManager: GameState에 두어 서버·클라이언트 모두에서 접근 가능 (GameMode는 클라이언트에 없음)
+	_eventManager = CreateDefaultSubobject<UEventManager>(TEXT("EventManager"));
 }
 
 void AJHSGameState::BeginPlay()
@@ -52,12 +52,6 @@ void AJHSGameState::InitializeGameState()
 	_turretStateGroup->InitializeTurretState(this);
 
 	_shopManager->InitializeShop(_containerStateGroup);
-
-	UUIManager* _outUIManager = nullptr;
-	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
-		return;
-
-	_outUIManager->OpenUI(E_UI_TYPE::UIPanelCommonInfo);
 }
 
 void AJHSGameState::SendCurrentDataEvent()
@@ -75,22 +69,7 @@ void AJHSGameState::SendCurrentDataEvent()
 
 TObjectPtr<UEventManager> AJHSGameState::GetEventManager()
 {
-	if (_cachedEventManager == nullptr)
-	{
-		UEventManager* _outEventManager = nullptr;
-		if (!UStaticFunctionLibrary::TryGetEventManager(_outEventManager))
-			return nullptr;
-
-		_cachedEventManager = _outEventManager;
-	}
-
-	if (_cachedEventManager == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("AJHSGameState: Failed to get EventManager"));
-		return nullptr;
-	}
-
-	return _cachedEventManager;
+	return _eventManager;
 }
 
 bool AJHSGameState::TryGetTextureFromPath(FString FolderPath, FString FileName, TObjectPtr<UTexture2D>& OutTexture)

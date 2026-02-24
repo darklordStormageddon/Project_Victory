@@ -24,10 +24,16 @@ private:
 	const E_UI_TYPE _playerUI = E_UI_TYPE::UIPanelPlayerFPS;
 
 	UPROPERTY()
+	TObjectPtr<APlayerController> _playerController = nullptr;
+
+	UPROPERTY()
 	TObjectPtr<UUIManager> _uiManager = nullptr;
 
 	UPROPERTY()
 	TObjectPtr<UInteractableComponent> _interactable = nullptr;
+
+public:
+	TObjectPtr<APlayerController> GetPlayerController() { return _playerController; }
 
 protected:
 	// Called when the game starts
@@ -44,6 +50,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Interacter|Interact")
 	bool TryInteractInput(bool& OutIsInterupt, bool& OutIsInteractEnter);
+
+	// Pawn 소유이므로 owning connection 있음 → 클라이언트에서 서버로 트리거 알림 (Interactable은 레벨 액터라 RPC 불가)
+	UFUNCTION(Server, Reliable)
+	void ServerReportTriggerEnter(UInteractableComponent* Interactable);
+
+	UFUNCTION(Server, Reliable)
+	void ServerReportTriggerExit(UInteractableComponent* Interactable);
 
 private:
 	void ExecuteEventOnChangeInteractType(E_INTERACT_TYPE InteractType);

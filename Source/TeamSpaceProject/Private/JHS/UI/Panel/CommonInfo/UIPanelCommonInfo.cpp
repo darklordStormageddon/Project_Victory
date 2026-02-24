@@ -89,8 +89,10 @@ void UUIPanelCommonInfo::OnChangePlayerRadiation(UEventOnChangePlayerRadiation* 
 	if (Event == nullptr)
 		return;
 
-	FPlayerStateData _maxCurrentData = Event->PlayerStateData;
+	const FPlayerStateData& _data = Event->PlayerStateData;
+	TObjectPtr<UPlayerInfoRow>* _rowPtr = _playerRadiationDoseMap.Find(_data.PlayerIndex);
+	if (_rowPtr == nullptr || *_rowPtr == nullptr)
+		return;
 
-	_playerRadiationDoseMap[_maxCurrentData.PlayerIndex]->UpdatePlayerRadiationDose(_maxCurrentData.Radiation);
-
+	(*_rowPtr)->UpdatePlayerRadiationDose(_data.Radiation);
 }

@@ -59,6 +59,11 @@ void UUIManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompo
 
 UUIBase* UUIManager::OpenUI(E_UI_TYPE UIType)
 {
+	return OpenUIInternal(UIType);
+}
+
+UUIBase* UUIManager::OpenUIInternal(E_UI_TYPE UIType)
+{
 	UUIBase* _ui = LoadUIInternal(UIType);
 	if (_ui == nullptr)
 	{
@@ -293,17 +298,17 @@ UUIBase* UUIManager::LoadUIInternal(E_UI_TYPE UIType)
 
 UUIBase* UUIManager::InstantiateUI(E_UI_TYPE UIType)
 {
-	UWorld* _world = GetWorld();
-	if (_world == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UUIManager: World is nullptr"));
-		return nullptr;
-	}
-
-	APlayerController* _playerController = UGameplayStatics::GetPlayerController(_world, 0);
+	// UIManager는 PlayerController의 컴포넌트이므로 GetOwner()로 소유자 가져오기
+	APlayerController* _playerController = Cast<APlayerController>(GetOwner());
 	if (_playerController == nullptr)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UUIManager: PlayerController is nullptr"));
+		UE_LOG(LogTemp, Error, TEXT("UUIManager: Owner is not APlayerController"));
+		return nullptr;
+	}
+	// 위젯은 반드시 로컬 플레이어 컨트롤러에만 할당 가능 (서버/다른 클라이언트에서 원격 PC로 CreateWidget 시 오류 방지)
+	if (!_playerController->IsLocalPlayerController())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UUIManager: Owner is not Local Player Controller, skipping widget creation [%d]"), (int32)UIType);
 		return nullptr;
 	}
 

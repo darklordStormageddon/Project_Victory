@@ -3,6 +3,7 @@
 
 #include "JHS/GameControl/StateData/PlayerStateGroup.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/JHSPlayerState.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
 
@@ -75,16 +76,21 @@ bool UPlayerStateGroup::TryRegistPlayer(TObjectPtr<AJHSPlayerState> PlayerState,
 		}
 	}
 
+	const int32 _assignedId = _playerStateMap.Num();
 	FPlayerStateData _newPlayerData;
 	_newPlayerData.PlayerState = PlayerState;
 	_newPlayerData.PlayerUID = _playerID;
+	_newPlayerData.AssignedPlayerId = _assignedId;
 	_newPlayerData.PlayerName = PlayerName;
-
-	_newPlayerData.PlayerIndex = _playerStateMap.Num();
+	_newPlayerData.PlayerIndex = _assignedId;
 	_newPlayerData.IsReady = false;
-
 	_newPlayerData.Radiation.MaxValue = _playerRadiationData.Value.MaxValue;
 	_newPlayerData.Radiation.CurrentValue = _newPlayerData.Radiation.MaxValue;
+
+	AJHSPlayerState* _jhsPS = Cast<AJHSPlayerState>(PlayerState);
+	if (_jhsPS != nullptr)
+		_jhsPS->SetAssignedPlayerId(_assignedId);
+
 	_playerStateMap.Add(_newPlayerData.PlayerUID, _newPlayerData);
 	return true;
 }
@@ -119,11 +125,15 @@ bool UPlayerStateGroup::IsAllPlayerReady()
 void UPlayerStateGroup::IncreasePlayerRadiation(int32 PlayerIdx, float IncreaseValue)
 {
 	FPlayerStateData* _playerState = _playerStateMap.Find(PlayerIdx);
+	if (_playerState == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UPlayerStateGroup::IncreasePlayerRadiation - PlayerIdx=%d not found in _playerStateMap, skip"), PlayerIdx);
+		return;
+	}
+
 	_playerState->Radiation.CurrentValue += IncreaseValue;
 	if (_playerState->Radiation.CurrentValue > _playerState->Radiation.MaxValue)
-	{
 		_playerState->Radiation.CurrentValue = _playerState->Radiation.MaxValue;
-	}
 
 	UEventOnChangePlayerRadiation* _event = NewObject<UEventOnChangePlayerRadiation>(this);
 	if (_event == nullptr)

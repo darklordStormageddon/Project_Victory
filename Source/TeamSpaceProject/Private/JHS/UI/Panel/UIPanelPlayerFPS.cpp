@@ -1,14 +1,16 @@
 // UIPanelPlayerFPS.cpp
 #include "JHS/UI/Panel/UIPanelPlayerFPS.h"
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
+#include "JHS/GameControl/JHSPlayerController.h"
 #include "JHS/Event/EventManager.h"
+#include "Engine/World.h"
 
 void UUIPanelPlayerFPS::NativeOnInitialized()
 {
     Super::NativeOnInitialized();
 
-    // NativeOnInitialized 시점에는 BindWidget이 완료되어 있어야 하지만
-    // 방어적으로 체크 후 호출
+    // NativeOnInitialized ???????? BindWidget?? ????? ???? ??????
+    // ????????? ?? ?? ???
     if (IMG_Interact)
     {
         ChangeInteractable(E_INTERACT_TYPE::Idle);
@@ -21,36 +23,37 @@ void UUIPanelPlayerFPS::NativeOnInitialized()
 
 void UUIPanelPlayerFPS::NativeDestruct()
 {
-    // Widget이 파괴될 때 이벤트 핸들이 남아있으면 명시적으로 해제
     UnregisterEvent();
     Super::NativeDestruct();
 }
 
 void UUIPanelPlayerFPS::RegisterEvent()
 {
-    // EventManager nullptr 체크
+    UWorld* _world = GetWorld();
+    const ENetMode _netMode = _world != nullptr ? _world->GetNetMode() : NM_Standalone;
+
     UEventManager* EventMgr = GetEventManager();
     if (!EventMgr)
     {
-        UE_LOG(LogTemp, Error, TEXT("UIPanelPlayerFPS::RegisterEvent - EventManager is nullptr"));
+        UE_LOG(LogTemp, Error, TEXT("[InteractFlow] UIPanelPlayerFPS::RegisterEvent - EventManager=null listener NOT registered NetMode=%d"), (int32)_netMode);
         return;
     }
 
-    // 이미 등록된 핸들이 있으면 중복 등록 방지
     if (_eventHandleOnChangeInteractType.IsValid())
     {
+        UE_LOG(LogTemp, Log, TEXT("[InteractFlow] UIPanelPlayerFPS::RegisterEvent - already registered skip NetMode=%d"), (int32)_netMode);
         return;
     }
 
     _eventHandleOnChangeInteractType = EventMgr->AddListener<UEventOnChangeInteractType>(
         [this](UEventOnChangeInteractType* Event)
         {
-            // this가 유효한지 체크 (WeakPtr 패턴 또는 IsValid 활용)
             if (!IsValid(this))
                 return;
             OnChangeInteractType(Event);
         }
     );
+    UE_LOG(LogTemp, Log, TEXT("[InteractFlow] UIPanelPlayerFPS::RegisterEvent - UEventOnChangeInteractType listener registered NetMode=%d"), (int32)_netMode);
 }
 
 void UUIPanelPlayerFPS::UnregisterEvent()
@@ -61,7 +64,7 @@ void UUIPanelPlayerFPS::UnregisterEvent()
     UEventManager* EventMgr = GetEventManager();
     if (!EventMgr)
     {
-        // EventManager가 이미 없어진 경우 핸들만 초기화
+        // EventManager?? ??? ?????? ??? ??? ????
         _eventHandleOnChangeInteractType.Reset();
         return;
     }
@@ -72,9 +75,10 @@ void UUIPanelPlayerFPS::UnregisterEvent()
 
 void UUIPanelPlayerFPS::ChangeInteractable(E_INTERACT_TYPE InteractType)
 {
+    UE_LOG(LogTemp, Log, TEXT("[InteractFlow] UIPanelPlayerFPS::ChangeInteractable - InteractType=%d"), (int32)InteractType);
     if (!IsValid(IMG_Interact))
     {
-        UE_LOG(LogTemp, Error, TEXT("UIPanelPlayerFPS::ChangeInteractable - IMG_Interact is nullptr"));
+        UE_LOG(LogTemp, Error, TEXT("[InteractFlow] UIPanelPlayerFPS::ChangeInteractable - IMG_Interact is nullptr"));
         return;
     }
 
@@ -84,7 +88,7 @@ void UUIPanelPlayerFPS::ChangeInteractable(E_INTERACT_TYPE InteractType)
     {
         Texture = _interactTextureMap.FindRef(InteractType);
 
-        // 캐시된 텍스처가 GC 등으로 무효화됐을 경우 재로드
+        // ????? ?????? GC ?????? ???????? ??? ?????
         if (!IsValid(Texture))
         {
             _interactTextureMap.Remove(InteractType);
@@ -116,7 +120,26 @@ void UUIPanelPlayerFPS::ChangeInteractable(E_INTERACT_TYPE InteractType)
 void UUIPanelPlayerFPS::OnChangeInteractType(UEventOnChangeInteractType* Event)
 {
     if (!IsValid(Event))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[InteractFlow] UIPanelPlayerFPS::OnChangeInteractType - Event invalid"));
         return;
+    }
 
+    UWorld* _world = GetWorld();
+    const ENetMode _netMode = _world != nullptr ? _world->GetNetMode() : NM_Standalone;
+    AJHSPlayerController* _localJHSPC = Cast<AJHSPlayerController>(GetOwningPlayer());
+    const int32 _localAssignedId = _localJHSPC ? _localJHSPC->GetAssignedPlayerId() : -1;
+
+    UE_LOG(LogTemp, Log, TEXT("[InteractFlow] UIPanelPlayerFPS::OnChangeInteractType - ENTRY NetMode=%d EventPlayerID=%d InteractType=%d localAssignedId=%d"),
+        (int32)_netMode, Event->PlayerID, (int32)Event->InteractType, _localAssignedId);
+
+    if (Event->PlayerID != _localAssignedId)
+    {
+        UE_LOG(LogTemp, Log, TEXT("[InteractFlow] UIPanelPlayerFPS::OnChangeInteractType - SKIP (EventPlayerID=%d != localAssignedId=%d) NetMode=%d"),
+            Event->PlayerID, _localAssignedId, (int32)_netMode);
+        return;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("[InteractFlow] UIPanelPlayerFPS::OnChangeInteractType - applying InteractType=%d to UI NetMode=%d"), (int32)Event->InteractType, (int32)_netMode);
     ChangeInteractable(Event->InteractType);
 }

@@ -22,6 +22,22 @@ class AJHSPlayerState : public APlayerState
 {
 	GENERATED_BODY()
 
+protected:
+	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 public:
 	bool TryRegistPlayer(FString Name, E_REGIST_ERROR_TYPE& OutErrorType);
+
+	void OpenCommonInfoUI();
+
+	/** 서버에서 접속 시 발급한 ID (복제). UI/Interact 호출자 구별용. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Player")
+	int32 GetAssignedPlayerId() const { return _assignedPlayerId; }
+
+	void SetAssignedPlayerId(int32 AssignedPlayerId);
+
+private:
+	UPROPERTY(Replicated)
+	int32 _assignedPlayerId = -1;
 };

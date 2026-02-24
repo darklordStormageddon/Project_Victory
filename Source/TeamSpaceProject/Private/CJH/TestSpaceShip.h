@@ -3,33 +3,35 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
-
-#include "Components/SphereComponent.h"
-#include "TeamSpaceProject/TeamSpaceProjectCharacter.h"
-
+#include "PSJ/PSJ_Spaceship.h"
+#include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "TestSpaceShip.generated.h"
 
-
-class UHealthComponent;
-class USpaceShipStateGroup;
-
 UCLASS()
-class ATestSpaceShip : public ATeamSpaceProjectCharacter
+class ATestSpaceShip : public APSJ_Spaceship
 {
 	GENERATED_BODY()
+private:
+	FTimerHandle ShieldAlphaTimerHandle;
 
-protected:
-	USpaceShipStateGroup* _spaceShipStateGroup = nullptr;
+	UPROPERTY(EditDefaultsOnly, Category = "Shield")
+	float ShieldDisplayDuration = 0.1f;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
-	UHealthComponent* HealthComp;
-	UPROPERTY(VisibleAnywhere, Category = "Collision")
-	USphereComponent* Collision;
+	UPROPERTY(EditDefaultsOnly, Category = "Shield")
+	USceneComponent* ShieldRoot = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Shield")
+	UStaticMeshComponent* ShieldMesh = nullptr;
+
+private:
+	void HideShield();
 
 public:	
 	// Sets default values for this actor's properties
 	ATestSpaceShip();
+
+	void OnTakeDamage(float Damage);
+	//virtual void OnTakeDamage(float Damage) override;
 
 protected:
 	// Called when the game starts or when spawned
@@ -38,12 +40,4 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	UFUNCTION()
-	void OnTakeDamage(float Damage);
-
-	UFUNCTION()
-	void OnDeath();
-
-	USpaceShipStateGroup* GetSpaceShipStateGroup();
 };

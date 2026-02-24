@@ -25,8 +25,8 @@ public:
 	AJHSGameState();
 
 private:
-	UPROPERTY()
-	TObjectPtr<UEventManager> _cachedEventManager = nullptr;
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|Manager")
+	TObjectPtr<UEventManager> _eventManager = nullptr;
 
 private:
 	UPROPERTY(EditAnywhere, Category = "GameState|Goal")

@@ -86,7 +86,7 @@ void APSJ_ShipCockpit::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
     DOREPLIFETIME(APSJ_ShipCockpit, bIsMalfunctioning);
 }
 
-void APSJ_ShipCockpit::OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> OpenedUI)
+void APSJ_ShipCockpit::OnInteractEnter(int32 CallerPlayerId, TObjectPtr<UUIBase> OpenedUI)
 {
 
     // [신규] 고장 상태 체크
@@ -97,7 +97,7 @@ void APSJ_ShipCockpit::OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> Opene
         return;
     }
 
-    Super::OnInteractEnter(Caller, OpenedUI); // 부모의 기본 로직 실행
+    Super::OnInteractEnter(CallerPlayerId, OpenedUI); // 부모의 기본 로직 실행
 
     if (TargetSpaceship) // 변수명은 TargetSpaceship이지만 실제로는 APawn* 타입
     {
@@ -151,7 +151,7 @@ void APSJ_ShipCockpit::StartMalfunction()
 }
 
 
-void APSJ_ShipCockpit::OnInteractExit(AActor* Caller, TObjectPtr<UUIBase> OpenedUI)
+void APSJ_ShipCockpit::OnInteractExit(int32 CallerPlayerId, TObjectPtr<UUIBase> OpenedUI)
 {
     // 1. TargetSpaceship이 유효한지 확인
     if (TargetSpaceship)
@@ -167,7 +167,7 @@ void APSJ_ShipCockpit::OnInteractExit(AActor* Caller, TObjectPtr<UUIBase> Opened
     }
 
     // 4. 조종사가 없거나 형변환에 실패한 경우 부모 로직 실행
-    Super::OnInteractExit(Caller, OpenedUI);
+    Super::OnInteractExit(CallerPlayerId, OpenedUI);
 }
 
 void APSJ_ShipCockpit::SetTargetPawn(TObjectPtr<APawn> TargetPawn)
