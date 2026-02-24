@@ -81,10 +81,10 @@ public:
 
 
 
-    virtual void OnInteractExit(AActor* Caller, TObjectPtr<UUIBase> ClosedUI) override;
+    virtual void OnInteractExit(int32 CallerPlayerId, TObjectPtr<UUIBase> ClosedUI) override;
 
 protected:
-    virtual void OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> OpenedUI) override;
+    virtual void OnInteractEnter(int32 CallerPlayerId, TObjectPtr<UUIBase> OpenedUI) override;
 
 public:
     void SetTargetPawn(TObjectPtr<APawn> TargetPawn);

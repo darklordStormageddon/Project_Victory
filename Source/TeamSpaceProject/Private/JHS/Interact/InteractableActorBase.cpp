@@ -38,12 +38,12 @@ void AInteractableActorBase::Tick(float DeltaTime)
 
 }
 
-void AInteractableActorBase::InteractEnter(AActor* Caller, UUIBase* OpenedUI)
+void AInteractableActorBase::InteractEnter(int32 CallerPlayerId, UUIBase* OpenedUI)
 {
-	OnInteractEnter(Caller, OpenedUI);
+	OnInteractEnter(CallerPlayerId, OpenedUI);
 }
 
-void AInteractableActorBase::InteractExit(AActor* Caller, UUIBase* ClosedUI)
+void AInteractableActorBase::InteractExit(int32 CallerPlayerId, UUIBase* ClosedUI)
 {
-	OnInteractExit(Caller, ClosedUI);
+	OnInteractExit(CallerPlayerId, ClosedUI);
 }

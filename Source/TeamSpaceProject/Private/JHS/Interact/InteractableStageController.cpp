@@ -4,28 +4,36 @@
 #include "JHS/Interact/InteractableStageController.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/JHSPlayerController.h"
 
-void AInteractableStageController::OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> OpenedUI)
+void AInteractableStageController::OnInteractEnter(int32 CallerPlayerId, TObjectPtr<UUIBase> OpenedUI)
 {
-	InteractController(Caller);
+	InteractController(CallerPlayerId);
 }
 
-void AInteractableStageController::OnInteractExit(AActor* Caller, TObjectPtr<UUIBase> ClosedUI)
+void AInteractableStageController::OnInteractExit(int32 CallerPlayerId, TObjectPtr<UUIBase> ClosedUI)
 {
 }
 
-void AInteractableStageController::InteractController(AActor* Caller)
+void AInteractableStageController::InteractController(int32 CallerPlayerId)
 {
 	AJHSGameMode* _outGameMode = nullptr;
 	if (!UStaticFunctionLibrary::TryGetGameMode(_outGameMode))
 		return;
 
+	AJHSPlayerController* _callerController = nullptr;
+	if (!UStaticFunctionLibrary::TryGetPlayerController(_callerController))
+		return;
+
+	if (_callerController->GetAssignedPlayerId() != CallerPlayerId)
+		return;
+
 	if (_isStartStage)
 	{
-		_outGameMode->StartNextStage(Caller);
+		_outGameMode->StartNextStage(_callerController);
 	}
 	else
 	{
-		_outGameMode->EndStage(Caller);
+		_outGameMode->EndStage(_callerController);
 	}
 }

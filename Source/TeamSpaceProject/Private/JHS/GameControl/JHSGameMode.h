@@ -8,7 +8,6 @@
 
 #include "JHSGameMode.generated.h"
 
-class UUIManager;
 class UEventManager;
 class USpaceManager;
 class UShopManager;
@@ -36,9 +35,6 @@ public:
 
 private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
-	TObjectPtr<UUIManager> _uiManager = nullptr;
-
-	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
 	TObjectPtr<UEventManager> _eventManager = nullptr;
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
@@ -61,9 +57,6 @@ private:
 	TArray<FEquipTurretData> _startEquipTurretArray;
 
 public:
-	UFUNCTION(BlueprintCallable, Category = "GameMode|UI Manager")
-	UUIManager* GetUIManager() { return _uiManager; }
-
 	UFUNCTION(BlueprintCallable, Category = "GameMode|Event Manager")
 	UEventManager* GetEventManager() { return _eventManager; }
 
@@ -72,8 +65,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
+	virtual void PostLogin(APlayerController* NewPlayer) override;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "GameMode|Game")

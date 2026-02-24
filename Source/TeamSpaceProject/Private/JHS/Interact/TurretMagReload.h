@@ -29,7 +29,7 @@ protected:
 protected:
 	virtual void BeginPlay() override;
 
-	void OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> OpenedUI) override;
+	void OnInteractEnter(int32 CallerPlayerId, TObjectPtr<UUIBase> OpenedUI) override;
 
-	void OnInteractExit(AActor* Caller, TObjectPtr<UUIBase> ClosedUI) override;
+	void OnInteractExit(int32 CallerPlayerId, TObjectPtr<UUIBase> ClosedUI) override;
 };

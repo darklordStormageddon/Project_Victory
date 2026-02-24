@@ -17,10 +17,10 @@ private:
 	bool _isStartStage = false;
 
 protected:
-	void OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> OpenedUI) override;
+	void OnInteractEnter(int32 CallerPlayerId, TObjectPtr<UUIBase> OpenedUI) override;
 
-	void OnInteractExit(AActor* Caller, TObjectPtr<UUIBase> ClosedUI) override;
+	void OnInteractExit(int32 CallerPlayerId, TObjectPtr<UUIBase> ClosedUI) override;
 
 private:
-	void InteractController(AActor* Caller);
+	void InteractController(int32 CallerPlayerId);
 };

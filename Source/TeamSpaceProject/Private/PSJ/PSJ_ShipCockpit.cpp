@@ -1,28 +1,26 @@
 
 #include "PSJ_ShipCockpit.h"
-#include "Kismet/GameplayStatics.h" // ¸Å´ÏÀú Ã£±â¿ë
+#include "Kismet/GameplayStatics.h"
 #include "PSJ_Character.h" 
 #include "PSJ_Spaceship.h"
 #include "YSH/TurretBase_GT.h"
-#include "Net/UnrealNetwork.h" // [ÇÊ¼ö] ÀÌ Çì´õ°¡ ¸Ç À§¿¡ ÀÖ¾î¾ß ÇÕ´Ï´Ù
-#include "GameFramework/Pawn.h" // APawn »ç¿ëÀ» À§ÇØ ÇÊ¿ä
-#include "GameFramework/Controller.h" // Controller Ã¼Å©¸¦ À§ÇØ ÇÊ¿ä
+#include "Net/UnrealNetwork.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
 #include "JHS/UI/UIBase.h"
 
-// [1] »ı¼ºÀÚ ±¸Çö (ÀÌ ºÎºĞÀÌ ¾ø¾î¼­ ¾Æ±î ¿¡·¯°¡ ³­ °ÍÀÔ´Ï´Ù)
 APSJ_ShipCockpit::APSJ_ShipCockpit()
 {
-    // Æ½ È°¼ºÈ­
     PrimaryActorTick.bCanEverTick = true;
 
-    // [ÇÙ½É ÇØ°áÃ¥] 
-    // ¹°¸®(Physics) ÀÌµ¿ÀÌ ³¡³­ 'µÚ'¿¡ Æ½À» ½ÇÇàÇØ¶ó!
-    // -> ÀÌ ¼³Á¤ ´öºĞ¿¡ BP¿¡¼­ ±×¸®´Â µğ¹ö±× ¶óÀÎµµ ¹Ğ¸®Áö ¾Ê°í µü ºÙ¾î ³ª¿É´Ï´Ù.
+    // [ì¤‘ìš” ì„¤ì •] 
+    // ë¬¼ë¦¬(Physics) ì‹œë®¬ë ˆì´ì…˜ ì§í›„ 'ë‹¤ìŒ'ì— ì´ í‹±ì„ì‹¤í–‰í•¨!
+    // -> ì¦‰, ìš°ì£¼ì„  ë³¸ì²´ê°€ BPì—ì„œ ì›€ì§ì¸ ë’¤ì—ì•¼ ì½•í•ë„ ë”°ë¼ê°€ì„œ ë™ê¸°í™” í•  ìˆ˜ ìˆê²Œ ë§Œë“¦.
     PrimaryActorTick.TickGroup = TG_PostPhysics;
 
-    // [!!! ÇÙ½É ´©¶ô ¼öÁ¤ !!!] 
-    // ÀÌ ÁÙÀÌ ¾øÀ¸¸é º¯¼ö µ¿±âÈ­(Replicated)°¡ ¾Æ¿¹ ÀÛµ¿ÇÏÁö ¾Ê½À´Ï´Ù.
+    // [!!! ë©€í‹° í”Œë ˆì´ ëŒ€ë¹„ !!!] 
+    // ì´ ì•¡í„° ìì²´ê°€ ë„¤íŠ¸ì›Œí¬ ë³µì œ(Replicated)ê°€ ë˜ê²Œ ì„¤ì •í•´ì•¼ ë™ê¸°í™”ë¨.
     bReplicates = true;
 }
 
@@ -30,17 +28,17 @@ void APSJ_ShipCockpit::BeginPlay()
 {
     Super::BeginPlay();
 
-    // [Áß¿ä] ¼­¹ö¿¡¼­¸¸ ÀÌº¥Æ®¸¦ Ã³¸®ÇÏ¸é µË´Ï´Ù.
+    // [ì„œë²„] ì†”ë¼ìœˆë“œì— ì´ë²¤íŠ¸ ë°”ì¸ë”© ë“±ë¡.
     if (HasAuthority())
     {
-        // 1. ¿ùµå¿¡ ÀÖ´Â ÅÂ¾çÇ³ ¸Å´ÏÀú¸¦ Ã£½À´Ï´Ù.
-        // (º¸Åë ¸Å´ÏÀú´Â 1°³¸¸ Á¸ÀçÇÏ¹Ç·Î GetActorOfClass »ç¿ë)
+        // 1. ì›”ë“œ ì•ˆì— ìˆëŠ” ë§¤ë‹ˆì €ë¥¼ ê²€ìƒ‰í•¨.
+        // (í˜„ì¬ ì›”ë“œì—ì„œ 1ê°œë§Œ ì¡´ì¬í•œë‹¤ê³  GetActorOfClass ì‚¬ìš©)
         AActor* ManagerActor = UGameplayStatics::GetActorOfClass(GetWorld(), ASolarWindManager::StaticClass());
 
         if (ASolarWindManager* WindManager = Cast<ASolarWindManager>(ManagerActor))
         {
-            // 2. ÀÌº¥Æ®¿¡ ³» ÇÔ¼ö¸¦ µî·Ï(Bind)ÇÕ´Ï´Ù.
-            // "¸Å´ÏÀú´Ô, ÅÂ¾çÇ³ ÅÍÁö¸é ÀúÇÑÅ×µµ(HandleSolarWindEvent) ¾Ë·ÁÁÖ¼¼¿ä"
+            // 2. ë§¤ë‹ˆì €ì˜ ë¸ë¦¬ê²Œì´íŠ¸ì— ì—°ê²°(Bind)í•¨.
+            // "íƒœì–‘í’ì´ í„°ì§€ë©´, ìš°ë¦¬ì˜ í•¨ìˆ˜(HandleSolarWindEvent)ë¥¼ í˜¸ì¶œí•˜ì„¸ìš”"
             WindManager->OnSolarWindImpact.AddDynamic(this, &APSJ_ShipCockpit::HandleSolarWindEvent);
 
             UE_LOG(LogTemp, Log, TEXT("[Cockpit] Successfully bound to SolarWindManager."));
@@ -48,74 +46,74 @@ void APSJ_ShipCockpit::BeginPlay()
     }
 }
 
-// [½Å±Ô] ÀÌº¥Æ® ¼ö½Å ÇÔ¼ö (Delegate¿¡ ÀÇÇØ È£ÃâµÊ)
+// [ì´ë²¤íŠ¸] íƒœì–‘í’ ë°œìƒ ì½œë°± (Delegateê°€ ìë™ í˜¸ì¶œí•¨)
 void APSJ_ShipCockpit::HandleSolarWindEvent()
 {
-    // ¼­¹öÀÎÁö ÇÑ¹ø ´õ Ã¼Å© (¾ÈÀüÀåÄ¡)
+    // ì„œë²„ì—ì„œë§Œ ì‹¤í–‰ í•  ê²ƒ (í´ë¼ì—ì„ X)
     if (!HasAuthority()) return;
 
-    // ÀÌ¹Ì °íÀå³­ »óÅÂ¸é È®·ü °è»ê ¾øÀÌ ÆĞ½ºÇÏ°Å³ª Å¸ÀÌ¸Ó °»½Å (¼±ÅÃ»çÇ×)
+    // ì´ë¯¸ ê³ ì¥ ìƒíƒœë¼ë©´ ë˜ ë‹¤ì‹œ ì²´í¬ ì•ˆí•¨(ì¤‘ë³µë°©ì§€)
     if (bIsMalfunctioning) return;
 
-    // 1. È®·ü °è»ê (ÁÖ»çÀ§ ±¼¸®±â)
-    float DiceRoll = FMath::FRand(); // 0.0 ~ 1.0 ·£´ı
+    // 1. í™•ë¥  ì²´í¬ (ëœë¤ê°’ ë½‘ê¸°)
+    float DiceRoll = FMath::FRand(); // 0.0 ~ 1.0 ë²”ìœ„
 
     if (DiceRoll <= MalfunctionProbability)
     {
-        // ´çÃ·! °íÀå ·ÎÁ÷ ½ÇÇà
+        // ê±¸ë ¸ë‹¤! ê³ ì¥ ìƒíƒœ ëŒì…
         UE_LOG(LogTemp, Warning, TEXT("[Cockpit] Hit by Solar Wind! (Roll: %.2f <= Prob: %.2f)"), DiceRoll, MalfunctionProbability);
         StartMalfunction();
     }
     else
     {
-        // È¸ÇÇ ¼º°ø
+        // ë¬´ì‚¬ í†µê³¼
         UE_LOG(LogTemp, Log, TEXT("[Cockpit] Survived Solar Wind. (Roll: %.2f > Prob: %.2f)"), DiceRoll, MalfunctionProbability);
     }
 }
 
-// [½Å±Ô Ãß°¡] º¯¼ö µ¿±âÈ­ ±ÔÄ¢ ¼³Á¤
+// [ë©€í‹° í”Œë ˆì´] ë™ê¸°í™” ì†ì„±ì„ ë“±ë¡
 void APSJ_ShipCockpit::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-    // TargetSpaceship º¯¼ö¸¦ ¼­¹ö -> Å¬¶óÀÌ¾ğÆ®·Î º¹Á¦(Replication)ÇÕ´Ï´Ù.
+    // TargetSpaceship ë³€ìˆ˜ë¥¼ ë™ê¸°í™” -> í´ë¼ì´ì–¸íŠ¸ì— ë³µì œ(Replication)ë¨.
     DOREPLIFETIME(APSJ_ShipCockpit, TargetSpaceship);
 
-    // [½Å±Ô] °íÀå »óÅÂ µ¿±âÈ­ (ÀÌ°Ô ¾øÀ¸¸é Å¬¶ó¿¡¼­ °íÀå³­ ÁÙ ¸ğ¸§)
+    // [ì¤‘ìš”] ê³ ì¥ ìƒíƒœ ë³µì œí•¨ (ëª¨ë“  í´ë¼ê°€ ê³ ì¥ í™”ë©´ì„ ë³¼ ìˆ˜ ìˆê²Œ)
     DOREPLIFETIME(APSJ_ShipCockpit, bIsMalfunctioning);
 }
 
-void APSJ_ShipCockpit::OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> OpenedUI)
+void APSJ_ShipCockpit::OnInteractEnter(int32 CallerPlayerId, TObjectPtr<UUIBase> OpenedUI)
 {
 
-    // [½Å±Ô] °íÀå »óÅÂ Ã¼Å©
+    // [ê³ ì¥] ê³ ì¥ ì¤‘ì¼ ë•Œ
     if (bIsMalfunctioning)
     {
         UE_LOG(LogTemp, Warning, TEXT("[Cockpit] System Error! Repair required before boarding."));
-        // ¿©±â¿¡ "¼ö¸®°¡ ÇÊ¿äÇÕ´Ï´Ù" °°Àº ÆË¾÷ÀÌ³ª »ç¿îµå¸¦ Àç»ıÇÒ ¼ö ÀÖ½À´Ï´Ù.
+        // ì¶”í›„ "ì‹œìŠ¤í…œ ì˜¤ë¥˜ì…ë‹ˆë‹¤" íŒì—… ë©”ì‹œì§€ ë„ìš°ê³  íƒ‘ìŠ¹ ê±°ì ˆí•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
         return;
     }
 
-    Super::OnInteractEnter(Caller, OpenedUI); // ºÎ¸ğÀÇ ±âº» ·ÎÁ÷ ½ÇÇà
+    Super::OnInteractEnter(CallerPlayerId, OpenedUI);
 
-    if (TargetSpaceship) // º¯¼ö¸íÀº TargetSpaceshipÀÌÁö¸¸ ½ÇÁ¦·Î´Â APawn* Å¸ÀÔ
+    if (TargetSpaceship)
     {
         APawn* PlayerPawn = GetWorld()->GetFirstPlayerController()->GetPawn();
         APSJ_Character* MyChar = Cast<APSJ_Character>(PlayerPawn);
 
         if (!MyChar) return;
 
-        // [ºĞ±â 1] ´ë»óÀÌ ÅÍ·¿(TurretBase_GT)ÀÎ °æ¿ì
+        // [ì¼€ì´ìŠ¤ 1] ëŒ€ìƒì´ í„°ë ›(TurretBase_GT)ì¸ ê²½ìš°
         if (ATurretBase_GT* TargetTurret = Cast<ATurretBase_GT>(TargetSpaceship))
         {
-            // ÅÍ·¿¿ë Å¾½Â ¿äÃ» È£Ãâ
+            // í„°ë ›ì— íƒ‘ìŠ¹ ìš”ì²­ ì „ì†¡
             MyChar->Server_RequestTurretBoarding(TargetTurret, this);
             UE_LOG(LogTemp, Log, TEXT("Cockpit: Requesting boarding to TURRET: %s"), *TargetTurret->GetName());
         }
-        // [ºĞ±â 2] ´ë»óÀÌ ¿ìÁÖ¼±(Spaceship)ÀÎ °æ¿ì
+        // [ì¼€ì´ìŠ¤ 2] ëŒ€ìƒì´ ìš°ì£¼ì„ (Spaceship)ì¸ ê²½ìš°
         else if (APSJ_Spaceship* Spaceship = Cast<APSJ_Spaceship>(TargetSpaceship))
         {
-            // ¿ìÁÖ¼±¿¡ Á¶Á¾¼® ¿¬°á Á¤º¸ Àü´Ş
+            // ìš°ì£¼ì„ ì— ì½•í•ì„ ì—°ê²° ë¨¼ì € í•´ì¤Œ
             Spaceship->LinkedCockpit = this;
             MyChar->Server_RequestBoarding(Spaceship);
             UE_LOG(LogTemp, Log, TEXT("Cockpit: Requesting boarding to SPACESHIP: %s"), *Spaceship->GetName());
@@ -123,50 +121,50 @@ void APSJ_ShipCockpit::OnInteractEnter(AActor* Caller, TObjectPtr<UUIBase> Opene
     }
 }
 
-// [3] °íÀå ¹ß»ı (SolarWindManager°¡ È£Ãâ)
+// [3] ê³ ì¥ ì‹œì‘ (SolarWindManagerê°€ í˜¸ì¶œ)
 void APSJ_ShipCockpit::StartMalfunction()
 {
-    if (!HasAuthority()) return; // ¼­¹ö¸¸ ½ÇÇà
+    if (!HasAuthority()) return; // ì„œë²„ì—ì„œë§Œ ì‹¤í–‰
 
-    // ÀÌ¹Ì °íÀå³­ »óÅÂ¸é Å¸ÀÌ¸Ó¸¸ ¸®¼Â (¶Ç´Â ¹«½Ã °¡´É)
+    // ì´ë¯¸ ê³ ì¥ ì¤‘ì´ë©´ íƒ€ì´ë¨¸ë§Œ ê°±ì‹  (ì¤‘ë³µ ë°©ì§€ ìš©ë„)
     if (bIsMalfunctioning)
     {
         CurrentMalfunctionTimer = MalfunctionDuration;
         return;
     }
 
-    // 1. Å¾½ÂÀÚ °­Á¦ ÇÏÂ÷ (±âÁ¸ ÇÔ¼ö È°¿ë)
+    // 1. íƒ‘ìŠ¹ìë¥¼ ê°•ì œë¡œ ì¶”ë°© (ìˆìœ¼ë©´ ë‚´ë³´ëƒ„)
     ReceiveForceEjectRequest();
 
-    // 2. »óÅÂ º¯°æ
+    // 2. ê³ ì¥ ì‹œì‘
     bIsMalfunctioning = true;
     CurrentMalfunctionTimer = MalfunctionDuration;
-    RepairingCharacters.Empty(); // ¼ö¸® ÀÎ¿ø ÃÊ±âÈ­
+    RepairingCharacters.Empty(); // ìˆ˜ë¦¬ ëª©ë¡ ì´ˆê¸°í™”
 
-    // 3. »óÅÂ °»½Å (OnRep È£ÃâµÊ)
+    // 3. ì‹œê° íš¨ê³¼ (OnRep í˜¸ì¶œ)
     OnRep_IsMalfunctioning();
 
     UE_LOG(LogTemp, Error, TEXT("[Cockpit] MALFUNCTION STARTED! Timer: %.1f"), MalfunctionDuration);
 }
 
 
-void APSJ_ShipCockpit::OnInteractExit(AActor* Caller, TObjectPtr<UUIBase> OpenedUI)
+void APSJ_ShipCockpit::OnInteractExit(int32 CallerPlayerId, TObjectPtr<UUIBase> ClosedUI)
 {
-    // 1. TargetSpaceshipÀÌ À¯È¿ÇÑÁö È®ÀÎ
+    // 1. TargetSpaceshipì´ ì¡´ì¬í•˜ë©´ ì²´í¬
     if (TargetSpaceship)
     {
-        // 2. APawn Å¸ÀÔÀ» APSJ_Spaceship Å¸ÀÔÀ¸·Î Çüº¯È¯
+        // 2. APawn í˜•íƒœë¥¼ APSJ_Spaceship íƒ€ì…ìœ¼ë¡œ ìºìŠ¤íŒ…
         APSJ_Spaceship* Spaceship = Cast<APSJ_Spaceship>(TargetSpaceship);
 
-        // 3. Çüº¯È¯¿¡ ¼º°øÇß°í, ÇöÀç Á¶Á¾»ç°¡ ÀÖ´Ù¸é Á¾·á(return) Ã³¸®
+        // 3. ìš°ì£¼ì„ ì´ ì¡´ì¬í•˜ê³ , í˜„ì¬ ì¡°ì¢…ì‚¬ê°€ ìˆìœ¼ë©´ ì¢…ë£Œ(return) ì²˜ë¦¬
         if (Spaceship && Spaceship->GetCurrentPilot())
         {
             return;
         }
     }
 
-    // 4. Á¶Á¾»ç°¡ ¾ø°Å³ª Çüº¯È¯¿¡ ½ÇÆĞÇÑ °æ¿ì ºÎ¸ğ ·ÎÁ÷ ½ÇÇà
-    Super::OnInteractExit(Caller, OpenedUI);
+    // 4. ì¡°ì¢…ì‚¬ê°€ ì—†ê±°ë‚˜ ìš°ì£¼ì„ ì´ ì•„ë‹ˆë©´ ì •ìƒ ì¢…ë£Œ ë¡œì§ ì‹¤í–‰
+    Super::OnInteractExit(CallerPlayerId, ClosedUI);
 }
 
 void APSJ_ShipCockpit::SetTargetPawn(TObjectPtr<APawn> TargetPawn)
@@ -176,41 +174,41 @@ void APSJ_ShipCockpit::SetTargetPawn(TObjectPtr<APawn> TargetPawn)
 
 void APSJ_ShipCockpit::ReceiveForceEjectRequest()
 {
-    // 1. ¿¬°áµÈ ´ë»ó(¿ìÁÖ¼±, ÅÍ·¿ µî)ÀÌ ¾Æ¿¹ ¼¼ÆÃ ¾È µÈ °æ¿ì -> ¹«½Ã
+    // 1. ëŒ€ìƒì´ ì—†ê±°ë‚˜(ìš°ì£¼ì„ , í„°ë › ë“±)ê°€ ì„¸íŒ… ì•ˆëœ ê²½ìš° -> ì¢…ë£Œ
     if (!TargetSpaceship) return;
 
-    // [ÇÙ½É ¾ÈÀüÀåÄ¡] ´ë»ó Pawn¿¡ ÇöÀç ºùÀÇ(Possess)ÇÑ ÄÁÆ®·Ñ·¯(ÇÃ·¹ÀÌ¾î)°¡ ÀÖ´Â°¡?
-    // Controller°¡ nullptr¶ó¸é, Å¸°í ÀÖ´Â »ç¶÷ÀÌ ¾ø´Ù´Â ¶æÀÔ´Ï´Ù.
+    // [ì¤‘ìš” ìµœì í™”] ë§Œì•½ Pawnì— ì•„ë¬´ë„ íƒ€ê³ ìˆì§€(Possess)ê°€ ì•Šë‹¤ë©´(ì»¨íŠ¸ë¡¤ëŸ¬ê°€ ì—†ë‹¤ë©´) ë„˜ì–´ê°
+    // Controllerê°€ nullptrì´ë©´, ì¢Œì„ ì•ˆì— íƒ‘ìŠ¹ìê°€ ì—†ë‹¤ëŠ” ëœ»ì´ë¯€ë¡œ.
     if (TargetSpaceship->GetController() == nullptr)
     {
-        // »ç¶÷ÀÌ ¾øÀ¸¹Ç·Î ÇÏÂ÷ ·ÎÁ÷À» ½ÇÇàÇÏÁö ¾Ê°í ±×³É ³ª°©´Ï´Ù.
-        // ¿ªÀ¸·Î ³»°¡ Å¾½ÂÇÏ´Â ·ÎÁ÷µµ ¾øÀ¸¹Ç·Î ¾ÈÀüÇÕ´Ï´Ù.
+        // ì‚¬ëŒì´ ì•ˆíƒ€ê³ ìˆìœ¼ë©´ êµ³ì´ ê°•ì œë¡œ ë‚´ë³´ë‚¼í•„ìš” ì—†ëŠ” ê±°ì„ ë‹¹ì—°í•¨.
+        // ë¡œê·¸ë„ ìì£¼ ë‚˜ì˜¤ë©´ ìŠ¤íŒ¸ì´ ë˜ë¯€ë¡œ ì£¼ì„ì²˜ë¦¬í•¨.
         // UE_LOG(LogTemp, Log, TEXT("Cockpit: Seat is empty. No one to eject."));
         return;
     }
 
-    // --- »ç¶÷ÀÌ ÀÖÀ» ¶§¸¸ ¾Æ·¡ ·ÎÁ÷ÀÌ ½ÇÇàµË´Ï´Ù ---
+    // --- íƒ‘ìŠ¹ìê°€ ìˆëŠ” ê²½ìš° ì—¬ê¸°ë¶€í„° ì‹¤í–‰ë¨ ---
 
-    // 2. ¸®ÇÃ·º¼ÇÀ» ÀÌ¿ëÇØ ¿¬°áµÈ PawnÀÇ 'DisembarkCharacter' ÇÔ¼ö Ã£±â
+    // 2. ë¦¬í”Œë ‰ì…˜ìœ¼ë¡œ ë™ì ìœ¼ë¡œ ëŒ€ìƒ Pawnì˜ 'DisembarkCharacter' í•¨ìˆ˜ í˜¸ì¶œ
     static const FName DisembarkFuncName(TEXT("DisembarkCharacter"));
     UFunction* DisembarkFunc = TargetSpaceship->FindFunction(DisembarkFuncName);
 
     if (DisembarkFunc)
     {
-        // ÇÔ¼ö°¡ ÀÖÀ¸¸é ½ÇÇà (°­Á¦ ÇÏÂ÷)
+        // í•¨ìˆ˜ë¥¼ ì°¾ì•„ì„œ í˜¸ì¶œ (ê°•ì œ í•˜ì„ )
         TargetSpaceship->ProcessEvent(DisembarkFunc, nullptr);
         UE_LOG(LogTemp, Warning, TEXT("Cockpit: Force Eject Executed on %s"), *TargetSpaceship->GetName());
     }
     else
     {
-        // ÇÔ¼ö°¡ ¾øÀ¸¸é ·Î±× Ãâ·Â
+        // í•¨ìˆ˜ê°€ ì—†ë‹¤ë©´ ê²½ê³  ì¶œë ¥
         UE_LOG(LogTemp, Error, TEXT("Cockpit: Target %s does NOT have 'DisembarkCharacter' function!"), *TargetSpaceship->GetName());
     }
 }
 
 void APSJ_ShipCockpit::AttemptBoarding(APSJ_Character* RequestingChar)
 {
-    // [1] °íÀå ³µÀ¸¸é Å¾½Â ½Ãµµ ÀÚÃ¼¸¦ Â÷´Ü (ÀÌ ÄÚµå°¡ ¾ø¾î¼­ ¶Õ·È´ø °ÍÀÔ´Ï´Ù)
+    // [1] ê³ ì¥ ìƒíƒœì—ì„  íƒ‘ìŠ¹ ëª» í•˜ê²Œ ê±°ë¶€í•¨ (ì´ ë¶€ë¶„ ë¨¼ì € ì²´í¬ í•´ì•¼ ì•ˆì „í•¨)
     if (bIsMalfunctioning)
     {
         UE_LOG(LogTemp, Warning, TEXT("[Cockpit] System Error! Repair required before boarding."));
@@ -224,17 +222,17 @@ void APSJ_ShipCockpit::AttemptBoarding(APSJ_Character* RequestingChar)
         return;
     }
 
-    // ÅÍ·¿ÀÎ °æ¿ì
+    // í„°ë ›ì¸ ê²½ìš°
     if (ATurretBase_GT* TargetTurret = Cast<ATurretBase_GT>(TargetSpaceship))
     {
-        // ¼­¹ö¿¡°Ô "³ª ÅÍ·¿ Å»·¡"¶ó°í ¿äÃ» (Ä³¸¯ÅÍ ³»ºÎ¿¡¼­ Server RPC È£ÃâµÊ)
+        // ìºë¦­í„°ì—ê²Œ "í„°ë › íƒ‘ìŠ¹ ìš”ì²­"ë¥¼ ì „ì†¡ (ì„œë²„ë¡œ ì²˜ë¦¬í•˜ë ¤ê³  Server RPC ì‚¬ìš©)
         RequestingChar->Server_RequestTurretBoarding(TargetTurret, this);
     }
-    // ¿ìÁÖ¼±ÀÎ °æ¿ì
+    // ìš°ì£¼ì„ ì¸ ê²½ìš°
     else if (APSJ_Spaceship* Spaceship = Cast<APSJ_Spaceship>(TargetSpaceship))
     {
         Spaceship->LinkedCockpit = this;
-        // ¼­¹ö¿¡°Ô "³ª ¿ìÁÖ¼± Å»·¡"¶ó°í ¿äÃ»
+        // ìºë¦­í„°ì—ê²Œ "ì´ ìš°ì£¼ì„  íƒ‘ìŠ¹"ë¥¼ ìš”ì²­
         RequestingChar->Server_RequestBoarding(Spaceship);
     }
 }
@@ -244,21 +242,21 @@ void APSJ_ShipCockpit::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    // ¼­¹öÀÌ°í, °íÀå³­ »óÅÂÀÏ ¶§¸¸ Å¸ÀÌ¸Ó°¡ µ¹¾Æ°©´Ï´Ù.
+    // ì„œë²„ì—ì„œë§Œ, ê³ ì¥ ìƒíƒœì¼ ë•Œë§Œ íƒ€ì´ë¨¸ ì°¨ê°ì‹œí‚´.
     if (HasAuthority() && bIsMalfunctioning)
     {
-        // === [ÇÕ¿¬»ê ¼ö¸® ¼Óµµ °ø½Ä] ===
-        // ±âº» °¨¼Ò ¼Óµµ: 1.0 (ÃÊ´ç 1ÃÊ °¨¼Ò)
-        // Ãß°¡ °¡¼Óµµ: (RepairSpeedRate - 1.0)
-        // ÃÖÁ¾ ¼Óµµ = 1.0 + (¼ö¸®ÀÎ¿ø * Ãß°¡ °¡¼Óµµ)
+        // === [ìˆ˜ë¦¬ì†ë„ ê³„ì‚° ê³µì‹ ì„¤ëª…] ===
+        // ê¸°ë³¸ ì†ë„ ê°ì†Œ: 1.0 (í˜¼ì 1ë°° ì†ë„ì„)
+        // ì¶”ê°€ ë³´ë„ˆìŠ¤: (RepairSpeedRate - 1.0)
+        // ìµœì¢… ê°ì†Œ ì†ë„ = 1.0 + (ìˆ˜ë¦¬ì¸ì›ìˆ˜ * ì¶”ê°€ ë³´ë„ˆìŠ¤)
 
         float BonusRatePerPerson = FMath::Max(1.0f, RepairSpeedRate) - 1.0f;
         float TotalSpeed = 1.0f + (RepairingCharacters.Num() * BonusRatePerPerson);
 
-        // ½Ã°£ °¨¼Ò
+        // íƒ€ì´ë¨¸ ì°¨ê°
         CurrentMalfunctionTimer -= (DeltaTime * TotalSpeed);
 
-        // µğ¹ö±ë¿ë ·Î±× (°³¹ß Áß¿¡¸¸ ÄÑµÎ¼¼¿ä)
+        // ë””ë²„ê¹… ë¡œê·¸ (ë„ˆë¬´ ìì£¼ ë‚˜ì˜¤ë©´ ì£¼ì„ì²˜ë¦¬)
         /*
         if (RepairingCharacters.Num() > 0)
         {
@@ -267,25 +265,25 @@ void APSJ_ShipCockpit::Tick(float DeltaTime)
         }
         */
 
-        // ¼ö¸® ¿Ï·á Ã¼Å©
+        // ìˆ˜ë¦¬ ì™„ë£Œ ì‹œ
         if (CurrentMalfunctionTimer <= 0.0f)
         {
             bIsMalfunctioning = false;
             CurrentMalfunctionTimer = 0.0f;
             RepairingCharacters.Empty();
 
-            OnRep_IsMalfunctioning(); // Å¬¶ó¿¡ ¾Ë¸²
+            OnRep_IsMalfunctioning(); // íš¨ê³¼ ì¬ìƒ
             UE_LOG(LogTemp, Log, TEXT("[Cockpit] REPAIR COMPLETE! System Online."));
         }
     }
 
 
-    // [Å¬¶óÀÌ¾ğÆ® µğ¹ö±ë¿ë ÅØ½ºÆ® Ç¥½Ã]
+    // [ì—ë””í„°ì—ì„œ ë””ë²„ê·¸ìš© í…ìŠ¤íŠ¸ í‘œì‹œ]
     if (GetWorld()->IsNetMode(NM_Client) || GetWorld()->IsPlayInEditor())
     {
         FVector ActorLoc = GetActorLocation();
 
-        // 1. [±âÁ¸] ¿¬°á »óÅÂ Ç¥½Ã (À§Ä¡: ±âº»)
+        // 1. [ë§í¬] ëŒ€ìƒ ì—°ê²° í‘œì‹œ (ìœ„ì¹˜: ì›ì )
         if (TargetSpaceship)
         {
             DrawDebugString(GetWorld(), ActorLoc, TEXT("Link OK"), nullptr, FColor::Green, 0.0f);
@@ -295,22 +293,22 @@ void APSJ_ShipCockpit::Tick(float DeltaTime)
             DrawDebugString(GetWorld(), ActorLoc, TEXT("Link NULL"), nullptr, FColor::White, 0.0f);
         }
 
-        // 2. [½Å±Ô] °íÀå »óÅÂ Ç¥½Ã (À§Ä¡: ZÃàÀ¸·Î 50cm À§)
-        FVector StatusLoc = ActorLoc + FVector(0, 0, 50.0f); // ±ÛÀÚ °ãÄ¡Áö ¾Ê°Ô À§·Î ¶ç¿ò
+        // 2. [ìƒíƒœ] ê³ ì¥ ìƒíƒœ í‘œì‹œ (ìœ„ì¹˜: Zì¶•ìœ¼ë¡œ 50cm ìœ„)
+        FVector StatusLoc = ActorLoc + FVector(0, 0, 50.0f); // ì›ì  ìœ„ìª½ì—ì„œ ë„ì›Œì„œ í‘œì‹œ
 
         if (bIsMalfunctioning)
         {
-            // °íÀå³µÀ» ¶§: »¡°£»öÀ¸·Î ³²Àº ½Ã°£ Ç¥½Ã
+            // ê³ ì¥ì¤‘ì¼ ë•Œ: ë¹¨ê°„ìƒ‰ìœ¼ë¡œ ë‚¨ì€ ì‹œê°„ í‘œì‹œ
             FString StatusMsg = FString::Printf(TEXT("MALFUNCTION! (Time: %.1f)"), CurrentMalfunctionTimer);
             DrawDebugString(GetWorld(), StatusLoc, StatusMsg, nullptr, FColor::Red, 0.0f);
         }
         else
         {
-            // Á¤»óÀÏ ¶§: ÆÄ¶õ»öÀ¸·Î Normal Ç¥½Ã
+            // ì •ìƒì¼ ë•Œ: ì²­ë¡ìƒ‰ìœ¼ë¡œ Normal í‘œì‹œ
             DrawDebugString(GetWorld(), StatusLoc, TEXT("STATUS: NORMAL"), nullptr, FColor::Cyan, 0.0f);
         }
 
-        // 3. [½Å±Ô] ¼ö¸® ÁßÀÎ ÀÎ¿ø Ç¥½Ã (À§Ä¡: ZÃàÀ¸·Î 80cm À§)
+        // 3. [ìˆ˜ë¦¬] ìˆ˜ë¦¬ ì¤‘ì¸ ì¸ì› í‘œì‹œ (ìœ„ì¹˜: Zì¶•ìœ¼ë¡œ 80cm ìœ„)
         if (RepairingCharacters.Num() > 0)
         {
             FVector RepairLoc = ActorLoc + FVector(0, 0, 80.0f);
@@ -321,7 +319,7 @@ void APSJ_ShipCockpit::Tick(float DeltaTime)
 
 }
 
-// [5] ¼ö¸® ÀÎ¿ø °ü¸® (Character¿¡¼­ È£ÃâµÊ)
+// [5] ìˆ˜ë¦¬ ì¸ì› ê´€ë¦¬ (Characterì—ì„œ í˜¸ì¶œ)
 void APSJ_ShipCockpit::AddRepairer(APSJ_Character* Mechanic)
 {
     if (Mechanic && !RepairingCharacters.Contains(Mechanic))
@@ -338,17 +336,17 @@ void APSJ_ShipCockpit::RemoveRepairer(APSJ_Character* Mechanic)
     }
 }
 
-// [6] RepNotify (Å¬¶óÀÌ¾ğÆ® È¿°ú Ã³¸®)
+// [6] RepNotify (í´ë¼ì´ì–¸íŠ¸ ì‹œê° íš¨ê³¼)
 void APSJ_ShipCockpit::OnRep_IsMalfunctioning()
 {
     if (bIsMalfunctioning)
     {
-        // ¿¹: ½ºÆÄÅ© ÆÄÆ¼Å¬ ÄÑ±â, °íÀåÀ½ ·çÇÁ Àç»ı
+        // ê³ ì¥: ë¹¨ê°›ê²Œ ê¹œë¹¡ì„, ê²½ê³ ìŒ ì¬ìƒ ë“±ë“±
         UE_LOG(LogTemp, Warning, TEXT("[Client] Cockpit looks broken!"));
     }
     else
     {
-        // ¿¹: ÆÄÆ¼Å¬ ²ô±â, Á¤»ó »óÅÂ º¹±¸
+        // ì •ìƒ: ì´ˆë¡ìƒ‰ ë¶ˆë¹›, ì •ìƒ ì‚¬ìš´ë“œ ì¬ìƒ
         UE_LOG(LogTemp, Log, TEXT("[Client] Cockpit looks fixed!"));
     }
 }

@@ -37,7 +37,7 @@ void UUIPanelTurretMagReload::OnChangeTurret(UEventOnChangeTurretData* Event)
     SetProgressBarUI(_turretData.Mag.Value.CurrentValue, _turretData.Mag.Value.MaxValue, PROG_TurretMag, TXT_TurretMag, false);
 }
 
-void UUIPanelTurretMagReload::Initialize(E_TURRET_POSITION TurretPosition)
+void UUIPanelTurretMagReload::InitializeMagReload(E_TURRET_POSITION TurretPosition)
 {
     _turretPosition = TurretPosition;
     TXT_TurretPosition->SetText(FText::FromString(FString::Printf(TEXT("%s"), *CommonEnums::GetEnum2FString<E_TURRET_POSITION>(_turretPosition))));
