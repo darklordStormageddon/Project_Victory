@@ -23,7 +23,7 @@ public:
 
 	void Input_Exit(const FInputActionValue& Value);
 
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable, Category = "Interaction")
 	void Server_RequestDisembark();
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;

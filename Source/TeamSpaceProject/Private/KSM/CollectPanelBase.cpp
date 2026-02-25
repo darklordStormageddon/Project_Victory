@@ -3,6 +3,7 @@
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
 #include "Net/UnrealNetwork.h"
+#include "EnhancedInputSubsystems.h"
 
 // Sets default values
 ACollectPanelBase::ACollectPanelBase()
@@ -56,5 +57,22 @@ void ACollectPanelBase::UpdateDurabilityAndDamage_Implementation()
 	float DeltaTime = GetWorld()->GetDeltaSeconds();
 	if (!_collectStateGroup->TryUseTool(_Tool_Type, DeltaTime, _OutToolDamage))
 		return;
+}
+
+void ACollectPanelBase::Client_BoardingSuccess_Implementation()
+{
+	Super::Client_BoardingSuccess_Implementation();
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+		{
+			Subsystem->ClearAllMappings();
+			if (PanelMappingContext)
+			{
+				Subsystem->AddMappingContext(PanelMappingContext, 0);
+			}
+		}
+	}
 }
 

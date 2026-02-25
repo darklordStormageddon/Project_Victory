@@ -28,6 +28,9 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UCollectStateGroup> _collectStateGroup;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputMappingContext* PanelMappingContext;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -37,6 +40,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
 	void UpdateDurabilityAndDamage();
+
+	virtual void Client_BoardingSuccess_Implementation() override;
 
 public:
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
