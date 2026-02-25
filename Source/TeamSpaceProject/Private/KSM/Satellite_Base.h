@@ -75,7 +75,7 @@ public:
 	TArray<TSubclassOf<AConnector_Base>> Connector_Types;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	UDataTable* Location_DataTable;
+	TArray<UDataTable*> Location_DataTable;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USceneComponent* SceneRoot;
