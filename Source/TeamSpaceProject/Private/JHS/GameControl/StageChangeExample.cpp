@@ -28,10 +28,10 @@ void AStageChangeExample::BeginPlay()
 		}
 	);
 
-	_eventHandleOnEndStage = _eventManager->AddListener<UEventOnEndStage>(
-		[this](UEventOnEndStage* Event)
+	_eventHandleOnToLobby = _eventManager->AddListener<UEventOnToLobby>(
+		[this](UEventOnToLobby* Event)
 		{
-			OnEndStage(Event);
+			OnMoveToLobby(Event);
 		}
 	);
 }
@@ -51,10 +51,10 @@ void AStageChangeExample::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		_eventHandleOnStartStage.Reset();
 	}
 
-	if (_eventHandleOnEndStage.IsValid())
+	if (_eventHandleOnToLobby.IsValid())
 	{
-		_eventManager->DelListener<UEventOnEndStage>(_eventHandleOnEndStage);
-		_eventHandleOnEndStage.Reset();
+		_eventManager->DelListener<UEventOnToLobby>(_eventHandleOnToLobby);
+		_eventHandleOnToLobby.Reset();
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -75,12 +75,12 @@ void AStageChangeExample::OnStartStage_Implementation(UEventOnStartStage* Event)
 	UE_LOG(LogTemp, Warning, TEXT("OnStartStage: %d"), _stage);
 }
 
-void AStageChangeExample::OnEndStage_Implementation(UEventOnEndStage* Event)
+void AStageChangeExample::OnMoveToLobby_Implementation(UEventOnToLobby* Event)
 {
 	if (Event == nullptr)
 		return;
 
-	// TODO: 스테이지 종료 처리
-	UE_LOG(LogTemp, Warning, TEXT("OnEndStage"));
+	// TODO: 로비 이동
+	UE_LOG(LogTemp, Warning, TEXT("OnToLobby"));
 }
 
