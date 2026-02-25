@@ -92,6 +92,9 @@ private:
 
 	AActor* TargetShip;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+	float DamageDamping = 2.f;
+
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	FSpawnAsteroidInfo _asteroidInfo;

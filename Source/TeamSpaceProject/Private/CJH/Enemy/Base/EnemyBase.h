@@ -39,7 +39,11 @@ UCLASS()
 class AEnemyBase : public ATargetBase
 {
 	GENERATED_BODY()
+
 protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Debug")
+	bool bShowStatsDebug = false;
+
 	FVector NewScale;
 
 	UPROPERTY(EditDefaultsOnly, Category = "SpaceObject")
@@ -76,6 +80,9 @@ public:
 	AActor* Target = nullptr;
 
 	UEnemySpawnComponent* EnemyComponent;
+
+private:
+	void DebugShowStat();
 
 public:	
 	// Sets default values for this actor's properties
