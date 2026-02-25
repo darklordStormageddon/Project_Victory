@@ -24,7 +24,6 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UProjectileMovementComponent* ProjectileMovement;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Bullet")
 	float Damage = 10.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Bullet")

@@ -213,7 +213,7 @@ void UAsteroidComponent::SpawnAsteroid()
 
 float UAsteroidComponent::SetDamage(float Speed, float Size)
 {
-	float Damage = _asteroidInfo.BaseDamage + (Size * Speed / 100.f);//0.3~40 //10.3~50
+	float Damage = _asteroidInfo.BaseDamage + (Size * Speed / (100.f * DamageDamping));//0.3~40 //10.3~50
 	return Damage;
 }
 

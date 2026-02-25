@@ -30,14 +30,12 @@ void AEnemyBase::BeginPlay()
 	if (!HasAuthority())
 		return;
 
-	// ===== 안전한 초기화 순서 =====
 	if (HealthComp)
 	{
 		FTimerHandle InitHandle;
 
 		GetWorld()->GetTimerManager().SetTimer(InitHandle, [this]()
 		{
-			SetInfo();
 			HealthComp->OnDeath.AddDynamic(this, &AEnemyBase::EnemyDeath);
 		}, 0.01f, false);
 	}
@@ -47,6 +45,9 @@ void AEnemyBase::SetInfo()
 {
 	if (!HasAuthority())
 		return;
+
+	if(bShowStatsDebug)
+		DebugShowStat();
 
 	// 적 크기에 비례하여 능력치 증감
 	SetActorScale3D(this->NewScale);
@@ -60,6 +61,19 @@ void AEnemyBase::SetInfo()
 		HealthComp->MaxHealth = _targetInfo.Max_HP;
 		HealthComp->CurrentHealth = _targetInfo.Max_HP;
 	}
+}
+
+void AEnemyBase::DebugShowStat()
+{
+	UE_LOG(LogTemp, Warning, TEXT("AEnemyBase::DebugShowStat - Size: %f, Max_HP: %f, Attack_Damage: %f, Speed: %f, Attack_Speed: %f, Attack_Range: %f, Detection_Range: %f"),
+		_targetInfo.Size,
+		_targetInfo.Max_HP,
+		_targetInfo.Attack_Damage,
+		_spawnedInfo.Attack_Speed,
+		_spawnedInfo.Attack_Range,
+		_spawnedInfo.Detection_Range,
+		_targetInfo.Speed
+	);
 }
 
 // Called every frame
@@ -142,8 +156,6 @@ void AEnemyBase::EnemyDeath()
 		return;
 
 	Murdered = true;
-
-	UE_LOG(LogTemp, Warning, TEXT("AEnemyBase::EnemyDeath - Enemy died!"));
 
 	// ===== 파티클 안전하게 스폰 (현재 위치에서만) =====
 	if (DeathParticle && GetActorLocation().Length() > 100.f)  // 0,0,0 확인
