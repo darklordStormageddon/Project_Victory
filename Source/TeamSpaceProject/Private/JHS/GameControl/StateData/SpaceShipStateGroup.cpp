@@ -2,6 +2,9 @@
 
 
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/JHSPlayerController.h"
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/ShopManager.h"
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
@@ -78,19 +81,6 @@ TArray<FPurchaseData*> USpaceShipStateGroup::GetPurchaseDataArray()
 	return _purchaseDataArray;
 }
 
-void USpaceShipStateGroup::TryPurchaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType)
-{
-	FSpaceShipData* _outSpaceShipData = nullptr;
-	if (!TryGetSpaceShipData(DataType, _outSpaceShipData) || _gameState == nullptr)
-		return;
-
-	TObjectPtr<UShopManager> _shopManager = _gameState->GetShopManager();
-	if (_shopManager == nullptr || !_shopManager->TryPurchase(&_outSpaceShipData->Data))
-		return;
-
-	ChangeMaxData(_outSpaceShipData, _outSpaceShipData->Data.Value.MaxValue, true);
-}
-
 void USpaceShipStateGroup::RepairSpaceShip()
 {
 	FSpaceShipData* _outSpaceShipData = nullptr;
@@ -110,13 +100,45 @@ void USpaceShipStateGroup::RepairSpaceShip()
 	}
 }
 
-void USpaceShipStateGroup::DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType, float DecreaseValue)
+void USpaceShipStateGroup::TakeDamage(float Damage)
 {
-	FSpaceShipData* _outSpaceShipData = nullptr;
-	if (!TryGetSpaceShipData(DataType, _outSpaceShipData))
+	// Shield
+	FSpaceShipData* _outShieldData = nullptr;
+	if (!TryGetSpaceShipData(E_SPACE_SHIP_DATA_TYPE::Shield, _outShieldData))
 		return;
 
-	ChangCurrentData(_outSpaceShipData, _outSpaceShipData->Data.Value.CurrentValue - DecreaseValue);
+	FMaxCurrentData* _shieldData = &_outShieldData->Data.Value;
+	float _leftDamage = Damage - _shieldData->CurrentValue;
+	ChangCurrentData(_outShieldData, _shieldData->CurrentValue - Damage);
+
+	if (_leftDamage <= 0.0f)
+		return;
+
+	// HP
+	FSpaceShipData* _outHPData = nullptr;
+	if (!TryGetSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, _outHPData))
+		return;
+
+	FMaxCurrentData* _hpData = &_outHPData->Data.Value;
+	ChangCurrentData(_outHPData, _hpData->CurrentValue - _leftDamage);
+
+	// Is died
+	if (_hpData->CurrentValue <= 0.0f)
+	{
+		AJHSPlayerController* _outPlayerController = nullptr;
+		if (!UStaticFunctionLibrary::TryGetPlayerController(_outPlayerController))
+			return;
+
+		APawn* _pawn = _outPlayerController->GetPawn();
+		if (_pawn->HasAuthority())
+		{
+			AJHSGameMode* _outGameMode = nullptr;
+			if (!UStaticFunctionLibrary::TryGetGameMode(_outGameMode))
+				return;
+
+			_outGameMode->EndStage(_pawn);
+		}
+	}
 }
 
 void USpaceShipStateGroup::RepairShield(float RepairShieldValue)
@@ -163,20 +185,26 @@ void USpaceShipStateGroup::LoadSpaceShipData()
 	UE_LOG(LogTemp, Warning, TEXT("SpaceShip Data Table loaded successfully. %d rows loaded"), _spaceShipDataMap.Num());
 }
 
-void USpaceShipStateGroup::ChangCurrentData(FSpaceShipData* OriginalData, float CurrentValue)
+void USpaceShipStateGroup::DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType, float DecreaseValue)
 {
-	FMaxCurrentData* _value = &(OriginalData->Data.Value);
-	_value->CurrentValue = CurrentValue;
-	if (_value->CurrentValue > _value->MaxValue)
-	{
-		_value->CurrentValue = _value->MaxValue;
-	}
-	if (_value->CurrentValue < 0.0f)
-	{
-		_value->CurrentValue = 0.0f;
-	}
+	FSpaceShipData* _outSpaceShipData = nullptr;
+	if (!TryGetSpaceShipData(DataType, _outSpaceShipData))
+		return;
 
-	ExecuteEventSpaceShipData(*OriginalData);
+	ChangCurrentData(_outSpaceShipData, _outSpaceShipData->Data.Value.CurrentValue - DecreaseValue);
+}
+
+void USpaceShipStateGroup::TryPurchaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType)
+{
+	FSpaceShipData* _outSpaceShipData = nullptr;
+	if (!TryGetSpaceShipData(DataType, _outSpaceShipData) || _gameState == nullptr)
+		return;
+
+	TObjectPtr<UShopManager> _shopManager = _gameState->GetShopManager();
+	if (_shopManager == nullptr || !_shopManager->TryPurchase(&_outSpaceShipData->Data))
+		return;
+
+	ChangeMaxData(_outSpaceShipData, _outSpaceShipData->Data.Value.MaxValue, true);
 }
 
 void USpaceShipStateGroup::ChangeMaxData(FSpaceShipData* OriginalData, float MaxValue, bool IsRepairCurrentValue)
@@ -195,6 +223,22 @@ void USpaceShipStateGroup::ChangeMaxData(FSpaceShipData* OriginalData, float Max
 	else if (_value->CurrentValue > _value->MaxValue)
 	{
 		_value->CurrentValue = _value->MaxValue;
+	}
+
+	ExecuteEventSpaceShipData(*OriginalData);
+}
+
+void USpaceShipStateGroup::ChangCurrentData(FSpaceShipData* OriginalData, float CurrentValue)
+{
+	FMaxCurrentData* _value = &(OriginalData->Data.Value);
+	_value->CurrentValue = CurrentValue;
+	if (_value->CurrentValue > _value->MaxValue)
+	{
+		_value->CurrentValue = _value->MaxValue;
+	}
+	if (_value->CurrentValue < 0.0f)
+	{
+		_value->CurrentValue = 0.0f;
 	}
 
 	ExecuteEventSpaceShipData(*OriginalData);

@@ -279,7 +279,7 @@ void APSJ_Spaceship::Tick(float DeltaTime)
 void APSJ_Spaceship::OnTakeDamage(float Damage)
 {
 	if (GetSpaceShipStateGroup())
-		_spaceShipStateGroup->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, Damage);
+		_spaceShipStateGroup->TakeDamage(Damage);
 }
 
 void APSJ_Spaceship::OnDeath()

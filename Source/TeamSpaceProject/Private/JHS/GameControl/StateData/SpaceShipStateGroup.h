@@ -41,20 +41,24 @@ public:
 
 	TArray<FPurchaseData*> GetPurchaseDataArray();
 
-	void TryPurchaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType);
-
+#pragma region SpaceShip Health
+public:
 	void RepairSpaceShip();
 
-	void DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType, float DecreaseValue);
-
+	void TakeDamage(float Damage);
+#pragma endregion SpaceShip Health
 	void RepairShield(float RepairShieldValue);
 
 private:
 	void LoadSpaceShipData();
 
-	void ChangCurrentData(FSpaceShipData* OriginalData, float CurrentValue);
+	void DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType, float DecreaseValue);
+
+	void TryPurchaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType);
 
 	void ChangeMaxData(FSpaceShipData* OriginalData, float MaxValue, bool IsRepairCurrentValue);
+
+	void ChangCurrentData(FSpaceShipData* OriginalData, float CurrentValue);
 
 	void ExecuteEventSpaceShipData(FSpaceShipData SpaceShipData);
 
