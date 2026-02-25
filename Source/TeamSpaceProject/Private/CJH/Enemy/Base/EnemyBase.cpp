@@ -111,20 +111,17 @@ bool AEnemyBase::TargetHPCheck()
 }
 
 // 플레이어와의 거리 체크
-bool AEnemyBase::DistanceCheck(float _condition)
+bool AEnemyBase::DistanceCheck(float Condition)
 {
-	if (!HasAuthority())
+	if (!HasAuthority() || !IsValid(_spaceShip))
 		return false;
 
-	if (!IsValid(_spaceShip))
-		return false;
+	const float DistSq = FVector::DistSquared(
+		GetActorLocation(),
+		_spaceShip->GetActorLocation()
+	);
 
-	float Distance = FVector::Dist(GetActorLocation(), _spaceShip->GetActorLocation());
-
-	if (Distance <= _condition)
-		return true;
-
-	return false;
+	return DistSq <= Condition * Condition;
 }
 
 void AEnemyBase::SetTargetShip(TSubclassOf<AActor> Targetenemy) 

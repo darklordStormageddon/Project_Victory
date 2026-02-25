@@ -143,9 +143,13 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 	const float OrbitMin = AttackR * 0.7f;
 	const float OrbitMax = AttackR;
 
-	float CurrentDistToTarget = FVector::Dist(CurrentLoc, TargetLoc);
+	const float OrbitMinSq = OrbitMin * OrbitMin;
+	const float OrbitMaxSq = OrbitMax * OrbitMax;
+	const float AttackRSq = AttackR * AttackR;
 
-	if (CurrentDistToTarget < OrbitMin)
+	const float CurrentDistSqToTarget = FVector::DistSquared(CurrentLoc, TargetLoc);
+
+	if (CurrentDistSqToTarget < OrbitMinSq)
 	{
 		FVector BackDir = (CurrentLoc - TargetLoc).GetSafeNormal();
 		if (BackDir.IsNearlyZero())
@@ -153,10 +157,11 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 
 		FVector BackTarget = TargetLoc + BackDir * OrbitMin;
 		FVector ToBack = BackTarget - CurrentLoc;
-		float Dist = ToBack.Size();
+		float DistSq = ToBack.SizeSquared();
 
-		if (Dist > KINDA_SMALL_NUMBER)
+		if (DistSq > KINDA_SMALL_NUMBER)
 		{
+			float Dist = FMath::Sqrt(DistSq);
 			FVector Dir = ToBack / Dist;
 			float Speed = FMath::Max(1.0f, _targetInfo.Speed);
 			float MaxStep = Speed * DeltaTime;
@@ -168,7 +173,7 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 		return;
 	}
 
-	if (CurrentDistToTarget > AttackR)
+	if (CurrentDistSqToTarget > AttackRSq)
 	{
 		FVector Dir = (TargetLoc - CurrentLoc).GetSafeNormal();
 		float Speed = FMath::Max(1.0f, _targetInfo.Speed);
@@ -178,7 +183,7 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 		return;
 	}
 
-	if (CurrentDistToTarget >= OrbitMin && CurrentDistToTarget <= OrbitMax)
+	if (CurrentDistSqToTarget >= OrbitMinSq && CurrentDistSqToTarget <= OrbitMaxSq)
 	{
 		if (!bOrbiting)
 			EnterOrbit();
@@ -229,10 +234,11 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 		FVector OrbitTargetPos = TargetLoc + OrbitDir * DesiredRadius;
 
 		FVector ToOrbit = OrbitTargetPos - CurrentLoc;
-		float DistToOrbit = ToOrbit.Size();
+		float DistToOrbitSq = ToOrbit.SizeSquared();
 
-		if (DistToOrbit > KINDA_SMALL_NUMBER)
+		if (DistToOrbitSq > KINDA_SMALL_NUMBER)
 		{
+			float DistToOrbit = FMath::Sqrt(DistToOrbitSq);
 			FVector MoveDir = ToOrbit / DistToOrbit;
 			float Speed = FMath::Max(1.0f, _targetInfo.Speed);
 			float MaxStep = Speed * DeltaTime;
@@ -252,27 +258,30 @@ void ADroneEnemy::ChaseMove(float DeltaTime)
 
 void ADroneEnemy::GoToTarget(FVector CurrentLoc, FVector TargetLoc, FVector ApproachPoint, float DeltaTime)
 {
-	float Dist = FVector::Dist(CurrentLoc, TargetLoc);
+	float DistSq = FVector::DistSquared(CurrentLoc, TargetLoc);
 
 	float OrbitEnterDist = _spawnedInfo.Attack_Range * 0.7f;
 	float OrbitExitDist = _spawnedInfo.Attack_Range * 1.5f;
+	float OrbitEnterDistSq = OrbitEnterDist * OrbitEnterDist;
+	float OrbitExitDistSq = OrbitExitDist * OrbitExitDist;
 
-	if (!bOrbiting && Dist <= OrbitEnterDist)
+	if (!bOrbiting && DistSq <= OrbitEnterDistSq)
 	{
 		EnterOrbit();
 		return;
 	}
 
-	if (bOrbiting && Dist >= OrbitExitDist)
+	if (bOrbiting && DistSq >= OrbitExitDistSq)
 	{
 		bOrbiting = false;
 		return;
 	}
 
 	FVector ToGoal = ApproachPoint - CurrentLoc;
-	float DistToGoal = ToGoal.Size();
-	if (DistToGoal > KINDA_SMALL_NUMBER)
+	float DistToGoalSq = ToGoal.SizeSquared();
+	if (DistToGoalSq > KINDA_SMALL_NUMBER)
 	{
+		float DistToGoal = FMath::Sqrt(DistToGoalSq);
 		FVector Dir = ToGoal / DistToGoal;
 		float Speed = FMath::Max(1.0f, _targetInfo.Speed);
 		float MaxStep = Speed * DeltaTime;
@@ -309,9 +318,12 @@ void ADroneEnemy::OrbitAroundTarget(const FVector& ApproachPoint, float DeltaTim
 
 	FVector TargetLoc = Target->GetActorLocation();
 	FVector CurrentLoc = GetActorLocation();
-	float CurrentDist = FVector::Dist(CurrentLoc, TargetLoc);
+	float CurrentDistSq = FVector::DistSquared(CurrentLoc, TargetLoc);
 
-	if (bOrbiting && CurrentDist > _spawnedInfo.Attack_Range * 0.8f)
+	float OrbitExitThreshold = _spawnedInfo.Attack_Range * 0.8f;
+	float OrbitExitThresholdSq = OrbitExitThreshold * OrbitExitThreshold;
+
+	if (bOrbiting && CurrentDistSq > OrbitExitThresholdSq)
 	{
 		float TargetDist = _spawnedInfo.Attack_Range * 0.75f;
 		FVector DirToTarget = (TargetLoc - CurrentLoc).GetSafeNormal();

@@ -89,13 +89,13 @@ void UDistanceComponent::MeasureDistance()
 
 	LastDistance = CalculateDistance(TargetA->GetActorLocation(), TargetB->GetActorLocation());
 
-	if (SpaceRadius < LastDistance)
+	if (SpaceRadius * SpaceRadius < LastDistance)
 		OnDistanceDamaged.Broadcast();
 }
 
 double UDistanceComponent::CalculateDistance(const FVector& FromTarget, const FVector& ToTarget)
 {
-	return (ToTarget - FromTarget).Size();
+	return FVector::DistSquared(ToTarget,FromTarget);
 }
 
 //void UDistanceComponent::OverDistance()
