@@ -51,34 +51,40 @@ void AGarbageEnemyBase::SetInfo()
 
 void AGarbageEnemyBase::FollowOrbitTarget(float DeltaTime)
 {
-	if (!HasAuthority())
-		return;
+    if (!HasAuthority() || !bHasOrbitTarget)
+        return;
 
-	if (!bHasOrbitTarget) return;
+    const FVector Current = GetActorLocation();
+    const FVector ToTarget = OrbitTarget - Current;
 
-	// 목표 위치까지의 벡터
-	FVector Current = GetActorLocation();
-	FVector ToTarget = OrbitTarget - Current;
-	float Dist = ToTarget.Size();
+    const float DistSq = ToTarget.SizeSquared();
 
-	// 소형 보정: 너무 가까우면 정지
-	const float StopThreshold = 10.0f;
-	if (Dist <= StopThreshold)
-	{
-		// 정확히 고정
-		SetActorLocation(OrbitTarget);
-		return;
-	}
+    const float StopThreshold = 10.0f;
+    const float StopThresholdSq = StopThreshold * StopThreshold;
 
-	float Speed = 800.f;
+    if (DistSq <= StopThresholdSq)
+    {
+        SetActorLocation(OrbitTarget);
+        return;
+    }
 
-	FVector MoveDelta = ToTarget.GetSafeNormal() * Speed * DeltaTime;
+    const float Speed = 800.f;
 
-	// 충돌을 고려한 이동(충돌 허용)
-	AddActorWorldOffset(MoveDelta, true);
+    // 여기서만 sqrt 1번
+    const float Dist = FMath::Sqrt(DistSq);
+    const FVector Dir = ToTarget / Dist;
 
-	// 방향 회전(선택): 이동 방향을 향하도록 천천히 회전
-	FRotator DesiredRot = ToTarget.Rotation();
-	FRotator NewRot = FMath::RInterpTo(GetActorRotation(), DesiredRot, DeltaTime, 5.0f);
-	SetActorRotation(NewRot);
+    const FVector MoveDelta = Dir * Speed * DeltaTime;
+
+    AddActorWorldOffset(MoveDelta, true);
+
+    const FRotator DesiredRot = Dir.Rotation();
+    const FRotator NewRot = FMath::RInterpTo(
+        GetActorRotation(),
+        DesiredRot,
+        DeltaTime,
+        5.0f
+    );
+
+    SetActorRotation(NewRot);
 }

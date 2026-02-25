@@ -82,7 +82,7 @@ void UStaticAsternoidManagerComponent::SpawnStaticAsteroid()
 			SpawnLocation = StationPos + RandDir * FMath::RandRange(SpaceStationSaveRadius, SpaceRadius);
 
 			// 정거장 안전 범위 체크
-			if (FVector::Dist(SpawnLocation, StationPos) < SpaceStationSaveRadius)
+			if (FVector::DistSquared(SpawnLocation, StationPos) < SpaceStationSaveRadius * SpaceStationSaveRadius)
 				continue;
 
 			// 이미 생성된 소행성과의 안전 범위 체크
@@ -92,7 +92,7 @@ void UStaticAsternoidManagerComponent::SpawnStaticAsteroid()
 				if (!IsValid(Existing))
 					continue;
 
-				if (FVector::Dist(SpawnLocation, Existing->GetActorLocation()) < StaticAsteroidSaveRadius)
+				if (FVector::DistSquared(SpawnLocation, Existing->GetActorLocation()) < StaticAsteroidSaveRadius * StaticAsteroidSaveRadius)
 				{
 					bTooClose = true;
 					break;

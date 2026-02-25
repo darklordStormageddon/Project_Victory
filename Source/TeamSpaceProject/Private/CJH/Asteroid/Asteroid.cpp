@@ -71,9 +71,9 @@ void AAsteroid::Tick(float DeltaTime)
 	if (!HasAuthority())
 		return;
 
-	float DestroyDist = FVector::Dist(SpaceStation->GetActorLocation(), GetActorLocation());
+	float DestroyDist = FVector::DistSquared(SpaceStation->GetActorLocation(), GetActorLocation());
 	
-	if (DestroyDist > SpaceManager->GetSpaceRadius() - 1)
+	if (DestroyDist > (SpaceManager->GetSpaceRadius() - 1) * (SpaceManager->GetSpaceRadius() - 1))
 		Destroy();
 }
 
