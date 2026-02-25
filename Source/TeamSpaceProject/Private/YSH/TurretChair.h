@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PSJ/PSJ_ShipCockpit.h"
+#include "PSJ/TaskChair.h"
 #include "TurretChair.generated.h"
 
 UCLASS()
-class ATurretChair : public APSJ_ShipCockpit
+class ATurretChair : public ATaskChair
 {
 	GENERATED_BODY()
 	
@@ -18,6 +18,8 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+
 
 public:	
 	// Called every frame

@@ -5,7 +5,7 @@
 #include "YSH/Projectile.h"
 
 #include "PSJ/PSJ_Character.h"     // PSJ 폴더 안에 있는 캐릭터 헤더
-#include "PSJ/PSJ_ShipCockpit.h"   // PSJ 폴더 안에 있는 콕핏 헤더
+#include "PSJ/TaskChair.h"   // PSJ 폴더 안에 있는 콕핏 헤더
 #include "GameFramework/CharacterMovementComponent.h" // 무브먼트 제어용
 
 #include "JHS/GameControl/StaticFunctionLibrary.h"
@@ -477,10 +477,10 @@ void ATurretBase_GT::AddPitchInput(float PitchInputDegPerSec, float DeltaTime)
 }
 
 // [신규] 탑승 설정 (서버에서 실행)
-void ATurretBase_GT::SetPilot(APSJ_Character* NewPilot, APSJ_ShipCockpit* Cockpit)
+void ATurretBase_GT::SetPilot(APSJ_Character* NewPilot, ATaskChair* Chair)
 {
 	CurrentPilot = NewPilot;
-	LinkedCockpit = Cockpit;
+	LinkedChair = Chair;
 
 	if (CurrentPilot)
 	{
@@ -563,13 +563,13 @@ void ATurretBase_GT::DisembarkCharacter()
 	CurrentPilot = nullptr;
 
 	// 연결된 콕핏에 하차 알림 (필요하다면)
-	if (LinkedCockpit)
+	if (LinkedChair)
 	{
 		APlayerController* _callerPC = ExitingChar ? Cast<APlayerController>(ExitingChar->GetController()) : nullptr;
 		APlayerState* _callerPS = _callerPC ? _callerPC->GetPlayerState<APlayerState>() : nullptr;
 		int32 _callerPlayerId = _callerPS ? _callerPS->GetPlayerId() : -1;
-		LinkedCockpit->OnInteractExit(_callerPlayerId, nullptr);
-		LinkedCockpit = nullptr;
+		LinkedChair->OnInteractExit(_callerPlayerId, nullptr);
+		LinkedChair = nullptr;
 	}
 
 	// 하차 위치 계산 (콕핏 앞이나 터렛 주변, 여기서는 임시로 현재 위치)

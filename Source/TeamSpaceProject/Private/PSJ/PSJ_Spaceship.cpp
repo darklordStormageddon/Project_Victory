@@ -1,5 +1,5 @@
 #include "PSJ_Spaceship.h"
-#include "PSJ_ShipCockpit.h"
+#include "PSJ/TaskChair.h"
 #include "PSJ_Character.h"
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputComponent.h"
@@ -29,19 +29,8 @@ APSJ_Spaceship::APSJ_Spaceship()
 	ShipRootComponent = nullptr;
 	PilotCamera = nullptr;
 	PilotSphere = nullptr;
-	ExitPoint = nullptr;
 
-	//쉴드 관련 컴포넌트 초기화
-	ShieldRoot = CreateDefaultSubobject<USceneComponent>(TEXT("ShieldRoot"));
-	ShieldRoot->SetupAttachment(RootComponent);
 
-	ShieldMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShieldMesh"));
-	ShieldMesh->SetupAttachment(ShieldRoot);
-
-	ShieldMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	ShieldMesh->SetHiddenInGame(true);
-
-	//거리 측정 컴포넌트 초기화
 	DistanceComp = CreateDefaultSubobject<UDistanceComponent>(TEXT("DistanceComponent"));
 
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
@@ -49,8 +38,9 @@ APSJ_Spaceship::APSJ_Spaceship()
 
 void APSJ_Spaceship::Client_BoardingSuccess_Implementation()
 {
-	Super::Client_BoardingSuccess_Implementation();
+	Super::Client_BoardingSuccess_Implementation(); // �θ� ���� ����
 
+	// ���ּ� ���� ����Ű ����
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
@@ -63,7 +53,6 @@ void APSJ_Spaceship::Client_BoardingSuccess_Implementation()
 		}
 	}
 }
-
 void APSJ_Spaceship::Input_ThrustForward(const FInputActionValue& Value)
 {
 	Server_ThrustForward(Value.Get<float>());
@@ -154,8 +143,6 @@ void APSJ_Spaceship::BeginPlay()
 	if (HealthComp)
 	{
 		HealthComp->OnDamaged.AddDynamic(this, &APSJ_Spaceship::OnTakeDamage);
-		//사망 구현(나중에 구현)
-		//HealthComp->OnDeath.AddDynamic(this, &APSJ_Spaceship::OnDeath);
 	}
 
 	if (_outGameState == nullptr)
@@ -163,35 +150,30 @@ void APSJ_Spaceship::BeginPlay()
 
 	ShipRootComponent = Cast<UPrimitiveComponent>(RootComponent);
 
+	TArray<UStaticMeshComponent*> StaticMeshes;
+	GetComponents<UStaticMeshComponent>(StaticMeshes);
+
+	for (UStaticMeshComponent* Mesh : StaticMeshes)
+	{
+		// �̸��� "Shield"�� ���Ե� �޽��� ã�� (��ҹ��� ����)
+		if (Mesh->GetName().Contains(TEXT("Shield")))
+		{
+			ShieldMesh = Mesh;
+			// ���� �ʱ� ���� ���� (����, �浹 ����)
+			ShieldMesh->SetHiddenInGame(true);
+			ShieldMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			UE_LOG(LogTemp, Log, TEXT("Spaceship: Found Shield Mesh successfully!"));
+			break;
+		}
+	}
+
+
 	PilotCamera = FindComponentByClass<UCameraComponent>();
 	if (!PilotCamera)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Warning: Camera not found in BP"));
 	}
 
-	TArray<UArrowComponent*> Arrows;
-	GetComponents(Arrows);
-	for (UArrowComponent* Arrow : Arrows)
-	{
-		if (Arrow->GetName().Contains(TEXT("Exit")) || Arrows.Num() == 1)
-		{
-			ExitPoint = Arrow;
-			break;
-		}
-	}
-	if (!ExitPoint)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Error: ExitPoint (Arrow) not found in BP!"));
-	}
-
-	for (UArrowComponent* Arrow : Arrows)
-	{
-		if (Arrow->GetName().Contains(TEXT("Ride")))
-		{
-			RidePoint = Arrow;
-			break;
-		}
-	}
 
 	TArray<UChildActorComponent*> ChildActors;
 	GetComponents(ChildActors);
@@ -200,11 +182,10 @@ void APSJ_Spaceship::BeginPlay()
 	{
 		if (ChildComp && ChildComp->GetChildActor())
 		{
-			if (APSJ_ShipCockpit* FoundCockpit = Cast<APSJ_ShipCockpit>(ChildComp->GetChildActor()))
+			if (ATaskChair* FoundChair = Cast<ATaskChair>(ChildComp->GetChildActor()))
 			{
-				FoundCockpit->TargetSpaceship = this;
-				LinkedCockpit = FoundCockpit;
-				UE_LOG(LogTemp, Log, TEXT("Spaceship: Successfully auto-connected to Child Actor Cockpit!"));
+
+				LinkedChair = FoundChair;
 			}
 		}
 	}
@@ -220,7 +201,7 @@ void APSJ_Spaceship::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("Warning: Sphere Component not found in BP"));
 	}
 
-	//OnDistanceDamaged로 이벤트 바인딩
+
 	if (DistanceComp)
 		DistanceComp->OnDistanceDamaged.AddDynamic(this, &APSJ_Spaceship::OverDistanceDamageCheck);
 	else
@@ -231,21 +212,15 @@ void APSJ_Spaceship::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// [중요] 최대 속도 제한 로직
-	// ShipRootComponent가 존재하고, 물리 시뮬레이션 중이면 속도 제한 적용
 	if (ShipRootComponent && ShipRootComponent->IsSimulatingPhysics())
 	{
-		// 1. 현재 속도 벡터를가져옴
 		FVector CurrentVelocity = ShipRootComponent->GetComponentVelocity();
 		float CurrentSpeed = CurrentVelocity.Size();
 
-		// 2. 현재 속도가 최대 속도보다 크면 제한함
 		if (CurrentSpeed > MaxSpeed)
 		{
-			// 3. 방향은 유지한 채, 크기를 MaxSpeed로 고정 (Clamping)
 			FVector ClampedVelocity = CurrentVelocity.GetSafeNormal() * MaxSpeed;
 
-			// 4. 제한된 속도로 물리 속도를 직접 설정
 			ShipRootComponent->SetPhysicsLinearVelocity(ClampedVelocity);
 		}
 	}
@@ -262,10 +237,10 @@ void APSJ_Spaceship::Tick(float DeltaTime)
 		FString LocMsg = FString::Printf(TEXT("[Location] %s"), *GetActorLocation().ToString());
 		GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor::Cyan, LocMsg);
 
-		if (LinkedCockpit)
+		if (LinkedChair)
 		{
-			float DistanceToCockpit = FVector::Dist(GetActorLocation(), LinkedCockpit->GetActorLocation());
-			FString GapMsg = FString::Printf(TEXT("[Cockpit Gap] %.2f (Is Lagging?)"), DistanceToCockpit);
+			float DistanceToChair = FVector::Dist(GetActorLocation(), LinkedChair->GetActorLocation());
+			FString GapMsg = FString::Printf(TEXT("[Chair Gap] %.2f (Is Lagging?)"), DistanceToChair);
 			FColor GapColor = (SpeedCmPerSec > 10.0f) ? FColor::Red : FColor::Green;
 			GEngine->AddOnScreenDebugMessage(3, 0.0f, GapColor, GapMsg);
 		}
@@ -280,7 +255,7 @@ void APSJ_Spaceship::OnTakeDamage(float Damage)
 		_spaceShipStateGroup->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, Damage);
 }
 
-// 대미지를 입을 시 쉴드 메시를 일시적으로 보이도록 하는 함수
+
 void APSJ_Spaceship::ShowShield()
 {
 	if (!ShieldMesh)
@@ -347,103 +322,10 @@ void APSJ_Spaceship::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		if (IA_MoveUp) EnhancedInputComponent->BindAction(IA_MoveUp, ETriggerEvent::Triggered, this, &APSJ_Spaceship::Input_MoveUp);
 		if (IA_MouseLook) EnhancedInputComponent->BindAction(IA_MouseLook, ETriggerEvent::Triggered, this, &APSJ_Spaceship::Input_MouseLook);
 		if (IA_Roll) EnhancedInputComponent->BindAction(IA_Roll, ETriggerEvent::Triggered, this, &APSJ_Spaceship::Input_Roll);
-		if (IA_Interact) EnhancedInputComponent->BindAction(IA_Interact, ETriggerEvent::Started, this, &APSJ_Spaceship::Input_Exit);
+		if (IA_Interact) EnhancedInputComponent->BindAction(IA_Interact, ETriggerEvent::Started, this, &ATaskPawnBase::Input_Exit);
 	}
 }
 
-void APSJ_Spaceship::SetPilot(APSJ_Character* NewPilot)
-{
-	CurrentPilot = NewPilot;
-	if (CurrentPilot)
-	{
-		if (RidePoint)
-		{
-			CurrentPilot->SetActorEnableCollision(false);
-			CurrentPilot->AttachToComponent(RidePoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-			if (auto* CMC = CurrentPilot->GetCharacterMovement())
-			{
-				CMC->StopMovementImmediately();
-				CMC->DisableMovement();
-			}
-		}
-	}
-}
-
-void APSJ_Spaceship::DisembarkCharacter()
-{
-	if (!CurrentPilot) return;
-
-	APSJ_Character* ExitingChar = CurrentPilot;
-	AController* ShipController = GetController();
-
-	CurrentPilot = nullptr;
-	if (LinkedCockpit)
-	{
-		APlayerController* _callerPC = ExitingChar ? Cast<APlayerController>(ExitingChar->GetController()) : nullptr;
-		APlayerState* _callerPS = _callerPC ? _callerPC->GetPlayerState<APlayerState>() : nullptr;
-		int32 _callerPlayerId = _callerPS ? _callerPS->GetPlayerId() : -1;
-		LinkedCockpit->OnInteractExit(_callerPlayerId, nullptr);
-		LinkedCockpit = nullptr;
-	}
-
-	FVector SpawnLoc = ExitPoint ? ExitPoint->GetComponentLocation() : GetActorLocation();
-	FRotator SpawnRot = ExitPoint ? ExitPoint->GetComponentRotation() : GetActorRotation();
-
-	// 1. 기존 부착 해제
-	ExitingChar->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-
-	// 2. 위치 설정
-	ExitingChar->SetActorLocationAndRotation(SpawnLoc, SpawnRot, false, nullptr, ETeleportType::TeleportPhysics);
-
-	// 3. [중요함] Attach를 유지 (위치는 X)
-	ExitingChar->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-
-	// 4. 이동 모드 Custom 설정 (원래는 DisableMovement 였음)
-	ExitingChar->GetCharacterMovement()->SetMovementMode(MOVE_Custom);
-	ExitingChar->SetReplicateMovement(false);
-
-	// 5. 베이스 액터로 설정
-	ExitingChar->SetBaseActorData(this);
-
-	ExitingChar->SetActorEnableCollision(true);
-	ExitingChar->SetActorHiddenInGame(false);
-
-	// 6. Client RPC
-	Client_DisembarkSuccess(ExitingChar, SpawnLoc, SpawnRot);
-
-	// 7. 캐릭터 빙의
-	if (ShipController)
-	{
-		ShipController->Possess(ExitingChar);
-	}
-}
-
-void APSJ_Spaceship::Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot)
-{
-	if (!ExitingPilot) return;
-
-	// 1. 먼저 움직임을 정지 (E0265 버그 해결: StopMovementImmediately 사용)
-	if (UCharacterMovementComponent* CMC = ExitingPilot->GetCharacterMovement())
-	{
-		CMC->StopMovementImmediately(); // 속도와 가속도를 모두 0으로 초기화함.
-		CMC->SetMovementMode(MOVE_Custom); // 모드를 Walking으로 바로 바꾸면 속도가 계속 남아있음
-	}
-
-	// 2. 서로 충돌 안 되게 설정
-	ExitingPilot->MoveIgnoreActorRemove(this);
-	this->MoveIgnoreActorRemove(ExitingPilot);
-
-	FVector SafeExitLoc = ExitLoc + GetActorUpVector() * 15.0f;
-	ExitingPilot->SetActorLocationAndRotation(SafeExitLoc, ExitRot, false, nullptr, ETeleportType::TeleportPhysics);
-
-	// 3. 우주선에 붙인 후 하선상태 시작
-	ExitingPilot->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-	ExitingPilot->StartDisembarkState();
-	ExitingPilot->SetBaseActorData(this);
-	ExitingPilot->ForceInputRecovery();
-
-	UE_LOG(LogTemp, Warning, TEXT("[Disembark] Velocity Reset & Mode Set to Custom"));
-}
 
 void APSJ_Spaceship::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -470,20 +352,6 @@ void APSJ_Spaceship::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* O
 	}
 }
 
-void APSJ_Spaceship::Input_Exit(const FInputActionValue& Value)
-{
-	Server_RequestDisembark();
-}
-
-bool APSJ_Spaceship::Server_RequestDisembark_Validate()
-{
-	return true;
-}
-
-void APSJ_Spaceship::Server_RequestDisembark_Implementation()
-{
-	DisembarkCharacter();
-}
 
 void APSJ_Spaceship::EnableCollisionWithPassenger(APSJ_Character* ExitedChar)
 {

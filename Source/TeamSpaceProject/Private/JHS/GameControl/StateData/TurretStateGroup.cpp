@@ -272,7 +272,7 @@ void UTurretStateGroup::MulticastEquipTurret_Implementation(E_TURRET_POSITION Tu
 		bool _isEquiped = _outTurretStand->TryEquipTurret(_spawnedTurret, AmmoType);
 		if (TurretPosition == E_TURRET_POSITION::Main && _isEquiped && _turretChair != nullptr)
 		{
-			_turretChair->SetTargetPawn(Cast<APawn>(_spawnedTurret));
+			_turretChair->SetTurretPawn(Cast<APawn>(_spawnedTurret));
 		}
 	}
 }

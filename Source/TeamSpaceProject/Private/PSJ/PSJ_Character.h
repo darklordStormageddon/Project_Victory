@@ -6,7 +6,7 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "Net/UnrealNetwork.h" 
-#include "Engine/NetSerialization.h" // [추가] 이것이 있어야 NetQuantize100 사용 가능
+#include "Engine/NetSerialization.h" 
 #include "PSJ_Character.generated.h"
 
 class UInteracterComponent;
@@ -16,12 +16,12 @@ class UInputComponent;
 class UInputMappingContext;
 class APawn;
 class APSJ_Spaceship;
-// 전방 선언 추가
+
 class ATurretBase_GT;
 class APSJ_ToolBase;
 class ATaskPawnBase;
 
-// [필수 구조체] 상대 좌표 동기화용 데이터
+
 USTRUCT()
 struct FRelativeSpaceData
 {
@@ -73,7 +73,7 @@ public:
 	void Server_RequestBoarding(ATaskPawnBase* TaskPawn);
 
 private:
-	// 하차 직후 상태 관리를 위한 변수 추가
+
 	bool bJustDisembarked = false;
 	float DisembarkGraceTimer = 0.0f;
 
@@ -88,89 +88,77 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
 	void Server_RequestPawnPossess(APawn* TargetPawn);
 
-	// 하차 상태 시작 함수
 	void StartDisembarkState();
 
-	// [신규] 터렛 탑승 요청 추가
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_RequestTurretBoarding(ATurretBase_GT* TurretToBoard, APSJ_ShipCockpit* LinkedCockpit);
-
-	// [신규] 타이머를 통해 호출될 최종 입력 복구 함수
 	void Client_LateInputRestore();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tool")
-	TSubclassOf<APSJ_ToolBase> ToolClassToSpawn; // 에디터에서 생성할 툴 블루프린트 지정
+	TSubclassOf<APSJ_ToolBase> ToolClassToSpawn; 
 
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Tool")
 	APSJ_ToolBase* EquippedTool;
 
-	// [추가] 하차 시 서버/클라 양쪽에서 변수를 세팅할 함수
+
 	void SetBaseActorData(AActor* NewBase);
 
-	// [신규] 하차 시 강제로 입력을 활성화하는 함수
+
 	void ForceInputRecovery();
 
-	// [신규] 입력 바인딩용 함수
+
 	void Input_ForceEject(const FInputActionValue& Value);
 
-	// [신규] 서버 RPC 함수 선언
+
 	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_TryForceEject(APSJ_ShipCockpit* TargetCockpit);
+	void Server_TryForceEject(ATaskChair* TargetChair);
 
-	// =========================================================
-	// [신규] 수리(Repair) 시스템 추가
-	// =========================================================
 
-	// [설정] 수리(좌클릭) 입력 액션 (에디터에서 IA_Fire 또는 IA_Repair 할당)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* RepairAction;
 
-	// 애니메이션 및 BP 로직 분기용 상태 변수
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction | Repair", Replicated)
 	bool bIsActivelyRepairing = false;
 
-	// [설정] 트레이스 길이 (시선이 닿는 거리, 예: 2000.0f)
-	// 멀리 있는 콕핏의 상태를 확인하는 용도
+
 	UPROPERTY(EditAnywhere, Category = "Interaction | Repair")
 	float RepairTraceLength = 2000.0f;
 
-	// [설정] 실제 수리가 가능한 유효 거리 (예: 300.0f)
-	// 이 거리 안으로 들어가야만 수리 게이지가 차오름
+
 	UPROPERTY(EditAnywhere, Category = "Interaction | Repair")
 	float RepairMaxDistance = 300.0f;
 
-	// [신규] 입력값을 서버로 전송하는 RPC 함수 선언
+
 	UFUNCTION(Server, Unreliable, WithValidation)
 	void Server_SetInputVector(FVector2D NewInput);
 
-	// [신규] 달리기 상태를 서버로 전송하는 RPC 함수 선언
+
 	UFUNCTION(Server, Unreliable, WithValidation)
 	void Server_SetSprinting(bool bNewSprinting);
 
 protected:
-	// 좌클릭 입력 상태 플래그
+
 	bool bIsRepairingInputDown = false;
 
-	// [클라이언트용] 현재 내가 수리를 시도하고 있는 대상
-	UPROPERTY()
-	class APSJ_ShipCockpit* ClientRepairTarget = nullptr;
 
-	// [서버용] 현재 이 캐릭터가 수리 중인 대상 (연결 끊길 때 제거용)
 	UPROPERTY()
-	class APSJ_ShipCockpit* ServerRepairTarget = nullptr;
+	class ATaskChair* ClientRepairTarget = nullptr;
 
-	// 입력 바인딩 함수
+
+	UPROPERTY()
+	class ATaskChair* ServerRepairTarget = nullptr;
+
+
 	void Input_StartRepair(const FInputActionValue& Value);
 	void Input_StopRepair(const FInputActionValue& Value);
 
-	// 매 프레임 수리 가능 여부를 판단하는 로직
+
 	void UpdateRepairLogic();
 
-	// 서버에 "나 얘 수리 시작할래" 요청
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_StartRepair(APSJ_ShipCockpit* TargetCockpit);
 
-	// 서버에 "나 수리 그만할래" 요청
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_StartRepair(ATaskChair* TargetChair);
+
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_StopRepair();
 
@@ -179,22 +167,21 @@ protected:
 	UInputAction* InteractAction;
 	void Interact(const FInputActionValue& Value);
 
-	// [추가] 클라이언트 전용: "서버가 날 조종하라고 보낸 컨트롤러가 도착했다!" 라는 검증 함수
+
 	virtual void OnRep_Controller() override;
 
-	// --- 벽 감지용 설정 변수 (에디터 수정 가능) ---
-	UPROPERTY(EditAnywhere, Category = "Movement | Wall Detection")
-	float WallTraceRadius = 40.0f; // 구체 트레이스 반지름 (지름의 절반)
 
 	UPROPERTY(EditAnywhere, Category = "Movement | Wall Detection")
-	float WallTraceZOffset = 0.0f; // 캐릭터 중심 기준 Z축 오프셋
+	float WallTraceRadius = 40.0f; 
 
 	UPROPERTY(EditAnywhere, Category = "Movement | Wall Detection")
-	bool bShowWallDebug = true; // 디버그 라인 표시 여부
+	float WallTraceZOffset = 0.0f; 
+	UPROPERTY(EditAnywhere, Category = "Movement | Wall Detection")
+	bool bShowWallDebug = true; 
 
 protected:
 
-	// [신규] 클라이언트가 바닥을 감지하면 서버에 "나 여기 붙여줘"라고 요청하는 함수
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_SetAnchoring(AActor* NewBase);
 
@@ -204,11 +191,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Mag Boots")
 	float MagBootsTraceRadius = 15.0f;
 
-	// [신규] 길이(Half Height) 추가 - 에디터 수정 가능
+
 	UPROPERTY(EditAnywhere, Category = "Mag Boots")
 	float MagBootsTraceHalfHeight = 30.0f;
 
-	// [추가] 바닥에서 캐릭터 캡슐 하단을 얼마나 띄울지 결정하는 오프셋 (기존 2.0f)
+
 	UPROPERTY(EditAnywhere, Category = "Mag Boots")
 	float FloorHeightOffset = 1.0f;
 
@@ -218,19 +205,19 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Movement Stats")
 	float FlyModeMaxSpeed = 600.0f;
 
-	// [수정] 기존 변수에 'BlueprintReadOnly' 속성을 추가해야 애니메이션 BP에서 읽을 수 있습니다.
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement Input", Replicated)
 	FVector2D CurrentInputVector = FVector2D::ZeroVector;
 
-	// [신규] 달리기 상태 확인용 변수 (블루프린트에서 읽기 가능)
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement Input", Replicated)
 	bool bIsSprinting = false;
 
-	// [신규] 달리기 입력 액션 (에디터 할당 필요)
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* SprintAction;
 
-	// [신규] 입력 바인딩 함수 선언
+
 	void Input_SprintStart(const FInputActionValue& Value);
 	void Input_SprintStop(const FInputActionValue& Value);
 
@@ -257,16 +244,12 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Camera")
 	UCameraComponent* FPSCamera;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* JumpAction;
 
-	void Input_Jump(const FInputActionValue& Value);
 
-	// [필수 추가 1] 강제 하차 입력 액션 (에디터 할당 필요)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* ForceEjectAction;
 
-	// [필수 추가 2] 감지 거리 
+
 	UPROPERTY(EditAnywhere, Category = "Interaction | Force Eject")
 	float ForceEjectSphereRadius = 40.0f;
 
@@ -274,19 +257,9 @@ protected:
 	float ForceEjectRange = 100.0f;
 
 
-	// [신규] 캐릭터 중심(Capsule)을 기준으로 스피어 트레이스가 시작될 위치 (X: 앞, Y: 우, Z: 위)
 	UPROPERTY(EditAnywhere, Category = "Interaction | Force Eject")
 	FVector ForceEjectSphereOffset = FVector(50.0f, 0.0f, 20.0f);
 
-	// [수정] 중력(Gravity) 용어 제거 -> 자력에 의한 감속(Deceleration)으로 변경
-	UPROPERTY(EditAnywhere, Category = "Mag Boots | Jump")
-	float JumpInitialSpeed = 450.0f; // 초기 도약 속도
-
-	UPROPERTY(EditAnywhere, Category = "Mag Boots | Jump")
-	float JumpDeceleration = 980.0f; // 자석이 당기는 힘 (감속도)
-
-	// 점프 상태 변수
-	bool bIsJumping = false;
 	float CurrentVerticalSpeed = 0.0f;
 
 	void Move(const FInputActionValue& Value);
