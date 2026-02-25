@@ -1,6 +1,7 @@
 #include "PSJ_Spaceship.h"
 #include "PSJ_ShipCockpit.h"
 #include "PSJ_Character.h"
+#include "Components/SphereComponent.h"
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -10,10 +11,9 @@
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "KSM/HealthComponent.h"
+#include "JHS/UI/UIManager.h"
 
 #include "Components/CapsuleComponent.h"
-
-#include "CJH/Component/DistanceComponent.h"
 
 #include "JHS/SpaceObject/DriveSeatRader.h"
 #include "Kismet/GameplayStatics.h"
@@ -30,19 +30,6 @@ APSJ_Spaceship::APSJ_Spaceship()
 	PilotCamera = nullptr;
 	PilotSphere = nullptr;
 	ExitPoint = nullptr;
-
-	//쉴드 관련 컴포넌트 초기화
-	ShieldRoot = CreateDefaultSubobject<USceneComponent>(TEXT("ShieldRoot"));
-	ShieldRoot->SetupAttachment(RootComponent);
-
-	ShieldMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShieldMesh"));
-	ShieldMesh->SetupAttachment(ShieldRoot);
-
-	ShieldMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	ShieldMesh->SetHiddenInGame(true);
-
-	//거리 측정 컴포넌트 초기화
-	DistanceComp = CreateDefaultSubobject<UDistanceComponent>(TEXT("DistanceComponent"));
 
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
@@ -61,6 +48,15 @@ void APSJ_Spaceship::Client_BoardingSuccess_Implementation()
 				Subsystem->AddMappingContext(ShipMappingContext, 0);
 			}
 		}
+	}
+
+	UUIManager* _outUIManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
+		return;
+	APlayerController* _pc = CurrentPilot ? Cast<APlayerController>(CurrentPilot->GetController()) : nullptr;
+	if (_pc && _outUIManager)
+	{
+		_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
 	}
 }
 
@@ -161,8 +157,22 @@ void APSJ_Spaceship::BeginPlay()
 	if (_outGameState == nullptr)
 		UStaticFunctionLibrary::TryGetGameState(_outGameState);
 
-	ShipRootComponent = Cast<UPrimitiveComponent>(RootComponent);
+	FTimerHandle TestDelay;
+	GetWorld()->GetTimerManager().SetTimer(
+		TestDelay,
+		[this]() {
+			UUIManager* _outUIManager = nullptr;
+			if (!UStaticFunctionLibrary::TryGetUIManager(_outUIManager))
+				return;
 
+			_outUIManager->OpenUI(E_UI_TYPE::UIPanelDriveSeat);
+		},
+		1.f,
+		false);
+
+	{
+		ShipRootComponent = Cast<UPrimitiveComponent>(RootComponent);
+	}
 	PilotCamera = FindComponentByClass<UCameraComponent>();
 	if (!PilotCamera)
 	{
@@ -219,12 +229,6 @@ void APSJ_Spaceship::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Warning: Sphere Component not found in BP"));
 	}
-
-	//OnDistanceDamaged로 이벤트 바인딩
-	if (DistanceComp)
-		DistanceComp->OnDistanceDamaged.AddDynamic(this, &APSJ_Spaceship::OverDistanceDamageCheck);
-	else
-		UE_LOG(LogTemp, Warning, TEXT("Warning: Distance Component not found in BP"));
 }
 
 void APSJ_Spaceship::Tick(float DeltaTime)
@@ -274,48 +278,8 @@ void APSJ_Spaceship::Tick(float DeltaTime)
 
 void APSJ_Spaceship::OnTakeDamage(float Damage)
 {
-	ShowShield();
-
 	if (GetSpaceShipStateGroup())
 		_spaceShipStateGroup->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, Damage);
-}
-
-// 대미지를 입을 시 쉴드 메시를 일시적으로 보이도록 하는 함수
-void APSJ_Spaceship::ShowShield()
-{
-	if (!ShieldMesh)
-		return;
-
-	Multicast_ShowShield();
-
-	if (GetWorld())
-	{
-		GetWorld()->GetTimerManager().ClearTimer(ShieldAlphaTimerHandle);
-		GetWorld()->GetTimerManager().SetTimer(
-			ShieldAlphaTimerHandle,
-			this,
-			&APSJ_Spaceship::HideShield,
-			ShieldDisplayDuration,
-			false
-		);
-	}
-}
-
-void APSJ_Spaceship::HideShield()
-{
-	Multicast_HideShield();
-}
-
-void APSJ_Spaceship::Multicast_ShowShield_Implementation()
-{
-	if (ShieldMesh)
-		ShieldMesh->SetHiddenInGame(false);
-}
-
-void APSJ_Spaceship::Multicast_HideShield_Implementation()
-{
-	if (ShieldMesh)
-		ShieldMesh->SetHiddenInGame(true);
 }
 
 void APSJ_Spaceship::OnDeath()
@@ -492,9 +456,4 @@ void APSJ_Spaceship::EnableCollisionWithPassenger(APSJ_Character* ExitedChar)
 		this->MoveIgnoreActorRemove(ExitedChar);
 		ExitedChar->MoveIgnoreActorRemove(this);
 	}
-}
-
-void APSJ_Spaceship::OverDistanceDamageCheck()
-{
-	HealthComp->TakeDamage(OverDistanceDamage);
 }

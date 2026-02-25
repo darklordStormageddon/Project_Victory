@@ -1,4 +1,6 @@
 #include "PSJ_Character.h"
+#include "JHS/Interact/InteracterComponent.h"
+#include "PSJ/TaskPawnBase.h"
 #include "PSJ_Spaceship.h"
 #include "PSJ_ShipCockpit.h"
 #include "PSJ_ToolBase.h"
@@ -25,6 +27,8 @@ APSJ_Character::APSJ_Character()
 
 	// [�ʼ� �߰�] �� �� ���� ������ ���� ����ȭ�� �� �� �� �ֽ��ϴ�.
 	bReplicates = true;
+
+	InteracterComponent = CreateDefaultSubobject<UInteracterComponent>(TEXT("InteracterComponent"));
 }
 
 void APSJ_Character::BeginPlay()
@@ -76,7 +80,7 @@ void APSJ_Character::BeginPlay()
 
 		if (EquippedTool)
 		{
-			EquippedTool->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("Gun"));
+			EquippedTool->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("toollocation_1"));
 		}
 	}
 
@@ -232,6 +236,18 @@ void APSJ_Character::Tick(float DeltaTime)
 				GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 			}
 		}
+	}
+}
+
+void APSJ_Character::Server_RequestBoarding_Implementation(ATaskPawnBase* TaskPawn)
+{
+	if (!TaskPawn) return;
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		TaskPawn->SetPilot(this);
+		PC->Possess(TaskPawn);
+		TaskPawn->Client_BoardingSuccess();
 	}
 }
 
@@ -592,66 +608,18 @@ void APSJ_Character::Interact(const FInputActionValue& Value)
 {
 	if (!Controller) return;
 
-	// 1. �ü� ���� (Line Trace) - "�� ���տ� �¼��� �ִ°�?"
-	FVector TraceStart;
-	FRotator TraceRot;
+	if (!InteracterComponent)
+		return;
 
-	if (FPSCamera)
+	bool OutIsInterrupt = false;			// 상호작용 실패, 이미 누가 앉아있음
+	bool OutIsInteractEnter = false;		// 상호작용 성공, 앉기 성공/실패
+	if (InteracterComponent->TryInteractInput(OutIsInterrupt, OutIsInteractEnter))
 	{
-		TraceStart = FPSCamera->GetComponentLocation();
-		TraceRot = FPSCamera->GetComponentRotation();
+		// 상호작용 성공
 	}
 	else
 	{
-		GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
-	}
-
-	FVector TraceEnd = TraceStart + (TraceRot.Vector() * 300.0f); // 3m �Ÿ� üũ
-
-	FHitResult HitResult;
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this); // ���� ����
-
-	// Trace ä���� ������Ʈ ������ �°� (Visibility or Interaction)
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
-		HitResult,
-		TraceStart,
-		TraceEnd,
-		ECC_Visibility,
-		QueryParams
-	);
-
-	// ����� ���� (�׽�Ʈ �� �ּ� ó��)
-	// DrawDebugLine(GetWorld(), TraceStart, TraceEnd, bHit ? FColor::Green : FColor::Red, false, 1.0f);
-
-	if (bHit && HitResult.GetActor())
-	{
-		// 2. ����(�¼�)���� Ȯ��
-		if (APSJ_ShipCockpit* HitCockpit = Cast<APSJ_ShipCockpit>(HitResult.GetActor()))
-		{
-			// [�ٽ� �ذ�] ���Ϳ��� ž�� ó���� �����մϴ�.
-			// ������ �˾Ƽ� TargetPawn�� Ȯ���ϰ� Character�� RPC�� �ҷ��ݴϴ�.
-			HitCockpit->AttemptBoarding(this);
-			return; // ž�� �õ������� �Լ� ����
-		}
-	}
-
-	// 3. [���� ó��] ���տ� �¼��� ������, �̹� ���ּ� ���ο� ž���� ���¶��?
-	// (�� �κ��� ��ȹ �ǵ��� ���� ���ܵΰų� �����ϼ���. 
-	//  ��: ���ּ� �ȿ��� ����� ��� F ������ ���������� �����̵� ��ų ���ΰ�?)
-	if (CurrentSpaceship)
-	{
-		// ���� �������� ���� �ٶ��� �ʰ��� ž���ϰ� �Ϸ��� �� ���� ����.
-		// ������ ��Ƽ�÷��̾� ȯ�濡�� ���۵� ���ɼ��� �־� �������� �ʽ��ϴ�.
-		/*
-		if (APlayerController* PC = Cast<APlayerController>(Controller))
-		{
-			if (APSJ_Spaceship* TargetShip = Cast<APSJ_Spaceship>(CurrentSpaceship))
-			{
-				Server_RequestBoarding(TargetShip);
-			}
-		}
-		*/
+		// 상호작용 실패
 	}
 }
 
@@ -755,18 +723,6 @@ bool APSJ_Character::Server_RequestBoarding_Validate(ATaskPawnBase* TaskPawn)
 	return TaskPawn != nullptr;
 }
 
-void APSJ_Character::Server_RequestBoarding_Implementation(ATaskPawnBase* TaskPawn)
-{
-	if (!TaskPawn) return;
-
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		TaskPawn->SetPilot(this);
-		PC->Possess(TaskPawn);
-		TaskPawn->Client_BoardingSuccess();
-	}
-}
-
 void APSJ_Character::ForceClearAnchoring()
 {
 	ReplicatedRelativeData.BaseActor = nullptr;
@@ -859,16 +815,10 @@ bool APSJ_Character::Server_RequestTurretBoarding_Validate(ATurretBase_GT* Turre
 void APSJ_Character::Server_RequestTurretBoarding_Implementation(ATurretBase_GT* TurretToBoard, APSJ_ShipCockpit* LinkedCockpit)
 {
 	if (!TurretToBoard) return;
-
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		// 1. �ͷ��� ������ ���� ���
 		TurretToBoard->SetPilot(this, LinkedCockpit);
-
-		// 2. ��Ʈ�ѷ� ���� (Possess) - ���� ĳ���Ͱ� �ƴ� �ͷ��� ����
 		PC->Possess(TurretToBoard);
-
-		// 3. Ŭ���̾�Ʈ ȭ��/�Է� ��ȯ ����
 		TurretToBoard->Client_BoardingSuccess();
 	}
 }
@@ -910,67 +860,67 @@ void APSJ_Character::Server_SetAnchoring_Implementation(AActor* NewBase)
 // �Է� ó�� �Լ� (Ŭ���̾�Ʈ)
 void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
 {
+	// ���� ž�� ���̸� ���� �Ұ� (���ο��� ������ �� Interact Ű��)
 	if (CurrentSpaceship) return;
 
-	if (EquippedTool && EquippedTool->bIsOnCooldown)
+	FVector TraceStart;
+	FRotator TraceRot;
+
+	// [�ٽ� �б�] ���� �����ϰ� ��ٿ��� �ƴ� ���� �� �ѱ����� Ʈ���̽� �߻�
+	if (EquippedTool)
 	{
-		Server_TryForceEject(nullptr);
-		return;
+		if (EquippedTool->bIsOnCooldown)
+		{
+			// ��ٿ� ���̸� ���� ó�������� ������ �� ��û ����
+			Server_TryForceEject(nullptr);
+			return;
+		}
+		// ��ٿ��� �ƴϸ� ������ Ʈ���̽� �߻�
+		TraceStart = EquippedTool->TraceMuzzle->GetComponentLocation();
+		TraceRot = EquippedTool->TraceMuzzle->GetComponentRotation();
+	}
+	else
+	{
+		// ���� ���� ���� ���� ���� (ī�޶� ����)
+		if (FPSCamera) {
+			TraceStart = FPSCamera->GetComponentLocation();
+			TraceRot = FPSCamera->GetComponentRotation();
+		}
+		else {
+			GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
+		}
 	}
 
-	// 1. Ʈ���̽� ������: ĳ���� �߽� ��ġ + ĳ���Ͱ� �ٶ󺸴� ���� ���� ������ ����
-	FVector StartLoc = GetActorLocation() + GetActorRotation().RotateVector(ForceEjectSphereOffset);
-
-	// 2. Ʈ���̽� ����: ���������� ����(Forward)���� Range��ŭ �̵�
-	FVector EndLoc = StartLoc + (GetActorForwardVector() * ForceEjectRange);
+	FVector TraceEnd = TraceStart + (TraceRot.Vector() * ForceEjectRange);
 
 	FHitResult HitResult;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 
-	// 3. ���Ǿ� ����(CollisionShape) ����
-	FCollisionShape SphereShape = FCollisionShape::MakeSphere(ForceEjectSphereRadius);
-
-	// 4. LineTrace ��� SweepSingleByChannel ���
-	bool bHit = GetWorld()->SweepSingleByChannel(
+	// [�߿�] ������ �޽�(Mesh)�� �ݸ��� �ڽ��� 'Visibility' ä���� 'Block' �ϰ� �־�� �����˴ϴ�.
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
 		HitResult,
-		StartLoc,
-		EndLoc,
-		FQuat::Identity,
+		TraceStart,
+		TraceEnd,
 		ECC_Visibility,
-		SphereShape,
 		QueryParams
 	);
 
 #if WITH_EDITOR
-	// ����� �����: Ʈ���̽��� ������ ������ ĸ�� ������� �׷��� ���������� Ȯ�� �����ϰ� ��
-	FVector TraceVec = EndLoc - StartLoc;
-	float TraceLen = TraceVec.Size();
-	FVector CenterLoc = StartLoc + TraceVec * 0.5f;
-	FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVec).ToQuat();
-
-	// ��Ʈ �����ϸ� �ʷϻ�, ����̸� ������ ĸ��
-	DrawDebugCapsule(GetWorld(), CenterLoc, TraceLen * 0.5f + ForceEjectSphereRadius, ForceEjectSphereRadius, CapsuleRot, bHit ? FColor::Green : FColor::Red, false, 2.0f);
-
-	if (bHit)
-	{
-		// ��Ȯ�� ��� �¾Ҵ��� �ʷϻ� ������ ǥ��
-		DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 10.0f, FColor::Green, false, 2.0f);
-	}
+	// ����� ���� Ȯ��: �ʷϻ��̸� ��Ʈ ����, �������̸� ���
+	if (bHit) DrawDebugLine(GetWorld(), TraceStart, HitResult.ImpactPoint, FColor::Green, false, 1.0f);
+	else DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 1.0f);
 #endif
 
-	// 1. ����� ���� �ӽ� ������ nullptr�� �ʱ�ȭ�մϴ�. (����� �� ���¸� �⺻������ ��)
-	APSJ_ShipCockpit* HitCockpit = nullptr;
-
-	// 2. ���𰡿� �¾Ұ�, �װ� �����̶�� ������ ����ݴϴ�.
 	if (bHit && HitResult.GetActor())
 	{
-		HitCockpit = Cast<APSJ_ShipCockpit>(HitResult.GetActor());
+		// ���� Ŭ������ ĳ���� (��ӹ��� ��� ��������Ʈ ����)
+		if (APSJ_ShipCockpit* HitCockpit = Cast<APSJ_ShipCockpit>(HitResult.GetActor()))
+		{
+			// ������ ��û
+			Server_TryForceEject(HitCockpit);
+		}
 	}
-
-	// 3. [�ٽ�] if�� ������ �����ϴ�! 
-	// Ÿ���� ã�ҵ�(HitCockpit), �� ã�ҵ�(nullptr) ������ ������ �����Ͽ� Ÿ�̸Ӹ� �����ϴ�.
-	Server_TryForceEject(HitCockpit);
 }
 
 // 3. ���� RPC ����
@@ -978,15 +928,12 @@ bool APSJ_Character::Server_TryForceEject_Validate(APSJ_ShipCockpit* TargetCockp
 {
 	if (TargetCockpit)
 	{
+		// �Ÿ� ���� (�ణ�� ���� ���)
 		float DistanceSq = FVector::DistSquared(GetActorLocation(), TargetCockpit->GetActorLocation());
-
-		// ��� �Ÿ� = �⺻ Range + ���Ǿ� ������ + ������ ���� + ���� ���� ���� ������(200.0f)
-		float MaxAllowedDistance = ForceEjectRange + ForceEjectSphereRadius + ForceEjectSphereOffset.Size() + 200.0f;
-		float AllowedRangeSq = FMath::Square(MaxAllowedDistance);
-
+		float AllowedRangeSq = FMath::Square(ForceEjectRange * 1.5f);
 		if (DistanceSq > AllowedRangeSq)
 		{
-			return false; // �� ���̳� ���������� ��ġ������ ��û ����
+			return false;
 		}
 	}
 	return true;
@@ -1086,15 +1033,23 @@ void APSJ_Character::UpdateRepairLogic()
 	FVector TraceStart;
 	FRotator TraceRot;
 
-	// [����] ���� Ʈ���̽��� ������ ĳ���� ����(ī�޶�)���� �߻�
-	if (FPSCamera)
+	// [�ٽ� �б�] ���� Ʈ���̽� ��ġ ����
+	if (EquippedTool && !EquippedTool->bIsOnCooldown)
 	{
-		TraceStart = FPSCamera->GetComponentLocation();
-		TraceRot = FPSCamera->GetComponentRotation();
+		// Ÿ�̸� �� ���� ��: �� �պκп��� �߻�
+		TraceStart = EquippedTool->TraceMuzzle->GetComponentLocation();
+		TraceRot = EquippedTool->TraceMuzzle->GetComponentRotation();
 	}
 	else
 	{
-		GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
+		// Ÿ�̸� ���� �� (�Ǵ� �� ����): ĳ���� ����(ī�޶�)���� �߻�
+		if (FPSCamera) {
+			TraceStart = FPSCamera->GetComponentLocation();
+			TraceRot = FPSCamera->GetComponentRotation();
+		}
+		else {
+			GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
+		}
 	}
 
 	FVector TraceEnd = TraceStart + (TraceRot.Vector() * RepairTraceLength);
