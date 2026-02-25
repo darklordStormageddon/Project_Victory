@@ -1,10 +1,13 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "InputActionValue.h"
 #include "TaskPawnBase.generated.h"
+
+class APSJ_Character;
+class UArrowComponent;
+class AInteractableActorBase;
 
 UCLASS()
 class ATaskPawnBase : public APawn
@@ -12,27 +15,45 @@ class ATaskPawnBase : public APawn
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this pawn's properties
 	ATaskPawnBase();
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	// 모든 자식이 공유할 하차 입력 액션
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* IA_Interact;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	void Input_Exit(const FInputActionValue& Value);
 
-	// Called to bind functionality to input
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestDisembark();
+
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-public:
-	void SetPilot(ACharacter* Character);
+protected:
+	virtual void BeginPlay() override;
 
-	/** 탑승 성공 시 클라이언트에서 입력/UI 등 역할별 설정. 서버에서 Possess 직후 호출. */
+public:
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "Pilot")
+	APSJ_Character* CurrentPilot = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Points")
+	UArrowComponent* RidePoint;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Points")
+	UArrowComponent* ExitPoint;
+
+	UPROPERTY(VisibleInstanceOnly, Category = "Connection")
+	AInteractableActorBase* LinkedSeat = nullptr;
+
+public:
+	virtual void SetPilot(ACharacter* Character);
+
 	UFUNCTION(Client, Reliable)
 	void Client_BoardingSuccess();
-
-protected:
 	virtual void Client_BoardingSuccess_Implementation();
+
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
+	virtual void DisembarkCharacter();
+
+	UFUNCTION(Client, Reliable)
+	void Client_DisembarkSuccess(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot);
 };

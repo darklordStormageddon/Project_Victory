@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
+#include "PSJ/TaskPawnBase.h"
 #include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "CollectPanelBase.generated.h"
 
 class UCollectStateGroup;
 
 UCLASS()
-class ACollectPanelBase : public APawn
+class ACollectPanelBase : public ATaskPawnBase
 {
 	GENERATED_BODY()
 

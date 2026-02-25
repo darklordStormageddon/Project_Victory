@@ -8,9 +8,9 @@
 #include "TurretBase_GT.generated.h"
 
 
-// 전방선언추가
+
 class APSJ_Character;
-class APSJ_ShipCockpit; // 연결된 의자 정보 저장을 위해
+class ATaskChair;
 
 class USceneComponent;
 class UStaticMeshComponent;
@@ -47,12 +47,12 @@ protected:
 
 	// [추가] 연결된 조종석 (내릴 때 정보 갱신용)
 	UPROPERTY(VisibleInstanceOnly, Category = "Connection")
-	APSJ_ShipCockpit* LinkedCockpit;
-
+	ATaskChair* LinkedChair;
+	
 public:
 
 	// [신규] 탑승 처리 함수 (서버 호출)
-	void SetPilot(APSJ_Character* NewPilot, APSJ_ShipCockpit* Cockpit);
+	void SetPilot(APSJ_Character* NewPilot, ATaskChair* Chair);
 
 	// [신규] 탑승 성공 시 클라이언트 설정 (IMC 교체, UI 켜기)
 	UFUNCTION(Client, Reliable)

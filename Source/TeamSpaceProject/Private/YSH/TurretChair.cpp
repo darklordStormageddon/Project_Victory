@@ -2,6 +2,7 @@
 
 
 #include "YSH/TurretChair.h"
+#include "PSJ/TaskPawnBase.h"
 
 // Sets default values
 ATurretChair::ATurretChair()
@@ -27,5 +28,5 @@ void ATurretChair::Tick(float DeltaTime)
 
 void ATurretChair::SetTurretPawn(TObjectPtr<APawn> TurretPawn)
 {
-	TargetSpaceship = TurretPawn;
+	TargetTaskPawn = Cast<ATaskPawnBase>(TurretPawn);
 }

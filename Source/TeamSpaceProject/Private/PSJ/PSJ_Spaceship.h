@@ -12,8 +12,9 @@ class USphereComponent;
 class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
+
 class APSJ_Character;
-class APSJ_ShipCockpit;
+class ATaskChair;
 
 class UHealthComponent;
 class USpaceShipStateGroup;
@@ -27,7 +28,7 @@ class TEAMSPACEPROJECT_API APSJ_Spaceship : public ATaskPawnBase
 	GENERATED_BODY()
 
 private:
-	// 쉴드 이펙트 관련 변수들
+
 	FTimerHandle ShieldAlphaTimerHandle;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shield")
@@ -38,7 +39,7 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Shield")
 	UStaticMeshComponent* ShieldMesh = nullptr;
 
-	// 거리 측정 컴포넌트 선언
+
 	UPROPERTY(VisibleAnywhere, Category = "DistanceComp")
 	UDistanceComponent* DistanceComp = nullptr;
 
@@ -64,9 +65,7 @@ private:
 public:
 	APSJ_Spaceship();
 
-	// -------------------------------------------------------------------------
-	// [추가] 입력 신호를 서버로 전달할 RPC 함수들
-	// -------------------------------------------------------------------------
+
 	UFUNCTION(Server, Unreliable, WithValidation)
 	void Server_ThrustForward(float Value);
 
@@ -103,11 +102,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Components")
 	USphereComponent* PilotSphere;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Components")
-	UArrowComponent* ExitPoint;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Components")
-	UArrowComponent* RidePoint;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputMappingContext* ShipMappingContext;
@@ -130,8 +124,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* IA_Roll;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_Interact;
 
 	UPROPERTY(EditAnywhere, Category = "Ship Stats")
 	float ThrustSpeed = 5000.0f;
@@ -139,17 +131,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Ship Stats")
 	float RotateSpeed = 1.0f;
 
-	// [신규] 우주선 최대 속도 제한 (에디터 수정 가능)
+
 	UPROPERTY(EditAnywhere, Category = "Ship Stats")
 	float MaxSpeed = 4000.0f;
 
-	// [추가] 현재 조종사를 반환하는 Getter 함수
-	UFUNCTION(BlueprintPure, Category = "Pilot")
-	APSJ_Character* GetCurrentPilot() const { return CurrentPilot; }
+
+
 
 protected:
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Pilot")
-	APSJ_Character* CurrentPilot = nullptr;
+
 
 	FTimerHandle CollisionResetTimerHandle;
 
@@ -159,7 +149,6 @@ protected:
 	UHealthComponent* HealthComp;
 
 public:
-	void SetPilot(APSJ_Character* NewPilot);
 
 	void Input_ThrustForward(const FInputActionValue& Value);
 	void Input_ThrustBackward(const FInputActionValue& Value);
@@ -167,20 +156,9 @@ public:
 	void Input_MoveUp(const FInputActionValue& Value);
 	void Input_MouseLook(const FInputActionValue& Value);
 	void Input_Roll(const FInputActionValue& Value);
-	void Input_Exit(const FInputActionValue& Value);
 
-	// [변경] 인자를 3개로 수정 (APSJ_Character* ExitingPilot 추가)
-	UFUNCTION(Client, Reliable)
-	void Client_DisembarkSuccess(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot);
 
-	// [삭제됨] 구형 선언 Client_DisembarkSuccess_Old 삭제하여 링크 에러 해결
 
-	// [추가] 서버에 하차를 요청하는 RPC 함수
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_RequestDisembark();
-
-	UFUNCTION(BlueprintCallable, Category = "Interaction")
-	void DisembarkCharacter();
 
 	void EnableCollisionWithPassenger(APSJ_Character* ExitedChar);
 
@@ -190,9 +168,9 @@ public:
 	UFUNCTION()
 	void OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	// [추가] 현재 연결된 조종석 (내릴 때 UI 끄기용)
+
 	UPROPERTY(VisibleInstanceOnly, Category = "Connection")
-	APSJ_ShipCockpit* LinkedCockpit;
+	ATaskChair* LinkedChair;
 
 	UFUNCTION()
 	void OnTakeDamage(float Damage);
