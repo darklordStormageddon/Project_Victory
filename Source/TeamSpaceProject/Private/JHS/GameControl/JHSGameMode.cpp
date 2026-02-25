@@ -7,10 +7,11 @@
 #include "JHS/GameControl/SpaceManager.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
-#include "JHS/GameControl/JHSPlayerController.h"
-#include "JHS/GameControl/JHSPlayerState.h"
+#include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/PlayerStateGroup.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
+#include "JHS/GameControl/JHSPlayerController.h"
+#include "JHS/GameControl/JHSPlayerState.h"
 #include "GameFramework/PlayerState.h"
 
 AJHSGameMode::AJHSGameMode()
@@ -111,7 +112,7 @@ void AJHSGameMode::StartNextStage(AActor* Caller)
 	if (_currentStage == 1)
 	{
 		AJHSGameState* _outGameState = nullptr;
-		if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+		if (!TryGetGameState(_outGameState))
 			return;
 
 		TObjectPtr<UTurretStateGroup> _turretStateGroup = _outGameState->GetTurretStateGroup();
@@ -151,6 +152,12 @@ void AJHSGameMode::EndStage(AActor* Caller)
 	}
 
 	_eventManager->ExecuteEvent<UEventOnEndStage>(_event);
+
+	AJHSGameState* _outGameState = nullptr;
+	if (!TryGetGameState(_outGameState))
+		return;
+
+	_outGameState->GetSpaceShipStateGroup()->RepairSpaceShip();
 }
 
 bool AJHSGameMode::CheckIsServerCaller(AActor* Caller)
@@ -163,4 +170,19 @@ bool AJHSGameMode::CheckIsServerCaller(AActor* Caller)
 	}
 
 	return true;
+}
+
+bool AJHSGameMode::TryGetGameState(AJHSGameState*& OutGameState)
+{
+	if (_cachedGameState == nullptr)
+	{
+		AJHSGameState* _outGameState = nullptr;
+		if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+			return false;
+
+		_cachedGameState = _outGameState;
+	}
+	
+	OutGameState = _cachedGameState;
+	return OutGameState != nullptr;
 }

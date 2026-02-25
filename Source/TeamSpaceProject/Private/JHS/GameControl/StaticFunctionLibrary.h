@@ -37,6 +37,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|EventManager")
     static bool TryGetEventManager(UEventManager*& OutEventManager);
 
+    UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|GameplayStatics")
+    static float GetDeltaTime();
+
 private:
     static bool TryGetWorld(UWorld*& OutWorld);
 };

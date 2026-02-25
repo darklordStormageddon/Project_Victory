@@ -48,4 +48,8 @@ public:
 	/** 트리거 이탈 시 해당 클라이언트만 호출. 복제 타이밍에 의존하지 않음. */
 	UFUNCTION(Client, Reliable)
 	void ClientInteractableTriggerExit(UInteractableComponent* Interactable);
+
+	/** 월드 UI 토글 요청. 서버에서만 상태 갱신 후 멀티캐스트로 결과 전파 (Interactable은 owning connection 없어 컨트롤러 경유). */
+	UFUNCTION(Server, Reliable)
+	void ServerRequestToggleWorldUI(UInteractableComponent* Target);
 };

@@ -106,12 +106,10 @@ public:
 		UClass* _eventClass = T::StaticClass();
 		if (_eventDelegates.Contains(_eventClass))
 		{
-			UE_LOG(LogTemp, Log, TEXT("[InteractFlow] EventManager::ExecuteEvent - broadcasting %s"), *_eventClass->GetName());
 			_eventDelegates[_eventClass].Broadcast(Event);
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[InteractFlow] EventManager::ExecuteEvent - NO listeners for %s (Broadcast skipped)"), *_eventClass->GetName());
 		}
 	}
 

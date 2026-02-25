@@ -167,19 +167,15 @@ void UInteractableComponent::OnTriggerEnter(UPrimitiveComponent* OverlappedCompo
 
 	AActor* _owner = GetOwner();
 	const bool _bAuthority = _owner != nullptr && _owner->HasAuthority();
-	UE_LOG(LogTemp, Log, TEXT("[InteractFlow] OnTriggerEnter - %s overlap with OtherActor=%s"),
-		_bAuthority ? TEXT("Server") : TEXT("Client"), *GetNameSafe(OtherActor));
 
 	if (_bAuthority)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[InteractFlow] OnTriggerEnter - Server path: ExecuteServerTriggerEnter"));
 		ExecuteServerTriggerEnter(OtherActor);
 		return;
 	}
 
 	if (!_otherPawn->IsLocallyControlled())
 	{
-		UE_LOG(LogTemp, Log, TEXT("[InteractFlow] OnTriggerEnter - Client SKIP (OtherPawn not locally controlled)"));
 		return;
 	}
 
@@ -187,7 +183,6 @@ void UInteractableComponent::OnTriggerEnter(UPrimitiveComponent* OverlappedCompo
 	const int32 _clientAssignedId = _clientJHSPC != nullptr ? _clientJHSPC->GetAssignedPlayerId() : -1;
 	UWorld* _clientWorld = GetWorld();
 	const ENetMode _clientNetMode = _clientWorld != nullptr ? _clientWorld->GetNetMode() : NM_Standalone;
-	UE_LOG(LogTemp, Log, TEXT("[InteractFlow] OnTriggerEnter - Client path: ServerReportTriggerEnter RPC (로컬 AssignedPlayerId=%d NetMode=%d)"), _clientAssignedId, (int32)_clientNetMode);
 	_foundInteracter->ServerReportTriggerEnter(this);
 }
 
@@ -252,8 +247,6 @@ void UInteractableComponent::ExecuteServerTriggerEnter(AActor* OtherActor)
 	const int32 _callerAssignedId = _callerJHSPC != nullptr ? _callerJHSPC->GetAssignedPlayerId() : -1;
 
 	const ENetMode _netMode = _world != nullptr ? _world->GetNetMode() : NM_Standalone;
-	UE_LOG(LogTemp, Log, TEXT("[InteractFlow] ExecuteServerTriggerEnter - NetMode=%d OtherActor=%s CallerAssignedPlayerId=%d"),
-		(int32)_netMode, *GetNameSafe(OtherActor), _callerAssignedId);
 
 	// 끌어내리기: 서버에서 상태 갱신 후 대상 클라이언트에만 Client RPC
 	if (_isInterrupt && _interacter != nullptr && _interacter != _foundInteracter)
@@ -266,7 +259,6 @@ void UInteractableComponent::ExecuteServerTriggerEnter(AActor* OtherActor)
 
 	_interacter = _foundInteracter;
 	E_INTERACT_TYPE _typeForEnter = _isWorldSpaceUI ? E_INTERACT_TYPE::Handle : E_INTERACT_TYPE::Seat;
-	UE_LOG(LogTemp, Log, TEXT("[InteractFlow] ExecuteServerTriggerEnter - calling ClientInteractableTriggerEnter CallerAssignedPlayerId=%d InteractType=%d"), _callerAssignedId, (int32)_typeForEnter);
 	// 대상 클라이언트에만 전달 (복제 타이밍 무관)
 	if (_callerJHSPC != nullptr)
 		_callerJHSPC->ClientInteractableTriggerEnter(this, _typeForEnter);
@@ -276,15 +268,11 @@ void UInteractableComponent::MulticastOnTriggerEnter_Implementation(int32 Caller
 {
 	UWorld* _world = GetWorld();
 	const ENetMode _netMode = _world != nullptr ? _world->GetNetMode() : NM_Standalone;
-	UE_LOG(LogTemp, Log, TEXT("[InteractFlow] MulticastOnTriggerEnter_Implementation - ENTRY NetMode=%d CallerAssignedPlayerId=%d InteractType=%d"),
-		(int32)_netMode, CallerAssignedPlayerId, (int32)InteractType);
 
 	// CallerAssignedPlayerId에 해당하는 PC를 찾고, 그 PC가 로컬일 때만 처리 (로컬 PC 우선 조회에 의존하지 않음)
 	AJHSPlayerController* _localController = nullptr;
 	if (!FindLocalPlayerControllerByAssignedId(_world, CallerAssignedPlayerId, _localController))
 	{
-		UE_LOG(LogTemp, Log, TEXT("[InteractFlow] MulticastOnTriggerEnter_Implementation - SKIP (no local PC with AssignedPlayerId=%d, NetMode=%d)"),
-			CallerAssignedPlayerId, (int32)_netMode);
 		return;
 	}
 
@@ -292,11 +280,8 @@ void UInteractableComponent::MulticastOnTriggerEnter_Implementation(int32 Caller
 	UInteracterComponent* _foundInteracter = _localPawn != nullptr ? _localPawn->FindComponentByClass<UInteracterComponent>() : nullptr;
 	if (_foundInteracter == nullptr)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[InteractFlow] MulticastOnTriggerEnter_Implementation - SKIP (local Pawn or InteracterComponent=null, NetMode=%d)"), (int32)_netMode);
 		return;
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("[InteractFlow] MulticastOnTriggerEnter_Implementation - calling OnInteractable CallerAssignedPlayerId=%d"), CallerAssignedPlayerId);
 	_interacter = _foundInteracter;
 	_foundInteracter->OnInteractable(this, InteractType);
 }
@@ -346,7 +331,9 @@ void UInteractableComponent::ExecuteServerTriggerExit(AActor* OtherActor)
 		_callerJHSPC->ClientInteractableTriggerExit(this);
 
 	if (!_isWorldSpaceUI && _isInteract)
-		ChangeInteractState(false, _callerAssignedId);
+		ChangeInteractState(false, _callerAssignedId, _callerJHSPC);
+	else if (_isWorldSpaceUI && _isInteract)
+		ChangeInteractState(false, _callerAssignedId, _callerJHSPC);
 }
 
 void UInteractableComponent::MulticastOnTriggerExit_Implementation(int32 CallerAssignedPlayerId)
@@ -366,6 +353,37 @@ void UInteractableComponent::MulticastOnTriggerExit_Implementation(int32 CallerA
 	_interacter = nullptr;
 }
 
+void UInteractableComponent::AuthorityToggleWorldUI()
+{
+	AActor* _owner = GetOwner();
+	if (_owner == nullptr || !_owner->HasAuthority())
+		return;
+	_isInteract = !_isInteract;
+	if (_isInteract)
+		MulticastOpenWorldUI(_interactUIType, _owner, _worldUIRelativeLocation, _worldUIScale);
+	else
+		MulticastCloseWorldUI(_interactUIType);
+}
+
+void UInteractableComponent::MulticastOpenWorldUI_Implementation(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation, float Scale)
+{
+	if (OwnerActor == nullptr) return;
+	AJHSPlayerController* _localController = nullptr;
+	if (!GetOrCacheLocalPlayerController(_localController)) return;
+	UUIManager* _localUIManager = _localController->GetUIManager();
+	if (_localUIManager != nullptr)
+		_localUIManager->OpenUIInWorldLocal(UIType, OwnerActor, RelativeLocation, Scale);
+}
+
+void UInteractableComponent::MulticastCloseWorldUI_Implementation(E_UI_TYPE UIType)
+{
+	AJHSPlayerController* _localController = nullptr;
+	if (!GetOrCacheLocalPlayerController(_localController)) return;
+	UUIManager* _localUIManager = _localController->GetUIManager();
+	if (_localUIManager != nullptr)
+		_localUIManager->CloseWorldUILocal(UIType);
+}
+
 void UInteractableComponent::InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType, bool IsWorldSpaceUI, FVector WorldUIRelativeLocation, float WorldUIScale)
 {
 	_isDebugDraw = IsDebugDraw;
@@ -375,6 +393,11 @@ void UInteractableComponent::InitializeUIInteractable(bool IsDebugDraw, float In
 	_isWorldSpaceUI = IsWorldSpaceUI;
 	_worldUIRelativeLocation = WorldUIRelativeLocation;
 	_worldUIScale = WorldUIScale;
+
+	// 월드 UI 멀티캐스트는 오너 액터가 각 클라이언트에 있어야 수신됨. 서버에서 복제 활성화.
+	AActor* _owner = GetOwner();
+	if (_isWorldSpaceUI && _owner != nullptr && _owner->HasAuthority())
+		_owner->SetReplicates(true);
 }
 
 bool UInteractableComponent::TryInteract(APlayerController* CallerController, bool& OutIsInterupt, bool& IsCloseUI)
@@ -391,90 +414,39 @@ bool UInteractableComponent::TryInteract(APlayerController* CallerController, bo
 	if (_jhsPC == nullptr)
 		return false;
 
+	// 월드 UI: 열림/닫힘은 서버에서만 처리. 클라이언트는 토글 요청만 보내고 상태 갱신·멀티캐스트는 서버가 담당.
+	if (_isWorldSpaceUI)
+	{
+		_jhsPC->ServerRequestToggleWorldUI(this);
+		IsCloseUI = false;
+		return true;
+	}
+
 	_isInteract = !_isInteract;
 	const int32 _callerAssignedId = _jhsPC->GetAssignedPlayerId();
-	ChangeInteractState(_isInteract, _callerAssignedId);
+	ChangeInteractState(_isInteract, _callerAssignedId, CallerController);
 
 	IsCloseUI = _isInteract;
-	if (IsCloseUI && _isWorldSpaceUI)
-	{
-		IsCloseUI = false;
-	}
-	
 	return true;
 }
 
-void UInteractableComponent::ServerOpenWorldUI_Implementation(int32 CallerPlayerId, E_UI_TYPE UIType)
-{
-	// 서버에서 멀티캐스트로 전달 (호출자 클라이언트에서만 실제로 UI 열림)
-	MulticastOpenWorldUI(CallerPlayerId, UIType);
-}
-
-void UInteractableComponent::MulticastOpenWorldUI_Implementation(int32 CallerPlayerId, E_UI_TYPE UIType)
-{
-	UWorld* _world = GetWorld();
-	AJHSPlayerController* _localController = nullptr;
-	if (!FindLocalPlayerControllerByAssignedId(_world, CallerPlayerId, _localController))
-		return;
-
-	UUIManager* _uiManagerPtr = _localController->GetUIManager();
-	if (_uiManagerPtr == nullptr)
-		return;
-
-	AActor* _owner = GetOwner();
-	if (_owner != nullptr)
-		_uiManagerPtr->OpenUIInWorld(UIType, _owner, _worldUIRelativeLocation, _worldUIScale);
-}
-
-void UInteractableComponent::ServerCloseWorldUI_Implementation(int32 CallerPlayerId, E_UI_TYPE UIType)
-{
-	// 서버에서 멀티캐스트로 전달 (호출자 클라이언트에서만 실제로 UI 닫기)
-	MulticastCloseWorldUI(CallerPlayerId, UIType);
-}
-
-void UInteractableComponent::MulticastCloseWorldUI_Implementation(int32 CallerPlayerId, E_UI_TYPE UIType)
-{
-	UWorld* _world = GetWorld();
-	AJHSPlayerController* _localController = nullptr;
-	if (!FindLocalPlayerControllerByAssignedId(_world, CallerPlayerId, _localController))
-		return;
-
-	UUIManager* _uiManagerPtr = _localController->GetUIManager();
-	if (_uiManagerPtr != nullptr)
-		_uiManagerPtr->CloseUI(UIType);
-}
-
-void UInteractableComponent::ChangeInteractState(bool IsInteract, int32 CallerPlayerId)
+void UInteractableComponent::ChangeInteractState(bool IsInteract, int32 CallerPlayerId, APlayerController* CallerController)
 {
 	_isInteract = IsInteract;
 
+	// 월드 UI 열기/닫기는 서버에서만 AuthorityToggleWorldUI 또는 트리거 이탈 시 여기(서버)에서 처리. 클라이언트는 TryInteract에서 토글 요청만 보냄.
 	if (_isInteract)
 	{
 		UUIBase* _openedUI = nullptr;
-		if (_interactUIType != E_UI_TYPE::NONE)
+		if (_interactUIType != E_UI_TYPE::NONE && !_isWorldSpaceUI)
 		{
-			if (_isWorldSpaceUI)
+			// 일반 뷰포트 UI: 로컬 플레이어만 표시
+			AJHSPlayerController* _localController = nullptr;
+			if (GetOrCacheLocalPlayerController(_localController) && _localController->GetAssignedPlayerId() == CallerPlayerId)
 			{
-				// 월드 공간 UI: 호출자 클라이언트에서만 열기 (RPC에서 CallerPlayerId로 필터)
-				AActor* _owner = GetOwner();
-				if (_owner != nullptr && _owner->HasAuthority())
-				{
-					MulticastOpenWorldUI(CallerPlayerId, _interactUIType);
-				}
-				else if (_owner != nullptr)
-				{
-					ServerOpenWorldUI(CallerPlayerId, _interactUIType);
-				}
-			}
-			else
-			{
-				AJHSPlayerController* _localController = nullptr;
-				if (GetOrCacheLocalPlayerController(_localController) && _localController->GetAssignedPlayerId() == CallerPlayerId)
-				{
-					UUIManager* _callerUIManager = _localController->GetUIManager();
-					if (_callerUIManager != nullptr)
-						_openedUI = _callerUIManager->OpenUI(_interactUIType);
-				}
+				UUIManager* _callerUIManager = _localController->GetUIManager();
+				if (_callerUIManager != nullptr)
+					_openedUI = _callerUIManager->OpenUI(_interactUIType);
 			}
 		}
 		OnInteractEnterAction.Broadcast(CallerPlayerId, _openedUI);
@@ -486,19 +458,13 @@ void UInteractableComponent::ChangeInteractState(bool IsInteract, int32 CallerPl
 		{
 			if (_isWorldSpaceUI)
 			{
-				// 월드 공간 UI 닫기: 호출자 클라이언트에서만 닫기
-				AActor* _owner = GetOwner();
-				if (_owner != nullptr && _owner->HasAuthority())
-				{
-					MulticastCloseWorldUI(CallerPlayerId, _interactUIType);
-				}
-				else if (_owner != nullptr)
-				{
-					ServerCloseWorldUI(CallerPlayerId, _interactUIType);
-				}
+				// 트리거 이탈 등 서버 전용 경로에서만 호출됨. 서버가 멀티캐스트로 닫기.
+				if (GetOwner() != nullptr && GetOwner()->HasAuthority())
+					MulticastCloseWorldUI(_interactUIType);
 			}
 			else
 			{
+				// 일반 뷰포트 UI 닫기: 로컬 플레이어만
 				AJHSPlayerController* _localController = nullptr;
 				if (GetOrCacheLocalPlayerController(_localController) && _localController->GetAssignedPlayerId() == CallerPlayerId)
 				{

@@ -35,13 +35,11 @@ void UUIPanelPlayerFPS::RegisterEvent()
     UEventManager* EventMgr = GetEventManager();
     if (!EventMgr)
     {
-        UE_LOG(LogTemp, Error, TEXT("[InteractFlow] UIPanelPlayerFPS::RegisterEvent - EventManager=null listener NOT registered NetMode=%d"), (int32)_netMode);
         return;
     }
 
     if (_eventHandleOnChangeInteractType.IsValid())
     {
-        UE_LOG(LogTemp, Log, TEXT("[InteractFlow] UIPanelPlayerFPS::RegisterEvent - already registered skip NetMode=%d"), (int32)_netMode);
         return;
     }
 
@@ -53,7 +51,6 @@ void UUIPanelPlayerFPS::RegisterEvent()
             OnChangeInteractType(Event);
         }
     );
-    UE_LOG(LogTemp, Log, TEXT("[InteractFlow] UIPanelPlayerFPS::RegisterEvent - UEventOnChangeInteractType listener registered NetMode=%d"), (int32)_netMode);
 }
 
 void UUIPanelPlayerFPS::UnregisterEvent()
@@ -64,7 +61,6 @@ void UUIPanelPlayerFPS::UnregisterEvent()
     UEventManager* EventMgr = GetEventManager();
     if (!EventMgr)
     {
-        // EventManager?? ??? ?????? ??? ??? ????
         _eventHandleOnChangeInteractType.Reset();
         return;
     }
@@ -75,10 +71,8 @@ void UUIPanelPlayerFPS::UnregisterEvent()
 
 void UUIPanelPlayerFPS::ChangeInteractable(E_INTERACT_TYPE InteractType)
 {
-    UE_LOG(LogTemp, Log, TEXT("[InteractFlow] UIPanelPlayerFPS::ChangeInteractable - InteractType=%d"), (int32)InteractType);
     if (!IsValid(IMG_Interact))
     {
-        UE_LOG(LogTemp, Error, TEXT("[InteractFlow] UIPanelPlayerFPS::ChangeInteractable - IMG_Interact is nullptr"));
         return;
     }
 
@@ -88,7 +82,6 @@ void UUIPanelPlayerFPS::ChangeInteractable(E_INTERACT_TYPE InteractType)
     {
         Texture = _interactTextureMap.FindRef(InteractType);
 
-        // ????? ?????? GC ?????? ???????? ??? ?????
         if (!IsValid(Texture))
         {
             _interactTextureMap.Remove(InteractType);
@@ -121,7 +114,6 @@ void UUIPanelPlayerFPS::OnChangeInteractType(UEventOnChangeInteractType* Event)
 {
     if (!IsValid(Event))
     {
-        UE_LOG(LogTemp, Warning, TEXT("[InteractFlow] UIPanelPlayerFPS::OnChangeInteractType - Event invalid"));
         return;
     }
 
@@ -130,16 +122,10 @@ void UUIPanelPlayerFPS::OnChangeInteractType(UEventOnChangeInteractType* Event)
     AJHSPlayerController* _localJHSPC = Cast<AJHSPlayerController>(GetOwningPlayer());
     const int32 _localAssignedId = _localJHSPC ? _localJHSPC->GetAssignedPlayerId() : -1;
 
-    UE_LOG(LogTemp, Log, TEXT("[InteractFlow] UIPanelPlayerFPS::OnChangeInteractType - ENTRY NetMode=%d EventPlayerID=%d InteractType=%d localAssignedId=%d"),
-        (int32)_netMode, Event->PlayerID, (int32)Event->InteractType, _localAssignedId);
-
     if (Event->PlayerID != _localAssignedId)
     {
-        UE_LOG(LogTemp, Log, TEXT("[InteractFlow] UIPanelPlayerFPS::OnChangeInteractType - SKIP (EventPlayerID=%d != localAssignedId=%d) NetMode=%d"),
-            Event->PlayerID, _localAssignedId, (int32)_netMode);
         return;
     }
 
-    UE_LOG(LogTemp, Log, TEXT("[InteractFlow] UIPanelPlayerFPS::OnChangeInteractType - applying InteractType=%d to UI NetMode=%d"), (int32)Event->InteractType, (int32)_netMode);
     ChangeInteractable(Event->InteractType);
 }

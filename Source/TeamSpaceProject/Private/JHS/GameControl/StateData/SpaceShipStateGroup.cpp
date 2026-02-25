@@ -35,9 +35,11 @@ void USpaceShipStateGroup::TickComponent(float DeltaTime, ELevelTick TickType, F
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-void USpaceShipStateGroup::InitializeSpaceShipState(TObjectPtr<AJHSGameState> GameState)
+void USpaceShipStateGroup::InitializeSpaceShipState(TObjectPtr<AJHSGameState> GameState, float RepairDelay, float RepairShieldValue)
 {
 	_gameState = GameState;
+	_repairDelay = RepairDelay;
+	_repairShieldValue = RepairShieldValue;
 
 	LoadSpaceShipData();
 	RepairSpaceShip();
@@ -81,6 +83,7 @@ TArray<FPurchaseData*> USpaceShipStateGroup::GetPurchaseDataArray()
 	return _purchaseDataArray;
 }
 
+#pragma region Health
 void USpaceShipStateGroup::RepairSpaceShip()
 {
 	FSpaceShipData* _outSpaceShipData = nullptr;
@@ -138,17 +141,58 @@ void USpaceShipStateGroup::TakeDamage(float Damage)
 
 			_outGameMode->EndStage(_pawn);
 		}
+
+		return;
 	}
+
+	// Repair shield timer
+	StartRepairShield();
 }
 
-void USpaceShipStateGroup::RepairShield(float RepairShieldValue)
+void USpaceShipStateGroup::StartRepairShield()
 {
+	GetWorld()->GetTimerManager().ClearTimer(_timerHandleDamageDelay);
+	GetWorld()->GetTimerManager().ClearTimer(_timerHandleRepairShield);
+	GetWorld()->GetTimerManager().SetTimer(_timerHandleRepairShield, this, &USpaceShipStateGroup::RepairShield, _repairDelay, false);
+}
+
+void USpaceShipStateGroup::RepairShield()
+{
+	float _deltaTime = UStaticFunctionLibrary::GetDeltaTime();
+
 	FSpaceShipData* _outSpaceShipData = nullptr;
 	if (TryGetSpaceShipData(E_SPACE_SHIP_DATA_TYPE::Shield, _outSpaceShipData))
 	{
-		ChangCurrentData(_outSpaceShipData, _outSpaceShipData->Data.Value.CurrentValue + RepairShieldValue);
+		FMaxCurrentData* _shieldData = &_outSpaceShipData->Data.Value;
+		ChangCurrentData(_outSpaceShipData, _shieldData->CurrentValue + _deltaTime * _repairShieldValue);
+
+		if (_shieldData->CurrentValue >= _shieldData->MaxValue)
+			return;
+	}
+
+	if (_deltaTime > 0.0f)
+	{
+		GetWorld()->GetTimerManager().SetTimer(_timerHandleRepairShield, this, &USpaceShipStateGroup::RepairShield, _deltaTime, false);
 	}
 }
+#pragma endregion Health
+
+#pragma region Feul
+bool USpaceShipStateGroup::TryConsumeFuel()
+{
+	FSpaceShipData* _outFuelData = nullptr;
+	if (!TryGetSpaceShipData(E_SPACE_SHIP_DATA_TYPE::Fuel, _outFuelData))
+		return false;
+
+	FMaxCurrentData* _fuelData = &_outFuelData->Data.Value;
+	float _consumeValue = CONSUME_FUEL_VALUE * UStaticFunctionLibrary::GetDeltaTime();
+	if (_fuelData->CurrentValue < _consumeValue)
+		return false;
+
+	ChangCurrentData(_outFuelData, _outFuelData->Data.Value.CurrentValue - _consumeValue);
+	return true;
+}
+#pragma endregion Feul
 
 void USpaceShipStateGroup::LoadSpaceShipData()
 {
