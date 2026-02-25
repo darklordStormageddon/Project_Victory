@@ -38,3 +38,9 @@ void AJHSPlayerController::ClientInteractableTriggerExit_Implementation(UInterac
 	if (IsValid(Interactable))
 		Interactable->ExecuteTriggerExitForLocalPlayer();
 }
+
+void AJHSPlayerController::ServerRequestToggleWorldUI_Implementation(UInteractableComponent* Target)
+{
+	if (IsValid(Target))
+		Target->AuthorityToggleWorldUI();
+}

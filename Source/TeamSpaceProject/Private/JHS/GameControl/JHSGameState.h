@@ -42,6 +42,12 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|SpaceShipStateGroup")
 	TObjectPtr<USpaceShipStateGroup> _spaceShipStateGroup = nullptr;
 
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|SpaceShipStateGroup")
+	float _repairDelay = 5.0f;
+
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|SpaceShipStateGroup")
+	float _repairShieldValue = 1.0f;
+
 	// Player
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|PlayerStateGroup")
 	TObjectPtr<UPlayerStateGroup> _playerStateGroup = nullptr;

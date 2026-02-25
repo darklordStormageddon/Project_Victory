@@ -116,19 +116,25 @@ bool UStaticFunctionLibrary::TryGetEventManager(UEventManager*& OutEventManager)
 	AJHSGameState* _gameState = nullptr;
 	if (!TryGetGameState(_gameState))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[InteractFlow] TryGetEventManager: TryGetGameState failed"));
 		return false;
 	}
 
 	OutEventManager = _gameState->GetEventManager();
 	if (OutEventManager == nullptr)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[InteractFlow] TryGetEventManager: GameState->GetEventManager() is nullptr"));
 		return false;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[InteractFlow] TryGetEventManager: OK (from GameState)"));
 	return true;
+}
+
+float UStaticFunctionLibrary::GetDeltaTime()
+{
+	UWorld* _world = nullptr;
+	if (!TryGetWorld(_world))
+		return 0.0f;
+
+	return UGameplayStatics::GetWorldDeltaSeconds(_world);
 }
 
 bool UStaticFunctionLibrary::TryGetWorld(UWorld*& OutWorld)

@@ -94,6 +94,34 @@ UUIBase* UUIManager::OpenUIInWorld(E_UI_TYPE UIType, AActor* OwnerActor, FVector
 		return nullptr;
 	}
 
+	// 서버/클라이언트 모두에서 보이도록 RPC 사용
+	if (OwnerActor->HasAuthority())
+	{
+		// 서버에서 직접 멀티캐스트
+		MulticastOpenUIInWorld(UIType, OwnerActor, RelativeLocation, Scale);
+	}
+	else
+	{
+		// 클라이언트에서 서버로 요청
+		ServerOpenUIInWorld(UIType, OwnerActor, RelativeLocation, Scale);
+	}
+
+	return nullptr;
+}
+
+UUIBase* UUIManager::OpenUIInWorldLocal(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation, float Scale)
+{
+	return OpenUIInWorldInternal(UIType, OwnerActor, RelativeLocation, Scale);
+}
+
+UUIBase* UUIManager::OpenUIInWorldInternal(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation, float Scale)
+{
+	if (OwnerActor == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UUIManager: OwnerActor is nullptr for WorldSpace UI [%d]"), (int32)UIType);
+		return nullptr;
+	}
+
 	// UI 클래스 로드
 	UUIBase* _ui = LoadUIInternal(UIType);
 	if (_ui == nullptr)
@@ -198,6 +226,37 @@ UUIBase* UUIManager::OpenUIInWorld(E_UI_TYPE UIType, AActor* OwnerActor, FVector
 }
 
 UUIBase* UUIManager::CloseUI(E_UI_TYPE UIType)
+{
+	// 월드 공간 UI인지 확인
+	if (_worldSpaceUIComponents.Contains(UIType))
+	{
+		// 월드 UI는 모든 클라이언트에서 닫기
+		AActor* _owner = GetOwner();
+		if (_owner != nullptr && _owner->HasAuthority())
+		{
+			// 서버에서 직접 멀티캐스트
+			MulticastCloseWorldUI(UIType);
+		}
+		else if (_owner != nullptr)
+		{
+			// 클라이언트에서 서버로 요청
+			ServerCloseWorldUI(UIType);
+		}
+		return nullptr;
+	}
+	else
+	{
+		// 일반 뷰포트 UI는 로컬에서만 닫기
+		return CloseUIInternal(UIType);
+	}
+}
+
+UUIBase* UUIManager::CloseWorldUILocal(E_UI_TYPE UIType)
+{
+	return CloseUIInternal(UIType);
+}
+
+UUIBase* UUIManager::CloseUIInternal(E_UI_TYPE UIType)
 {
 	UUIBase* _closedUI = nullptr;
 
@@ -383,4 +442,28 @@ FString UUIManager::GetUIPath(E_UI_TYPE UIType) const
 	// 전체 경로 구성: /Game/Main/PS_JHS/Blueprint/UI/Popup/Common/WBP_UIPopupCommon.WBP_UIPopupCommon_C
 	FString _fullPath = _basePath + _folderPath + _uiName;
 	return _fullPath + TEXT(".") + _uiName + TEXT("_C");
+}
+
+void UUIManager::ServerOpenUIInWorld_Implementation(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation, float Scale)
+{
+	// 서버에서 멀티캐스트로 모든 클라이언트에 전달
+	MulticastOpenUIInWorld(UIType, OwnerActor, RelativeLocation, Scale);
+}
+
+void UUIManager::MulticastOpenUIInWorld_Implementation(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation, float Scale)
+{
+	// 모든 클라이언트에서 월드 UI 생성
+	OpenUIInWorldInternal(UIType, OwnerActor, RelativeLocation, Scale);
+}
+
+void UUIManager::ServerCloseWorldUI_Implementation(E_UI_TYPE UIType)
+{
+	// 서버에서 멀티캐스트로 모든 클라이언트에 전달
+	MulticastCloseWorldUI(UIType);
+}
+
+void UUIManager::MulticastCloseWorldUI_Implementation(E_UI_TYPE UIType)
+{
+	// 모든 클라이언트에서 월드 UI 닫기
+	CloseUIInternal(UIType);
 }

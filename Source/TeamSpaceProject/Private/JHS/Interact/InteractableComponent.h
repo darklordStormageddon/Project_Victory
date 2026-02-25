@@ -84,6 +84,9 @@ public:
 public:
 	E_INTERACT_TYPE GetInteractType() { return _interactType; }
 
+	/** 월드 스페이스 UI 사용 여부 (멀티캐스트 수신을 위해 오너 복제 보장·Interacter UI 토글 생략 판단용). */
+	bool IsWorldSpaceUI() const { return _isWorldSpaceUI; }
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -109,6 +112,17 @@ public:
 	void ExecuteServerTriggerEnter(AActor* OtherActor);
 	void ExecuteServerTriggerExit(AActor* OtherActor);
 
+	/** 서버 전용. 월드 UI 열림 상태 토글 후 결과만 멀티캐스트 (JHSPlayerController::ServerRequestToggleWorldUI에서 호출). */
+	void AuthorityToggleWorldUI();
+
+	/** 서버에서만 호출. 월드 UI 열기(모든 클라이언트). */
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastOpenWorldUI(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation, float Scale);
+
+	/** 서버에서만 호출. 월드 UI 닫기(모든 클라이언트). */
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastCloseWorldUI(E_UI_TYPE UIType);
+
 private:
 	/** 호출자 구별: 서버에서 발급·복제한 AssignedPlayerId (FPlayerStateData와 동일). */
 	UFUNCTION(NetMulticast, Reliable)
@@ -129,19 +143,7 @@ public:
 	bool TryInteract(APlayerController* CallerController, bool& OutIsInterupt, bool& IsCloseUI);
 
 private:
-	UFUNCTION(Server, Reliable)
-	void ServerOpenWorldUI(int32 CallerPlayerId, E_UI_TYPE UIType);
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastOpenWorldUI(int32 CallerPlayerId, E_UI_TYPE UIType);
-
-	UFUNCTION(Server, Reliable)
-	void ServerCloseWorldUI(int32 CallerPlayerId, E_UI_TYPE UIType);
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastCloseWorldUI(int32 CallerPlayerId, E_UI_TYPE UIType);
-
-	void ChangeInteractState(bool IsInteract, int32 CallerPlayerId);
+	void ChangeInteractState(bool IsInteract, int32 CallerPlayerId, APlayerController* CallerController);
 
 	bool TryGetUIManager(UUIManager*& OutUIManager);
 };

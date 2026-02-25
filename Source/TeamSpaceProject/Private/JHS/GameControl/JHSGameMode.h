@@ -11,6 +11,7 @@
 class UEventManager;
 class USpaceManager;
 class UShopManager;
+class AJHSGameState;
 
 USTRUCT(BlueprintType)
 struct FEquipTurretData
@@ -42,6 +43,9 @@ private:
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
 	TObjectPtr<UShopManager> _shopManager = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<AJHSGameState> _cachedGameState = nullptr;
 
 	UPROPERTY()
 	bool _isGameStarted = false;
@@ -84,4 +88,7 @@ public:
 private:
 	UFUNCTION()
 	bool CheckIsServerCaller(AActor* Caller);
+
+	UFUNCTION()
+	bool TryGetGameState(AJHSGameState*& OutGameState);
 };

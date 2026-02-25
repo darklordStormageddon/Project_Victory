@@ -26,6 +26,17 @@ private:
 	UPROPERTY()
 	TMap<E_SPACE_SHIP_DATA_TYPE, FSpaceShipData> _spaceShipDataMap;
 
+	const float CONSUME_FUEL_VALUE = 1.0f;
+
+	// Repair Shield
+	float _repairDelay = 0.0f;
+
+	float _repairShieldValue = 0.0f;
+
+	FTimerHandle _timerHandleDamageDelay;
+
+	FTimerHandle _timerHandleRepairShield;
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -35,19 +46,28 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	void InitializeSpaceShipState(TObjectPtr<AJHSGameState> GameState);
+	void InitializeSpaceShipState(TObjectPtr<AJHSGameState> GameState, float RepairDelay, float RepairShieldValue);
 
 	void UpdateSpaceShipState();
 
 	TArray<FPurchaseData*> GetPurchaseDataArray();
 
-#pragma region SpaceShip Health
+#pragma region Health
 public:
 	void RepairSpaceShip();
 
 	void TakeDamage(float Damage);
-#pragma endregion SpaceShip Health
-	void RepairShield(float RepairShieldValue);
+
+private:
+	void StartRepairShield();
+
+	void RepairShield();
+#pragma endregion Health
+
+#pragma region Feul
+public:
+	bool TryConsumeFuel();
+#pragma endregion Feul
 
 private:
 	void LoadSpaceShipData();

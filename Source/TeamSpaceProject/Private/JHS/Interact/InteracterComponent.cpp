@@ -80,24 +80,19 @@ void UInteracterComponent::OnInteractable(TObjectPtr<UInteractableComponent> Int
 	const ENetMode _netMode = _world != nullptr ? _world->GetNetMode() : NM_Standalone;
 	APawn* _ownerPawn = Cast<APawn>(GetOwner());
 	const bool _bLocallyControlled = _ownerPawn != nullptr && _ownerPawn->IsLocallyControlled();
-	UE_LOG(LogTemp, Log, TEXT("[InteractFlow] OnInteractable - ENTRY NetMode=%d Owner=%s InteractType=%d IsLocallyControlled=%d"),
-		(int32)_netMode, *GetNameSafe(GetOwner()), (int32)InteractType, _bLocallyControlled ? 1 : 0);
 
 	if (_ownerPawn == nullptr || !_bLocallyControlled)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[InteractFlow] OnInteractable - SKIP (not locally controlled), NetMode=%d"), (int32)_netMode);
 		return;
 	}
 
 	_interactable = Interactable;
 	if (_interactable != nullptr)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[InteractFlow] OnInteractable - calling ExecuteEventOnChangeInteractType NetMode=%d"), (int32)_netMode);
 		ExecuteEventOnChangeInteractType(InteractType);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("[InteractFlow] OnInteractable - SKIP (Interactable=null), NetMode=%d"), (int32)_netMode);
 	}
 }
 
@@ -128,7 +123,8 @@ bool UInteracterComponent::TryInteractInput(bool& OutIsInterupt, bool& OutIsInte
 	if (!_interactable->TryInteract(_playerController, OutIsInterupt, OutIsInteractEnter))
 		return false;
 
-	if (_uiManager != nullptr)
+	// 월드 스페이스 UI일 때는 Open/Close를 멀티캐스트로만 처리. 여기서 _playerUI 토글 시 서버에서 닫자마자 다시 열리는 현상 방지.
+	if (!_interactable->IsWorldSpaceUI() && _uiManager != nullptr)
 	{
 		if (OutIsInteractEnter)
 		{
@@ -145,7 +141,6 @@ bool UInteracterComponent::TryInteractInput(bool& OutIsInterupt, bool& OutIsInte
 
 void UInteracterComponent::ServerReportTriggerEnter_Implementation(UInteractableComponent* Interactable)
 {
-	UE_LOG(LogTemp, Log, TEXT("[InteractFlow] ServerReportTriggerEnter_Implementation - Server received RPC, Interactable=%s"), Interactable ? *GetNameSafe(Interactable->GetOwner()) : TEXT("null"));
 	if (Interactable == nullptr)
 		return;
 	AActor* _ownerPawn = GetOwner();
@@ -172,15 +167,11 @@ void UInteracterComponent::ExecuteEventOnChangeInteractType(E_INTERACT_TYPE Inte
 	UEventOnChangeInteractType* _event = NewObject<UEventOnChangeInteractType>(this);
 	if (_event == nullptr)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[InteractFlow] ExecuteEventOnChangeInteractType - Failed to create event, NetMode=%d"), (int32)_netMode);
 		return;
 	}
 
 	_event->InteractType = InteractType;
 	AJHSPlayerController* _callerJHSPC = _playerController ? Cast<AJHSPlayerController>(_playerController) : nullptr;
 	_event->PlayerID = _callerJHSPC ? _callerJHSPC->GetAssignedPlayerId() : -1;
-
-	UE_LOG(LogTemp, Log, TEXT("[InteractFlow] ExecuteEventOnChangeInteractType - broadcasting NetMode=%d Owner=%s PlayerID=%d InteractType=%d (이 PlayerID로 UI 패널에서 필터링)"),
-		(int32)_netMode, *GetNameSafe(GetOwner()), _event->PlayerID, (int32)_event->InteractType);
 	UEventManager::ExecuteEvent<UEventOnChangeInteractType>(_event);
 }

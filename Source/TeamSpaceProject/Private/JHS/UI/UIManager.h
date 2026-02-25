@@ -35,8 +35,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UIManager")
 	UUIBase* OpenUIInWorld(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation = FVector(0, 0, 100), float Scale = 1.0f);
 
+	/** 멀티캐스트 수신 측에서 호출. 이 머신의 로컬 UIManager에서만 월드 UI를 연다. */
+	UUIBase* OpenUIInWorldLocal(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation, float Scale);
+
 	UFUNCTION(BlueprintCallable, Category = "UIManager")
 	UUIBase* CloseUI(E_UI_TYPE UIType);
+
+	/** 멀티캐스트 수신 측에서 호출. 이 머신의 로컬 UIManager에서만 월드 UI를 닫는다. */
+	UUIBase* CloseWorldUILocal(E_UI_TYPE UIType);
 
 	UFUNCTION(BlueprintCallable, Category = "UIManager")
 	void CloseAllUI();
@@ -45,7 +51,23 @@ public:
 	UUIBase* GetUI(E_UI_TYPE UIType) const;
 
 private:
+	UFUNCTION(Server, Reliable)
+	void ServerOpenUIInWorld(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation, float Scale);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastOpenUIInWorld(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation, float Scale);
+
+	UFUNCTION(Server, Reliable)
+	void ServerCloseWorldUI(E_UI_TYPE UIType);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastCloseWorldUI(E_UI_TYPE UIType);
+
 	UUIBase* OpenUIInternal(E_UI_TYPE UIType);
+
+	UUIBase* OpenUIInWorldInternal(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation, float Scale);
+
+	UUIBase* CloseUIInternal(E_UI_TYPE UIType);
 
 	template<typename T>
 	T* LoadUI(E_UI_TYPE UIType)
