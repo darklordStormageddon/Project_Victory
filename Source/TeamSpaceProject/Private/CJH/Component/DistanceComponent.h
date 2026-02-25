@@ -28,6 +28,9 @@ private:
 
 	APSJ_Spaceship* OwnerActor = nullptr;
 
+	UPROPERTY(EditAnywhere, Category = "Distance")
+	float CheckDistanceTime = 1.0f;
+
 private:
 	AJHSGameMode* InGameMode = nullptr;
 

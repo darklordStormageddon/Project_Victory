@@ -13,6 +13,8 @@
 
 #include "Components/CapsuleComponent.h"
 
+#include "CJH/Component/DistanceComponent.h"
+
 #include "JHS/SpaceObject/DriveSeatRader.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -29,6 +31,7 @@ APSJ_Spaceship::APSJ_Spaceship()
 	PilotSphere = nullptr;
 	ExitPoint = nullptr;
 
+	//쉴드 관련 컴포넌트 초기화
 	ShieldRoot = CreateDefaultSubobject<USceneComponent>(TEXT("ShieldRoot"));
 	ShieldRoot->SetupAttachment(RootComponent);
 
@@ -37,6 +40,9 @@ APSJ_Spaceship::APSJ_Spaceship()
 
 	ShieldMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ShieldMesh->SetHiddenInGame(true);
+
+	//거리 측정 컴포넌트 초기화
+	DistanceComp = CreateDefaultSubobject<UDistanceComponent>(TEXT("DistanceComponent"));
 
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
@@ -213,6 +219,12 @@ void APSJ_Spaceship::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Warning: Sphere Component not found in BP"));
 	}
+
+	//OnDistanceDamaged로 이벤트 바인딩
+	if (DistanceComp)
+		DistanceComp->OnDistanceDamaged.AddDynamic(this, &APSJ_Spaceship::OverDistanceDamageCheck);
+	else
+		UE_LOG(LogTemp, Warning, TEXT("Warning: Distance Component not found in BP"));
 }
 
 void APSJ_Spaceship::Tick(float DeltaTime)
@@ -262,12 +274,19 @@ void APSJ_Spaceship::Tick(float DeltaTime)
 
 void APSJ_Spaceship::OnTakeDamage(float Damage)
 {
-	//Super::OnTakeDamage(Damage);
+	ShowShield();
 
+	if (GetSpaceShipStateGroup())
+		_spaceShipStateGroup->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, Damage);
+}
+
+// 대미지를 입을 시 쉴드 메시를 일시적으로 보이도록 하는 함수
+void APSJ_Spaceship::ShowShield()
+{
 	if (!ShieldMesh)
 		return;
 
-	ShieldMesh->SetHiddenInGame(false);
+	Multicast_ShowShield();
 
 	if (GetWorld())
 	{
@@ -280,9 +299,23 @@ void APSJ_Spaceship::OnTakeDamage(float Damage)
 			false
 		);
 	}
+}
 
-	if (GetSpaceShipStateGroup())
-		_spaceShipStateGroup->DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, Damage);
+void APSJ_Spaceship::HideShield()
+{
+	Multicast_HideShield();
+}
+
+void APSJ_Spaceship::Multicast_ShowShield_Implementation()
+{
+	if (ShieldMesh)
+		ShieldMesh->SetHiddenInGame(false);
+}
+
+void APSJ_Spaceship::Multicast_HideShield_Implementation()
+{
+	if (ShieldMesh)
+		ShieldMesh->SetHiddenInGame(true);
 }
 
 void APSJ_Spaceship::OnDeath()
@@ -461,8 +494,7 @@ void APSJ_Spaceship::EnableCollisionWithPassenger(APSJ_Character* ExitedChar)
 	}
 }
 
-void APSJ_Spaceship::HideShield()
+void APSJ_Spaceship::OverDistanceDamageCheck()
 {
-	if (ShieldMesh)
-		ShieldMesh->SetHiddenInGame(true);
+	HealthComp->TakeDamage(OverDistanceDamage);
 }

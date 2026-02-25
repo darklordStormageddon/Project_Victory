@@ -74,7 +74,7 @@ void UDistanceComponent::StartMeasure(AActor* FromTarget, AActor* ToTarget)
 	TargetA = FromTarget;
 	TargetB = ToTarget;
 
-	GetWorld()->GetTimerManager().SetTimer(MesureTimerHandle, this, &UDistanceComponent::MeasureDistance, 0.05f, true);
+	GetWorld()->GetTimerManager().SetTimer(MesureTimerHandle, this, &UDistanceComponent::MeasureDistance, CheckDistanceTime, true);
 }
 
 void UDistanceComponent::StopMeasure()

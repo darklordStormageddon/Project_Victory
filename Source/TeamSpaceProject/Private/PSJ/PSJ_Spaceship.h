@@ -19,12 +19,15 @@ class UHealthComponent;
 class USpaceShipStateGroup;
 class AJHSGameState;
 
+class UDistanceComponent;
+
 UCLASS()
 class TEAMSPACEPROJECT_API APSJ_Spaceship : public ATaskPawnBase
 {
 	GENERATED_BODY()
 
 private:
+	// 쉴드 이펙트 관련 변수들
 	FTimerHandle ShieldAlphaTimerHandle;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shield")
@@ -35,11 +38,28 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Shield")
 	UStaticMeshComponent* ShieldMesh = nullptr;
 
+	// 거리 측정 컴포넌트 선언
+	UPROPERTY(VisibleAnywhere, Category = "DistanceComp")
+	UDistanceComponent* DistanceComp = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DistanceDamage")
+	float OverDistanceDamage = 1.0f;
+
 private:
 	AJHSGameState* _outGameState = nullptr;
 
 private:
+	void ShowShield();
 	void HideShield();
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_ShowShield();
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_HideShield();
+
+	UFUNCTION()
+	void OverDistanceDamageCheck();
 
 public:
 	APSJ_Spaceship();
