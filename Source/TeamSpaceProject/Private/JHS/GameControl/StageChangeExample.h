@@ -15,7 +15,7 @@ class AStageChangeExample : public AActor
 private:
 	FDelegateHandle _eventHandleOnStartStage;
 
-	FDelegateHandle _eventHandleOnEndStage;
+	FDelegateHandle _eventHandleOnToLobby;
 
 public:
 	AStageChangeExample();
@@ -33,5 +33,5 @@ public:
 	void OnStartStage(UEventOnStartStage* Event);
 
 	UFUNCTION(BlueprintNativeEvent)
-	void OnEndStage(UEventOnEndStage* Event);
+	void OnMoveToLobby(UEventOnToLobby* Event);
 };

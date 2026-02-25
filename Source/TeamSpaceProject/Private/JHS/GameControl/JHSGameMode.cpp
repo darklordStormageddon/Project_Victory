@@ -144,15 +144,27 @@ void AJHSGameMode::EndStage(AActor* Caller)
 
 	_isStageStarted = false;
 
-	UEventOnEndStage* _event = NewObject<UEventOnEndStage>(this);
-	if (_event == nullptr)
+	// Event end stage
+	UEventOnEndStage* _eventOnEndStage = NewObject<UEventOnEndStage>(this);
+	if (_eventOnEndStage == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("AJHSGameMode: Failed to create UEventOnEndStage"));
 		return;
 	}
 
-	_eventManager->ExecuteEvent<UEventOnEndStage>(_event);
+	_eventManager->ExecuteEvent<UEventOnEndStage>(_eventOnEndStage);
 
+	// Event to lobby
+	UEventOnToLobby* _eventOnToLobby = NewObject<UEventOnToLobby>(this);
+	if (_eventOnToLobby == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("AJHSGameMode: Failed to create UEventOnToLobby"));
+		return;
+	}
+
+	_eventManager->ExecuteEvent<UEventOnToLobby>(_eventOnToLobby);
+
+	// repair shield
 	AJHSGameState* _outGameState = nullptr;
 	if (!TryGetGameState(_outGameState))
 		return;

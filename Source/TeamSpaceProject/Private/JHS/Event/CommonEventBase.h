@@ -50,6 +50,18 @@ public:
 	{
 	}
 };
+
+UCLASS(BlueprintType)
+class UEventOnToLobby : public UCommonEventBase
+{
+	GENERATED_BODY()
+
+public:
+	UEventOnToLobby(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{
+	}
+};
 #pragma endregion Game Control
 
 #pragma region SpaceShip
