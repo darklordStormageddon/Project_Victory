@@ -618,6 +618,9 @@ void APSJ_Character::ForceClearAnchoring()
 	ReplicatedRelativeData.bIsAnchored = false;
 	CurrentInputVector = FVector2D::ZeroVector;
 
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	CurrentSpaceship = nullptr;
+
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 	SetReplicateMovement(true);
 }
@@ -626,6 +629,9 @@ void APSJ_Character::Client_ForceCleanupImmediate()
 {
 	ReplicatedRelativeData.BaseActor = nullptr;
 	ReplicatedRelativeData.bIsAnchored = false;
+
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	CurrentSpaceship = nullptr;
 
 	if (GetCharacterMovement())
 	{
@@ -1023,4 +1029,22 @@ bool APSJ_Character::Server_SetSprinting_Validate(bool bNewSprinting)
 void APSJ_Character::Server_SetSprinting_Implementation(bool bNewSprinting)
 {
 	bIsSprinting = bNewSprinting;
+}
+
+void APSJ_Character::TeleportToSpaceship(const FVector& DestLocation, const FRotator& DestRotation)
+{
+	if (!HasAuthority()) return;
+
+	ForceClearAnchoring();
+
+	SetActorLocationAndRotation(DestLocation, DestRotation, false, nullptr, ETeleportType::TeleportPhysics);
+
+	Client_TeleportAndReset(DestLocation, DestRotation);
+}
+
+void APSJ_Character::Client_TeleportAndReset_Implementation(const FVector& DestLocation, const FRotator& DestRotation)
+{
+	Client_ForceCleanupImmediate();
+
+	SetActorLocationAndRotation(DestLocation, DestRotation, false, nullptr, ETeleportType::TeleportPhysics);
 }

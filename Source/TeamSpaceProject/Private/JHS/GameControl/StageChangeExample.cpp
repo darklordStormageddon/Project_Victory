@@ -4,6 +4,9 @@
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
+#include "Kismet/GameplayStatics.h"
+#include "PSJ/PSJ_Character.h"
+
 
 AStageChangeExample::AStageChangeExample()
 {

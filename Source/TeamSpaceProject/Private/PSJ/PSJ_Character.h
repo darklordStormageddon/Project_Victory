@@ -78,6 +78,12 @@ private:
 	float DisembarkGraceTimer = 0.0f;
 
 public:
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void TeleportToSpaceship(const FVector& DestLocation, const FRotator& DestRotation);
+
+	UFUNCTION(Client, Reliable)
+	void Client_TeleportAndReset(const FVector& DestLocation, const FRotator& DestRotation);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	APawn* CurrentSpaceship = nullptr;
 	void SetCurrentSpaceship(APawn* NewSpaceship);
