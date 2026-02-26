@@ -69,6 +69,11 @@ public:
 	bool TryConsumeFuel();
 #pragma endregion Feul
 
+#pragma region Radiation
+public:
+	bool TryGetRadiationData(FMaxCurrentData*& OutRadiationData);
+#pragma endregion Radiation
+
 private:
 	void LoadSpaceShipData();
 

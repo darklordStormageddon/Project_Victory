@@ -21,6 +21,9 @@ public:
 	UInteracterComponent();
 
 private:
+	UPROPERTY()
+	APawn* _ownerPawn = nullptr;
+
 	const E_UI_TYPE _playerUI = E_UI_TYPE::UIPanelPlayerFPS;
 
 	UPROPERTY()

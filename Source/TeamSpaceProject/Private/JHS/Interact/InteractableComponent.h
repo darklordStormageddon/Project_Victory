@@ -102,15 +102,16 @@ public:
 	void OnTriggerExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 public:
+	// 서버 전용: 트리거 진입/이탈 로직 (InteracterComponent의 Server RPC에서 호출, 레벨 액터는 owning connection 없어 직접 Server RPC 불가)
+	void ExecuteServerTriggerEnter(AActor* OtherActor);
+
+	void ExecuteServerTriggerExit(AActor* OtherActor);
+
 	/** Client RPC 수신 측에서 호출. 로컬 Pawn의 Interacter에 OnInteractable 호출 (복제 타이밍 무관). */
 	void ExecuteTriggerEnterForLocalPlayer(E_INTERACT_TYPE InteractType);
 
 	/** Client RPC 수신 측에서 호출. 로컬 Pawn의 Interacter에 OnDisInteractable 호출 (복제 타이밍 무관). */
 	void ExecuteTriggerExitForLocalPlayer();
-
-	// 서버 전용: 트리거 진입/이탈 로직 (InteracterComponent의 Server RPC에서 호출, 레벨 액터는 owning connection 없어 직접 Server RPC 불가)
-	void ExecuteServerTriggerEnter(AActor* OtherActor);
-	void ExecuteServerTriggerExit(AActor* OtherActor);
 
 	/** 서버 전용. 월드 UI 열림 상태 토글 후 결과만 멀티캐스트 (JHSPlayerController::ServerRequestToggleWorldUI에서 호출). */
 	void AuthorityToggleWorldUI();

@@ -194,6 +194,18 @@ bool USpaceShipStateGroup::TryConsumeFuel()
 }
 #pragma endregion Feul
 
+#pragma region Radiation
+bool USpaceShipStateGroup::TryGetRadiationData(FMaxCurrentData*& OutRadiationData)
+{
+	FSpaceShipData* _outRadiationData = nullptr;
+	if (!TryGetSpaceShipData(E_SPACE_SHIP_DATA_TYPE::Radiation, _outRadiationData))
+		return false;
+
+	OutRadiationData = &_outRadiationData->Data.Value;
+	return OutRadiationData != nullptr;
+}
+#pragma endregion Radiation
+
 void USpaceShipStateGroup::LoadSpaceShipData()
 {
 	_spaceShipDataMap.Empty();

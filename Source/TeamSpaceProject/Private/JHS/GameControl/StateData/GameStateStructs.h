@@ -117,12 +117,6 @@ struct FPlayerStateData
 	GENERATED_BODY()
 
 public:
-	UPROPERTY()
-	TObjectPtr<AJHSPlayerState> PlayerState = nullptr;
-
-	UPROPERTY()
-	int32 PlayerUID = 0;
-
 	/** 서버에서 접속 시 발급한 ID (복제되어 서버/클라이언트 동일). 호출자 구별·Interact 필터에 사용. */
 	UPROPERTY()
 	int32 AssignedPlayerId = -1;
@@ -132,9 +126,6 @@ public:
 
 	UPROPERTY()
 	int32 PlayerIndex = -1;
-
-	UPROPERTY()
-	bool IsReady = false;
 
 	UPROPERTY()
 	FMaxCurrentData Radiation;

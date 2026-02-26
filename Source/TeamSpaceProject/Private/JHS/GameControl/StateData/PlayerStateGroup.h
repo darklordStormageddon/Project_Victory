@@ -27,12 +27,6 @@ private:
 	UPROPERTY()
 	TMap<int32, FPlayerStateData> _playerStateMap;
 
-	UPROPERTY()
-	FPurchaseData _playerRadiationData;
-
-public:
-	FPurchaseData GetPlayerRadiationData() { return _playerRadiationData; }
-
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -42,15 +36,13 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	void InitializePlayerState(TObjectPtr<AJHSGameState> GameState, FPurchaseData PlayerRadiation);
+	void InitializePlayerState(TObjectPtr<AJHSGameState> GameState);
 
 	void UpdatePlayerState();
 
+	void UpdatePlayerRadiation();
+
 	bool TryRegistPlayer(TObjectPtr<AJHSPlayerState> PlayerState, FString PlayerName, E_REGIST_ERROR_TYPE& ErrorType);
-
-	void ReadyPlayer(int32 PlayerUID);
-
-	bool IsAllPlayerReady();
 
 	void IncreasePlayerRadiation(int32 PlayerIdx, float IncreaseValue);
 

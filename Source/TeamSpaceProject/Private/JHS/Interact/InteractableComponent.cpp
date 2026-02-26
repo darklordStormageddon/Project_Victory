@@ -95,63 +95,6 @@ void UInteractableComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	}
 }
 
-bool UInteractableComponent::GetOrCacheLocalPlayerController(AJHSPlayerController*& OutController)
-{
-	// 캐시가 유효하고 같은 월드이면 재사용 (PIE에서 월드별로 올바른 로컬 PC 사용)
-	UWorld* _world = GetWorld();
-	if (_world != nullptr && _cachedLocalPlayerController.IsValid() && _cachedLocalPlayerController->IsLocalPlayerController()
-		&& _cachedLocalPlayerController->GetWorld() == _world)
-	{
-		OutController = _cachedLocalPlayerController.Get();
-		return true;
-	}
-	_cachedLocalPlayerController.Reset();
-
-	// 이 컴포넌트가 속한 월드에서 "현재 컨텍스트의 로컬" PlayerController 사용.
-	// GetFirstPlayerController()는 월드 내 첫 번째 PC(호스트)만 반환하므로, PIE 리슨 서버 등에서 클라이언트 창에서는 잘못된 PC가 선택됨.
-	// 따라서 iterator로 순회하여 IsLocalPlayerController()인 PC를 사용.
-	if (_world == nullptr)
-		return false;
-	APlayerController* _pc = nullptr;
-	for (FConstPlayerControllerIterator _it = _world->GetPlayerControllerIterator(); _it; ++_it)
-	{
-		APlayerController* _candidate = _it->Get();
-		if (_candidate != nullptr && _candidate->IsLocalPlayerController())
-		{
-			_pc = _candidate;
-			break;
-		}
-	}
-	if (_pc == nullptr)
-		return false;
-	AJHSPlayerController* _controller = Cast<AJHSPlayerController>(_pc);
-	if (_controller == nullptr)
-		return false;
-
-	_cachedLocalPlayerController = _controller;
-	OutController = _controller;
-	return true;
-}
-
-bool UInteractableComponent::FindLocalPlayerControllerByAssignedId(UWorld* World, int32 AssignedPlayerId, AJHSPlayerController*& OutController)
-{
-	OutController = nullptr;
-	if (World == nullptr || AssignedPlayerId < 0)
-		return false;
-	for (FConstPlayerControllerIterator _it = World->GetPlayerControllerIterator(); _it; ++_it)
-	{
-		APlayerController* _pc = _it->Get();
-		if (_pc == nullptr || !_pc->IsLocalPlayerController())
-			continue;
-		AJHSPlayerController* _jhsPC = Cast<AJHSPlayerController>(_pc);
-		if (_jhsPC == nullptr || _jhsPC->GetAssignedPlayerId() != AssignedPlayerId)
-			continue;
-		OutController = _jhsPC;
-		return true;
-	}
-	return false;
-}
-
 void UInteractableComponent::OnTriggerEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Interactable Enter"));
@@ -168,37 +111,128 @@ void UInteractableComponent::OnTriggerEnter(UPrimitiveComponent* OverlappedCompo
 		return;
 
 	AActor* _owner = GetOwner();
-	const bool _bAuthority = _owner != nullptr && _owner->HasAuthority();
+	const bool _isAuthority = _owner != nullptr && _owner->HasAuthority();
 
-	if (_bAuthority)
+	if (_isAuthority)
 	{
 		ExecuteServerTriggerEnter(OtherActor);
 		return;
 	}
 
 	if (!_otherPawn->IsLocallyControlled())
+		return;
+
+	_foundInteracter->ServerReportTriggerEnter(this);
+}
+
+void UInteractableComponent::OnTriggerExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (OtherActor == nullptr)
+		return;
+
+	APawn* _otherPawn = Cast<APawn>(OtherActor);
+	if (_otherPawn == nullptr)
+		return;
+
+	// 서버(권한 보유): 오버랩 해제가 서버에서 감지되면 서버에서 로직 실행 후 멀티캐스트
+	AActor* _owner = GetOwner();
+	if (_owner != nullptr && _owner->HasAuthority())
 	{
+		ExecuteServerTriggerExit(OtherActor);
 		return;
 	}
 
-	AJHSPlayerController* _clientJHSPC = Cast<AJHSPlayerController>(_otherPawn->GetController());
-	const int32 _clientAssignedId = _clientJHSPC != nullptr ? _clientJHSPC->GetAssignedPlayerId() : -1;
-	UWorld* _clientWorld = GetWorld();
-	const ENetMode _clientNetMode = _clientWorld != nullptr ? _clientWorld->GetNetMode() : NM_Standalone;
-	_foundInteracter->ServerReportTriggerEnter(this);
+	// 클라이언트: Pawn 소유 InteracterComponent의 Server RPC로 알림
+	if (!_otherPawn->IsLocallyControlled())
+		return;
+
+	UInteracterComponent* _foundInteracterExit = OtherActor->FindComponentByClass<UInteracterComponent>();
+	if (_foundInteracterExit != nullptr)
+		_foundInteracterExit->ServerReportTriggerExit(this);
+}
+
+void UInteractableComponent::ExecuteServerTriggerEnter(AActor* OtherActor)
+{
+	if (OtherActor == nullptr)
+		return;
+
+	if (!_isInterrupt && _interacter != nullptr)
+		return;
+
+	UInteracterComponent* _foundInteracter = OtherActor->FindComponentByClass<UInteracterComponent>();
+	if (_foundInteracter == nullptr)
+		return;
+
+	UWorld* _world = GetWorld();
+	APawn* _otherPawnForId = Cast<APawn>(OtherActor);
+	AJHSPlayerController* _callerJHSPC = _otherPawnForId != nullptr ? Cast<AJHSPlayerController>(_otherPawnForId->GetController()) : nullptr;
+	const int32 _callerAssignedId = _callerJHSPC != nullptr ? _callerJHSPC->GetAssignedPlayerId() : -1;
+
+	// 끌어내리기: 서버에서 상태 갱신 후 대상 클라이언트에만 Client RPC
+	if (_isInterrupt && _interacter != nullptr && _interacter != _foundInteracter)
+	{
+		_InterruptInteracter = _foundInteracter;
+		if (_callerJHSPC != nullptr)
+		{
+			_callerJHSPC->ClientInteractableTriggerEnter(this, E_INTERACT_TYPE::DumpThrow);
+		}
+
+		return;
+	}
+
+	_interacter = _foundInteracter;
+	E_INTERACT_TYPE _typeForEnter = _isWorldSpaceUI ? E_INTERACT_TYPE::Handle : E_INTERACT_TYPE::Seat;
+	// 대상 클라이언트에만 전달 (복제 타이밍 무관)
+	if (_callerJHSPC != nullptr)
+	{
+		_callerJHSPC->ClientInteractableTriggerEnter(this, _typeForEnter);
+	}
+}
+
+void UInteractableComponent::ExecuteServerTriggerExit(AActor* OtherActor)
+{
+	if (OtherActor == nullptr)
+		return;
+
+	UInteracterComponent* _foundInteracter = OtherActor->FindComponentByClass<UInteracterComponent>();
+	if (_foundInteracter == nullptr || _interacter != _foundInteracter)
+		return;
+
+	APawn* _otherPawn = Cast<APawn>(OtherActor);
+	AJHSPlayerController* _callerJHSPC = _otherPawn != nullptr ? Cast<AJHSPlayerController>(_otherPawn->GetController()) : nullptr;
+	const int32 _callerAssignedId = _callerJHSPC != nullptr ? _callerJHSPC->GetAssignedPlayerId() : -1;
+
+	_interacter = nullptr;
+
+	if (_callerJHSPC != nullptr)
+	{
+		_callerJHSPC->ClientInteractableTriggerExit(this);
+	}
+
+	if (!_isWorldSpaceUI && _isInteract)
+	{
+		ChangeInteractState(false, _callerAssignedId, _callerJHSPC);
+	}
+	else if (_isWorldSpaceUI && _isInteract)
+	{
+		ChangeInteractState(false, _callerAssignedId, _callerJHSPC);
+	}
 }
 
 void UInteractableComponent::ExecuteTriggerEnterForLocalPlayer(E_INTERACT_TYPE InteractType)
 {
 	if (!IsValid(this))
 		return;
+
 	AJHSPlayerController* _localController = nullptr;
 	if (!GetOrCacheLocalPlayerController(_localController))
 		return;
+
 	APawn* _localPawn = _localController->GetPawn();
 	UInteracterComponent* _foundInteracter = _localPawn != nullptr ? _localPawn->FindComponentByClass<UInteracterComponent>() : nullptr;
 	if (_foundInteracter == nullptr)
 		return;
+
 	_interacter = _foundInteracter;
 	_foundInteracter->OnInteractable(this, InteractType);
 }
@@ -231,41 +265,6 @@ void UInteractableComponent::ExecuteTriggerExitForLocalPlayer()
 	}
 }
 
-void UInteractableComponent::ExecuteServerTriggerEnter(AActor* OtherActor)
-{
-	if (OtherActor == nullptr)
-		return;
-
-	if (!_isInterrupt && _interacter != nullptr)
-		return;
-
-	UInteracterComponent* _foundInteracter = OtherActor->FindComponentByClass<UInteracterComponent>();
-	if (_foundInteracter == nullptr)
-		return;
-
-	UWorld* _world = GetWorld();
-	APawn* _otherPawnForId = Cast<APawn>(OtherActor);
-	AJHSPlayerController* _callerJHSPC = _otherPawnForId != nullptr ? Cast<AJHSPlayerController>(_otherPawnForId->GetController()) : nullptr;
-	const int32 _callerAssignedId = _callerJHSPC != nullptr ? _callerJHSPC->GetAssignedPlayerId() : -1;
-
-	const ENetMode _netMode = _world != nullptr ? _world->GetNetMode() : NM_Standalone;
-
-	// 끌어내리기: 서버에서 상태 갱신 후 대상 클라이언트에만 Client RPC
-	if (_isInterrupt && _interacter != nullptr && _interacter != _foundInteracter)
-	{
-		_InterruptInteracter = _foundInteracter;
-		if (_callerJHSPC != nullptr)
-			_callerJHSPC->ClientInteractableTriggerEnter(this, E_INTERACT_TYPE::DumpThrow);
-		return;
-	}
-
-	_interacter = _foundInteracter;
-	E_INTERACT_TYPE _typeForEnter = _isWorldSpaceUI ? E_INTERACT_TYPE::Handle : E_INTERACT_TYPE::Seat;
-	// 대상 클라이언트에만 전달 (복제 타이밍 무관)
-	if (_callerJHSPC != nullptr)
-		_callerJHSPC->ClientInteractableTriggerEnter(this, _typeForEnter);
-}
-
 void UInteractableComponent::MulticastOnTriggerEnter_Implementation(int32 CallerAssignedPlayerId, E_INTERACT_TYPE InteractType)
 {
 	UWorld* _world = GetWorld();
@@ -288,56 +287,6 @@ void UInteractableComponent::MulticastOnTriggerEnter_Implementation(int32 Caller
 	_foundInteracter->OnInteractable(this, InteractType);
 }
 
-void UInteractableComponent::OnTriggerExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	if (OtherActor == nullptr)
-		return;
-
-	APawn* _otherPawn = Cast<APawn>(OtherActor);
-	if (_otherPawn == nullptr)
-		return;
-
-	// 서버(권한 보유): 오버랩 해제가 서버에서 감지되면 서버에서 로직 실행 후 멀티캐스트
-	AActor* _owner = GetOwner();
-	if (_owner != nullptr && _owner->HasAuthority())
-	{
-		ExecuteServerTriggerExit(OtherActor);
-		return;
-	}
-
-	// 클라이언트: Pawn 소유 InteracterComponent의 Server RPC로 알림
-	if (!_otherPawn->IsLocallyControlled())
-		return;
-
-	UInteracterComponent* _foundInteracterExit = OtherActor->FindComponentByClass<UInteracterComponent>();
-	if (_foundInteracterExit != nullptr)
-		_foundInteracterExit->ServerReportTriggerExit(this);
-}
-
-void UInteractableComponent::ExecuteServerTriggerExit(AActor* OtherActor)
-{
-	if (OtherActor == nullptr)
-		return;
-
-	UInteracterComponent* _foundInteracter = OtherActor->FindComponentByClass<UInteracterComponent>();
-	if (_foundInteracter == nullptr || _interacter != _foundInteracter)
-		return;
-
-	APawn* _otherPawn = Cast<APawn>(OtherActor);
-	AJHSPlayerController* _callerJHSPC = _otherPawn != nullptr ? Cast<AJHSPlayerController>(_otherPawn->GetController()) : nullptr;
-	const int32 _callerAssignedId = _callerJHSPC != nullptr ? _callerJHSPC->GetAssignedPlayerId() : -1;
-
-	_interacter = nullptr;
-
-	if (_callerJHSPC != nullptr)
-		_callerJHSPC->ClientInteractableTriggerExit(this);
-
-	if (!_isWorldSpaceUI && _isInteract)
-		ChangeInteractState(false, _callerAssignedId, _callerJHSPC);
-	else if (_isWorldSpaceUI && _isInteract)
-		ChangeInteractState(false, _callerAssignedId, _callerJHSPC);
-}
-
 void UInteractableComponent::MulticastOnTriggerExit_Implementation(int32 CallerAssignedPlayerId)
 {
 	UWorld* _world = GetWorld();
@@ -355,16 +304,79 @@ void UInteractableComponent::MulticastOnTriggerExit_Implementation(int32 CallerA
 	_interacter = nullptr;
 }
 
+bool UInteractableComponent::GetOrCacheLocalPlayerController(AJHSPlayerController*& OutController)
+{
+	// 캐시가 유효하고 같은 월드이면 재사용 (PIE에서 월드별로 올바른 로컬 PC 사용)
+	UWorld* _world = GetWorld();
+	if (_world != nullptr && _cachedLocalPlayerController.IsValid() && _cachedLocalPlayerController->IsLocalPlayerController()
+		&& _cachedLocalPlayerController->GetWorld() == _world)
+	{
+		OutController = _cachedLocalPlayerController.Get();
+		return true;
+	}
+	_cachedLocalPlayerController.Reset();
+
+	// 이 컴포넌트가 속한 월드에서 "현재 컨텍스트의 로컬" PlayerController 사용.
+	// GetFirstPlayerController()는 월드 내 첫 번째 PC(호스트)만 반환하므로, PIE 리슨 서버 등에서 클라이언트 창에서는 잘못된 PC가 선택됨.
+	// 따라서 iterator로 순회하여 IsLocalPlayerController()인 PC를 사용.
+	if (_world == nullptr)
+		return false;
+	APlayerController* _pc = nullptr;
+	for (FConstPlayerControllerIterator _it = _world->GetPlayerControllerIterator(); _it; ++_it)
+	{
+		APlayerController* _candidate = _it->Get();
+		if (_candidate != nullptr && _candidate->IsLocalPlayerController())
+		{
+			_pc = _candidate;
+			break;
+		}
+	}
+	if (_pc == nullptr)
+		return false;
+
+	AJHSPlayerController* _controller = Cast<AJHSPlayerController>(_pc);
+	if (_controller == nullptr)
+		return false;
+
+	_cachedLocalPlayerController = _controller;
+	OutController = _controller;
+	return true;
+}
+
+bool UInteractableComponent::FindLocalPlayerControllerByAssignedId(UWorld* World, int32 AssignedPlayerId, AJHSPlayerController*& OutController)
+{
+	OutController = nullptr;
+	if (World == nullptr || AssignedPlayerId < 0)
+		return false;
+	for (FConstPlayerControllerIterator _it = World->GetPlayerControllerIterator(); _it; ++_it)
+	{
+		APlayerController* _pc = _it->Get();
+		if (_pc == nullptr || !_pc->IsLocalPlayerController())
+			continue;
+		AJHSPlayerController* _jhsPC = Cast<AJHSPlayerController>(_pc);
+		if (_jhsPC == nullptr || _jhsPC->GetAssignedPlayerId() != AssignedPlayerId)
+			continue;
+		OutController = _jhsPC;
+		return true;
+	}
+	return false;
+}
+
 void UInteractableComponent::AuthorityToggleWorldUI()
 {
 	AActor* _owner = GetOwner();
 	if (_owner == nullptr || !_owner->HasAuthority())
 		return;
+
 	_isInteract = !_isInteract;
 	if (_isInteract)
+	{
 		MulticastOpenWorldUI(_interactUIType, _owner, _worldUIRelativeLocation, _worldUIScale);
+	}
 	else
+	{
 		MulticastCloseWorldUI(_interactUIType);
+	}
 }
 
 void UInteractableComponent::MulticastOpenWorldUI_Implementation(E_UI_TYPE UIType, AActor* OwnerActor, FVector RelativeLocation, float Scale)

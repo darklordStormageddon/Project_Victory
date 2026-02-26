@@ -30,17 +30,23 @@ void AJHSPlayerController::SetAssignedPlayerId(int32 AssignedPlayerId)
 void AJHSPlayerController::ClientInteractableTriggerEnter_Implementation(UInteractableComponent* Interactable, E_INTERACT_TYPE InteractType)
 {
 	if (IsValid(Interactable))
+	{
 		Interactable->ExecuteTriggerEnterForLocalPlayer(InteractType);
+	}
 }
 
 void AJHSPlayerController::ClientInteractableTriggerExit_Implementation(UInteractableComponent* Interactable)
 {
 	if (IsValid(Interactable))
+	{
 		Interactable->ExecuteTriggerExitForLocalPlayer();
+	}
 }
 
 void AJHSPlayerController::ServerRequestToggleWorldUI_Implementation(UInteractableComponent* Target)
 {
 	if (IsValid(Target))
+	{
 		Target->AuthorityToggleWorldUI();
+	}
 }

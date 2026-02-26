@@ -50,12 +50,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "CollectToolColor")
 	FLinearColor _durabilityColorZero = FColor::Red;
 
-protected:
-	virtual void NativePreConstruct() override;
-
-	virtual void NativeOnInitialized() override;
-
 public:
+	void InitializeToolDurability();
+
 	void SetDurabilityProgress(TObjectPtr<UTexture2D> ToolImage, float Progress, bool IsVacuumTool);
 
 	void SelectTool(bool IsSelected);

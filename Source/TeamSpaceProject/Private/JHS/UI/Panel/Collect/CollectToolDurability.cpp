@@ -12,21 +12,13 @@ UCollectToolDurability::UCollectToolDurability(const FObjectInitializer& ObjectI
     _circleProgressBar = CreateDefaultSubobject<UCircleProgressBar>(TEXT("CircleProgressBar"));
 }
 
-void UCollectToolDurability::NativePreConstruct()
+void UCollectToolDurability::InitializeToolDurability()
 {
-    Super::NativePreConstruct();
-
+    IMG_SelectHighlight->SetVisibility(ESlateVisibility::Hidden);
     if (_circleProgressBar && IMG_Durability)
     {
         _circleProgressBar->InitializeCircleProgressBar(this, IMG_Durability, _initTexture, false);
     }
-}
-
-void UCollectToolDurability::NativeOnInitialized()
-{
-    Super::NativeOnInitialized();
-
-    IMG_SelectHighlight->SetVisibility(ESlateVisibility::Hidden);
 }
 
 void UCollectToolDurability::SetDurabilityProgress(TObjectPtr<UTexture2D> ToolImage, float Progress, bool IsVacuumTool)

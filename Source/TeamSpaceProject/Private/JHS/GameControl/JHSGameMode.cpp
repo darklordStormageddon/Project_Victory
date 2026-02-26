@@ -9,6 +9,7 @@
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/PlayerStateGroup.h"
+#include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "JHS/GameControl/JHSPlayerController.h"
 #include "JHS/GameControl/JHSPlayerState.h"
@@ -109,12 +110,19 @@ void AJHSGameMode::StartNextStage(AActor* Caller)
 	_isStageStarted = true;
 	_currentStage++;
 
+	AJHSGameState* _outGameState = nullptr;
+	if (!TryGetGameState(_outGameState))
+		return;
+
+	// 플레이어 방사선 초기화
+	_outGameState->GetPlayerStateGroup()->UpdatePlayerRadiation();
+
+	// 회수 도구 내구도 초기화
+	_outGameState->GetCollectStateGroup()->RepairAllTool();
+
+	// 터렛 장착
 	if (_currentStage == 1)
 	{
-		AJHSGameState* _outGameState = nullptr;
-		if (!TryGetGameState(_outGameState))
-			return;
-
 		TObjectPtr<UTurretStateGroup> _turretStateGroup = _outGameState->GetTurretStateGroup();
 		_turretStateGroup->SetInfiniteMagMode(false);
 		for (auto& _startEquipTurret : _startEquipTurretArray)

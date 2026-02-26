@@ -19,10 +19,6 @@ class AJHSPlayerController : public APlayerController
 public:
 	AJHSPlayerController();
 
-protected:
-	virtual void BeginPlay() override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
 private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "PlayerController|Manager")
 	TObjectPtr<UUIManager> _uiManager = nullptr;
@@ -36,10 +32,16 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Player")
 	int32 GetAssignedPlayerId() const { return _assignedPlayerId; }
 
-	void SetAssignedPlayerId(int32 AssignedPlayerId);
-
 	UFUNCTION(BlueprintCallable, Category = "PlayerController|UI Manager")
 	UUIManager* GetUIManager() { return _uiManager; }
+
+protected:
+	virtual void BeginPlay() override;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+public:
+	void SetAssignedPlayerId(int32 AssignedPlayerId);
 
 	/** 트리거 진입 시 해당 클라이언트만 호출. 복제 타이밍에 의존하지 않음. */
 	UFUNCTION(Client, Reliable)

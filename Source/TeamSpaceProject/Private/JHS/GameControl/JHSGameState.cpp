@@ -43,7 +43,7 @@ void AJHSGameState::InitializeGameState()
 {
 	_spaceShipStateGroup->InitializeSpaceShipState(this, _repairDelay, _repairShieldValue);
 
-	_playerStateGroup->InitializePlayerState(this, _playerRadiation);
+	_playerStateGroup->InitializePlayerState(this);
 
 	_collectStateGroup->InitializeCollectState(this);
 

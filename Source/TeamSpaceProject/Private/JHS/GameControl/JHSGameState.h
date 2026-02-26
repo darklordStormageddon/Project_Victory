@@ -52,9 +52,6 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|PlayerStateGroup")
 	TObjectPtr<UPlayerStateGroup> _playerStateGroup = nullptr;
 
-	UPROPERTY(EditAnywhere, Category = "GameState|PlayerStateGroup")
-	FPurchaseData _playerRadiation;
-
 	// Collect
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|CollectStateGroup")
 	TObjectPtr<UCollectStateGroup> _collectStateGroup = nullptr;

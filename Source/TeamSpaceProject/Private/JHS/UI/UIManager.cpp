@@ -279,7 +279,7 @@ UUIBase* UUIManager::CloseUIInternal(E_UI_TYPE UIType)
 		// 일반 뷰포트 UI
 		if (!_loadedUIDict.Contains(UIType))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("UUIManager: UI [%d] is not loaded"), (int32)UIType);
+			UE_LOG(LogTemp, Warning, TEXT("UUIManager: UI [%s] is not loaded"), *CommonEnums::GetEnum2FString<E_UI_TYPE>(UIType));
 			return nullptr;
 		}
 

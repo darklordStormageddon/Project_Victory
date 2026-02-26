@@ -188,6 +188,11 @@ void UUIBase::SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar*
 	}
 }
 
+void UUIBase::SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar* ProgressBar)
+{
+	SetProgressBarUI(CurrentValue, MaxValue, ProgressBar, nullptr, false);
+}
+
 TObjectPtr<UEventManager> UUIBase::GetEventManager()
 {
 	if (_cachedEventManager == nullptr)

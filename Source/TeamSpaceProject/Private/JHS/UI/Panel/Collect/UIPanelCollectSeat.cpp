@@ -172,6 +172,7 @@ TObjectPtr<UCollectToolDurability> UUIPanelCollectSeat::GetCollectToolItem(E_COL
 	}
 	
 	_toolWidget->SetVisibility(ESlateVisibility::Visible);
+	_toolWidget->InitializeToolDurability();
 
 	// Spacer_Right를 일시적으로 제거 (Tool들을 추가한 후 마지막에 다시 추가하기 위함)
 	if (Spacer_Right && Spacer_Right->GetParent())

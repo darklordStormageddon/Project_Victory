@@ -4,12 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "JHS/UI/UIBase.h"
-#include "Delegates/Delegate.h"
-#include "Components/VerticalBox.h"
 
 #include "UIPanelCommonInfo.generated.h"
 
-class UPlayerInfoRow;
+class UImage;
+class UProgressBar;
 class UEventOnChangePlayerRadiation;
 
 UCLASS()
@@ -20,19 +19,11 @@ class UUIPanelCommonInfo : public UUIBase
 private:
 	FDelegateHandle _eventHandle;
 
-#pragma region Player Radiation Dose
-	const FString TEXT_HEADER = "TXT_RadiationDoseP";
-
-	const FString PROG_HEADER = "PROG_RadiationDoseP";
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> IMG_RadiationDose;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UVerticalBox> Plate_RadiationDose;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UPlayerInfoRow> WBP_PlayerInfoRow;
-
-	TMap<int32, TObjectPtr<UPlayerInfoRow>> _playerRadiationDoseMap;
-#pragma endregion Player Radiation Dose
+	TObjectPtr<UProgressBar> PROG_RadiationDose;
 
 protected:
 	void RegisterEvent() override;
@@ -40,10 +31,8 @@ protected:
 	void UnregisterEvent() override;
 
 public:
-	void InitializeUI(int32 PlayerNum);
+	void InitializeUI(TObjectPtr<UTexture2D> RadiationImage);
 
 private:
-	void ClearDynamicRows();
-
 	void OnChangePlayerRadiation(UEventOnChangePlayerRadiation* Event);
 };

@@ -29,7 +29,7 @@ void UInteracterComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// InteracterComponent는 Pawn의 컴포넌트이므로 소유자 Pawn의 Controller에서 UIManager 가져오기
-	APawn* _ownerPawn = Cast<APawn>(GetOwner());
+	_ownerPawn = Cast<APawn>(GetOwner());
 	if (_ownerPawn == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UInteracterComponent::BeginPlay - Owner is not APawn"));
@@ -77,29 +77,21 @@ void UInteracterComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 void UInteracterComponent::OnInteractable(TObjectPtr<UInteractableComponent> Interactable, E_INTERACT_TYPE InteractType)
 {
 	UWorld* _world = GetWorld();
-	const ENetMode _netMode = _world != nullptr ? _world->GetNetMode() : NM_Standalone;
-	APawn* _ownerPawn = Cast<APawn>(GetOwner());
-	const bool _bLocallyControlled = _ownerPawn != nullptr && _ownerPawn->IsLocallyControlled();
+	const bool _isLocallyControlled = _ownerPawn != nullptr && _ownerPawn->IsLocallyControlled();
 
-	if (_ownerPawn == nullptr || !_bLocallyControlled)
-	{
+	if (_ownerPawn == nullptr || !_isLocallyControlled)
 		return;
-	}
 
 	_interactable = Interactable;
 	if (_interactable != nullptr)
 	{
 		ExecuteEventOnChangeInteractType(InteractType);
 	}
-	else
-	{
-	}
 }
 
 void UInteracterComponent::OnDisInteractable()
 {
 	// 호출자(본 컴포넌트 소유 Pawn)를 로컬에서 조종 중인 클라이언트에서만 반응
-	APawn* _ownerPawn = Cast<APawn>(GetOwner());
 	if (_ownerPawn == nullptr || !_ownerPawn->IsLocallyControlled())
 		return;
 
@@ -108,6 +100,7 @@ void UInteracterComponent::OnDisInteractable()
 	{
 		_uiManager->OpenUI(_playerUI);
 	}
+
 	ExecuteEventOnChangeInteractType(E_INTERACT_TYPE::Idle);
 }
 
@@ -143,9 +136,7 @@ void UInteracterComponent::ServerReportTriggerEnter_Implementation(UInteractable
 {
 	if (Interactable == nullptr)
 		return;
-	AActor* _ownerPawn = GetOwner();
-	if (_ownerPawn == nullptr)
-		return;
+
 	Interactable->ExecuteServerTriggerEnter(_ownerPawn);
 }
 
@@ -153,9 +144,7 @@ void UInteracterComponent::ServerReportTriggerExit_Implementation(UInteractableC
 {
 	if (Interactable == nullptr)
 		return;
-	AActor* _ownerPawn = GetOwner();
-	if (_ownerPawn == nullptr)
-		return;
+
 	Interactable->ExecuteServerTriggerExit(_ownerPawn);
 }
 
@@ -166,9 +155,7 @@ void UInteracterComponent::ExecuteEventOnChangeInteractType(E_INTERACT_TYPE Inte
 
 	UEventOnChangeInteractType* _event = NewObject<UEventOnChangeInteractType>(this);
 	if (_event == nullptr)
-	{
 		return;
-	}
 
 	_event->InteractType = InteractType;
 	AJHSPlayerController* _callerJHSPC = _playerController ? Cast<AJHSPlayerController>(_playerController) : nullptr;

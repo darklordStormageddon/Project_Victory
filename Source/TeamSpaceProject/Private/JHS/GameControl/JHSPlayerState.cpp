@@ -16,11 +16,6 @@ void AJHSPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME(AJHSPlayerState, _assignedPlayerId);
 }
 
-void AJHSPlayerState::SetAssignedPlayerId(int32 AssignedPlayerId)
-{
-	_assignedPlayerId = AssignedPlayerId;
-}
-
 void AJHSPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
@@ -35,6 +30,11 @@ bool AJHSPlayerState::TryRegistPlayer(FString Name, E_REGIST_ERROR_TYPE& OutErro
 		return false;
 
 	return _outGameState->GetPlayerStateGroup()->TryRegistPlayer(this, Name, OutErrorType);
+}
+
+void AJHSPlayerState::SetAssignedPlayerId(int32 AssignedPlayerId)
+{
+	_assignedPlayerId = AssignedPlayerId;
 }
 
 void AJHSPlayerState::OpenCommonInfoUI()

@@ -4,6 +4,7 @@
 #include "JHS/GameControl/StateData/PlayerStateGroup.h"
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/JHSPlayerState.h"
+#include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
 
@@ -36,10 +37,9 @@ void UPlayerStateGroup::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 	// ...
 }
 
-void UPlayerStateGroup::InitializePlayerState(TObjectPtr<AJHSGameState> GameState, FPurchaseData PlayerRadiation)
+void UPlayerStateGroup::InitializePlayerState(TObjectPtr<AJHSGameState> GameState)
 {
 	_gameState = GameState;
-	_playerRadiationData = PlayerRadiation;
 }
 
 void UPlayerStateGroup::UpdatePlayerState()
@@ -47,6 +47,23 @@ void UPlayerStateGroup::UpdatePlayerState()
 	for (auto& _playerState : _playerStateMap)
 	{
 		IncreasePlayerRadiation(_playerState.Key, 0.0f);
+	}
+}
+
+void UPlayerStateGroup::UpdatePlayerRadiation()
+{
+	TObjectPtr<USpaceShipStateGroup> _spaceShipStateGroup = _gameState->GetSpaceShipStateGroup();
+	if (_spaceShipStateGroup == nullptr)
+		return;
+
+	FMaxCurrentData* _outRadiationData = nullptr;
+	if (!_spaceShipStateGroup->TryGetRadiationData(_outRadiationData))
+		return;
+
+	for (auto& _playerStateData : _playerStateMap)
+	{
+		_playerStateData.Value.Radiation.MaxValue = _outRadiationData->MaxValue;
+		_playerStateData.Value.Radiation.CurrentValue = _playerStateData.Value.Radiation.MaxValue;
 	}
 }
 
@@ -78,47 +95,15 @@ bool UPlayerStateGroup::TryRegistPlayer(TObjectPtr<AJHSPlayerState> PlayerState,
 
 	const int32 _assignedId = _playerStateMap.Num();
 	FPlayerStateData _newPlayerData;
-	_newPlayerData.PlayerState = PlayerState;
-	_newPlayerData.PlayerUID = _playerID;
 	_newPlayerData.AssignedPlayerId = _assignedId;
 	_newPlayerData.PlayerName = PlayerName;
 	_newPlayerData.PlayerIndex = _assignedId;
-	_newPlayerData.IsReady = false;
-	_newPlayerData.Radiation.MaxValue = _playerRadiationData.Value.MaxValue;
-	_newPlayerData.Radiation.CurrentValue = _newPlayerData.Radiation.MaxValue;
 
 	AJHSPlayerState* _jhsPS = Cast<AJHSPlayerState>(PlayerState);
 	if (_jhsPS != nullptr)
 		_jhsPS->SetAssignedPlayerId(_assignedId);
 
-	_playerStateMap.Add(_newPlayerData.PlayerUID, _newPlayerData);
-	return true;
-}
-
-void UPlayerStateGroup::ReadyPlayer(int32 PlayerUID)
-{
-	FPlayerStateData* _outPlayerStateData = nullptr;
-	if (!TryGetPlayerStateData(PlayerUID, _outPlayerStateData))
-		return;
-
-	_outPlayerStateData->IsReady = true;
-}
-
-bool UPlayerStateGroup::IsAllPlayerReady()
-{
-	for (auto& _element : _playerStateMap)
-	{
-		FPlayerStateData _playerStateData = _element.Value;
-		if (_playerStateData.PlayerState == nullptr)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("PlayerID [%d] is registered but PlayerState is nullptr"), _playerStateData.PlayerUID);
-			continue;
-		}
-
-		if (!_playerStateData.IsReady)
-			return false;
-	}
-
+	_playerStateMap.Add(_newPlayerData.AssignedPlayerId, _newPlayerData);
 	return true;
 }
 

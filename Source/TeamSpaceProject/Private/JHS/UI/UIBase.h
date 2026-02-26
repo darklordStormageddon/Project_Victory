@@ -67,6 +67,8 @@ public:
 public:
 	static void SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar* ProgressBar, UTextBlock* TextBlock, bool IsOnlyCurrentText);
 
+	static void SetProgressBarUI(float CurrentValue, float MaxValue, UProgressBar* ProgressBar);
+
 protected:
 	TObjectPtr<UEventManager> GetEventManager();
 

@@ -104,6 +104,7 @@ void UCollectStateGroup::RepairAllTool()
 
 bool UCollectStateGroup::TrySelectTool(E_COLLECT_TOOL_TYPE CollectToolType)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Tool: %s"), *CommonEnums::GetEnum2FString<E_COLLECT_TOOL_TYPE>(CollectToolType));
 	if (CollectToolType != E_COLLECT_TOOL_TYPE::NONE)
 	{
 		FCollectToolData* _outCollectToolData = nullptr;
