@@ -247,6 +247,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* MoveAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* WheelAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* LookAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputMappingContext* DefaultMappingContext;
@@ -274,5 +276,5 @@ protected:
 	void Move(const FInputActionValue& Value);
 	void StopMove(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
-
+	void Wheel(const FInputActionValue& Value);
 };

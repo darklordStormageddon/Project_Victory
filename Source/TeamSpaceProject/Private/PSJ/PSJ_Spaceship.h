@@ -65,6 +65,7 @@ private:
 public:
 	APSJ_Spaceship();
 
+	bool TryMove();
 
 	UFUNCTION(Server, Unreliable, WithValidation)
 	void Server_ThrustForward(float Value);
