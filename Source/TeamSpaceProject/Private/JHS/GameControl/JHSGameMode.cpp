@@ -144,9 +144,6 @@ void AJHSGameMode::StartNextStage(AActor* Caller)
 
 void AJHSGameMode::EndStage(AActor* Caller)
 {
-	if (!CheckIsServerCaller(Caller))
-		return;
-
 	if (!_isStageStarted)
 		return;
 

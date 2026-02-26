@@ -6,8 +6,10 @@
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/JHSPlayerController.h"
 #include "JHS/GameControl/StateData/PlayerStateGroup.h"
+#include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/UI/UIManager.h"
 #include "JHS/UI/UIBase.h"
+#include "JHS/UI/Panel/CommonInfo/UIPanelCommonInfo.h"
 #include "Net/UnrealNetwork.h"
 
 void AJHSPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -63,5 +65,22 @@ void AJHSPlayerState::OpenCommonInfoUI()
 		return;
 	}
 
-	_uiManager->OpenUI(E_UI_TYPE::UIPanelCommonInfo);
+	UUIBase* _uiBase = _uiManager->OpenUI(E_UI_TYPE::UIPanelCommonInfo);
+	TObjectPtr<UUIPanelCommonInfo> _uiCommonInfo = Cast<UUIPanelCommonInfo>(_uiBase);
+	if (_uiCommonInfo != nullptr)
+	{
+		AJHSGameState* _outGameState = nullptr;
+		if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
+			return;
+
+		TObjectPtr<USpaceShipStateGroup> _spaceShipStateGroup = _outGameState->GetSpaceShipStateGroup();
+		if (_spaceShipStateGroup != nullptr)
+		{
+			FPurchaseData* _outRadiationData = nullptr;
+			if (_spaceShipStateGroup->TryGetRadiationData(_outRadiationData))
+			{
+				_uiCommonInfo->InitializeUI(_outRadiationData->Image);
+			}
+		}
+	}
 }

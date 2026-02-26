@@ -195,13 +195,13 @@ bool USpaceShipStateGroup::TryConsumeFuel()
 #pragma endregion Feul
 
 #pragma region Radiation
-bool USpaceShipStateGroup::TryGetRadiationData(FMaxCurrentData*& OutRadiationData)
+bool USpaceShipStateGroup::TryGetRadiationData(FPurchaseData*& OutRadiationData)
 {
 	FSpaceShipData* _outRadiationData = nullptr;
 	if (!TryGetSpaceShipData(E_SPACE_SHIP_DATA_TYPE::Radiation, _outRadiationData))
 		return false;
 
-	OutRadiationData = &_outRadiationData->Data.Value;
+	OutRadiationData = &_outRadiationData->Data;
 	return OutRadiationData != nullptr;
 }
 #pragma endregion Radiation

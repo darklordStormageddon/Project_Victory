@@ -184,6 +184,4 @@ void ATaskPawnBase::OnEndStage(UEventOnEndStage* Event)
 		return;
 
 	DisembarkCharacter();
-
-
 }
