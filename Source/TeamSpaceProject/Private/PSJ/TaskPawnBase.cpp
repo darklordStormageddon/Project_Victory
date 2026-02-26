@@ -74,7 +74,7 @@ void ATaskPawnBase::DisembarkCharacter()
 {
 	if (!CurrentPilot) return; // 여기 파일럿이 없으면 return 예외처리관련
 
-    if (!CurrentPilot->TryUnboard()) return; // 하차 시 입력이 즉시 복구되도록 함 (캐릭터가 좌표 이동 중에도 입력이 막히지 않도록)
+    CurrentPilot->TryUnboard(); // 하차 시 입력이 즉시 복구되도록 함 (캐릭터가 좌표 이동 중에도 입력이 막히지 않도록)
 
 	APSJ_Character* ExitingChar = CurrentPilot;
 	AController* ShipController = GetController();
