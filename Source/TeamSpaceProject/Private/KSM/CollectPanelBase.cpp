@@ -49,15 +49,20 @@ void ACollectPanelBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 }
 
-void ACollectPanelBase::UpdateDurabilityAndDamage_Implementation()
+void ACollectPanelBase::UpdateToolUsage_Implementation()
 {
 	if (_collectStateGroup == nullptr)
 		return;
 
 	if (!_collectStateGroup->TrySelectTool(_Tool_Type))
 		return;
+}
 
-	// 사용 예시
+void ACollectPanelBase::UpdateDurability_Implementation()
+{
+	if (_collectStateGroup == nullptr)
+		return;
+
 	float DeltaTime = GetWorld()->GetDeltaSeconds();
 	if (!_collectStateGroup->TryUseTool(_Tool_Type, DeltaTime, _OutToolDamage))
 		return;
