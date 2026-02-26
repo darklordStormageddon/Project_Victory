@@ -58,6 +58,7 @@ void UDistanceComponent::HandleStartStage(UEventOnStartStage* Event)
 	if (!Event)
 		return;
 
+	bDamageEnabled = true;
 	StartMeasure(OwnerActor, SpaceStation);
 }
 
@@ -66,6 +67,7 @@ void UDistanceComponent::HandleEndStage(UEventOnEndStage* Event)
 	if (!Event)
 		return;
 
+	bDamageEnabled = false;
 	StopMeasure();
 }
 
@@ -84,6 +86,9 @@ void UDistanceComponent::StopMeasure()
 
 void UDistanceComponent::MeasureDistance()
 {
+	if (!bDamageEnabled)
+		return;
+
 	if (!IsValid(TargetA) || !IsValid(TargetB))
 		return;
 
