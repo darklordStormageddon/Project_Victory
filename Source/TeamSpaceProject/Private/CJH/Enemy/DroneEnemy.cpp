@@ -382,7 +382,7 @@ void ADroneEnemy::LookTarget()
 		return;
 
 	FRotator CurrentRot = GetActorRotation();
-	FRotator TargetRot = ToTarget.Rotation();
+	FRotator TargetRot = ToTarget.Rotation(); 
 
 	float DeltaYaw = FMath::FindDeltaAngleDegrees(CurrentRot.Yaw, TargetRot.Yaw);
 	float DeltaPitch = FMath::FindDeltaAngleDegrees(CurrentRot.Pitch, TargetRot.Pitch);
