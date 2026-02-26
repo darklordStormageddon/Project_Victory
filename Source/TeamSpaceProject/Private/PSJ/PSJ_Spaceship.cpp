@@ -116,6 +116,7 @@ bool APSJ_Spaceship::Server_Roll_Validate(float Value) { return true; }
 
 void APSJ_Spaceship::Server_Roll_Implementation(float Value)
 {
+	if (!TryMove()) return;
 	AddActorLocalRotation(FRotator(0.0f, 0.0f, Value * RotateSpeed));
 }
 
@@ -128,6 +129,7 @@ bool APSJ_Spaceship::Server_MouseLook_Validate(FVector2D Value) { return true; }
 
 void APSJ_Spaceship::Server_MouseLook_Implementation(FVector2D Value)
 {
+	if (!TryMove()) return;
 	AddActorLocalRotation(FRotator(Value.Y * -1.0f, Value.X, 0.0f));
 }
 
@@ -312,6 +314,25 @@ USpaceShipStateGroup* APSJ_Spaceship::GetSpaceShipStateGroup()
 	return _spaceShipStateGroup;
 }
 
+void APSJ_Spaceship::Input_SpaceshipBrake(const FInputActionValue& Value)
+{
+	Server_SpaceshipBrake();
+}
+
+bool APSJ_Spaceship::Server_SpaceshipBrake_Validate() { return true; }
+
+void APSJ_Spaceship::Server_SpaceshipBrake_Implementation()
+{
+	if (ShipRootComponent && ShipRootComponent->IsSimulatingPhysics())
+	{
+		// 선형 속도(이동 속도)를 즉시 0으로 만듭니다.
+		ShipRootComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
+		
+		// (선택 사항) 회전 속도도 0으로 만들어 완전히 멈추게 하려면 아래 줄을 추가하세요.
+		//ShipRootComponent->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+	}
+}
+
 void APSJ_Spaceship::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -325,6 +346,7 @@ void APSJ_Spaceship::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		if (IA_MouseLook) EnhancedInputComponent->BindAction(IA_MouseLook, ETriggerEvent::Triggered, this, &APSJ_Spaceship::Input_MouseLook);
 		if (IA_Roll) EnhancedInputComponent->BindAction(IA_Roll, ETriggerEvent::Triggered, this, &APSJ_Spaceship::Input_Roll);
 		if (IA_Interact) EnhancedInputComponent->BindAction(IA_Interact, ETriggerEvent::Started, this, &ATaskPawnBase::Input_Exit);
+		if (IA_SpaceshipBrake) EnhancedInputComponent->BindAction(IA_SpaceshipBrake, ETriggerEvent::Started, this, &APSJ_Spaceship::Input_SpaceshipBrake);
 	}
 }
 

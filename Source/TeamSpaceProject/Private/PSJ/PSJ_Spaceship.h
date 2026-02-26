@@ -125,6 +125,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* IA_Roll;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* IA_SpaceshipBrake;
+
 
 	UPROPERTY(EditAnywhere, Category = "Ship Stats")
 	float ThrustSpeed = 5000.0f;
@@ -157,7 +160,7 @@ public:
 	void Input_MoveUp(const FInputActionValue& Value);
 	void Input_MouseLook(const FInputActionValue& Value);
 	void Input_Roll(const FInputActionValue& Value);
-
+	void Input_SpaceshipBrake(const FInputActionValue& Value);
 
 
 
@@ -169,6 +172,8 @@ public:
 	UFUNCTION()
 	void OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	UFUNCTION(Server, Unreliable, WithValidation)
+	void Server_SpaceshipBrake();
 
 	UPROPERTY(VisibleInstanceOnly, Category = "Connection")
 	ATaskChair* LinkedChair;
