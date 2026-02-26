@@ -42,7 +42,10 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
-	void UpdateDurabilityAndDamage();
+	void UpdateToolUsage();
+
+	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
+	void UpdateDurability();
 
 	virtual void Client_BoardingSuccess_Implementation() override;
 	virtual void Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot) override;
