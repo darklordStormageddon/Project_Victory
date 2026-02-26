@@ -34,6 +34,10 @@ void ATaskChair::BeginPlay()
 	}
 }
 
+void ATaskChair::SetTargetTaskPawn(ATaskPawnBase* NewTaskPawn)
+{
+    TargetTaskPawn = NewTaskPawn;
+}
 
 void ATaskChair::HandleSolarWindEvent()
 {

@@ -3,7 +3,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "InputActionValue.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/Event/EventManager.h"
+#include "JHS/Event/CommonEventBase.h"
 #include "TaskPawnBase.generated.h"
+
 
 class APSJ_Character;
 class UArrowComponent;
@@ -17,6 +21,9 @@ class ATaskPawnBase : public APawn
 public:
 	ATaskPawnBase();
 
+private:
+	FDelegateHandle _eventHandleOnEndStage;
+public:
 	// 모든 자식이 공유할 하차 입력 액션
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* IA_Interact;
@@ -30,6 +37,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "Pilot")
@@ -56,4 +65,6 @@ public:
 
 	UFUNCTION(Client, Reliable)
 	void Client_DisembarkSuccess(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot);
+
+	void OnEndStage(UEventOnEndStage* Event);
 };

@@ -30,6 +30,10 @@ protected:
 
 public:
 
+	// 블루프린트에서 스폰한 포탑을 의자에 연결할 수 있도록 함수를 열어줍니다.
+	UFUNCTION(BlueprintCallable, Category = "Link")
+	void SetTargetTaskPawn(ATaskPawnBase* NewTaskPawn);
+
 	virtual void OnInteractExit(int32 CallerPlayerId, TObjectPtr<UUIBase> ClosedUI) override;
 
 	ATaskPawnBase* GetTargetTaskPawn() const { return TargetTaskPawn; }

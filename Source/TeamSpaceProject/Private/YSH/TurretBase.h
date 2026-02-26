@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
+#include "PSJ/TaskPawnBase.h"
 #include "TurretBase.generated.h"
 
 class USceneComponent;
@@ -18,7 +19,7 @@ class AProjectile;
 class AJHSGameState;
 
 UCLASS()
-class TEAMSPACEPROJECT_API ATurretBase : public APawn
+class TEAMSPACEPROJECT_API ATurretBase : public ATaskPawnBase
 {
 	GENERATED_BODY()
 

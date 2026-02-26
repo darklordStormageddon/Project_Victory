@@ -1,8 +1,12 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "KSM/CollectPanelBase.h"
+#include "PSJ/PSJ_Character.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "JHS/Event/EventManager.h"
+#include "JHS/Event/CommonEventBase.h"
 #include "EnhancedInputSubsystems.h"
 
 // Sets default values
@@ -74,5 +78,27 @@ void ACollectPanelBase::Client_BoardingSuccess_Implementation()
 			}
 		}
 	}
+}
+
+void ACollectPanelBase::Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot)
+{
+	if (!ExitingPilot) return;
+
+	if (UCharacterMovementComponent* CMC = ExitingPilot->GetCharacterMovement())
+	{
+		CMC->StopMovementImmediately();
+		CMC->SetMovementMode(MOVE_Custom);
+	}
+
+	ExitingPilot->MoveIgnoreActorRemove(this);
+	this->MoveIgnoreActorRemove(ExitingPilot);
+
+	FVector SafeExitLoc = ExitLoc + GetActorUpVector() * 15.0f;
+	ExitingPilot->SetActorLocationAndRotation(SafeExitLoc, ExitRot, false, nullptr, ETeleportType::TeleportPhysics);
+
+	ExitingPilot->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+	ExitingPilot->StartDisembarkState();
+	ExitingPilot->SetBaseActorData(this);
+
 }
 

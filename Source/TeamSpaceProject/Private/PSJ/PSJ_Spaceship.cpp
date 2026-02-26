@@ -53,6 +53,8 @@ void APSJ_Spaceship::Client_BoardingSuccess_Implementation()
 		}
 	}
 }
+
+
 void APSJ_Spaceship::Input_ThrustForward(const FInputActionValue& Value)
 {
 	Server_ThrustForward(Value.Get<float>());

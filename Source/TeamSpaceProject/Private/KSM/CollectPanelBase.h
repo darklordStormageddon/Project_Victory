@@ -3,11 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PSJ/PSJ_Character.h"
 #include "PSJ/TaskPawnBase.h"
 #include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "CollectPanelBase.generated.h"
 
 class UCollectStateGroup;
+class APSJ_Character;
 
 UCLASS()
 class ACollectPanelBase : public ATaskPawnBase
@@ -23,6 +25,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 
 protected:
 	UPROPERTY()
@@ -42,6 +45,7 @@ public:
 	void UpdateDurabilityAndDamage();
 
 	virtual void Client_BoardingSuccess_Implementation() override;
+	virtual void Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot) override;
 
 public:
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)

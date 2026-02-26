@@ -135,6 +135,8 @@ public:
 	UFUNCTION(Server, Unreliable, WithValidation)
 	void Server_SetSprinting(bool bNewSprinting);
 
+	bool TryUnboard();
+
 protected:
 
 	bool bIsRepairingInputDown = false;
@@ -165,7 +167,8 @@ protected:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* InteractAction;
-	void Interact(const FInputActionValue& Value);
+	void InteractEnter(const FInputActionValue& Value);
+
 
 
 	virtual void OnRep_Controller() override;

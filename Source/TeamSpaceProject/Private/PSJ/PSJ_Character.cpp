@@ -1,4 +1,5 @@
 #include "PSJ_Character.h"
+#include "JHS/Interact/InteracterComponent.h"
 #include "PSJ_Spaceship.h"
 #include "PSJ/TaskChair.h"
 #include "PSJ_ToolBase.h"
@@ -6,6 +7,7 @@
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
+#include "JHS/Interact/InteracterComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -29,6 +31,12 @@ APSJ_Character::APSJ_Character()
 void APSJ_Character::BeginPlay()
 {
 	Super::BeginPlay();
+
+
+	if (!InteracterComponent)
+	{
+		InteracterComponent = FindComponentByClass<UInteracterComponent>();
+	}
 
 	if (HasAuthority())
 	{
@@ -399,12 +407,7 @@ void APSJ_Character::ForceInputRecovery()
 			}
 		}
 
-		EnableInput(PC);
 
-		if (InputComponent)
-		{
-			SetupPlayerInputComponent(InputComponent);
-		}
 
 		PC->SetInputMode(FInputModeGameOnly());
 		PC->bShowMouseCursor = false;
@@ -452,11 +455,9 @@ void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APSJ_Character::Look);
 		}
 
-
-
 		if (InteractAction)
 		{
-			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APSJ_Character::Interact);
+			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APSJ_Character::InteractEnter);
 		}
 
 
@@ -488,37 +489,42 @@ void APSJ_Character::SetCurrentSpaceship(APawn* NewSpaceship)
 }
 
 
-void APSJ_Character::Interact(const FInputActionValue& Value)
+void APSJ_Character::InteractEnter(const FInputActionValue& Value)
 {
 	if (!Controller) return;
 
-	FVector TraceStart;
-	FRotator TraceRot;
-
-	if (FPSCamera)
+	if (InteracterComponent)
 	{
-		TraceStart = FPSCamera->GetComponentLocation();
-		TraceRot = FPSCamera->GetComponentRotation();
+		// 1. TryInteractInput에서 반환받을 상태값 변수 선언
+		bool bOutIsInterrupt = false;
+		bool bOutIsInteractEnter = false;
+
+		// 2. 변수를 인자로 넣어서 함수 호출
+		bool bSuccess = InteracterComponent->TryInteractInput(bOutIsInterrupt, bOutIsInteractEnter);
+
+		// 필요하다면 bSuccess, bOutIsInterrupt, bOutIsInteractEnter 값에 따라 
+		// 추가적인 캐릭터 로직(예: 애니메이션 재생 등)을 작성할 수 있습니다.
+		if (bSuccess)
+		{
+			// 상호작용 성공 시 처리
+			UE_LOG(LogTemp, Log, TEXT("Interact Success! Interrupt: %d, Enter: %d"), bOutIsInterrupt, bOutIsInteractEnter);
+		}
 	}
-	else
-	{
-		GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
-	}
-
-	FVector TraceEnd = TraceStart + (TraceRot.Vector() * 300.0f); 
-
-	FHitResult HitResult;
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this); 
-
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
-		HitResult,
-		TraceStart,
-		TraceEnd,
-		ECC_Visibility,
-		QueryParams
-	);
 }
+
+
+bool APSJ_Character::TryUnboard()
+{
+	bool _isInterrupt = false;
+	bool _isInteractEnter = false;
+	bool _isSuccess = InteracterComponent->TryInteractInput( _isInterrupt, _isInteractEnter);
+	if (_isSuccess && !_isInteractEnter)
+		return true;
+	return false;
+
+}
+
+
 
 void APSJ_Character::Move(const FInputActionValue& Value)
 {

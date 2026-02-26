@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
+#include "PSJ/TaskPawnBase.h"
 #include "TurretBase_GT.generated.h"
 
 
@@ -23,7 +24,7 @@ class AProjectile;
 class AJHSGameState;
 
 UCLASS()
-class TEAMSPACEPROJECT_API ATurretBase_GT : public APawn
+class TEAMSPACEPROJECT_API ATurretBase_GT : public ATaskPawnBase
 {
 	GENERATED_BODY()
 
@@ -41,36 +42,27 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	// [추가] 현재 탑승한 조종사
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Pilot")
-	APSJ_Character* CurrentPilot = nullptr;
-
-	// [추가] 연결된 조종석 (내릴 때 정보 갱신용)
-	UPROPERTY(VisibleInstanceOnly, Category = "Connection")
-	ATaskChair* LinkedChair;
+	//// [추가] 연결된 조종석 (내릴 때 정보 갱신용)
+	//UPROPERTY(VisibleInstanceOnly, Category = "Connection")
+	//ATaskChair* LinkedSeat;
 	
 public:
 
 	// [신규] 탑승 처리 함수 (서버 호출)
 	void SetPilot(APSJ_Character* NewPilot, ATaskChair* Chair);
 
-	// [신규] 탑승 성공 시 클라이언트 설정 (IMC 교체, UI 켜기)
-	UFUNCTION(Client, Reliable)
-	void Client_BoardingSuccess();
+	// 오버라이드하게  수정
+	virtual void Client_BoardingSuccess_Implementation() override;
 
-	// [신규] 하차 요청 (서버 RPC)
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_RequestDisembark();
 
-	// [신규] 하차 처리 구현부
-	void DisembarkCharacter();
+	// 오버라이드하게  수정
+	virtual void DisembarkCharacter() override;
 
-	// [신규] 하차 성공 시 클라이언트 정리
-	UFUNCTION(Client, Reliable)
-	void Client_DisembarkSuccess(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot);
+	// [수정 후] Implementation만 오버라이드 합니다.
+	virtual void Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot) override;
 
-	// [신규] 하차 입력 바인딩 함수
-	void Input_Exit(const FInputActionValue& Value);
+	//// [신규] 하차 입력 바인딩 함수
+	//void Input_Exit(const FInputActionValue& Value);
 
 
 

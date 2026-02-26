@@ -480,7 +480,7 @@ void ATurretBase_GT::AddPitchInput(float PitchInputDegPerSec, float DeltaTime)
 void ATurretBase_GT::SetPilot(APSJ_Character* NewPilot, ATaskChair* Chair)
 {
 	CurrentPilot = NewPilot;
-	LinkedChair = Chair;
+	LinkedSeat = Chair;
 
 	if (CurrentPilot)
 	{
@@ -539,64 +539,35 @@ void ATurretBase_GT::Client_BoardingSuccess_Implementation()
 	}
 }
 
-// [신규] 하차 요청 (입력 시 호출)
-void ATurretBase_GT::Input_Exit(const FInputActionValue& Value)
-{
-	Server_RequestDisembark();
-}
+//// [신규] 하차 요청 (입력 시 호출)
+//void ATurretBase_GT::Input_Exit(const FInputActionValue& Value)
+//{
+//	Server_RequestDisembark();
+//}
 
-bool ATurretBase_GT::Server_RequestDisembark_Validate() { return true; }
-
-void ATurretBase_GT::Server_RequestDisembark_Implementation()
-{
-	DisembarkCharacter();
-}
-
-// [신규] 하차 로직 구현
 void ATurretBase_GT::DisembarkCharacter()
 {
+
 	if (!CurrentPilot) return;
 
-	APSJ_Character* ExitingChar = CurrentPilot;
-	AController* TurretController = GetController();
-
-	CurrentPilot = nullptr;
-
-	// 연결된 콕핏에 하차 알림 (필요하다면)
-	if (LinkedChair)
+	if (LinkedSeat)
 	{
-		APlayerController* _callerPC = ExitingChar ? Cast<APlayerController>(ExitingChar->GetController()) : nullptr;
-		APlayerState* _callerPS = _callerPC ? _callerPC->GetPlayerState<APlayerState>() : nullptr;
-		int32 _callerPlayerId = _callerPS ? _callerPS->GetPlayerId() : -1;
-		LinkedChair->OnInteractExit(_callerPlayerId, nullptr);
-		LinkedChair = nullptr;
+		APlayerController* CallerPC = Cast<APlayerController>(CurrentPilot->GetController());
+
+		int32 CallerPlayerId = -1;
+		if (CallerPC && CallerPC->PlayerState)
+		{
+			CallerPlayerId = CallerPC->PlayerState->GetPlayerId();
+		}
+
+		if (ATaskChair* Chair = Cast<ATaskChair>(LinkedSeat))
+		{
+			Chair->OnInteractExit(CallerPlayerId, nullptr);
+		}
+		LinkedSeat = nullptr;
 	}
 
-	// 하차 위치 계산 (콕핏 앞이나 터렛 주변, 여기서는 임시로 현재 위치)
-	FVector SpawnLoc = GetActorLocation() + (GetActorUpVector() * -100.0f); // 우측 하차 예시
-	FRotator SpawnRot = FRotator(0.0f, GetActorRotation().Yaw, 0.0f);
-
-	// 1. 부착 해제
-	ExitingChar->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-
-	// 2. 위치 이동 및 물리 복구
-	ExitingChar->SetActorLocationAndRotation(SpawnLoc, SpawnRot);
-	ExitingChar->SetActorEnableCollision(true);
-	ExitingChar->SetActorHiddenInGame(false);
-
-	if (auto* CMC = ExitingChar->GetCharacterMovement())
-	{
-		CMC->SetMovementMode(MOVE_Falling); // 혹은 MOVE_Walking
-	}
-
-	// 3. Client RPC로 정리 지시
-	Client_DisembarkSuccess(ExitingChar, SpawnLoc, SpawnRot);
-
-	// 4. 제어권 반환 (빙의)
-	if (TurretController)
-	{
-		TurretController->Possess(ExitingChar);
-	}
+	Super::DisembarkCharacter();
 }
 
 // [신규] 클라이언트 하차 후처리

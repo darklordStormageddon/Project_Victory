@@ -25,6 +25,17 @@ void ATaskPawnBase::BeginPlay()
 		if (Arrow->GetName().Contains(TEXT("Ride"))) RidePoint = Arrow;
 		if (Arrow->GetName().Contains(TEXT("Arrow"))) ExitPoint = Arrow;
 	}
+
+	UEventManager* _eventManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetEventManager(_eventManager) || _eventManager == nullptr)
+		return;
+
+	_eventHandleOnEndStage = _eventManager->AddListener<UEventOnEndStage>(
+		[this](UEventOnEndStage* Event)
+		{
+			OnEndStage(Event);
+		}
+    );
 }
 
 void ATaskPawnBase::SetPilot(ACharacter* Character)
@@ -61,7 +72,9 @@ void ATaskPawnBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 void ATaskPawnBase::DisembarkCharacter()
 {
-	if (!CurrentPilot) return;
+	if (!CurrentPilot) return; // 여기 파일럿이 없으면 return 예외처리관련
+
+    if (!CurrentPilot->TryUnboard()) return; // 하차 시 입력이 즉시 복구되도록 함 (캐릭터가 좌표 이동 중에도 입력이 막히지 않도록)
 
 	APSJ_Character* ExitingChar = CurrentPilot;
 	AController* ShipController = GetController();
@@ -69,18 +82,18 @@ void ATaskPawnBase::DisembarkCharacter()
 	CurrentPilot = nullptr;
 
 
-	if (LinkedSeat)
-	{
-		APlayerController* _callerPC = ExitingChar ? Cast<APlayerController>(ExitingChar->GetController()) : nullptr;
-		APlayerState* _callerPS = _callerPC ? _callerPC->GetPlayerState<APlayerState>() : nullptr;
-		int32 _callerPlayerId = _callerPS ? _callerPS->GetPlayerId() : -1;
+	//if (LinkedSeat)
+	//{
+	//	APlayerController* _callerPC = ExitingChar ? Cast<APlayerController>(ExitingChar->GetController()) : nullptr;
+	//	APlayerState* _callerPS = _callerPC ? _callerPC->GetPlayerState<APlayerState>() : nullptr;
+	//	int32 _callerPlayerId = _callerPS ? _callerPS->GetPlayerId() : -1;
 
-		if (ATaskChair* Chair = Cast<ATaskChair>(LinkedSeat))
-		{
-			Chair->OnInteractExit(_callerPlayerId, nullptr);
-		}
-		LinkedSeat = nullptr; 
-	}
+	//	if (ATaskChair* Chair = Cast<ATaskChair>(LinkedSeat))
+	//	{
+	//		Chair->OnInteractExit(_callerPlayerId, nullptr);
+	//	}
+	//	LinkedSeat = nullptr; 
+	//}
 
 
 	FVector SpawnLoc = ExitPoint ? ExitPoint->GetComponentLocation() : (RidePoint ? RidePoint->GetComponentLocation() : GetActorLocation());
@@ -108,6 +121,8 @@ void ATaskPawnBase::DisembarkCharacter()
 
 void ATaskPawnBase::Input_Exit(const FInputActionValue& Value)
 {
+
+
 	Server_RequestDisembark();
 }
 
@@ -142,4 +157,33 @@ void ATaskPawnBase::Client_DisembarkSuccess_Implementation(APSJ_Character* Exiti
 	ExitingPilot->StartDisembarkState();
 	ExitingPilot->SetBaseActorData(this);
 	ExitingPilot->ForceInputRecovery();
+}
+
+void ATaskPawnBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UEventManager* _eventManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetEventManager(_eventManager) || _eventManager == nullptr)
+		return;
+
+	if (_eventHandleOnEndStage.IsValid())
+	{
+		_eventManager->DelListener<UEventOnEndStage>(_eventHandleOnEndStage);
+		_eventHandleOnEndStage.Reset();
+	}
+
+
+
+
+	Super::EndPlay(EndPlayReason);
+
+}
+
+void ATaskPawnBase::OnEndStage(UEventOnEndStage* Event)
+{
+	if (Event == nullptr)
+		return;
+
+	DisembarkCharacter();
+
+
 }
