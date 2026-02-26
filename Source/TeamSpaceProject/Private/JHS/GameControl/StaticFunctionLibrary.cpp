@@ -55,6 +55,24 @@ bool UStaticFunctionLibrary::TryGetPlayerController(AJHSPlayerController*& OutPl
 	return true;
 }
 
+int32 UStaticFunctionLibrary::GetAssignedPlayerId()
+{
+	AJHSPlayerController* _playerController = nullptr;
+	if (!TryGetPlayerController(_playerController))
+		return -1;
+
+	return _playerController->GetAssignedPlayerId();
+}
+
+bool UStaticFunctionLibrary::CheckIsSelfClient(int32 CallerAssignedPlayerId)
+{
+	AJHSPlayerController* _playerController = nullptr;
+	if (!TryGetPlayerController(_playerController))
+		return false;
+
+	return _playerController->GetAssignedPlayerId() == CallerAssignedPlayerId;
+}
+
 bool UStaticFunctionLibrary::TryGetGameState(AJHSGameState*& OutGameState)
 {
 	UWorld* _world = nullptr;

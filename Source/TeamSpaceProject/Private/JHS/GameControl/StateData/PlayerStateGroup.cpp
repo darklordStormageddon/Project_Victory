@@ -107,28 +107,48 @@ bool UPlayerStateGroup::TryRegistPlayer(TObjectPtr<AJHSPlayerState> PlayerState,
 	return true;
 }
 
-void UPlayerStateGroup::IncreasePlayerRadiation(int32 PlayerIdx, float IncreaseValue)
+void UPlayerStateGroup::IncreasePlayerRadiation(int32 CallerAssignedPlayerId, float IncreaseValue)
 {
-	FPlayerStateData* _playerState = _playerStateMap.Find(PlayerIdx);
+	FPlayerStateData* _playerState = _playerStateMap.Find(CallerAssignedPlayerId);
 	if (_playerState == nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UPlayerStateGroup::IncreasePlayerRadiation - PlayerIdx=%d not found in _playerStateMap, skip"), PlayerIdx);
+		UE_LOG(LogTemp, Warning, TEXT("UPlayerStateGroup::IncreasePlayerRadiation - PlayerIdx=%d not found in _playerStateMap, skip"), CallerAssignedPlayerId);
 		return;
 	}
+	
+	FMaxCurrentData* _radiationData = &_playerState->Radiation;
+	_radiationData->CurrentValue += IncreaseValue;
+	bool _isFullRadiation = false;
+	if (_radiationData->CurrentValue > _radiationData->MaxValue)
+	{
+		_radiationData->CurrentValue = _radiationData->MaxValue;
+		_isFullRadiation = true;
+	}
 
-	_playerState->Radiation.CurrentValue += IncreaseValue;
-	if (_playerState->Radiation.CurrentValue > _playerState->Radiation.MaxValue)
-		_playerState->Radiation.CurrentValue = _playerState->Radiation.MaxValue;
-
-	UEventOnChangePlayerRadiation* _event = NewObject<UEventOnChangePlayerRadiation>(this);
-	if (_event == nullptr)
+	UEventOnChangePlayerRadiation* _eventOnRadiation = NewObject<UEventOnChangePlayerRadiation>(this);
+	if (_eventOnRadiation == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UPlayerStateGroup: Failed to create UEventOnChangePlayerRadiation"));
 		return;
 	}
 
-	_event->PlayerStateData = *_playerState;
-	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangePlayerRadiation>(_event);
+	_eventOnRadiation->CallerAssignedPlayerId = CallerAssignedPlayerId;
+	_eventOnRadiation->RadiationData = *_radiationData;
+	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangePlayerRadiation>(_eventOnRadiation);
+
+	// Full radiation
+	if (_isFullRadiation)
+	{
+		UEventOnPlayerDied* _eventDied = NewObject<UEventOnPlayerDied>(this);
+		if (_eventDied == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UPlayerStateGroup: Failed to create UEventOnPlayerDied"));
+			return;
+		}
+
+		_eventDied->CallerAssignedPlayerId = CallerAssignedPlayerId;
+		_gameState->GetEventManager()->ExecuteEvent<UEventOnPlayerDied>(_eventDied);
+	}
 }
 
 bool UPlayerStateGroup::TryGetPlayerStateData(int32 PlayerUID, FPlayerStateData*& OutPlayerStateData)

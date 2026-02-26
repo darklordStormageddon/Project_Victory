@@ -56,6 +56,9 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|CollectStateGroup")
 	TObjectPtr<UCollectStateGroup> _collectStateGroup = nullptr;
 
+	UPROPERTY(EditAnywhere, Category = "GameState|CollectStateGroup")
+	float _useToolradiationValue = 1.0f;
+
 	// Container
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|ContainerStateGroup")
 	TObjectPtr<UContainerStateGroup> _containerStateGroup = nullptr;

@@ -40,9 +40,13 @@ void UUIPanelCommonInfo::OnChangePlayerRadiation(UEventOnChangePlayerRadiation* 
 {
 	if (Event == nullptr)
 		return;
+	
+	const int32& _callerAssignedPlayerId = Event->CallerAssignedPlayerId;
 
-	const FPlayerStateData& _playerStateData = Event->PlayerStateData;
-	const FMaxCurrentData& _radiationData = _playerStateData.Radiation;
+	if (!UStaticFunctionLibrary::CheckIsSelfClient(_callerAssignedPlayerId))
+		return;
+
+	const FMaxCurrentData& _radiationData = Event->RadiationData;
 
 	if (PROG_RadiationDose)
 	{

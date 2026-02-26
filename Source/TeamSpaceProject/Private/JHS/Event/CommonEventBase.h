@@ -109,8 +109,26 @@ public:
 		: Super(ObjectInitializer)
 	{}
 
-	UPROPERTY(BlueprintReadOnly, Category = "Event|SpaceShipData")
-	FPlayerStateData PlayerStateData;
+	UPROPERTY(BlueprintReadOnly, Category = "Event|PlayerStateData")
+	int32 CallerAssignedPlayerId = -1;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|PlayerStateData")
+	FMaxCurrentData RadiationData;
+};
+
+UCLASS(BlueprintType)
+class UEventOnPlayerDied : public UCommonEventBase
+{
+	GENERATED_BODY()
+
+public:
+	UEventOnPlayerDied(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{
+	}
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|PlayerStateData")
+	int32 CallerAssignedPlayerId = -1;
 };
 #pragma endregion Player
 

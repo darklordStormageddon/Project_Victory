@@ -3,6 +3,7 @@
 
 #include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/PlayerStateGroup.h"
 #include "JHS/GameControl/ShopManager.h"
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "KSM/DataTable/ToolDataTable.h"
@@ -118,7 +119,7 @@ bool UCollectStateGroup::TrySelectTool(E_COLLECT_TOOL_TYPE CollectToolType)
 	return true;
 }
 
-bool UCollectStateGroup::TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float DeltaTime, float& OutToolDamage)
+bool UCollectStateGroup::TryUseTool(int32 CallerAssignedPlayerId, E_COLLECT_TOOL_TYPE CollectToolType, float DeltaTime, float& OutToolDamage)
 {
 	OutToolDamage = 0.0f;
 	if (CollectToolType != _selectedToolType)
@@ -144,6 +145,13 @@ bool UCollectStateGroup::TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float D
 	OutToolDamage = _outCollectToolData->ToolDamage.Value.MaxValue;
 
 	ExecuteEventToolDurability(*_outCollectToolData);
+
+	// Increase radiation
+	TObjectPtr<UPlayerStateGroup> _playerStateGroup = _gameState->GetPlayerStateGroup();
+	if (_playerStateGroup != nullptr)
+	{
+		_playerStateGroup->IncreasePlayerRadiation(CallerAssignedPlayerId, USE_TOOL_RADIATION * DeltaTime);
+	}
 	return true;
 }
 

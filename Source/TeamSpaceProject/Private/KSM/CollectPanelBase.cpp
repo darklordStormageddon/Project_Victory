@@ -64,7 +64,7 @@ void ACollectPanelBase::UpdateDurability_Implementation()
 		return;
 
 	float DeltaTime = GetWorld()->GetDeltaSeconds();
-	if (!_collectStateGroup->TryUseTool(_Tool_Type, DeltaTime, _OutToolDamage))
+	if (!_collectStateGroup->TryUseTool(UStaticFunctionLibrary::GetAssignedPlayerId(), _Tool_Type, DeltaTime, _OutToolDamage))
 		return;
 }
 

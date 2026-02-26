@@ -22,8 +22,14 @@ public:
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|GameMode")
     static bool TryGetGameMode(AJHSGameMode*& OutGameMode);
 
-    UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|GameMode")
+    UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|PlayerController")
     static bool TryGetPlayerController(AJHSPlayerController*& OutPlayerController);
+
+    UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|PlayerController")
+    static int32 GetAssignedPlayerId();
+
+    UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|PlayerController")
+    static bool CheckIsSelfClient(int32 CallerAssignedPlayerId);
 
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|GameState")
     static bool TryGetGameState(AJHSGameState*& OutGameState);

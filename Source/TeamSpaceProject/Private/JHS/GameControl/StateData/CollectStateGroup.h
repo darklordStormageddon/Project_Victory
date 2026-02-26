@@ -22,6 +22,8 @@ public:
 private:
 	const float CONSUME_DURABILITY = 1.0f;
 
+	const float USE_TOOL_RADIATION = 1.0f;
+
 	UPROPERTY()
 	TObjectPtr<AJHSGameState> _gameState = nullptr;
 
@@ -30,6 +32,9 @@ private:
 
 	UPROPERTY()
 	E_COLLECT_TOOL_TYPE _selectedToolType = E_COLLECT_TOOL_TYPE::NONE;
+
+	UPROPERTY()
+	float _useToolradiationValue = 0.0f;
 
 protected:
 	// Called when the game starts
@@ -52,7 +57,7 @@ public:
 
 	bool TrySelectTool(E_COLLECT_TOOL_TYPE CollectToolType);
 
-	bool TryUseTool(E_COLLECT_TOOL_TYPE CollectToolType, float DeltaTime, float& OutToolDamage);
+	bool TryUseTool(int32 CallerAssignedPlayerId, E_COLLECT_TOOL_TYPE CollectToolType, float DeltaTime, float& OutToolDamage);
 
 private:
 	void LoadCollectToolDataTable();

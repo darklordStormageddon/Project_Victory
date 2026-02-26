@@ -146,7 +146,7 @@ void AJHSPlayerBase::UseCollectTool()
 	if (_collectStateGroup->TrySelectTool(_toolType))
 	{
 		float _outToolDamage = 0.0f;
-		_collectStateGroup->TryUseTool(_toolType, 1.0f, _outToolDamage);
+		_collectStateGroup->TryUseTool(-1, _toolType, 1.0f, _outToolDamage);
 		UE_LOG(LogTemp, Warning, TEXT("Tool [%s] Damage [%f]"), *CommonEnums::GetEnum2FString<E_COLLECT_TOOL_TYPE>(_toolType), _outToolDamage);
 	}
 

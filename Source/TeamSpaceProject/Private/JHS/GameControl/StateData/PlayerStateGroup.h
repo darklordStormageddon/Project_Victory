@@ -44,7 +44,7 @@ public:
 
 	bool TryRegistPlayer(TObjectPtr<AJHSPlayerState> PlayerState, FString PlayerName, E_REGIST_ERROR_TYPE& ErrorType);
 
-	void IncreasePlayerRadiation(int32 PlayerIdx, float IncreaseValue);
+	void IncreasePlayerRadiation(int32 CallerAssignedPlayerId, float DeltaTime);
 
 private:
 	bool TryGetPlayerStateData(int32 PlayerUID, FPlayerStateData*& OutPlayerStateData);
