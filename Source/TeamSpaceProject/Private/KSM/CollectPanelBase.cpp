@@ -53,7 +53,7 @@ void ACollectPanelBase::UpdateToolUsage_Implementation()
 {
 	if (_collectStateGroup == nullptr)
 		return;
-
+	//UE_LOG(LogTemp, Log, TEXT("ACollectPanelBase::UpdateToolUsage_Implementation - Tool Type: %s"), *CommonEnums::GetEnum2FString<E_COLLECT_TOOL_TYPE>(_Tool_Type));
 	if (!_collectStateGroup->TrySelectTool(_Tool_Type))
 		return;
 }
