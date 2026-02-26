@@ -13,39 +13,40 @@ ASolarWindManager::ASolarWindManager()
 	PrimaryActorTick.bCanEverTick = true;
 	bIsWarningActive = false;
 	CurrentWarningTime = 0.0f;
+	bIsFirstEvent = true;
 }
 
 void ASolarWindManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UE_LOG(LogTemp, Error, TEXT("========================================"));
-	UE_LOG(LogTemp, Error, TEXT("🎬 SolarWindManager BeginPlay() CALLED"));
-	UE_LOG(LogTemp, Error, TEXT("========================================"));
+	//UE_LOG(LogTemp, Error, TEXT("========================================"));
+	//UE_LOG(LogTemp, Error, TEXT("🎬 SolarWindManager BeginPlay() CALLED"));
+	//UE_LOG(LogTemp, Error, TEXT("========================================"));
 
-	// 첫 태양풍 이벤트 스케줄링
-	if (SolarWindInterval > 0.0f)
+	// 첫 태양풍 이벤트는 InitialDelay(3분) 후에 시작
+	if (InitialDelay > 0.0f)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⏰ Setting up timer with interval: %.1f seconds"), SolarWindInterval);
+		//UE_LOG(LogTemp, Warning, TEXT("⏰ Scheduling first event after initial delay: %.1f seconds (%.1f minutes)"),
+		//	InitialDelay, InitialDelay / 60.0f);
 
 		GetWorldTimerManager().SetTimer(
 			SolarWindIntervalTimerHandle,
 			this,
 			&ASolarWindManager::StartSolarWindEvent,
-			SolarWindInterval,
-			true // 반복
+			InitialDelay,
+			false // 반복 안 함
 		);
-
-		UE_LOG(LogTemp, Warning, TEXT("✅ Timer set successfully. First event in %.1f seconds"), SolarWindInterval);
 
 		if (bShowDebugInfo)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("✓ Solar Wind Manager initialized. First event in %.1f seconds"), SolarWindInterval);
+			//UE_LOG(LogTemp, Warning, TEXT("✓ Solar Wind Manager initialized. First event in %.1f seconds (%.1f minutes)"),
+			//	InitialDelay, InitialDelay / 60.0f);
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ SolarWindInterval is <= 0! Timer NOT set! Value: %.1f"), SolarWindInterval);
+		//UE_LOG(LogTemp, Error, TEXT("❌ InitialDelay is <= 0! Timer NOT set! Value: %.1f"), InitialDelay);
 	}
 }
 
@@ -89,20 +90,21 @@ void ASolarWindManager::Tick(float DeltaTime)
 
 void ASolarWindManager::StartSolarWindEvent()
 {
-	UE_LOG(LogTemp, Error, TEXT("========================================"));
-	UE_LOG(LogTemp, Error, TEXT("🌞 StartSolarWindEvent() CALLED"));
-	UE_LOG(LogTemp, Error, TEXT("========================================"));
+	//UE_LOG(LogTemp, Error, TEXT("========================================"));
+	//UE_LOG(LogTemp, Error, TEXT("🌞 StartSolarWindEvent() CALLED"));
+	//UE_LOG(LogTemp, Error, TEXT("========================================"));
 
 	if (bShowDebugInfo)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("🌞 Solar Wind Event Started!"));
+		//UE_LOG(LogTemp, Warning, TEXT("🌞 Solar Wind Event Started! (First: %s)"),
+		//	bIsFirstEvent ? TEXT("Yes") : TEXT("No"));
 	}
 
 	// 경보 시작
 	TriggerSolarWindWarning();
 
 	// 경보 시간 후 충격 발생 스케줄링
-	UE_LOG(LogTemp, Warning, TEXT("⏰ Scheduling impact in %.1f seconds"), WarningDuration);
+	//UE_LOG(LogTemp, Warning, TEXT("⏰ Scheduling impact in %.1f seconds"), WarningDuration);
 
 	GetWorldTimerManager().SetTimer(
 		WarningTimerHandle,
@@ -112,84 +114,94 @@ void ASolarWindManager::StartSolarWindEvent()
 		false
 	);
 
-	UE_LOG(LogTemp, Warning, TEXT("✅ Impact timer set"));
+	//UE_LOG(LogTemp, Warning, TEXT("✅ Impact timer set"));
 }
 
 void ASolarWindManager::TriggerSolarWindWarning()
 {
-	UE_LOG(LogTemp, Error, TEXT("========================================"));
-	UE_LOG(LogTemp, Error, TEXT("⚠ TriggerSolarWindWarning() CALLED"));
-	UE_LOG(LogTemp, Error, TEXT("========================================"));
+	//UE_LOG(LogTemp, Error, TEXT("========================================"));
+	//UE_LOG(LogTemp, Error, TEXT("⚠ TriggerSolarWindWarning() CALLED"));
+	//UE_LOG(LogTemp, Error, TEXT("========================================"));
 
 	bIsWarningActive = true;
 	CurrentWarningTime = WarningDuration;
 
 	// 경보 이벤트 브로드캐스트 (UI가 이를 받아서 경보 메시지 표시)
-	UE_LOG(LogTemp, Warning, TEXT("📡 Broadcasting warning event..."));
+	//UE_LOG(LogTemp, Warning, TEXT("📡 Broadcasting warning event..."));
 	OnSolarWindWarning.Broadcast(WarningDuration);
-
-	// 경보 사운드 재생
-	if (WarningSoundCue)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("🔊 Playing warning sound"));
-		UGameplayStatics::PlaySound2D(this, WarningSoundCue);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠ No warning sound set"));
-	}
-
-	if (bShowDebugInfo)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠ Solar Wind Warning! Impact in %.1f seconds"), WarningDuration);
-	}
 }
 
 void ASolarWindManager::TriggerSolarWindImpact()
 {
-	UE_LOG(LogTemp, Error, TEXT("========================================"));
-	UE_LOG(LogTemp, Error, TEXT("💥 TriggerSolarWindImpact() CALLED"));
-	UE_LOG(LogTemp, Error, TEXT("========================================"));
+	//UE_LOG(LogTemp, Error, TEXT("========================================"));
+	//UE_LOG(LogTemp, Error, TEXT("💥 TriggerSolarWindImpact() CALLED"));
+	//UE_LOG(LogTemp, Error, TEXT("========================================"));
 
 	bIsWarningActive = false;
 
 	// 충격 이벤트 브로드캐스트
-	UE_LOG(LogTemp, Warning, TEXT("📡 Broadcasting impact event..."));
+	//UE_LOG(LogTemp, Warning, TEXT("📡 Broadcasting impact event..."));
 	OnSolarWindImpact.Broadcast();
 
-	// 충격 사운드 재생
-	if (ImpactSoundCue)
+	// 카메라 셰이크 적용
+	//UE_LOG(LogTemp, Error, TEXT("🎥 About to call ApplyCameraShake()..."));
+	ApplyCameraShake();
+	//UE_LOG(LogTemp, Error, TEXT("🎥 ApplyCameraShake() returned"));
+
+	// 다음 이벤트 스케줄링
+	ScheduleNextEvent();
+}
+
+void ASolarWindManager::ScheduleNextEvent()
+{
+	float NextInterval = 0.0f;
+
+	if (bIsFirstEvent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("🔊 Playing impact sound"));
-		UGameplayStatics::PlaySound2D(this, ImpactSoundCue);
+		// 첫 이벤트 후에는 쿨다운(3분) 적용
+		NextInterval = CooldownDuration;
+		bIsFirstEvent = false;
+
+		//UE_LOG(LogTemp, Warning, TEXT("📅 First event completed. Next event after cooldown: %.1f seconds (%.1f minutes)"),
+		//	NextInterval, NextInterval / 60.0f);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠ No impact sound set"));
+		// 이후에는 쿨다운(3분) + 랜덤(1~5분)
+		float RandomDelay = FMath::RandRange(MinRandomInterval, MaxRandomInterval);
+		NextInterval = CooldownDuration + RandomDelay;
+
+		//UE_LOG(LogTemp, Warning, TEXT("📅 Scheduling next event: Cooldown(%.1f) + Random(%.1f) = %.1f seconds (%.1f /minutes)"),
+		//	CooldownDuration, RandomDelay, NextInterval, NextInterval / 60.0f);
 	}
 
-	// 카메라 셰이크 적용
-	UE_LOG(LogTemp, Error, TEXT("🎥 About to call ApplyCameraShake()..."));
-	ApplyCameraShake();
-	UE_LOG(LogTemp, Error, TEXT("🎥 ApplyCameraShake() returned"));
+	// 다음 이벤트 타이머 설정
+	GetWorldTimerManager().SetTimer(
+		SolarWindIntervalTimerHandle,
+		this,
+		&ASolarWindManager::StartSolarWindEvent,
+		NextInterval,
+		false // 반복 안 함 (매번 새로 스케줄링)
+	);
 
 	if (bShowDebugInfo)
 	{
-		UE_LOG(LogTemp, Error, TEXT("💥 Solar Wind Impact!"));
+		//UE_LOG(LogTemp, Warning, TEXT("✅ Next solar wind event scheduled in %.1f seconds (%.1f minutes)"),
+		//	NextInterval, NextInterval / 60.0f);
 	}
 }
 
 void ASolarWindManager::ApplyCameraShake()
 {
-	UE_LOG(LogTemp, Warning, TEXT("====== ApplyCameraShake() Called ======"));
+	//UE_LOG(LogTemp, Warning, TEXT("====== ApplyCameraShake() Called ======"));
 
 	if (!CameraShakeClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ Camera Shake Class not set in Solar Wind Manager!"));
+		//UE_LOG(LogTemp, Error, TEXT("❌ Camera Shake Class not set in Solar Wind Manager!"));
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("✅ Camera Shake Class is set: %s"), *CameraShakeClass->GetName());
+	//UE_LOG(LogTemp, Warning, TEXT("✅ Camera Shake Class is set: %s"), *CameraShakeClass->GetName());
 
 	// 이전 셰이크 정리
 	CleanupActiveCameraShakes();
@@ -198,11 +210,11 @@ void ASolarWindManager::ApplyCameraShake()
 	UWorld* World = GetWorld();
 	if (!World)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ World is NULL!"));
+		//UE_LOG(LogTemp, Error, TEXT("❌ World is NULL!"));
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("✅ World found: %s"), *World->GetName());
+	//UE_LOG(LogTemp, Warning, TEXT("✅ World found: %s"), *World->GetName());
 
 	int32 PlayerControllerCount = 0;
 	int32 SuccessfulShakeCount = 0;
@@ -212,14 +224,14 @@ void ASolarWindManager::ApplyCameraShake()
 		PlayerControllerCount++;
 		APlayerController* PC = It->Get();
 
-		UE_LOG(LogTemp, Warning, TEXT("  [%d] Found PlayerController: %s"), PlayerControllerCount, PC ? *PC->GetName() : TEXT("NULL"));
+		//UE_LOG(LogTemp, Warning, TEXT("  [%d] Found PlayerController: %s"), PlayerControllerCount, PC ? *PC->GetName() : TEXT("NULL"));
 
 		if (PC)
 		{
 			if (PC->PlayerCameraManager)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("  ✅ PlayerCameraManager found for %s"), *PC->GetName());
-				UE_LOG(LogTemp, Warning, TEXT("  Attempting to start camera shake with Intensity: %.2f"), ShakeIntensity);
+				//UE_LOG(LogTemp, Warning, TEXT("  ✅ PlayerCameraManager found for %s"), *PC->GetName());
+				//UE_LOG(LogTemp, Warning, TEXT("  Attempting to start camera shake with Intensity: %.2f"), ShakeIntensity);
 
 				UCameraShakeBase* ShakeInstance = PC->PlayerCameraManager->StartCameraShake(
 					CameraShakeClass,
@@ -230,37 +242,37 @@ void ASolarWindManager::ApplyCameraShake()
 				{
 					SuccessfulShakeCount++;
 					ActiveCameraShakes.Add(ShakeInstance);
-					UE_LOG(LogTemp, Warning, TEXT("  ✅✅ Camera Shake Instance Created: %s"), *ShakeInstance->GetName());
+					//UE_LOG(LogTemp, Warning, TEXT("  ✅✅ Camera Shake Instance Created: %s"), *ShakeInstance->GetName());
 				}
 				else
 				{
-					UE_LOG(LogTemp, Error, TEXT("  ❌ StartCameraShake returned NULL!"));
+					//UE_LOG(LogTemp, Error, TEXT("  ❌ StartCameraShake returned NULL!"));
 				}
 			}
 			else
 			{
-				UE_LOG(LogTemp, Error, TEXT("  ❌ PlayerCameraManager is NULL for %s"), *PC->GetName());
+				//UE_LOG(LogTemp, Error, TEXT("  ❌ PlayerCameraManager is NULL for %s"), *PC->GetName());
 			}
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("📊 Summary: %d Player Controllers found, %d Shake Instances created"),
-		PlayerControllerCount, SuccessfulShakeCount);
+	//UE_LOG(LogTemp, Warning, TEXT("📊 Summary: %d Player Controllers found, %d Shake Instances created"),
+	//	PlayerControllerCount, SuccessfulShakeCount);
 
 	if (SuccessfulShakeCount > 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("📹 Camera Shake applied to %d players (Intensity: %.2f)"),
-			SuccessfulShakeCount, ShakeIntensity);
+		//UE_LOG(LogTemp, Warning, TEXT("📹 Camera Shake applied to %d players (Intensity: %.2f)"),
+		//	SuccessfulShakeCount, ShakeIntensity);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ NO CAMERA SHAKES WERE APPLIED!"));
+		//UE_LOG(LogTemp, Error, TEXT("❌ NO CAMERA SHAKES WERE APPLIED!"));
 	}
 
 	// ShakeDuration 후 셰이크 중지
 	if (ShakeDuration > 0.0f)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⏰ Scheduling shake stop in %.2f seconds"), ShakeDuration);
+		//UE_LOG(LogTemp, Warning, TEXT("⏰ Scheduling shake stop in %.2f seconds"), ShakeDuration);
 		GetWorldTimerManager().SetTimer(
 			ShakeTimerHandle,
 			this,
@@ -270,7 +282,7 @@ void ASolarWindManager::ApplyCameraShake()
 		);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("====== ApplyCameraShake() End ======\n"));
+	//UE_LOG(LogTemp, Warning, TEXT("====== ApplyCameraShake() End ======\n"));
 }
 
 void ASolarWindManager::StopCameraShake()
@@ -279,7 +291,7 @@ void ASolarWindManager::StopCameraShake()
 
 	if (bShowDebugInfo)
 	{
-		UE_LOG(LogTemp, Log, TEXT("📹 Camera Shake stopped"));
+		//UE_LOG(LogTemp, Log, TEXT("📹 Camera Shake stopped"));
 	}
 }
 
@@ -314,13 +326,13 @@ void ASolarWindManager::CleanupActiveCameraShakes()
 
 void ASolarWindManager::TriggerSolarWindManually()
 {
-	UE_LOG(LogTemp, Error, TEXT("========================================"));
-	UE_LOG(LogTemp, Error, TEXT("🔧 MANUAL SOLAR WIND TRIGGER CALLED"));
-	UE_LOG(LogTemp, Error, TEXT("========================================"));
+	//UE_LOG(LogTemp, Error, TEXT("========================================"));
+	//UE_LOG(LogTemp, Error, TEXT("🔧 MANUAL SOLAR WIND TRIGGER CALLED"));
+	//UE_LOG(LogTemp, Error, TEXT("========================================"));
 
 	if (bShowDebugInfo)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Debug Info is ON"));
+		//UE_LOG(LogTemp, Warning, TEXT("Debug Info is ON"));
 	}
 
 	StartSolarWindEvent();
@@ -328,9 +340,9 @@ void ASolarWindManager::TriggerSolarWindManually()
 
 void ASolarWindManager::TestCameraShakeImmediately()
 {
-	UE_LOG(LogTemp, Error, TEXT("========================================"));
-	UE_LOG(LogTemp, Error, TEXT("🧪 IMMEDIATE CAMERA SHAKE TEST"));
-	UE_LOG(LogTemp, Error, TEXT("========================================"));
+	//UE_LOG(LogTemp, Error, TEXT("========================================"));
+	//UE_LOG(LogTemp, Error, TEXT("🧪 IMMEDIATE CAMERA SHAKE TEST"));
+	//UE_LOG(LogTemp, Error, TEXT("========================================"));
 
 	ApplyCameraShake();
 }
