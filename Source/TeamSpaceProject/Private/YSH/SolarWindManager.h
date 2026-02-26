@@ -6,12 +6,10 @@
 #include "GameFramework/Actor.h"
 #include "SolarWindManager.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSolarWindWarning, float, TimeUntilImpact);
+// 델리게이트 선언
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSolarWindWarning, float, WarningDuration);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSolarWindImpact);
 
-/**
- * 태양풍 월드 이벤트를 관리하는 클래스
- */
 UCLASS()
 class TEAMSPACEPROJECT_API ASolarWindManager : public AActor
 {
@@ -20,67 +18,57 @@ class TEAMSPACEPROJECT_API ASolarWindManager : public AActor
 public:
 	ASolarWindManager();
 
-protected:
-	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
-public:
-	virtual void Tick(float DeltaTime) override;
-
-	// ========== 태양풍 설정 ==========
-
-	/** 즉시 카메라 셰이크 테스트 (경고 없이 바로 실행) */
-	UFUNCTION(BlueprintCallable, Category = "Solar Wind|Debug")
-	void TestCameraShakeImmediately();
-
-	/** 태양풍 발생 주기 (초) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Settings")
-	float SolarWindInterval = 180.0f; // 3분마다
-
-	/** 경보 후 실제 충격까지의 시간 (초) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Settings")
-	float WarningDuration = 10.0f;
-
-	/** 카메라 셰이크 지속 시간 (초) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Settings")
-	float ShakeDuration = 3.0f;
-
-	/** 카메라 셰이크 강도 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Settings")
-	float ShakeIntensity = 1.0f;
-
-	// ========== 이벤트 델리게이트 ==========
-
-	/** 경보 발생 시 브로드캐스트 (UI에서 구독) */
-	UPROPERTY(BlueprintAssignable, Category = "Solar Wind|Events")
+	// 델리게이트
+	UPROPERTY(BlueprintAssignable, Category = "Solar Wind")
 	FOnSolarWindWarning OnSolarWindWarning;
 
-	/** 태양풍 충격 발생 시 브로드캐스트 */
-	UPROPERTY(BlueprintAssignable, Category = "Solar Wind|Events")
+	UPROPERTY(BlueprintAssignable, Category = "Solar Wind")
 	FOnSolarWindImpact OnSolarWindImpact;
 
-	// ========== 카메라 셰이크 ==========
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Timing")
+	float InitialDelay = 180.0f; // 게임 시작 후 첫 이벤트까지 시간
 
-	/** 카메라 셰이크 클래스 (블루프린트에서 설정) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Effects")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Timing")
+	float CooldownDuration = 180.0f; // 이벤트 후 금지 시간
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Timing")
+	float MinRandomInterval = 60.0f; // 최소 랜덤 간격
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Timing")
+	float MaxRandomInterval = 300.0f; // 최대 랜덤 간격
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Warning")
+	float WarningDuration = 5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Camera")
 	TSubclassOf<class UCameraShakeBase> CameraShakeClass;
 
-	/** 경보 사운드 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Effects")
-	class USoundBase* WarningSoundCue;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Camera")
+	float ShakeIntensity = 1.0f;
 
-	/** 충격 사운드 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Effects")
-	class USoundBase* ImpactSoundCue;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Camera")
+	float ShakeDuration = 3.0f;
 
-	// ========== 디버그 ==========
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Audio")
+	class USoundCue* WarningSoundCue;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Audio")
+	class USoundCue* ImpactSoundCue;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Wind|Debug")
 	bool bShowDebugInfo = true;
 
-	/** 수동으로 태양풍 트리거 (테스트용) */
+	// 수동 트리거 함수들
 	UFUNCTION(BlueprintCallable, Category = "Solar Wind")
 	void TriggerSolarWindManually();
+
+	UFUNCTION(BlueprintCallable, Category = "Solar Wind")
+	void TestCameraShakeImmediately();
+
+protected:
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void Tick(float DeltaTime) override;
 
 private:
 	// 타이머 핸들
@@ -88,18 +76,24 @@ private:
 	FTimerHandle WarningTimerHandle;
 	FTimerHandle ShakeTimerHandle;
 
-	// 현재 경보 남은 시간
-	float CurrentWarningTime;
+	// 경보 상태
 	bool bIsWarningActive;
+	float CurrentWarningTime;
 
-	// 활성화된 카메라 셰이크 인스턴스 저장
+	// 카메라 셰이크 추적
 	TArray<TWeakObjectPtr<class UCameraShakeBase>> ActiveCameraShakes;
 
-	// 태양풍 이벤트 함수
+	// 내부 함수들
 	void StartSolarWindEvent();
 	void TriggerSolarWindWarning();
 	void TriggerSolarWindImpact();
 	void ApplyCameraShake();
 	void StopCameraShake();
 	void CleanupActiveCameraShakes();
+
+	// 다음 이벤트 스케줄링
+	void ScheduleNextEvent();
+
+	// 첫 이벤트 여부 추적
+	bool bIsFirstEvent = true;
 };
