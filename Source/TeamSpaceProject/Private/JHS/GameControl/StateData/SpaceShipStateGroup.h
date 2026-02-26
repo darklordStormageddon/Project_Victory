@@ -71,7 +71,7 @@ public:
 
 #pragma region Radiation
 public:
-	bool TryGetRadiationData(FMaxCurrentData*& OutRadiationData);
+	bool TryGetRadiationData(FPurchaseData*& OutRadiationData);
 #pragma endregion Radiation
 
 private:

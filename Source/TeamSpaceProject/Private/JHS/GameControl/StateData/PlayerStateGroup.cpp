@@ -56,14 +56,14 @@ void UPlayerStateGroup::UpdatePlayerRadiation()
 	if (_spaceShipStateGroup == nullptr)
 		return;
 
-	FMaxCurrentData* _outRadiationData = nullptr;
+	FPurchaseData* _outRadiationData = nullptr;
 	if (!_spaceShipStateGroup->TryGetRadiationData(_outRadiationData))
 		return;
 
 	for (auto& _playerStateData : _playerStateMap)
 	{
-		_playerStateData.Value.Radiation.MaxValue = _outRadiationData->MaxValue;
-		_playerStateData.Value.Radiation.CurrentValue = _playerStateData.Value.Radiation.MaxValue;
+		_playerStateData.Value.Radiation.MaxValue = _outRadiationData->Value.MaxValue;
+		_playerStateData.Value.Radiation.CurrentValue = 0.0f;
 	}
 }
 

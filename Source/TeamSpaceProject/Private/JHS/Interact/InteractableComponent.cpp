@@ -97,8 +97,6 @@ void UInteractableComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void UInteractableComponent::OnTriggerEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Interactable Enter"));
-
 	if (OtherActor == nullptr)
 		return;
 
