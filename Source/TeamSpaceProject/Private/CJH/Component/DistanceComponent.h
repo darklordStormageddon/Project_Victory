@@ -46,6 +46,8 @@ private:
 
 	double LastDistance = 0.0;
 
+	bool bDamageEnabled = false;
+
 	UEventManager* EventManager = nullptr;
 
 	FDelegateHandle OnStartStageHandle;
