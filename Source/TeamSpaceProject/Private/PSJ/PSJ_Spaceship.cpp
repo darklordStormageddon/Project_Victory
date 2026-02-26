@@ -5,16 +5,12 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
-
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "KSM/HealthComponent.h"
-
 #include "Components/CapsuleComponent.h"
-
 #include "CJH/Component/DistanceComponent.h"
-
 #include "JHS/SpaceObject/DriveSeatRader.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -64,7 +60,7 @@ bool APSJ_Spaceship::Server_ThrustForward_Validate(float Value) { return true; }
 
 void APSJ_Spaceship::Server_ThrustForward_Implementation(float Value)
 {
-	if (ShipRootComponent)
+	if (!TryMove()) return;
 		ShipRootComponent->AddForce(GetActorForwardVector() * ThrustSpeed * Value, NAME_None, true);
 }
 
@@ -77,7 +73,7 @@ bool APSJ_Spaceship::Server_ThrustBackward_Validate(float Value) { return true; 
 
 void APSJ_Spaceship::Server_ThrustBackward_Implementation(float Value)
 {
-	if (ShipRootComponent)
+	if (!TryMove()) return;
 		ShipRootComponent->AddForce(GetActorForwardVector() * -ThrustSpeed * Value, NAME_None, true);
 }
 
@@ -90,12 +86,11 @@ bool APSJ_Spaceship::Server_MoveAxes_Validate(FVector2D Value) { return true; }
 
 void APSJ_Spaceship::Server_MoveAxes_Implementation(FVector2D Value)
 {
-	if (ShipRootComponent)
-	{
-		FVector RightForce = GetActorRightVector() * Value.X * ThrustSpeed * 0.5f;
-		FVector UpForce = GetActorUpVector() * Value.Y * ThrustSpeed * 0.5f;
-		ShipRootComponent->AddForce(RightForce + UpForce, NAME_None, true);
-	}
+	if (!TryMove()) return;
+
+	FVector RightForce = GetActorRightVector() * Value.X * ThrustSpeed * 0.5f;
+	FVector UpForce = GetActorUpVector() * Value.Y * ThrustSpeed * 0.5f;
+	ShipRootComponent->AddForce(RightForce + UpForce, NAME_None, true);
 }
 
 void APSJ_Spaceship::Input_MoveUp(const FInputActionValue& Value)
@@ -107,11 +102,9 @@ bool APSJ_Spaceship::Server_MoveUp_Validate(float Value) { return true; }
 
 void APSJ_Spaceship::Server_MoveUp_Implementation(float Value)
 {
-	if (ShipRootComponent)
-	{
-		FVector UpForce = GetActorUpVector() * Value * ThrustSpeed * 0.5f;
-		ShipRootComponent->AddForce(UpForce, NAME_None, true);
-	}
+	if (!TryMove()) return;
+	FVector UpForce = GetActorUpVector() * Value * ThrustSpeed * 0.5f;
+	ShipRootComponent->AddForce(UpForce, NAME_None, true);
 }
 
 void APSJ_Spaceship::Input_Roll(const FInputActionValue& Value)
@@ -137,6 +130,8 @@ void APSJ_Spaceship::Server_MouseLook_Implementation(FVector2D Value)
 {
 	AddActorLocalRotation(FRotator(Value.Y * -1.0f, Value.X, 0.0f));
 }
+
+
 
 void APSJ_Spaceship::BeginPlay()
 {
@@ -208,6 +203,11 @@ void APSJ_Spaceship::BeginPlay()
 		DistanceComp->OnDistanceDamaged.AddDynamic(this, &APSJ_Spaceship::OverDistanceDamageCheck);
 	else
 		UE_LOG(LogTemp, Warning, TEXT("Warning: Distance Component not found in BP"));
+}
+
+bool APSJ_Spaceship::TryMove()
+{
+	return GetSpaceShipStateGroup()->TryConsumeFuel();
 }
 
 void APSJ_Spaceship::Tick(float DeltaTime)

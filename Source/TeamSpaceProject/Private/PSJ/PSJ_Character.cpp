@@ -450,6 +450,11 @@ void APSJ_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		}
 
 
+		if (WheelAction)
+		{
+			EnhancedInputComponent->BindAction(WheelAction, ETriggerEvent::Triggered, this, &APSJ_Character::Wheel);
+		}
+
 		if (LookAction)
 		{
 			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APSJ_Character::Look);
@@ -507,7 +512,6 @@ void APSJ_Character::InteractEnter(const FInputActionValue& Value)
 		if (bSuccess)
 		{
 			// 상호작용 성공 시 처리
-			UE_LOG(LogTemp, Log, TEXT("Interact Success! Interrupt: %d, Enter: %d"), bOutIsInterrupt, bOutIsInteractEnter);
 		}
 	}
 }
@@ -565,6 +569,16 @@ void APSJ_Character::Look(const FInputActionValue& Value)
 		float NewPitch = CurrentCamRot.Pitch + (LookAxisVector.Y * -1.0f);
 		NewPitch = FMath::Clamp(NewPitch, -80.0f, 80.0f);
 		FPSCamera->SetRelativeRotation(FRotator(NewPitch, 0.0f, 0.0f));
+	}
+}
+
+void APSJ_Character::Wheel(const FInputActionValue& Value)
+{
+	float WheelValue = Value.Get<float>();
+
+	if (WheelValue != 0.0f)
+	{
+
 	}
 }
 
