@@ -48,19 +48,13 @@ void USpaceShipStateGroup::InitializeSpaceShipState(TObjectPtr<AJHSGameState> Ga
 void USpaceShipStateGroup::UpdateSpaceShipState()
 {
 	FSpaceShipData* _outSpaceShipData = nullptr;
-	if (TryGetSpaceShipData(E_SPACE_SHIP_DATA_TYPE::Shield, _outSpaceShipData))
+	for (int32 i = 0; i < (int32)E_SPACE_SHIP_DATA_TYPE::NONE; i++)
 	{
-		ChangCurrentData(_outSpaceShipData, _outSpaceShipData->Data.Value.CurrentValue);
-	}
-
-	if (TryGetSpaceShipData(E_SPACE_SHIP_DATA_TYPE::HP, _outSpaceShipData))
-	{
-		ChangCurrentData(_outSpaceShipData, _outSpaceShipData->Data.Value.CurrentValue);
-	}
-
-	if (TryGetSpaceShipData(E_SPACE_SHIP_DATA_TYPE::Fuel, _outSpaceShipData))
-	{
-		ChangCurrentData(_outSpaceShipData, _outSpaceShipData->Data.Value.CurrentValue);
+		E_SPACE_SHIP_DATA_TYPE _dataType = (E_SPACE_SHIP_DATA_TYPE)i;
+		if (TryGetSpaceShipData(_dataType, _outSpaceShipData))
+		{
+			ChangCurrentData(_outSpaceShipData, _outSpaceShipData->Data.Value.CurrentValue);
+		}
 	}
 }
 
@@ -309,7 +303,7 @@ void USpaceShipStateGroup::ExecuteEventSpaceShipData(FSpaceShipData SpaceShipDat
 		return;
 	}
 
-	_event->SpaceShipDataData = SpaceShipData;
+	_event->SpaceShipData = SpaceShipData;
 	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangeSpaceShipData>(_event);
 }
 

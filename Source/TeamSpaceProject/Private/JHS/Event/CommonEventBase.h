@@ -76,7 +76,7 @@ public:
 	{}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|SpaceShipData")
-	FSpaceShipData SpaceShipDataData;
+	FSpaceShipData SpaceShipData;
 };
 #pragma endregion SpaceShip
 

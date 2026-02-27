@@ -38,7 +38,7 @@ void UUIPanelDriveSeat::OnChangeSpaceShipData(UEventOnChangeSpaceShipData* Event
 	if (Event == nullptr)
 		return;
 
-	FSpaceShipData _maxCurrentData = Event->SpaceShipDataData;
+	FSpaceShipData _maxCurrentData = Event->SpaceShipData;
 	FMaxCurrentData _value = _maxCurrentData.Data.Value;
 
 	switch (_maxCurrentData.DataType)
