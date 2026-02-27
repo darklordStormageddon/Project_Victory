@@ -48,7 +48,6 @@ public:
 	void UpdateDurability();
 
 	virtual void Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot) override;
-	virtual void Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot) override;
 
 public:
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)

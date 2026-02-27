@@ -284,6 +284,7 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 	{
 		bFoundValidFloor = true;
 	}
+
 	else
 	{
 		bHit = GetWorld()->SweepSingleByChannel(Hit, Start, End, ShapeRotation, ECC_Visibility, CapsuleShape, Params);
@@ -291,13 +292,19 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		if (bHit && Hit.GetActor())
 		{
 			if (Hit.GetActor()->ActorHasTag(TEXT("Stairs")))
-			{
-				bFoundValidFloor = true;
-			}
-			else
-			{
-				bFoundValidFloor = false;
-			}
+			
+				if (Hit.GetActor()->IsA(APSJ_Character::StaticClass()))
+				{
+					bFoundValidFloor = false;
+				}
+				else if (Hit.GetActor()->ActorHasTag(TEXT("Stairs")))
+				{
+					bFoundValidFloor = true;
+				}
+				else
+				{
+					bFoundValidFloor = false;
+				}
 		}
 	}
 
