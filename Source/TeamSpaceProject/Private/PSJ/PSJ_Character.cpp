@@ -7,7 +7,6 @@
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
-#include "JHS/Interact/InteracterComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -622,7 +621,8 @@ void APSJ_Character::Server_RequestBoarding_Implementation(ATaskPawnBase* TaskPa
 	{
 		TaskPawn->SetPilot(this);
 		PC->Possess(TaskPawn);
-		TaskPawn->Client_BoardingSuccess();
+		// 수정: Client_BoardingSuccess에 본인(Character)을 인자로 전달
+		TaskPawn->Client_BoardingSuccess(this);
 	}
 }
 

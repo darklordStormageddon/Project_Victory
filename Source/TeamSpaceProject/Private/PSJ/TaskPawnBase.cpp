@@ -5,6 +5,7 @@
 #include "JHS/Interact/InteractableActorBase.h"
 #include "Components/ArrowComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "PSJ/TaskChair.h"
 
 ATaskPawnBase::ATaskPawnBase()
@@ -16,15 +17,6 @@ ATaskPawnBase::ATaskPawnBase()
 void ATaskPawnBase::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// 우주선에서 했던 것처럼, 블루프린트에 추가된 Arrow를 자동으로 찾습니다.
-	TArray<UArrowComponent*> Arrows;
-	GetComponents(Arrows);
-	for (UArrowComponent* Arrow : Arrows)
-	{
-		if (Arrow->GetName().Contains(TEXT("Ride"))) RidePoint = Arrow;
-		if (Arrow->GetName().Contains(TEXT("Arrow"))) ExitPoint = Arrow;
-	}
 
 	UEventManager* _eventManager = nullptr;
 	if (!UStaticFunctionLibrary::TryGetEventManager(_eventManager) || _eventManager == nullptr)
@@ -41,15 +33,53 @@ void ATaskPawnBase::BeginPlay()
 void ATaskPawnBase::SetPilot(ACharacter* Character)
 {
 	CurrentPilot = Cast<APSJ_Character>(Character);
-	if (CurrentPilot && RidePoint)
+
+	if (CurrentPilot)
 	{
-		CurrentPilot->SetActorEnableCollision(false);
-		CurrentPilot->AttachToComponent(RidePoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-		if (auto* CMC = CurrentPilot->GetCharacterMovement())
+		// 1. 나를 가리키는 의자(TaskChair) 찾기 (이 작업은 즉시 수행)
+		ATaskChair* FoundChair = Cast<ATaskChair>(LinkedSeat);
+		if (!FoundChair)
 		{
-			CMC->StopMovementImmediately();
-			CMC->DisableMovement();
+			TArray<AActor*> AllChairs;
+			UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATaskChair::StaticClass(), AllChairs);
+			for (AActor* Actor : AllChairs)
+			{
+				ATaskChair* Chair = Cast<ATaskChair>(Actor);
+				if (Chair && Chair->GetTargetTaskPawn() == this)
+				{
+					FoundChair = Chair;
+					break;
+				}
+			}
 		}
+
+		// 안전한 지연 실행을 위한 약참조(Weak Pointer) 설정
+		TWeakObjectPtr<ATaskPawnBase> WeakThis(this);
+		TWeakObjectPtr<APSJ_Character> WeakPilot(CurrentPilot);
+		TWeakObjectPtr<ATaskChair> WeakChair(FoundChair);
+
+		// 2. 물리 충돌 변경 및 이동 로직을 다음 프레임(Next Tick)으로 지연!
+		GetWorld()->GetTimerManager().SetTimerForNextTick([WeakThis, WeakPilot, WeakChair]()
+			{
+				if (WeakThis.IsValid() && WeakPilot.IsValid())
+				{
+					// 캐릭터 위치 이동
+					if (WeakChair.IsValid())
+					{
+						WeakPilot->SetActorLocationAndRotation(WeakChair->GetActorLocation(), WeakChair->GetActorRotation());
+					}
+
+					// 부착 및 충돌 해제
+					WeakPilot->AttachToActor(WeakThis.Get(), FAttachmentTransformRules::KeepWorldTransform);
+					WeakPilot->SetActorEnableCollision(false);
+
+					if (auto* CMC = WeakPilot->GetCharacterMovement())
+					{
+						CMC->StopMovementImmediately();
+						CMC->DisableMovement();
+					}
+				}
+			});
 	}
 }
 
@@ -72,44 +102,51 @@ void ATaskPawnBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 void ATaskPawnBase::DisembarkCharacter()
 {
-	if (!CurrentPilot) return; // 여기 파일럿이 없으면 return 예외처리관련
+	if (!CurrentPilot) return; // 파일럿이 없으면 return 예외처리
 
-    CurrentPilot->TryUnboard(); // 하차 시 입력이 즉시 복구되도록 함 (캐릭터가 좌표 이동 중에도 입력이 막히지 않도록)
+	CurrentPilot->TryUnboard(); // 하차 시 입력이 즉시 복구되도록 함
 
 	APSJ_Character* ExitingChar = CurrentPilot;
 	AController* ShipController = GetController();
 
 	CurrentPilot = nullptr;
 
+	FVector SpawnLoc = GetActorLocation();
+	FRotator SpawnRot = GetActorRotation();
 
-	//if (LinkedSeat)
-	//{
-	//	APlayerController* _callerPC = ExitingChar ? Cast<APlayerController>(ExitingChar->GetController()) : nullptr;
-	//	APlayerState* _callerPS = _callerPC ? _callerPC->GetPlayerState<APlayerState>() : nullptr;
-	//	int32 _callerPlayerId = _callerPS ? _callerPS->GetPlayerId() : -1;
+	ATaskChair* FoundChair = Cast<ATaskChair>(LinkedSeat);
 
-	//	if (ATaskChair* Chair = Cast<ATaskChair>(LinkedSeat))
-	//	{
-	//		Chair->OnInteractExit(_callerPlayerId, nullptr);
-	//	}
-	//	LinkedSeat = nullptr; 
-	//}
+	if (!FoundChair)
+	{
+		TArray<AActor*> AllChairs;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATaskChair::StaticClass(), AllChairs);
 
+		for (AActor* Actor : AllChairs)
+		{
+			ATaskChair* Chair = Cast<ATaskChair>(Actor);
 
-	FVector SpawnLoc = ExitPoint ? ExitPoint->GetComponentLocation() : (RidePoint ? RidePoint->GetComponentLocation() : GetActorLocation());
-	FRotator SpawnRot = ExitPoint ? ExitPoint->GetComponentRotation() : (RidePoint ? RidePoint->GetComponentRotation() : GetActorRotation());
+			if (Chair && Chair->GetTargetTaskPawn() == this)
+			{
+				FoundChair = Chair;
+				break;
+			}
+		}
+	}
 
-	// 1. 하차 위치 설정 및 우주선에 다시 부착
+	// 의자의 오프셋을 기준으로 하차 위치 계산
+	if (FoundChair)
+	{
+		SpawnLoc = GetActorTransform().TransformPosition(FoundChair->SeatDisembarkOffset);
+	}
+
 	ExitingChar->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	ExitingChar->SetActorLocationAndRotation(SpawnLoc, SpawnRot, false, nullptr, ETeleportType::TeleportPhysics);
-	ExitingChar->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 
 	ExitingChar->GetCharacterMovement()->SetMovementMode(MOVE_Custom);
-	ExitingChar->SetReplicateMovement(false);
+	ExitingChar->SetReplicateMovement(true);
 
-	// 2. [중요] 캐릭터 데이터 동기화 및 '하차 유예 상태' 시작
 	ExitingChar->SetBaseActorData(this);
-	ExitingChar->StartDisembarkState(); // 클라이언트가 좌표를 덮어쓰지 못하게 보호함
+	ExitingChar->StartDisembarkState();
 
 	ExitingChar->SetActorEnableCollision(true);
 	ExitingChar->SetActorHiddenInGame(false);
@@ -156,7 +193,24 @@ void ATaskPawnBase::Client_DisembarkSuccess_Implementation(APSJ_Character* Exiti
 	ExitingPilot->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 	ExitingPilot->StartDisembarkState();
 	ExitingPilot->SetBaseActorData(this);
-	ExitingPilot->ForceInputRecovery();
+
+	// Next Tick을 활용한 안전한 입력 복구 지연
+	TWeakObjectPtr<APSJ_Character> WeakPilot(ExitingPilot);
+
+	GetWorld()->GetTimerManager().SetTimerForNextTick([WeakPilot]()
+		{
+			if (WeakPilot.IsValid())
+			{
+				if (WeakPilot->GetController())
+				{
+					WeakPilot->ForceInputRecovery();
+				}
+				else
+				{
+					WeakPilot->ForceInputRecovery();
+				}
+			}
+		});
 }
 
 void ATaskPawnBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
