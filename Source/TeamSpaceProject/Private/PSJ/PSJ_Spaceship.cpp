@@ -33,9 +33,9 @@ APSJ_Spaceship::APSJ_Spaceship()
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
-void APSJ_Spaceship::Client_BoardingSuccess_Implementation()
+void APSJ_Spaceship::Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot)
 {
-	Super::Client_BoardingSuccess_Implementation(); // 부모 로직 실행
+	Super::Client_BoardingSuccess_Implementation(BoardingPilot); // 부모 로직 실행
 
 	// 우주선 전용 조작키 설정
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))

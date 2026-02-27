@@ -97,7 +97,7 @@ protected:
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	virtual void Client_BoardingSuccess_Implementation() override;
+	virtual void Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot) override;
 
 public:
 	virtual void Tick(float DeltaTime) override;

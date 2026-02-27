@@ -68,9 +68,9 @@ void ACollectPanelBase::UpdateDurability_Implementation()
 		return;
 }
 
-void ACollectPanelBase::Client_BoardingSuccess_Implementation()
+void ACollectPanelBase::Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot)
 {
-	Super::Client_BoardingSuccess_Implementation();
+	Super::Client_BoardingSuccess_Implementation(BoardingPilot);
 
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{

@@ -83,7 +83,7 @@ void ATaskPawnBase::SetPilot(ACharacter* Character)
 	}
 }
 
-void ATaskPawnBase::Client_BoardingSuccess_Implementation()
+void ATaskPawnBase::Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot)
 {
 	// 부모 클래스에서는 기본적인 카메라 전환이나 공통 UI 처리 등을 할 수 있습니다.
 	// (특정 조작키 IMC 할당은 자식 클래스에서 오버라이드하여 수행합니다.)

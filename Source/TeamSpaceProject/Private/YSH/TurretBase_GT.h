@@ -52,7 +52,7 @@ public:
 	void SetPilot(APSJ_Character* NewPilot, ATaskChair* Chair);
 
 	// 오버라이드하게  수정
-	virtual void Client_BoardingSuccess_Implementation() override;
+	virtual void Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot) override;
 
 
 	// 오버라이드하게  수정

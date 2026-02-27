@@ -500,7 +500,7 @@ void ATurretBase_GT::SetPilot(APSJ_Character* NewPilot, ATaskChair* Chair)
 }
 
 // [신규] 클라이언트 탑승 성공 처리 (UI, IMC)
-void ATurretBase_GT::Client_BoardingSuccess_Implementation()
+void ATurretBase_GT::Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot)
 {
 	// 탑승 시 포탑 회전 초기화
 	if (YawPivot)
