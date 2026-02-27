@@ -96,14 +96,14 @@ void UEnemySpawnComponent::SpawnEnemies(const TArray<TSubclassOf<AEnemyBase>>& E
 
 void UEnemySpawnComponent::ClearSpawnedEnemies()
 {
-	for (AEnemyBase* Enemy : _spawnedEnemies)
+	TArray<AEnemyBase*> EnemiesToClear = _spawnedEnemies;
+	_spawnedEnemies.Empty();
+
+	for (AEnemyBase* Enemy : EnemiesToClear)
 	{
 		if (IsValid(Enemy))
 			Enemy->Destroy();
 	}
-
-	_spawnedEnemies.Empty();
-	_spawnedEnemies.Shrink();
 }
 
 void UEnemySpawnComponent::DeleteAllEnemy()
@@ -114,3 +114,4 @@ void UEnemySpawnComponent::DeleteAllEnemy()
 void UEnemySpawnComponent::OnEnemySpawned(AEnemyBase* NewEnemy)
 {
 }
+

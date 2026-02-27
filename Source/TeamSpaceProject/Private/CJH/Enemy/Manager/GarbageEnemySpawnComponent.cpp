@@ -295,17 +295,21 @@ void UGarbageEnemySpawnComponent::DeleteAllEnemy()
 
 	GetWorld()->GetTimerManager().ClearTimer(OrbitTimerHandle);
 
-	for (AEnemyBase* SpawnEnemy : GarbageEnemies)
+	TArray<AEnemyBase*> EnemiesToClear;
+	for (AGarbageEnemyBase* Enemy : GarbageEnemies)
+	{
+		EnemiesToClear.Add(Enemy);
+	}
+
+	GarbageEnemies.Empty();
+	JuniorEnemies.Empty();
+	OrbitData.Empty();
+
+	for (AEnemyBase* SpawnEnemy : EnemiesToClear)
 	{
 		if (!IsValid(SpawnEnemy))
 			continue;
 
 		SpawnEnemy->Destroy();
 	}
-
-	JuniorEnemies.Empty();
-	JuniorEnemies.Shrink();
-
-	GarbageEnemies.Empty();
-	GarbageEnemies.Shrink();
 }

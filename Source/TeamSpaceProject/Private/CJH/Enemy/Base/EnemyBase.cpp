@@ -203,13 +203,16 @@ void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (UWorld* World = GetWorld())
 		World->GetTimerManager().ClearAllTimersForObject(this);
 
-	UGarbageEnemySpawnComponent* GarbageComponent = Cast<UGarbageEnemySpawnComponent>(EnemyComponent);
-	UEnemySpawnComponent* SpawnComponent = Cast<UEnemySpawnComponent>(EnemyComponent);
+	if (IsValid(EnemyComponent))
+	{
+		UGarbageEnemySpawnComponent* GarbageComponent = Cast<UGarbageEnemySpawnComponent>(EnemyComponent);
+		UEnemySpawnComponent* SpawnComponent = Cast<UEnemySpawnComponent>(EnemyComponent);
 
-	if (GarbageComponent)
-		GarbageComponent->RemoveEnemies(this);
-	else if (SpawnComponent)
-		SpawnComponent->RemoveEnemies(this);
+		if (GarbageComponent)
+			GarbageComponent->RemoveEnemies(this);
+		else if (SpawnComponent)
+			SpawnComponent->RemoveEnemies(this);
+	}
 
 	USpaceManager* OutSpaceManager = nullptr;
 

@@ -79,6 +79,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Target")
 	AActor* Target = nullptr;
 
+	UPROPERTY()
 	UEnemySpawnComponent* EnemyComponent;
 
 private:

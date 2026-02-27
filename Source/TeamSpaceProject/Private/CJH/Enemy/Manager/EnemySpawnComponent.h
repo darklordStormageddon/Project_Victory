@@ -19,6 +19,7 @@ class UEnemySpawnComponent : public UActorComponent
 protected:
 	AActor* _owner = nullptr;
 
+	UPROPERTY()
 	TArray<AEnemyBase*> _spawnedEnemies;
 
 	UPROPERTY(EditDefaultsOnly, Category = "TargetShip")
