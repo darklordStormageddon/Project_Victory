@@ -136,7 +136,7 @@ void ATaskPawnBase::DisembarkCharacter()
 	// 의자의 오프셋을 기준으로 하차 위치 계산
 	if (FoundChair)
 	{
-		SpawnLoc = GetActorTransform().TransformPosition(FoundChair->SeatDisembarkOffset);
+		SpawnLoc = FoundChair->GetActorTransform().TransformPosition(FoundChair->SeatDisembarkOffset);
 	}
 
 	ExitingChar->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
@@ -145,7 +145,9 @@ void ATaskPawnBase::DisembarkCharacter()
 	ExitingChar->GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 	ExitingChar->SetReplicateMovement(true);
 
-	ExitingChar->SetBaseActorData(this);
+	//ExitingChar->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+
+	//ExitingChar->SetBaseActorData(this);
 	ExitingChar->StartDisembarkState();
 
 	ExitingChar->SetActorEnableCollision(true);
@@ -153,7 +155,10 @@ void ATaskPawnBase::DisembarkCharacter()
 
 	Client_DisembarkSuccess(ExitingChar, SpawnLoc, SpawnRot);
 
-	if (ShipController) ShipController->Possess(ExitingChar);
+	if (ShipController)
+	{
+		ShipController->Possess(ExitingChar);
+	}
 }
 
 void ATaskPawnBase::Input_Exit(const FInputActionValue& Value)
@@ -190,9 +195,9 @@ void ATaskPawnBase::Client_DisembarkSuccess_Implementation(APSJ_Character* Exiti
 	FVector SafeExitLoc = ExitLoc + GetActorUpVector() * 15.0f;
 	ExitingPilot->SetActorLocationAndRotation(SafeExitLoc, ExitRot, false, nullptr, ETeleportType::TeleportPhysics);
 
-	ExitingPilot->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+	//ExitingPilot->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 	ExitingPilot->StartDisembarkState();
-	ExitingPilot->SetBaseActorData(this);
+	//ExitingPilot->SetBaseActorData(this);
 
 	// Next Tick을 활용한 안전한 입력 복구 지연
 	TWeakObjectPtr<APSJ_Character> WeakPilot(ExitingPilot);
@@ -201,14 +206,7 @@ void ATaskPawnBase::Client_DisembarkSuccess_Implementation(APSJ_Character* Exiti
 		{
 			if (WeakPilot.IsValid())
 			{
-				if (WeakPilot->GetController())
-				{
-					WeakPilot->ForceInputRecovery();
-				}
-				else
-				{
-					WeakPilot->ForceInputRecovery();
-				}
+				WeakPilot->ForceInputRecovery();
 			}
 		});
 }
