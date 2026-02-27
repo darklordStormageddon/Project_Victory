@@ -26,15 +26,16 @@ private:
 	UPROPERTY()
 	TObjectPtr<AActor> _turret = nullptr;
 
-	UPROPERTY()
-	E_AMMO_TYPE _ammoType = E_AMMO_TYPE::NONE;
+	UPROPERTY(EditAnywhere, Category = "TurretStand")
+	E_AMMO_TYPE _standType = E_AMMO_TYPE::NONE;
 
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "TurretStand")
-	E_TURRET_POSITION _turretPosition = E_TURRET_POSITION::END;
+	UPROPERTY()
+	E_AMMO_TYPE _turretAmmoType = E_AMMO_TYPE::NONE;
 
 public:
-	E_TURRET_POSITION GetTurretPosition() { return _turretPosition; }
+	E_AMMO_TYPE GetStandType() { return _standType; }
+
+	E_AMMO_TYPE GetTurretType() { return _turretAmmoType; }
 
 protected:
 	// Called when the game starts or when spawned
@@ -47,11 +48,11 @@ public:
 public:
 	void InitializeTurretStand(TObjectPtr<UTurretStateGroup> TurretStateGroup);
 
+	void SetTurretType(E_AMMO_TYPE TurretAmmoType);
+
 	bool CanEquipTurret() const;
 
-	bool TryEquipTurret(TObjectPtr<AActor> Turret, E_AMMO_TYPE AmmoType);
-
-	E_AMMO_TYPE GetAmmoType();
+	bool TryEquipTurret(TObjectPtr<AActor> Turret);
 
 private:
 	void RemoveCurrentTurret();

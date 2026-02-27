@@ -44,11 +44,8 @@ public:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "Pilot")
 	APSJ_Character* CurrentPilot = nullptr;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Points")
-	UArrowComponent* RidePoint;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Points")
-	UArrowComponent* ExitPoint;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Points")
+	FVector DisembarkOffset = FVector(0.0f, 0.0f, 0.0f);
 
 	UPROPERTY(VisibleInstanceOnly, Category = "Connection")
 	AInteractableActorBase* LinkedSeat = nullptr;
@@ -56,9 +53,12 @@ public:
 public:
 	virtual void SetPilot(ACharacter* Character);
 
+	// TaskPawnBase.h 파일 내부
+
 	UFUNCTION(Client, Reliable)
-	void Client_BoardingSuccess();
-	virtual void Client_BoardingSuccess_Implementation();
+	void Client_BoardingSuccess(APSJ_Character* BoardingPilot);
+
+	virtual void Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot);
 
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	virtual void DisembarkCharacter();

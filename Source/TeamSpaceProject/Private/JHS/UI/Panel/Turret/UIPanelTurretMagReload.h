@@ -18,8 +18,6 @@ class UUIPanelTurretMagReload : public UUIBase
 private:
 	FDelegateHandle _eventHandleOnChangeTurret;
 
-	E_TURRET_POSITION _turretPosition;
-
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* TXT_TurretPosition;
 
@@ -37,5 +35,5 @@ protected:
 public:
 	void OnChangeTurret(UEventOnChangeTurretData* Event);
 
-	void InitializeMagReload(E_TURRET_POSITION TurretPosition);
+	void InitializeMagReload();
 };

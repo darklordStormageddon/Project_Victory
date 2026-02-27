@@ -9,6 +9,8 @@
 #include "JHS/Event/EventManager.h"
 #include "Engine/Engine.h"
 
+TWeakObjectPtr<AJHSPlayerController> UStaticFunctionLibrary::_cachedLocalPlayerController = nullptr;
+
 bool UStaticFunctionLibrary::TryGetGameMode(AJHSGameMode*& OutGameMode)
 {
 	UWorld* _world = nullptr;
@@ -57,20 +59,20 @@ bool UStaticFunctionLibrary::TryGetPlayerController(AJHSPlayerController*& OutPl
 
 int32 UStaticFunctionLibrary::GetAssignedPlayerId()
 {
-	AJHSPlayerController* _playerController = nullptr;
-	if (!TryGetPlayerController(_playerController))
+	AJHSPlayerController* _localController = nullptr;
+	if (!GetOrCacheLocalPlayerController(_localController))
 		return -1;
 
-	return _playerController->GetAssignedPlayerId();
+	return _localController->GetAssignedPlayerId();
 }
 
 bool UStaticFunctionLibrary::CheckIsSelfClient(int32 CallerAssignedPlayerId)
 {
-	AJHSPlayerController* _playerController = nullptr;
-	if (!TryGetPlayerController(_playerController))
+	AJHSPlayerController* _localController = nullptr;
+	if (!GetOrCacheLocalPlayerController(_localController))
 		return false;
 
-	return _playerController->GetAssignedPlayerId() == CallerAssignedPlayerId;
+	return _localController->GetAssignedPlayerId() == CallerAssignedPlayerId;
 }
 
 bool UStaticFunctionLibrary::TryGetGameState(AJHSGameState*& OutGameState)
@@ -153,6 +155,42 @@ float UStaticFunctionLibrary::GetDeltaTime()
 		return 0.0f;
 
 	return UGameplayStatics::GetWorldDeltaSeconds(_world);
+}
+
+bool UStaticFunctionLibrary::GetOrCacheLocalPlayerController(AJHSPlayerController*& OutController)
+{
+	UWorld* _world = nullptr;
+	if (!TryGetWorld(_world))
+		return false;
+
+	if (_world != nullptr && _cachedLocalPlayerController.IsValid() && _cachedLocalPlayerController->IsLocalPlayerController()
+		&& _cachedLocalPlayerController->GetWorld() == _world)
+	{
+		OutController = _cachedLocalPlayerController.Get();
+		return true;
+	}
+	_cachedLocalPlayerController.Reset();
+
+	APlayerController* _pc = nullptr;
+	for (FConstPlayerControllerIterator _it = _world->GetPlayerControllerIterator(); _it; ++_it)
+	{
+		APlayerController* _candidate = _it->Get();
+		if (_candidate != nullptr && _candidate->IsLocalPlayerController())
+		{
+			_pc = _candidate;
+			break;
+		}
+	}
+	if (_pc == nullptr)
+		return false;
+
+	AJHSPlayerController* _controller = Cast<AJHSPlayerController>(_pc);
+	if (_controller == nullptr)
+		return false;
+
+	_cachedLocalPlayerController = _controller;
+	OutController = _controller;
+	return true;
 }
 
 bool UStaticFunctionLibrary::TryGetWorld(UWorld*& OutWorld)

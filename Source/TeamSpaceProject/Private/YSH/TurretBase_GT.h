@@ -52,7 +52,7 @@ public:
 	void SetPilot(APSJ_Character* NewPilot, ATaskChair* Chair);
 
 	// 오버라이드하게  수정
-	virtual void Client_BoardingSuccess_Implementation() override;
+	virtual void Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot) override;
 
 
 	// 오버라이드하게  수정
@@ -68,10 +68,6 @@ public:
 
 	void AddYawInput(float YawInputDegPerSec, float DeltaTime);
 	void AddPitchInput(float PitchInputDegPerSec, float DeltaTime);
-
-	// 터렛 포지션 설정 (Main, Left, Right 중 하나)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Position")
-	E_TURRET_POSITION TurretPosition = E_TURRET_POSITION::Main;
 
 private:
 	UPROPERTY(VisibleAnywhere)

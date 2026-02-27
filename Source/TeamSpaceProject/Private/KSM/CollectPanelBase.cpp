@@ -68,9 +68,9 @@ void ACollectPanelBase::UpdateDurability_Implementation()
 		return;
 }
 
-void ACollectPanelBase::Client_BoardingSuccess_Implementation()
+void ACollectPanelBase::Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot)
 {
-	Super::Client_BoardingSuccess_Implementation();
+	Super::Client_BoardingSuccess_Implementation(BoardingPilot);
 
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
@@ -85,25 +85,4 @@ void ACollectPanelBase::Client_BoardingSuccess_Implementation()
 	}
 }
 
-void ACollectPanelBase::Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot)
-{
-	if (!ExitingPilot) return;
-
-	if (UCharacterMovementComponent* CMC = ExitingPilot->GetCharacterMovement())
-	{
-		CMC->StopMovementImmediately();
-		CMC->SetMovementMode(MOVE_Custom);
-	}
-
-	ExitingPilot->MoveIgnoreActorRemove(this);
-	this->MoveIgnoreActorRemove(ExitingPilot);
-
-	FVector SafeExitLoc = ExitLoc + GetActorUpVector() * 15.0f;
-	ExitingPilot->SetActorLocationAndRotation(SafeExitLoc, ExitRot, false, nullptr, ETeleportType::TeleportPhysics);
-
-	ExitingPilot->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-	ExitingPilot->StartDisembarkState();
-	ExitingPilot->SetBaseActorData(this);
-
-}
 

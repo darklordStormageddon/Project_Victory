@@ -67,10 +67,11 @@ ATurretBase_GT::ATurretBase_GT()
 	SpringArm->bInheritYaw = true;
 	SpringArm->bInheritRoll = true;
 
-	SpringArm->bEnableCameraLag = true;
-	SpringArm->CameraLagSpeed = 3.0f;
-	SpringArm->bEnableCameraRotationLag = true;
-	SpringArm->CameraRotationLagSpeed = 10.0f;
+	SpringArm->bEnableCameraLag = false;
+	SpringArm->bEnableCameraRotationLag = false;
+
+	// SpringArm->bUseCameraLagSubstepping = true;
+	// SpringArm->CameraLagMaxDistance = 0.0f;  // 최대 지연 거리를 0으로 설정
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
@@ -207,7 +208,7 @@ void ATurretBase_GT::Tick(float DeltaTime)
 		float CurrentFireCoolTime = 0.0f;
 		UTurretStateGroup* TurretStateGroup = _cachedGameState->GetTurretStateGroup();
 
-		if (TurretStateGroup && TurretStateGroup->TryGetTurretFireInterval(TurretPosition, &CurrentFireCoolTime))
+		if (TurretStateGroup && TurretStateGroup->TryGetTurretFireInterval(true, E_AMMO_TYPE::Bullet, &CurrentFireCoolTime))
 		{
 			float AdjustedFireCoolTime = CurrentFireCoolTime / FireRateMultiplier;
 
@@ -332,7 +333,7 @@ void ATurretBase_GT::TryFire()
 	}
 
 	// TryFireTurret으로 탄약 소비 및 발사 가능 여부 확인
-	if (!TurretStateGroup->TryFireTurret(TurretPosition))
+	if (!TurretStateGroup->TryFireTurret(true, E_AMMO_TYPE::Bullet))
 	{
 		// 발사 실패 (탄약 부족 등)
 		return;
@@ -499,8 +500,9 @@ void ATurretBase_GT::SetPilot(APSJ_Character* NewPilot, ATaskChair* Chair)
 }
 
 // [신규] 클라이언트 탑승 성공 처리 (UI, IMC)
-void ATurretBase_GT::Client_BoardingSuccess_Implementation()
+void ATurretBase_GT::Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot)
 {
+	Super::Client_BoardingSuccess_Implementation(BoardingPilot);
 	// 탑승 시 포탑 회전 초기화
 	if (YawPivot)
 	{
@@ -573,6 +575,7 @@ void ATurretBase_GT::DisembarkCharacter()
 // [신규] 클라이언트 하차 후처리
 void ATurretBase_GT::Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot)
 {
+
 	if (!ExitingPilot) return;
 
 	// 캐릭터의 입력 복구 함수 호출 (PSJ_Spaceship에 구현된 것과 동일한 원리)

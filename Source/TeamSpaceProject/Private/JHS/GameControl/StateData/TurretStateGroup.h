@@ -34,7 +34,10 @@ private:
 	TMap<E_AMMO_TYPE, FAmmoData> _ammoDataMap;
 
 	UPROPERTY()
-	TMap<E_TURRET_POSITION, TObjectPtr<ATurretStand>> _turretStandMap;
+	TMap<E_AMMO_TYPE, TObjectPtr<ATurretStand>> _turretStandMap;
+
+	UPROPERTY()
+	E_AMMO_TYPE _mainTurretType = E_AMMO_TYPE::NONE;
 
 	const int32 CONSUME_AMMO = -1;
 
@@ -58,44 +61,49 @@ public:
 
 	TArray<FPurchaseData*> GetTurretPurchaseDataArray();
 
+private:
+	TArray<FPurchaseData*> GetTurretPurchaseDataArray(bool IsMainTurret, E_AMMO_TYPE AmmoType);
+
+public:
 	TArray<FPurchaseData*> GetAmmoPurchaseDataArray();
 
-	void TryPurchaseTurret(bool IsMainPosition, E_AMMO_TYPE AmmoType, int32 FieldIndex);
+private:
+	void TryPurchaseTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType, int32 FieldIndex);
 
 	void TryPurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex);
 
-	void SetInfiniteMagMode(bool IsInfiniteMagMode);
+public:
+	void SetStartSettings(bool IsInfiniteMagMode, E_AMMO_TYPE MainTurretType, TArray<E_AMMO_TYPE> _startEquipAutoTurretArray);
 
-	void TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType);
+	bool TryGetTurretFireInterval(bool IsMainTurret, E_AMMO_TYPE AmmoType, float* OutFireCoolTime);
+
+	bool TryFireTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType);
+
+	bool TryReloadTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType);
+
+private:
+	void TryEquipTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType);
 
 	UFUNCTION(Server, Reliable)
-	void ServerEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType);
+	void ServerEquipTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType);
-
-	bool TryGetTurretFireInterval(E_TURRET_POSITION TurretPosition, float* OutFireCoolTime);
-
-	bool TryFireTurret(E_TURRET_POSITION TurretPosition);
-
-	bool TryReloadTurret(E_TURRET_POSITION TurretPosition);
+	void MulticastEquipTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType);
 
 private:
 	void LoadTurretDataTable();
 
 	int32 GetTurretKey(bool IsMainTurret, E_AMMO_TYPE AmmoType);
 
-	bool TryGetTurretData(bool ISMainPosition, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData);
-
-	bool TryGetTurretData(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData);
+	bool TryGetTurretData(bool IsMainTurret, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData);
 
 public:
 	bool TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutAmmoData);
 
 private:
-	bool TryGetTurretStand(E_TURRET_POSITION TurretPosition, TObjectPtr<ATurretStand>& OutTurretStand);
+	bool TryGetTurretStand(bool IsMainTurret, E_AMMO_TYPE AmmoType, TObjectPtr<ATurretStand>& OutTurretStand);
 
-	void ChangeTurretAmmo(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, int32 ChangeValue);
+	void ChangeTurretAmmo(bool IsMainTurret, E_AMMO_TYPE AmmoType, int32 ChangeValue);
 
-	void ExecuteTurretEvent(E_TURRET_POSITION TurretPosition, FTurretData TurretData);
+	void ExecuteTurretEvent(bool IsMainTurret, E_AMMO_TYPE AmmoType, FTurretData TurretData);
 };

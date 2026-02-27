@@ -45,6 +45,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_IsMalfunctioning, Category = "Malfunction")
 	bool bIsMalfunctioning = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+	FVector SeatDisembarkOffset = FVector(0.0f, 0.0f, 0.0f);
+
 	UFUNCTION()
 	void HandleSolarWindEvent();
 

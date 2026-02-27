@@ -7,7 +7,6 @@
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/GameControl/StateData/GameStateStructs.h"
-#include "JHS/Interact/InteracterComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -285,6 +284,7 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 	{
 		bFoundValidFloor = true;
 	}
+
 	else
 	{
 		bHit = GetWorld()->SweepSingleByChannel(Hit, Start, End, ShapeRotation, ECC_Visibility, CapsuleShape, Params);
@@ -292,13 +292,19 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		if (bHit && Hit.GetActor())
 		{
 			if (Hit.GetActor()->ActorHasTag(TEXT("Stairs")))
-			{
-				bFoundValidFloor = true;
-			}
-			else
-			{
-				bFoundValidFloor = false;
-			}
+			
+				if (Hit.GetActor()->IsA(APSJ_Character::StaticClass()))
+				{
+					bFoundValidFloor = false;
+				}
+				else if (Hit.GetActor()->ActorHasTag(TEXT("Stairs")))
+				{
+					bFoundValidFloor = true;
+				}
+				else
+				{
+					bFoundValidFloor = false;
+				}
 		}
 	}
 
@@ -622,7 +628,8 @@ void APSJ_Character::Server_RequestBoarding_Implementation(ATaskPawnBase* TaskPa
 	{
 		TaskPawn->SetPilot(this);
 		PC->Possess(TaskPawn);
-		TaskPawn->Client_BoardingSuccess();
+		// 수정: Client_BoardingSuccess에 본인(Character)을 인자로 전달
+		TaskPawn->Client_BoardingSuccess(this);
 	}
 }
 

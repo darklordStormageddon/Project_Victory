@@ -49,7 +49,7 @@ void UUIPanelShop::NativeOnInitialized()
 	// BTN_SaleElement
 	if (BTN_SaleElement != nullptr)
 	{
-		BTN_SaleElement->Clicked.AddDynamic(this, &UUIPanelShop::OnClickSaleElement);
+		BTN_SaleElement->ClickedEnter.AddDynamic(this, &UUIPanelShop::OnClickSaleElement);
 	}
 }
 

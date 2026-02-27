@@ -79,11 +79,11 @@ void UTurretStateGroup::InitializeTurretState(TObjectPtr<AJHSGameState> GameStat
 			continue;
 		}
 
-		_turretStandMap.Add(_turretStandActor->GetTurretPosition(), _turretStandActor);
+		_turretStandMap.Add(_turretStandActor->GetStandType(), _turretStandActor);
 		_turretStandActor->InitializeTurretStand(this);
 	}
 
-	if (_turretStandMap.Num() < (int32)E_TURRET_POSITION::END)
+	if (_turretStandMap.Num() < (int32)E_AMMO_TYPE::NONE + 1)
 	{
 		UE_LOG(LogTemp, Error, TEXT("TurretStateGroup: TurretStand not found. %d"), _turretStandMap.Num());
 	}
@@ -93,40 +93,76 @@ void UTurretStateGroup::UpdateTurretState()
 {
 	for (auto& _turretStand : _turretStandMap)
 	{
-		E_TURRET_POSITION _turretPosition = _turretStand.Value->GetTurretPosition();
-		E_AMMO_TYPE _ammoType = _turretStand.Value->GetAmmoType();
+		E_AMMO_TYPE _ammoType = _turretStand.Value->GetStandType();
+
+		FTurretData* _outTurretData = nullptr;
+		bool _isMain = _ammoType == E_AMMO_TYPE::NONE;
+		if (_isMain)
+		{
+			_ammoType = _turretStand.Value->GetTurretType();
+		}
+
 		if (_ammoType == E_AMMO_TYPE::NONE)
 			continue;
 
-		FTurretData* _outTurretData = nullptr;
-		if (!TryGetTurretData(_turretPosition, _ammoType, _outTurretData))
+		if (!TryGetTurretData(_isMain, _ammoType, _outTurretData))
 			continue;
 
-		ExecuteTurretEvent(_turretPosition, *_outTurretData);
+		ExecuteTurretEvent(_isMain, _ammoType, *_outTurretData);
 	}
 }
 
 TArray<FPurchaseData*> UTurretStateGroup::GetTurretPurchaseDataArray()
 {
 	TArray<FPurchaseData*> _purchaseDataArray;
-	for (int32 i = 1; i >= 0; i--)
+
+	// 메인 터렛
+	TArray<FPurchaseData*> _turretPurchaseDataArray = GetTurretPurchaseDataArray(true, _mainTurretType);
+	for (auto& _purchaseData : _turretPurchaseDataArray)
 	{
-		for (int32 j = 0; j < (int32)E_AMMO_TYPE::NONE; j++)
+		_purchaseDataArray.Add(_purchaseData);
+	}
+
+	// Auto
+	for (int32 i = 0; i < (int32)E_AMMO_TYPE::NONE; i++)
+	{
+		E_AMMO_TYPE _ammoType = (E_AMMO_TYPE)i;
+		_turretPurchaseDataArray = GetTurretPurchaseDataArray(false, _ammoType);
+		for (auto& _purchaseData : _turretPurchaseDataArray)
 		{
-			E_AMMO_TYPE _ammoType = (E_AMMO_TYPE)j;
-			bool _isMain = (bool)i;
-
-			FTurretData* _outTurretData = nullptr;
-			if (!TryGetTurretData(_isMain, _ammoType, _outTurretData))
-				continue;
-
-			for (int32 _fieldIndex = 0; _fieldIndex < 3; _fieldIndex++)
-			{
-				FPurchaseData *_data = _fieldIndex == 0 ? &_outTurretData->Price : (_fieldIndex == 1 ? &_outTurretData->Mag : &_outTurretData->FireInterval);
-				_data->OnPurchaseRequested.BindLambda([this, _isMain, _ammoType, _fieldIndex]() { TryPurchaseTurret(_isMain, _ammoType, _fieldIndex); });
-				_purchaseDataArray.Add(_data);
-			}
+			_purchaseDataArray.Add(_purchaseData);
 		}
+	}
+
+	return _purchaseDataArray;
+}
+
+TArray<FPurchaseData*> UTurretStateGroup::GetTurretPurchaseDataArray(bool IsMainTurret, E_AMMO_TYPE AmmoType)
+{
+	TArray<FPurchaseData*> _purchaseDataArray;
+
+	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
+	if (!TryGetTurretStand(IsMainTurret, AmmoType, _outTurretStand))
+		return _purchaseDataArray;
+
+	const bool _isTurretEmpty = _outTurretStand->GetTurretType() == E_AMMO_TYPE::NONE;
+
+	FTurretData* _outTurretData = nullptr;
+	if (!TryGetTurretData(IsMainTurret, AmmoType, _outTurretData))
+		return _purchaseDataArray;
+
+	for (int32 _fieldIndex = 0; _fieldIndex < 3; _fieldIndex++)
+	{
+		FPurchaseData* _data = _fieldIndex == 0 ? &_outTurretData->Price : (_fieldIndex == 1 ? &_outTurretData->Mag : &_outTurretData->FireInterval);
+
+		const bool _isPurchaseable = (_fieldIndex == 0) ? _isTurretEmpty : !_isTurretEmpty;
+		_data->IsPurchaseable = _isPurchaseable;
+		_data->OnPurchaseRequested.BindLambda([this, IsMainTurret, AmmoType, _fieldIndex]()
+		{
+			TryPurchaseTurret(IsMainTurret, AmmoType, _fieldIndex);
+		});
+
+		_purchaseDataArray.Add(_data);
 	}
 
 	return _purchaseDataArray;
@@ -154,10 +190,10 @@ TArray<FPurchaseData*> UTurretStateGroup::GetAmmoPurchaseDataArray()
 	return _purchaseDataArray;
 }
 
-void UTurretStateGroup::TryPurchaseTurret(bool IsMainPosition, E_AMMO_TYPE AmmoType, int32 FieldIndex)
+void UTurretStateGroup::TryPurchaseTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType, int32 FieldIndex)
 {
 	FTurretData* _outTurretData = nullptr;
-	if (!TryGetTurretData(IsMainPosition, AmmoType, _outTurretData) || _gameState == nullptr)
+	if (!TryGetTurretData(IsMainTurret, AmmoType, _outTurretData) || _gameState == nullptr)
 		return;
 
 	FPurchaseData* _data = FieldIndex == 0 ? &_outTurretData->Price : (FieldIndex == 1 ? &_outTurretData->Mag : &_outTurretData->FireInterval);
@@ -165,7 +201,9 @@ void UTurretStateGroup::TryPurchaseTurret(bool IsMainPosition, E_AMMO_TYPE AmmoT
 	if (_shopManager == nullptr || !_shopManager->TryPurchase(_data))
 		return;
 
-	ExecuteTurretEvent(IsMainPosition ? E_TURRET_POSITION::Main : E_TURRET_POSITION::Left, *_outTurretData);
+	TryEquipTurret(IsMainTurret, AmmoType);
+
+	ExecuteTurretEvent(IsMainTurret, AmmoType, *_outTurretData);
 }
 
 void UTurretStateGroup::TryPurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex)
@@ -180,60 +218,114 @@ void UTurretStateGroup::TryPurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex)
 		return;
 }
 
-void UTurretStateGroup::SetInfiniteMagMode(bool IsInfiniteMagMode)
+void UTurretStateGroup::SetStartSettings(bool IsInfiniteMagMode, E_AMMO_TYPE MainTurretType, TArray<E_AMMO_TYPE> _startEquipAutoTurretArray)
 {
 	_isInfiniteMagMode = IsInfiniteMagMode;
+
+	_mainTurretType = MainTurretType;
+	if (_mainTurretType == E_AMMO_TYPE::NONE)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UTurretStateGroup: Main turret type is None"));
+		return;
+	}
+
+	TryEquipTurret(true, _mainTurretType);
+
+	for (auto& _turretType : _startEquipAutoTurretArray)
+	{
+		TryEquipTurret(false, _turretType);
+	}
 }
 
-void UTurretStateGroup::TryEquipTurret(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType)
+bool UTurretStateGroup::TryGetTurretFireInterval(bool IsMainTurret, E_AMMO_TYPE AmmoType, float* OutFireCoolTime)
+{
+	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
+	if (!TryGetTurretStand(IsMainTurret, AmmoType, _outTurretStand))
+		return false;
+
+	FTurretData* _outTurretData = nullptr;
+	if (!TryGetTurretData(IsMainTurret, AmmoType, _outTurretData))
+		return false;
+
+	*OutFireCoolTime = _outTurretData->FireInterval.Value.MaxValue;
+	return true;
+}
+
+bool UTurretStateGroup::TryFireTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType)
+{
+	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
+	if (!TryGetTurretStand(IsMainTurret, AmmoType, _outTurretStand))
+		return false;
+
+	FTurretData* _outTurretData = nullptr;
+	if (!TryGetTurretData(IsMainTurret, AmmoType, _outTurretData))
+		return false;
+
+	if (_outTurretData->Mag.Value.CurrentValue <= 0)
+	{
+		if (!_isInfiniteMagMode)
+			return false;
+
+		if (!TryReloadTurret(IsMainTurret, AmmoType))
+			return false;
+	}
+
+	ChangeTurretAmmo(IsMainTurret, AmmoType, CONSUME_AMMO);
+	return true;
+}
+
+bool UTurretStateGroup::TryReloadTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType)
+{
+	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
+	if (!TryGetTurretStand(IsMainTurret, AmmoType, _outTurretStand))
+		return false;
+
+	FAmmoData* _outAmmoData = nullptr;
+	if (!TryGetAmmoData(AmmoType, _outAmmoData))
+		return false;
+
+	ChangeTurretAmmo(IsMainTurret, AmmoType, _outAmmoData->ReloadCapacity.Value.MaxValue);
+	return true;
+}
+
+void UTurretStateGroup::TryEquipTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType)
 {
 	// 서버/클라이언트 모두에서 호출 가능
-	ServerEquipTurret(TurretPosition, AmmoType);
+	ServerEquipTurret(IsMainTurret, AmmoType);
 }
 
-void UTurretStateGroup::ServerEquipTurret_Implementation(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType)
+void UTurretStateGroup::ServerEquipTurret_Implementation(bool IsMainTurret, E_AMMO_TYPE AmmoType)
 {
 	// 서버에서만 실행: 장착가능 여부 체크
 	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
-	if (!TryGetTurretStand(TurretPosition, _outTurretStand))
-	{
-		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to get turret stand"));
+	if (!TryGetTurretStand(IsMainTurret, AmmoType, _outTurretStand))
 		return;
-	}
 
 	if (!_outTurretStand->CanEquipTurret())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UTurretStateGroup: Turret already equipped at [%s]"), *CommonEnums::GetEnum2FString<E_TURRET_POSITION>(TurretPosition));
+		FString _turretPosition = IsMainTurret ? TEXT("Main") : CommonEnums::GetEnum2FString<E_AMMO_TYPE>(AmmoType);
+		UE_LOG(LogTemp, Warning, TEXT("UTurretStateGroup: Turret already equipped at [%s]"), *_turretPosition);
 		return;
 	}
 
 	FTurretData* _outTurretData = nullptr;
-	if (!TryGetTurretData(TurretPosition, AmmoType, _outTurretData))
-	{
-		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to get turret data"));
+	if (!TryGetTurretData(IsMainTurret, AmmoType, _outTurretData))
 		return;
-	}
 
 	// 검증 통과 시 서버/클라이언트 모두에서 로드·스폰·장착 수행
-	MulticastEquipTurret(TurretPosition, AmmoType);
+	MulticastEquipTurret(IsMainTurret, AmmoType);
 }
 
-void UTurretStateGroup::MulticastEquipTurret_Implementation(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType)
+void UTurretStateGroup::MulticastEquipTurret_Implementation(bool IsMainTurret, E_AMMO_TYPE AmmoType)
 {
 	// 서버/클라이언트 모두에서 실행: 터렛 BP 로드, 스폰, 장착
 	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
-	if (!TryGetTurretStand(TurretPosition, _outTurretStand))
-	{
-		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to get turret stand"));
+	if (!TryGetTurretStand(IsMainTurret, AmmoType, _outTurretStand))
 		return;
-	}
 
 	FTurretData* _outTurretData = nullptr;
-	if (!TryGetTurretData(TurretPosition, AmmoType, _outTurretData))
-	{
-		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Failed to get turret data"));
-		return;
-	}
+	if (!TryGetTurretData(IsMainTurret, AmmoType, _outTurretData))
+		return;;
 
 	// 터렛 BP 클래스 로드
 	FString _fileName = "BP_" + CommonEnums::GetEnum2FString<E_TURRET_TYPE>(_outTurretData->TurretType);
@@ -269,75 +361,13 @@ void UTurretStateGroup::MulticastEquipTurret_Implementation(E_TURRET_POSITION Tu
 	// 터렛 장착 (서버만 직접 수행, 클라이언트는 복제로 반영)
 	if (_spawnedTurret != nullptr)
 	{
-		bool _isEquiped = _outTurretStand->TryEquipTurret(_spawnedTurret, AmmoType);
-		if (TurretPosition == E_TURRET_POSITION::Main && _isEquiped && _turretChair != nullptr)
+		bool _isEquiped = _outTurretStand->TryEquipTurret(_spawnedTurret);
+		if (IsMainTurret && _isEquiped && _turretChair != nullptr)
 		{
 			_turretChair->SetTurretPawn(Cast<APawn>(_spawnedTurret));
+			_outTurretStand->SetTurretType(AmmoType);
 		}
 	}
-}
-
-bool UTurretStateGroup::TryGetTurretFireInterval(E_TURRET_POSITION TurretPosition, float* OutFireCoolTime)
-{
-	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
-	if (!TryGetTurretStand(TurretPosition, _outTurretStand))
-		return false;
-
-	E_AMMO_TYPE _equipedAmmoType = _outTurretStand->GetAmmoType();
-	if (_equipedAmmoType == E_AMMO_TYPE::NONE)
-		return false;
-
-	FTurretData* _outTurretData = nullptr;
-	if (!TryGetTurretData(TurretPosition, _equipedAmmoType, _outTurretData))
-		return false;
-
-	*OutFireCoolTime = _outTurretData->FireInterval.Value.MaxValue;
-	return true;
-}
-
-bool UTurretStateGroup::TryFireTurret(E_TURRET_POSITION TurretPosition)
-{
-	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
-	if (!TryGetTurretStand(TurretPosition, _outTurretStand))
-		return false;
-
-	E_AMMO_TYPE _equipedAmmoType = _outTurretStand->GetAmmoType();
-	if (_equipedAmmoType == E_AMMO_TYPE::NONE)
-		return false;
-
-	FTurretData* _outTurretData = nullptr;
-	if (!TryGetTurretData(TurretPosition, _equipedAmmoType, _outTurretData))
-		return false;
-
-	if (_outTurretData->Mag.Value.CurrentValue <= 0)
-	{
-		if (!_isInfiniteMagMode)
-			return false;
-
-		if (!TryReloadTurret(TurretPosition))
-			return false;
-	}
-
-	ChangeTurretAmmo(TurretPosition, _equipedAmmoType, CONSUME_AMMO);
-	return true;
-}
-
-bool UTurretStateGroup::TryReloadTurret(E_TURRET_POSITION TurretPosition)
-{
-	TObjectPtr<ATurretStand> _outTurretStand = nullptr;
-	if (!TryGetTurretStand(TurretPosition, _outTurretStand))
-		return false;
-
-	E_AMMO_TYPE _equipedAmmoType = _outTurretStand->GetAmmoType();
-	if (_equipedAmmoType == E_AMMO_TYPE::NONE)
-		return false;
-
-	FAmmoData* _outAmmoData = nullptr;
-	if (!TryGetAmmoData(_equipedAmmoType, _outAmmoData))
-		return false;
-
-	ChangeTurretAmmo(TurretPosition, _equipedAmmoType, _outAmmoData->ReloadCapacity.Value.MaxValue);
-	return true;
 }
 
 void UTurretStateGroup::LoadTurretDataTable()
@@ -362,6 +392,7 @@ void UTurretStateGroup::LoadTurretDataTable()
 			// 터렛 정보
 			_newTurretData.TurretType = _turrerInfo->TurretType;
 			_newTurretData.AmmoType = _turrerInfo->AmmoType;
+			_newTurretData.IsMainTurret = _turrerInfo->bIsMainTurret;
 			TObjectPtr<UTexture2D> _outTexture = nullptr;
 			FString _fileName = ConstantLibrary::Resource.Image.TEXTURE_HEADER + CommonEnums::GetEnum2FString<E_TURRET_TYPE>(_newTurretData.TurretType);
 			if (AJHSGameState::TryGetTextureFromPath(ConstantLibrary::Resource.Image.TURRET_FOLDER_PATH, _fileName, _outTexture))
@@ -384,7 +415,7 @@ void UTurretStateGroup::LoadTurretDataTable()
 			// 공격 속도
 			_newTurretData.FireInterval = AJHSGameState::ParseFromDataRow(_newTurretData.TurretImage, _turrerInfo->FireInterval);
 
-			_turretDataMap.Add(GetTurretKey(_turrerInfo->bIsMainTurret, _newTurretData.AmmoType), _newTurretData);
+			_turretDataMap.Add(GetTurretKey(_newTurretData.IsMainTurret, _newTurretData.AmmoType), _newTurretData);
 		}
 	}
 
@@ -443,25 +474,19 @@ int32 UTurretStateGroup::GetTurretKey(bool IsMainTurret, E_AMMO_TYPE AmmoType)
 	return ((int32)IsMainTurret + 1) * HUNDRED + (int32)AmmoType;
 }
 
-bool UTurretStateGroup::TryGetTurretData(bool ISMainPosition, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData)
+bool UTurretStateGroup::TryGetTurretData(bool IsMainTurret, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData)
 {
-	int32 _turretKey = GetTurretKey(ISMainPosition, AmmoType);
+	int32 _turretKey = GetTurretKey(IsMainTurret, AmmoType);
 	if (!_turretDataMap.Contains(_turretKey))
 	{
-		FString _isMainPosition = ISMainPosition ? TEXT("Main") : TEXT("Auto");
+		FString _isMainPosition = IsMainTurret ? TEXT("Main") : TEXT("Auto");
 		FString _ammoType = CommonEnums::GetEnum2FString<E_AMMO_TYPE>(AmmoType);
-		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Invalid TurretKey,\nIsMainPosition: [%s], AmmoType: [%s]"), *_isMainPosition, *_ammoType);
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Invalid TurretKey,\nIsMainTurret: [%s], AmmoType: [%s]"), *_isMainPosition, *_ammoType);
 		return false;
 	}
 
 	OutTurretData = _turretDataMap.Find(_turretKey);
 	return OutTurretData != nullptr;
-}
-
-bool UTurretStateGroup::TryGetTurretData(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, FTurretData*& OutTurretData)
-{
-	bool _isMainTurret = TurretPosition == E_TURRET_POSITION::Main;
-	return TryGetTurretData(_isMainTurret, AmmoType, OutTurretData);
 }
 
 bool UTurretStateGroup::TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutAmmoData)
@@ -477,22 +502,25 @@ bool UTurretStateGroup::TryGetAmmoData(E_AMMO_TYPE AmmoType, FAmmoData*& OutAmmo
 	return OutAmmoData != nullptr;
 }
 
-bool UTurretStateGroup::TryGetTurretStand(E_TURRET_POSITION TurretPosition, TObjectPtr<ATurretStand>& OutTurretStand)
+bool UTurretStateGroup::TryGetTurretStand(bool IsMainTurret, E_AMMO_TYPE AmmoType, TObjectPtr<ATurretStand>& OutTurretStand)
 {
-	if (!_turretStandMap.Contains(TurretPosition))
+	if (IsMainTurret)
+		AmmoType = E_AMMO_TYPE::NONE;
+
+	if (!_turretStandMap.Contains(AmmoType))
 	{
-		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Not initialized turret state. TurretPosition: %d"), (int32)TurretPosition);
+		UE_LOG(LogTemp, Error, TEXT("UTurretStateGroup: Not initialized turret state. TurretPosition: %s"), *CommonEnums::GetEnum2FString<E_AMMO_TYPE>(AmmoType));
 		return false;
 	}
 
-	OutTurretStand = _turretStandMap.FindRef(TurretPosition);
+	OutTurretStand = _turretStandMap.FindRef(AmmoType);
 	return OutTurretStand != nullptr;
 }
 
-void UTurretStateGroup::ChangeTurretAmmo(E_TURRET_POSITION TurretPosition, E_AMMO_TYPE AmmoType, int32 ChangeValue)
+void UTurretStateGroup::ChangeTurretAmmo(bool IsMainTurret, E_AMMO_TYPE AmmoType, int32 ChangeValue)
 {
 	FTurretData* _outTurretData = nullptr;
-	if (!TryGetTurretData(TurretPosition, AmmoType, _outTurretData))
+	if (!TryGetTurretData(IsMainTurret, AmmoType, _outTurretData))
 		return;
 
 	FMaxCurrentData* _value = &(_outTurretData->Mag.Value);
@@ -506,13 +534,13 @@ void UTurretStateGroup::ChangeTurretAmmo(E_TURRET_POSITION TurretPosition, E_AMM
 		_value->CurrentValue = 0;
 	}
 
-	ExecuteTurretEvent(TurretPosition, *_outTurretData);
+	ExecuteTurretEvent(IsMainTurret, AmmoType, *_outTurretData);
 }
 
-void UTurretStateGroup::ExecuteTurretEvent(E_TURRET_POSITION TurretPosition, FTurretData TurretData)
+void UTurretStateGroup::ExecuteTurretEvent(bool IsMainTurret, E_AMMO_TYPE AmmoType, FTurretData TurretData)
 {
 	UEventOnChangeTurretData* _event = NewObject<UEventOnChangeTurretData>(this);
-	_event->TurretPosition = TurretPosition;
+	_event->IsMainTurret = IsMainTurret;
 	_event->TurretData = TurretData;
 	_gameState->GetEventManager()->ExecuteEvent<UEventOnChangeTurretData>(_event);
 }

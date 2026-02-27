@@ -13,6 +13,7 @@
 #include "CJH/Component/DistanceComponent.h"
 #include "JHS/SpaceObject/DriveSeatRader.h"
 #include "Kismet/GameplayStatics.h"
+#include "JHS/Event/EventManager.h"
 
 APSJ_Spaceship::APSJ_Spaceship()
 {
@@ -32,9 +33,9 @@ APSJ_Spaceship::APSJ_Spaceship()
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
-void APSJ_Spaceship::Client_BoardingSuccess_Implementation()
+void APSJ_Spaceship::Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot)
 {
-	Super::Client_BoardingSuccess_Implementation(); // 부모 로직 실행
+	Super::Client_BoardingSuccess_Implementation(BoardingPilot); // 부모 로직 실행
 
 	// 우주선 전용 조작키 설정
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
@@ -133,11 +134,11 @@ void APSJ_Spaceship::Server_MouseLook_Implementation(FVector2D Value)
 	AddActorLocalRotation(FRotator(Value.Y * -1.0f, Value.X, 0.0f));
 }
 
-
-
 void APSJ_Spaceship::BeginPlay()
 {
 	Super::BeginPlay();
+
+	RegistEvent();
 
 	if (HealthComp)
 	{
@@ -205,6 +206,13 @@ void APSJ_Spaceship::BeginPlay()
 		DistanceComp->OnDistanceDamaged.AddDynamic(this, &APSJ_Spaceship::OverDistanceDamageCheck);
 	else
 		UE_LOG(LogTemp, Warning, TEXT("Warning: Distance Component not found in BP"));
+}
+
+void APSJ_Spaceship::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UnregistEvent();
+
+	Super::EndPlay(EndPlayReason);
 }
 
 bool APSJ_Spaceship::TryMove()
@@ -314,11 +322,6 @@ USpaceShipStateGroup* APSJ_Spaceship::GetSpaceShipStateGroup()
 	return _spaceShipStateGroup;
 }
 
-void APSJ_Spaceship::Input_SpaceshipBrake(const FInputActionValue& Value)
-{
-	Server_SpaceshipBrake();
-}
-
 bool APSJ_Spaceship::Server_SpaceshipBrake_Validate() { return true; }
 
 void APSJ_Spaceship::Server_SpaceshipBrake_Implementation()
@@ -346,7 +349,6 @@ void APSJ_Spaceship::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		if (IA_MouseLook) EnhancedInputComponent->BindAction(IA_MouseLook, ETriggerEvent::Triggered, this, &APSJ_Spaceship::Input_MouseLook);
 		if (IA_Roll) EnhancedInputComponent->BindAction(IA_Roll, ETriggerEvent::Triggered, this, &APSJ_Spaceship::Input_Roll);
 		if (IA_Interact) EnhancedInputComponent->BindAction(IA_Interact, ETriggerEvent::Started, this, &ATaskPawnBase::Input_Exit);
-		if (IA_SpaceshipBrake) EnhancedInputComponent->BindAction(IA_SpaceshipBrake, ETriggerEvent::Started, this, &APSJ_Spaceship::Input_SpaceshipBrake);
 	}
 }
 
@@ -389,4 +391,86 @@ void APSJ_Spaceship::EnableCollisionWithPassenger(APSJ_Character* ExitedChar)
 void APSJ_Spaceship::OverDistanceDamageCheck()
 {
 	HealthComp->TakeDamage(OverDistanceDamage);
+}
+
+void APSJ_Spaceship::RegistEvent()
+{
+	UEventManager* _outEventManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetEventManager(_outEventManager))
+		return;
+
+	_eventHandleOnStartStage = _outEventManager->AddListener<UEventOnStartStage>(
+		[this](UEventOnStartStage* Event)
+		{
+			OnStartStage(Event);
+		}
+	);
+
+	_eventHandleOnEndStage = _outEventManager->AddListener<UEventOnEndStage>(
+		[this](UEventOnEndStage* Event)
+		{
+			OnEndStage(Event);
+		}
+	);
+
+	_eventHandleOnChangeMaxSpeed = _outEventManager->AddListener<UEventOnChangeSpaceShipData>(
+		[this](UEventOnChangeSpaceShipData* Event)
+		{
+			OnChangeMexSpeed(Event);
+		}
+	);
+}
+
+void APSJ_Spaceship::UnregistEvent()
+{
+	UEventManager* _outEventManager = nullptr;
+	if (!UStaticFunctionLibrary::TryGetEventManager(_outEventManager))
+		return;
+
+	if (_eventHandleOnStartStage.IsValid())
+	{
+		_outEventManager->DelListener<UEventOnStartStage>(_eventHandleOnStartStage);
+		_eventHandleOnStartStage.Reset();
+	}
+
+	if (_eventHandleOnEndStage.IsValid())
+	{
+		_outEventManager->DelListener<UEventOnEndStage>(_eventHandleOnEndStage);
+		_eventHandleOnEndStage.Reset();
+	}
+
+	if (_eventHandleOnChangeMaxSpeed.IsValid())
+	{
+		_outEventManager->DelListener<UEventOnChangeSpaceShipData>(_eventHandleOnChangeMaxSpeed);
+		_eventHandleOnChangeMaxSpeed.Reset();
+	}
+}
+
+void APSJ_Spaceship::OnStartStage(UEventOnStartStage* Event)
+{
+	if (Event == nullptr)
+		return;
+
+	_outGameState->SendCurrentDataEvent();
+}
+
+void APSJ_Spaceship::OnEndStage(UEventOnEndStage* Event)
+{
+	if (Event == nullptr)
+		return;
+
+	Server_SpaceshipBrake();
+}
+
+void APSJ_Spaceship::OnChangeMexSpeed(UEventOnChangeSpaceShipData* Event)
+{
+	if (Event == nullptr)
+		return;
+
+	const FSpaceShipData& _spaceShipData = Event->SpaceShipData;
+	if (_spaceShipData.DataType != E_SPACE_SHIP_DATA_TYPE::MaxSpeed)
+		return;
+
+	UE_LOG(LogTemp, Warning, TEXT("MaxSpeed: %f"), _spaceShipData.Data.Value.MaxValue);
+	MaxSpeed = _spaceShipData.Data.Value.MaxValue;
 }

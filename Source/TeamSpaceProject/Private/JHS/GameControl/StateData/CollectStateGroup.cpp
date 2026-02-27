@@ -146,11 +146,13 @@ bool UCollectStateGroup::TryUseTool(int32 CallerAssignedPlayerId, E_COLLECT_TOOL
 
 	ExecuteEventToolDurability(*_outCollectToolData);
 
-	// Increase radiation
-	TObjectPtr<UPlayerStateGroup> _playerStateGroup = _gameState->GetPlayerStateGroup();
-	if (_playerStateGroup != nullptr)
+	if (_gameState != nullptr)
 	{
-		_playerStateGroup->IncreasePlayerRadiation(CallerAssignedPlayerId, USE_TOOL_RADIATION * DeltaTime);
+		TObjectPtr<UPlayerStateGroup> _playerStateGroup = _gameState->GetPlayerStateGroup();
+		if (_playerStateGroup != nullptr)
+		{
+			_playerStateGroup->IncreasePlayerRadiation(CallerAssignedPlayerId, USE_TOOL_RADIATION * DeltaTime);
+		}
 	}
 	return true;
 }

@@ -6,6 +6,7 @@
 #include "Components/ArrowComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "JHS/Event/CommonEventBase.h"
 #include "PSJ_Spaceship.generated.h"
 
 class USphereComponent;
@@ -30,6 +31,12 @@ class TEAMSPACEPROJECT_API APSJ_Spaceship : public ATaskPawnBase
 private:
 
 	FTimerHandle ShieldAlphaTimerHandle;
+
+	FDelegateHandle _eventHandleOnStartStage;
+
+	FDelegateHandle _eventHandleOnEndStage;
+
+	FDelegateHandle _eventHandleOnChangeMaxSpeed;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shield")
 	float ShieldDisplayDuration = 0.1f;
@@ -88,7 +95,9 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	virtual void Client_BoardingSuccess_Implementation() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	virtual void Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot) override;
 
 public:
 	virtual void Tick(float DeltaTime) override;
@@ -125,9 +134,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* IA_Roll;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_SpaceshipBrake;
-
 
 	UPROPERTY(EditAnywhere, Category = "Ship Stats")
 	float ThrustSpeed = 5000.0f;
@@ -160,7 +166,6 @@ public:
 	void Input_MoveUp(const FInputActionValue& Value);
 	void Input_MouseLook(const FInputActionValue& Value);
 	void Input_Roll(const FInputActionValue& Value);
-	void Input_SpaceshipBrake(const FInputActionValue& Value);
 
 
 
@@ -185,4 +190,16 @@ public:
 	void OnDeath();
 
 	USpaceShipStateGroup* GetSpaceShipStateGroup();
+
+	// ¿Ã∫•∆Æ
+private:
+	void RegistEvent();
+
+	void UnregistEvent();
+
+	void OnStartStage(UEventOnStartStage* Event);
+
+	void OnEndStage(UEventOnEndStage* Event);
+
+	void OnChangeMexSpeed(UEventOnChangeSpaceShipData* Event);
 };
