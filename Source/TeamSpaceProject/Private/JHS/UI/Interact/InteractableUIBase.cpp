@@ -6,6 +6,8 @@
 void UInteractableUIBase::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+
+	SetClickable(true);
 }
 
 void UInteractableUIBase::NativeConstruct()
@@ -13,31 +15,44 @@ void UInteractableUIBase::NativeConstruct()
 	Super::NativeConstruct();
 }
 
+void UInteractableUIBase::SetClickable(bool IsClickable)
+{
+	_isClickable = IsClickable;
+	OnChangeClickable(_isClickable);
+}
+
 void UInteractableUIBase::Focus()
 {
-	OnHovered();
+	if (!_isClickable)
+		return;
+
 	OnHover();
 	Hovered.Broadcast();
 }
 
 void UInteractableUIBase::Unfocus()
 {
-	OnUnhovered();
+	if (!_isClickable)
+		return;
+
 	OnUnhover();
 	Unhovered.Broadcast();
 }
 
 void UInteractableUIBase::ClickEnter()
 {
-	OnClickedEnter();
+	if (!_isClickable)
+		return;
+
 	OnClickEnter();
 	ClickedEnter.Broadcast();
-	Clicked.Broadcast();
 }
 
 void UInteractableUIBase::ClickExit()
 {
-	OnClickedExit();
+	if (!_isClickable)
+		return;
+
 	OnClickExit();
 	ClickedExit.Broadcast();
 }

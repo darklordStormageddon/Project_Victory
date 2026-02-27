@@ -30,10 +30,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Turret")
 	void InvalidateCurrentTarget(AActor* DestroyedTarget);
 
-	// 터렛 포지션 설정 (Main, Left, Right 중 하나)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret|Position")
-	E_TURRET_POSITION TurretPosition = E_TURRET_POSITION::Left;
-
 private:
 	// === 컴포넌트 ===
 	UPROPERTY(VisibleAnywhere, Category = "Components")

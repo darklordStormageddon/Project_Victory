@@ -28,17 +28,12 @@ void UUIPanelTurretMagReload::OnChangeTurret(UEventOnChangeTurretData* Event)
 {
     if (Event == nullptr)
         return;
-    
-    E_TURRET_POSITION _eventTurretPosition = Event->TurretPosition;
-    if (_eventTurretPosition != _turretPosition)
-        return;
 
     FTurretData _turretData = Event->TurretData;
     SetProgressBarUI(_turretData.Mag.Value.CurrentValue, _turretData.Mag.Value.MaxValue, PROG_TurretMag, TXT_TurretMag, false);
 }
 
-void UUIPanelTurretMagReload::InitializeMagReload(E_TURRET_POSITION TurretPosition)
+void UUIPanelTurretMagReload::InitializeMagReload()
 {
-    _turretPosition = TurretPosition;
-    TXT_TurretPosition->SetText(FText::FromString(FString::Printf(TEXT("%s"), *CommonEnums::GetEnum2FString<E_TURRET_POSITION>(_turretPosition))));
+    TXT_TurretPosition->SetText(FText::FromString(FString::Printf(TEXT("Ammo"))));
 }

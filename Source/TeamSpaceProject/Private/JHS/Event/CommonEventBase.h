@@ -144,7 +144,7 @@ public:
 	{}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|TurretData")
-	E_TURRET_POSITION TurretPosition;
+	bool IsMainTurret;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|TurretData")
 	FTurretData TurretData;
@@ -185,7 +185,6 @@ public:
 	E_COLLECT_TOOL_TYPE NextToolType;
 };
 #pragma endregion Collect
-
 
 #pragma region Container
 UCLASS(BlueprintType)

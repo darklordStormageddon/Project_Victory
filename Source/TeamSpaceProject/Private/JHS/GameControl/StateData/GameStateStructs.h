@@ -206,16 +206,6 @@ public:
 };
 
 UENUM(BlueprintType)
-enum class E_TURRET_POSITION : uint8
-{
-	Main = 0 UMETA(DisplayName = "Main"),
-	Left UMETA(DisplayName = "Left"),
-	Right UMETA(DisplayName = "Right"),
-
-	END UMETA(DisplayName = "END"),
-};
-
-UENUM(BlueprintType)
 enum class E_TURRET_TYPE : uint8
 {
 	DualCannon = 0 UMETA(DisplayName = "DualCannon"),
@@ -238,6 +228,9 @@ public:
 
 	UPROPERTY()
 	E_AMMO_TYPE AmmoType = E_AMMO_TYPE::NONE;
+
+	UPROPERTY()
+	bool IsMainTurret = false;
 
 	UPROPERTY()
 	UTexture2D* TurretImage = nullptr;

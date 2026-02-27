@@ -33,9 +33,6 @@ private:
 	UPROPERTY()
 	E_COLLECT_TOOL_TYPE _selectedToolType = E_COLLECT_TOOL_TYPE::NONE;
 
-	UPROPERTY()
-	float _useToolradiationValue = 0.0f;
-
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

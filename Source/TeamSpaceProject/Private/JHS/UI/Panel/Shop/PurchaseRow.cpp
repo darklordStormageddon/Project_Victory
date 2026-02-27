@@ -29,7 +29,7 @@ void UPurchaseRow::UpdateRow(FPurchaseData* PurchaseData)
 {
 	_currentPurchaseData = PurchaseData;
 
-	FPurchaseData _purchaseData = *_currentPurchaseData;
+	const FPurchaseData& _purchaseData = *_currentPurchaseData;
 	IMG_Icon->SetBrushFromTexture(_purchaseData.Image);
 	TXT_Description->SetText(FText::FromString(_purchaseData.Description));
 
@@ -39,4 +39,7 @@ void UPurchaseRow::UpdateRow(FPurchaseData* PurchaseData)
 	TXT_NextValue->SetText(FText::FromString(FString::Printf(TEXT("%d"), (int32)_nextValue)));
 
 	TXT_PurchaseDollar->SetText(FText::FromString(FString::Printf(TEXT("%d"), (int32)_purchaseData.PurchaseDollar)));
+
+	// Purchase block
+	BTN_Purchase->SetClickable(_purchaseData.IsPurchaseable);
 }

@@ -30,6 +30,12 @@ void ATurretStand::InitializeTurretStand(TObjectPtr<UTurretStateGroup> TurretSta
 {
 	_turretManager = TurretStateGroup;
 	RemoveCurrentTurret();
+	_turretAmmoType = E_AMMO_TYPE::NONE;
+}
+
+void ATurretStand::SetTurretType(E_AMMO_TYPE TurretAmmoType)
+{
+	_turretAmmoType = TurretAmmoType;
 }
 
 bool ATurretStand::CanEquipTurret() const
@@ -37,7 +43,7 @@ bool ATurretStand::CanEquipTurret() const
 	return _turret == nullptr;
 }
 
-bool ATurretStand::TryEquipTurret(TObjectPtr<AActor> Turret, E_AMMO_TYPE AmmoType)
+bool ATurretStand::TryEquipTurret(TObjectPtr<AActor> Turret)
 {
 	RemoveCurrentTurret();
 
@@ -45,7 +51,6 @@ bool ATurretStand::TryEquipTurret(TObjectPtr<AActor> Turret, E_AMMO_TYPE AmmoTyp
 		return false;
 
 	_turret = Turret;
-	_ammoType = AmmoType;
 
 	// Turret을 자신의 자식으로 두고 로컬 좌표와 회전값을 0으로 설정
 	FAttachmentTransformRules _attachRules = FAttachmentTransformRules::KeepWorldTransform;
@@ -55,14 +60,6 @@ bool ATurretStand::TryEquipTurret(TObjectPtr<AActor> Turret, E_AMMO_TYPE AmmoTyp
 	return true;
 }
 
-E_AMMO_TYPE ATurretStand::GetAmmoType()
-{
-	if (_turret == nullptr)
-		return E_AMMO_TYPE::NONE;
-
-	return _ammoType;
-}
-
 void ATurretStand::RemoveCurrentTurret()
 {
 	if (_turret != nullptr)
@@ -70,5 +67,4 @@ void ATurretStand::RemoveCurrentTurret()
 		_turret->Destroy();
 		_turret = nullptr;
 	}
-	_ammoType = E_AMMO_TYPE::NONE;
 }

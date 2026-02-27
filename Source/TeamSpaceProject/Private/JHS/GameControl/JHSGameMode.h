@@ -13,19 +13,6 @@ class USpaceManager;
 class UShopManager;
 class AJHSGameState;
 
-USTRUCT(BlueprintType)
-struct FEquipTurretData
-{
-	GENERATED_BODY()
-
-public:
-	UPROPERTY(EditAnywhere)
-	E_TURRET_POSITION TurretPosition = E_TURRET_POSITION::END;
-
-	UPROPERTY(EditAnywhere)
-	E_AMMO_TYPE AmmoType = E_AMMO_TYPE::NONE;
-};
-
 UCLASS()
 class AJHSGameMode : public AGameMode
 {
@@ -56,9 +43,15 @@ private:
 	UPROPERTY()
 	int32 _currentStage = 0;
 
-	// Start Equip Turret
-	UPROPERTY(EditAnywhere, Category = "GameMode|Start Equip Turret")
-	TArray<FEquipTurretData> _startEquipTurretArray;
+	// Start Turret
+	UPROPERTY(EditAnywhere, Category = "GameMode|Start Turret")
+	bool _isInfiniteMagMode = false;
+
+	UPROPERTY(EditAnywhere, Category = "GameMode|Start Turret")
+	E_AMMO_TYPE _mainTurretType = E_AMMO_TYPE::Bullet;
+
+	UPROPERTY(EditAnywhere, Category = "GameMode|Start Turret")
+	TArray<E_AMMO_TYPE> _startEquipAutoTurretArray;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "GameMode|Event Manager")

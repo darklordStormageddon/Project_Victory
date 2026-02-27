@@ -82,6 +82,14 @@ void AJHSGameMode::StartGame(AActor* Caller)
 
 	_isGameStarted = true;
 	_currentStage = 0;
+
+	AJHSGameState* _outGameState = nullptr;
+	if (!TryGetGameState(_outGameState))
+		return;
+
+	// 초기 장착 터렛
+	TObjectPtr<UTurretStateGroup> _turretStateGroup = _outGameState->GetTurretStateGroup();
+	_turretStateGroup->SetStartSettings(_isInfiniteMagMode, _mainTurretType, _startEquipAutoTurretArray);
 }
 
 void AJHSGameMode::EndGame(AActor* Caller)
@@ -119,17 +127,6 @@ void AJHSGameMode::StartNextStage(AActor* Caller)
 
 	// 회수 도구 내구도 초기화
 	_outGameState->GetCollectStateGroup()->RepairAllTool();
-
-	// 터렛 장착
-	if (_currentStage == 1)
-	{
-		TObjectPtr<UTurretStateGroup> _turretStateGroup = _outGameState->GetTurretStateGroup();
-		_turretStateGroup->SetInfiniteMagMode(false);
-		for (auto& _startEquipTurret : _startEquipTurretArray)
-		{
-			_turretStateGroup->TryEquipTurret(_startEquipTurret.TurretPosition, _startEquipTurret.AmmoType);
-		}
-	}
 
 	UEventOnStartStage* _event = NewObject<UEventOnStartStage>(this);
 	if (_event == nullptr)

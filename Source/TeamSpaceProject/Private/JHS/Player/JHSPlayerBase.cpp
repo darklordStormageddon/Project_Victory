@@ -52,7 +52,7 @@ void AJHSPlayerBase::BeginPlay()
 	_outGameMode->StartGame(this);
 
 	UTurretStateGroup* _turretStateGroup = _gameState->GetTurretStateGroup();
-	_turretStateGroup->SetInfiniteMagMode(true);
+	//_turretStateGroup->SetInfiniteMagMode(true, );
 }
 
 // Called every frame
@@ -90,12 +90,10 @@ void AJHSPlayerBase::FireTurret()
 	if (_turretStateGroup == nullptr)
 		return;
 
-	E_TURRET_POSITION _turretPosition = E_TURRET_POSITION::Main;
-
-	_turretStateGroup->TryFireTurret(_turretPosition);
+	_turretStateGroup->TryFireTurret(true, E_AMMO_TYPE::Bullet);
 
 	float _outFireCoolTime = 0.0f;
-	if (!_turretStateGroup->TryGetTurretFireInterval(_turretPosition, &_outFireCoolTime))
+	if (!_turretStateGroup->TryGetTurretFireInterval(true, E_AMMO_TYPE::Bullet, &_outFireCoolTime))
 		return;
 
 	if (_outFireCoolTime > 0.0f)
