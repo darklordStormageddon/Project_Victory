@@ -113,6 +113,8 @@ public:
 
 	void Input_ForceEject(const FInputActionValue& Value);
 
+	void ForceExecuteMagBoots();
+
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_TryForceEject(ATaskChair* TargetChair);

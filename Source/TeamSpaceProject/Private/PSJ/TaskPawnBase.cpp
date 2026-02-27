@@ -139,7 +139,14 @@ void ATaskPawnBase::DisembarkCharacter()
 		SpawnLoc = FoundChair->GetActorTransform().TransformPosition(FoundChair->SeatDisembarkOffset);
 	}
 
+	if (UCharacterMovementComponent* CMC = ExitingChar->GetCharacterMovement())
+	{
+		CMC->StopMovementImmediately();
+		CMC->Velocity = FVector::ZeroVector;
+	}
+
 	ExitingChar->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	ExitingChar->ForceClearAnchoring();
 	ExitingChar->SetActorLocationAndRotation(SpawnLoc, SpawnRot, false, nullptr, ETeleportType::TeleportPhysics);
 
 	ExitingChar->GetCharacterMovement()->SetMovementMode(MOVE_Custom);
@@ -183,32 +190,34 @@ void ATaskPawnBase::Client_DisembarkSuccess_Implementation(APSJ_Character* Exiti
 {
 	if (!ExitingPilot) return;
 
-	if (UCharacterMovementComponent* CMC = ExitingPilot->GetCharacterMovement())
-	{
-		CMC->StopMovementImmediately();
-		CMC->SetMovementMode(MOVE_Custom);
-	}
-
 	ExitingPilot->MoveIgnoreActorRemove(this);
 	this->MoveIgnoreActorRemove(ExitingPilot);
 
-	FVector SafeExitLoc = ExitLoc + GetActorUpVector() * 15.0f;
-	ExitingPilot->SetActorLocationAndRotation(SafeExitLoc, ExitRot, false, nullptr, ETeleportType::TeleportPhysics);
+	ExitingPilot->Client_ForceCleanupImmediate();
 
-	//ExitingPilot->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-	ExitingPilot->StartDisembarkState();
-	//ExitingPilot->SetBaseActorData(this);
+	// 1. 위치 텔레포트
+	ExitingPilot->SetActorLocationAndRotation(ExitLoc, ExitRot, false, nullptr, ETeleportType::TeleportPhysics);
 
-	// Next Tick을 활용한 안전한 입력 복구 지연
-	TWeakObjectPtr<APSJ_Character> WeakPilot(ExitingPilot);
-
-	GetWorld()->GetTimerManager().SetTimerForNextTick([WeakPilot]()
+	// 2. 무브먼트 보간 데이터 초기화 (이전 팁 유지)
+	if (UCharacterMovementComponent* CMC = ExitingPilot->GetCharacterMovement())
+	{
+		CMC->StopMovementImmediately();
+		CMC->Velocity = FVector::ZeroVector;
+		CMC->SetMovementMode(MOVE_Custom);
+		CMC->bJustTeleported = true;
+		if (CMC->HasPredictionData_Client())
 		{
-			if (WeakPilot.IsValid())
-			{
-				WeakPilot->ForceInputRecovery();
-			}
-		});
+			CMC->ResetPredictionData_Client();
+		}
+	}
+
+	ExitingPilot->StartDisembarkState();
+
+	// 3. [핵심] 타이머 딜레이 삭제하고 자석 부츠 1회 강제 실행!
+	ExitingPilot->ForceExecuteMagBoots();
+
+	// 4. 입력 즉시 복구
+	ExitingPilot->ForceInputRecovery();
 }
 
 void ATaskPawnBase::EndPlay(const EEndPlayReason::Type EndPlayReason)

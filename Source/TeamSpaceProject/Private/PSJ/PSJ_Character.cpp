@@ -230,6 +230,12 @@ void APSJ_Character::Tick(float DeltaTime)
 	}
 }
 
+void APSJ_Character::ForceExecuteMagBoots()
+{
+	// DeltaTime을 1.0f로 크게 주어 InterpTo(보간)를 무시하고 즉시 바닥에 밀착 및 각도 정렬되게 합니다.
+	UpdateMagBoots(1.0f);
+}
+
 void APSJ_Character::UpdateMagBoots(float DeltaTime)
 {
 	if (!IsLocallyControlled()) return;
@@ -277,36 +283,46 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 	FCollisionShape CapsuleShape = FCollisionShape::MakeCapsule(MagBootsTraceRadius, MagBootsTraceHalfHeight);
 	FQuat ShapeRotation = FRotationMatrix::MakeFromZ(GravityUpDir).ToQuat();
 
+	// ==========================================
+	// 수정된 충돌 검사 및 바닥 판별 로직 시작
+	// ==========================================
 	bool bFoundValidFloor = false;
 	bool bHit = GetWorld()->SweepSingleByChannel(Hit, Start, End, ShapeRotation, ECC_Spaceship_Floor, CapsuleShape, Params);
 
-	if (bHit)
+	if (bHit && Hit.GetActor())
 	{
-		bFoundValidFloor = true;
+		// 다른 캐릭터를 바닥으로 인식하는 것을 완벽히 차단
+		if (!Hit.GetActor()->IsA(APSJ_Character::StaticClass()))
+		{
+			bFoundValidFloor = true;
+		}
 	}
-
 	else
 	{
 		bHit = GetWorld()->SweepSingleByChannel(Hit, Start, End, ShapeRotation, ECC_Visibility, CapsuleShape, Params);
 
 		if (bHit && Hit.GetActor())
 		{
-			if (Hit.GetActor()->ActorHasTag(TEXT("Stairs")))
-			
-				if (Hit.GetActor()->IsA(APSJ_Character::StaticClass()))
-				{
-					bFoundValidFloor = false;
-				}
-				else if (Hit.GetActor()->ActorHasTag(TEXT("Stairs")))
-				{
-					bFoundValidFloor = true;
-				}
-				else
-				{
-					bFoundValidFloor = false;
-				}
+			// 1. 맞은 액터가 캐릭터인 경우 무조건 바닥 취급 안 함
+			if (Hit.GetActor()->IsA(APSJ_Character::StaticClass()))
+			{
+				bFoundValidFloor = false;
+			}
+			// 2. 계단 태그가 있는 경우 바닥으로 인정
+			else if (Hit.GetActor()->ActorHasTag(TEXT("Stairs")))
+			{
+				bFoundValidFloor = true;
+			}
+			// 3. 그 외의 오브젝트는 바닥으로 취급 안 함
+			else
+			{
+				bFoundValidFloor = false;
+			}
 		}
 	}
+	// ==========================================
+	// 수정된 충돌 검사 및 바닥 판별 로직 끝
+	// ==========================================
 
 	if (bFoundValidFloor && Hit.GetActor())
 	{
@@ -321,6 +337,8 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 
 		CurrentFloorNormal = Hit.Normal;
 
+		// 참고: 기존 코드에 AttachToActor 로직이 두 번 중복해서 들어가 있었습니다.
+		// 작동상 치명적인 문제는 없으나 아래의 중복 코드는 삭제하셔도 무방합니다.
 		AActor* NewFloor = Hit.GetActor();
 
 		if (GetAttachParentActor() != NewFloor)
