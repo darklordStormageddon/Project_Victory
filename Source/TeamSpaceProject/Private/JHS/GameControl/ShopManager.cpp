@@ -59,13 +59,22 @@ bool UShopManager::TryPurchase(FPurchaseData* PurchaseData)
 
 	// 레벨 증가
 	_level->CurrentValue++;
+	if (_level->CurrentValue >= _level->MaxValue)
+	{
+		_level->CurrentValue = _level->MaxValue;
+		_purchaseData.IsPurchaseable = false;
 
-	// 값 증가
-	_purchaseData.Value.MaxValue = CalculateValue(_purchaseData.InitValue, _purchaseData.IncreasePerValue, _level->CurrentValue);
-	_purchaseData.Value.CurrentValue = _purchaseData.Value.MaxValue;
+		_purchaseData.PurchaseDollar = 0.0f;
+	}
+	else
+	{
+		// 값 증가
+		_purchaseData.Value.MaxValue = CalculateValue(_purchaseData.InitValue, _purchaseData.IncreasePerValue, _level->CurrentValue);
+		_purchaseData.Value.CurrentValue = _purchaseData.Value.MaxValue;
 
-	// 가격 증가
-	_purchaseData.PurchaseDollar = (int32)CalculateValue(_purchaseData.InitDollar, _purchaseData.IncreasePerDollar, _level->CurrentValue);
+		// 가격 증가
+		_purchaseData.PurchaseDollar = (int32)CalculateValue(_purchaseData.InitDollar, _purchaseData.IncreasePerDollar, _level->CurrentValue);
+	}
 
 	*PurchaseData = _purchaseData;
 	return true;

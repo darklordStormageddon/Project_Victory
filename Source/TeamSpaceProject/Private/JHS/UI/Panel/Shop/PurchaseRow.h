@@ -11,6 +11,7 @@
 class UImage;
 class UTextBlock;
 class UInteractableButton;
+class UPurchaseCategory;
 
 UCLASS()
 class UPurchaseRow : public UUserWidget
@@ -36,12 +37,17 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> TXT_PurchaseDollar = nullptr;
 
+private:
+	TObjectPtr<UPurchaseCategory> _purchaseCategory = nullptr;
+
 	FPurchaseData* _currentPurchaseData;
 
 protected:
 	virtual void NativeOnInitialized() override;
 
 public:
+	void InitializeRow(TObjectPtr<UPurchaseCategory> PurchaseCategory);
+
 	void UpdateRow(FPurchaseData* PurchaseData);
 
 private:

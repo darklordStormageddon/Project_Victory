@@ -51,6 +51,9 @@ private:
 	E_AMMO_TYPE _mainTurretType = E_AMMO_TYPE::Bullet;
 
 	UPROPERTY(EditAnywhere, Category = "GameMode|Start Turret")
+	bool _isStartEquipMainTurret = true;
+
+	UPROPERTY(EditAnywhere, Category = "GameMode|Start Turret")
 	TArray<E_AMMO_TYPE> _startEquipAutoTurretArray;
 
 public:

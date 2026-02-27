@@ -91,24 +91,24 @@ void UTurretStateGroup::InitializeTurretState(TObjectPtr<AJHSGameState> GameStat
 
 void UTurretStateGroup::UpdateTurretState()
 {
-	for (auto& _turretStand : _turretStandMap)
+	for (auto& _element : _turretStandMap)
 	{
-		E_AMMO_TYPE _ammoType = _turretStand.Value->GetStandType();
-
-		FTurretData* _outTurretData = nullptr;
-		bool _isMain = _ammoType == E_AMMO_TYPE::NONE;
+		TObjectPtr<ATurretStand> _turretStand = _element.Value;
+		E_AMMO_TYPE _standType = _element.Key;
+		const bool& _isMain = _standType == E_AMMO_TYPE::NONE;
 		if (_isMain)
 		{
-			_ammoType = _turretStand.Value->GetTurretType();
+			_standType = _turretStand->GetTurretType();
 		}
 
-		if (_ammoType == E_AMMO_TYPE::NONE)
+		if (_standType == E_AMMO_TYPE::NONE)
 			continue;
 
-		if (!TryGetTurretData(_isMain, _ammoType, _outTurretData))
+		FTurretData* _outTurretData = nullptr;
+		if (!TryGetTurretData(_isMain, _standType, _outTurretData))
 			continue;
 
-		ExecuteTurretEvent(_isMain, _ammoType, *_outTurretData);
+		ExecuteTurretEvent(_isMain, _standType, *_outTurretData);
 	}
 }
 
@@ -117,10 +117,14 @@ TArray<FPurchaseData*> UTurretStateGroup::GetTurretPurchaseDataArray()
 	TArray<FPurchaseData*> _purchaseDataArray;
 
 	// 메인 터렛
-	TArray<FPurchaseData*> _turretPurchaseDataArray = GetTurretPurchaseDataArray(true, _mainTurretType);
-	for (auto& _purchaseData : _turretPurchaseDataArray)
+	TArray<FPurchaseData*> _turretPurchaseDataArray ;
+	if (_mainTurretType != E_AMMO_TYPE::NONE)
 	{
-		_purchaseDataArray.Add(_purchaseData);
+		_turretPurchaseDataArray = GetTurretPurchaseDataArray(true, _mainTurretType);
+		for (auto& _purchaseData : _turretPurchaseDataArray)
+		{
+			_purchaseDataArray.Add(_purchaseData);
+		}
 	}
 
 	// Auto
@@ -145,7 +149,7 @@ TArray<FPurchaseData*> UTurretStateGroup::GetTurretPurchaseDataArray(bool IsMain
 	if (!TryGetTurretStand(IsMainTurret, AmmoType, _outTurretStand))
 		return _purchaseDataArray;
 
-	const bool _isTurretEmpty = _outTurretStand->GetTurretType() == E_AMMO_TYPE::NONE;
+	const bool _isTurretEmpty = _outTurretStand->CanEquipTurret();
 
 	FTurretData* _outTurretData = nullptr;
 	if (!TryGetTurretData(IsMainTurret, AmmoType, _outTurretData))
@@ -155,8 +159,18 @@ TArray<FPurchaseData*> UTurretStateGroup::GetTurretPurchaseDataArray(bool IsMain
 	{
 		FPurchaseData* _data = _fieldIndex == 0 ? &_outTurretData->Price : (_fieldIndex == 1 ? &_outTurretData->Mag : &_outTurretData->FireInterval);
 
-		const bool _isPurchaseable = (_fieldIndex == 0) ? _isTurretEmpty : !_isTurretEmpty;
-		_data->IsPurchaseable = _isPurchaseable;
+		// 구매 가능
+		if (_fieldIndex == 0)
+		{
+			if (_data->IsPurchaseable)
+			{
+				_data->IsPurchaseable = _isTurretEmpty;
+			}
+		}
+		else
+		{
+			_data->IsPurchaseable = !_isTurretEmpty;
+		}
 		_data->OnPurchaseRequested.BindLambda([this, IsMainTurret, AmmoType, _fieldIndex]()
 		{
 			TryPurchaseTurret(IsMainTurret, AmmoType, _fieldIndex);
@@ -218,18 +232,21 @@ void UTurretStateGroup::TryPurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex)
 		return;
 }
 
-void UTurretStateGroup::SetStartSettings(bool IsInfiniteMagMode, E_AMMO_TYPE MainTurretType, TArray<E_AMMO_TYPE> _startEquipAutoTurretArray)
+void UTurretStateGroup::SetStartSettings(bool IsInfiniteMagMode, E_AMMO_TYPE MainTurretType, bool IsStartEquipMainTurret, TArray<E_AMMO_TYPE> _startEquipAutoTurretArray)
 {
 	_isInfiniteMagMode = IsInfiniteMagMode;
 
 	_mainTurretType = MainTurretType;
 	if (_mainTurretType == E_AMMO_TYPE::NONE)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UTurretStateGroup: Main turret type is None"));
+		UE_LOG(LogTemp, Error, TEXT("Main turret type is NONE"));
 		return;
 	}
 
-	TryEquipTurret(true, _mainTurretType);
+	if (IsStartEquipMainTurret)
+	{
+		TryEquipTurret(true, _mainTurretType);
+	}
 
 	for (auto& _turretType : _startEquipAutoTurretArray)
 	{
@@ -401,13 +418,15 @@ void UTurretStateGroup::LoadTurretDataTable()
 			}
 
 			// 가격
-			FPurchaseData _price;
-			_price.Image = _newTurretData.TurretImage;
-			_price.Description = FString::Printf(TEXT("%s"), *_turrerInfo->Description);
-			_price.Level.MaxValue = 1;
-			_price.Level.CurrentValue = 0;
-			_price.PurchaseDollar = _turrerInfo->Price;
-			_newTurretData.Price = _price;
+			FPurchaseDataFormat _pricePurchaseDataFormat;
+			_pricePurchaseDataFormat.Description = _turrerInfo->Description;
+			_pricePurchaseDataFormat.MaxLevel = 2;
+			_pricePurchaseDataFormat.InitValue = 0;
+			_pricePurchaseDataFormat.IncreasePerValue = 100.0f;
+			_pricePurchaseDataFormat.InitDollar = _turrerInfo->Price;
+			_pricePurchaseDataFormat.IncreasePerDollar = 0.0f;
+
+			_newTurretData.Price = AJHSGameState::ParseFromDataRow(_newTurretData.TurretImage, _pricePurchaseDataFormat);;
 
 			// 탄약
 			_newTurretData.Mag = AJHSGameState::ParseFromDataRow(_newTurretData.TurretImage, _turrerInfo->Mag);

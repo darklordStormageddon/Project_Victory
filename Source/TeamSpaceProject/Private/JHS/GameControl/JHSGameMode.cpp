@@ -89,7 +89,7 @@ void AJHSGameMode::StartGame(AActor* Caller)
 
 	// 초기 장착 터렛
 	TObjectPtr<UTurretStateGroup> _turretStateGroup = _outGameState->GetTurretStateGroup();
-	_turretStateGroup->SetStartSettings(_isInfiniteMagMode, _mainTurretType, _startEquipAutoTurretArray);
+	_turretStateGroup->SetStartSettings(_isInfiniteMagMode, _mainTurretType, _isStartEquipMainTurret, _startEquipAutoTurretArray);
 }
 
 void AJHSGameMode::EndGame(AActor* Caller)
