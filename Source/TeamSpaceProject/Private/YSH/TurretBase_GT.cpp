@@ -67,10 +67,11 @@ ATurretBase_GT::ATurretBase_GT()
 	SpringArm->bInheritYaw = true;
 	SpringArm->bInheritRoll = true;
 
-	SpringArm->bEnableCameraLag = true;
-	SpringArm->CameraLagSpeed = 3.0f;
-	SpringArm->bEnableCameraRotationLag = true;
-	SpringArm->CameraRotationLagSpeed = 10.0f;
+	SpringArm->bEnableCameraLag = false;
+	SpringArm->bEnableCameraRotationLag = false;
+
+	// SpringArm->bUseCameraLagSubstepping = true;
+	// SpringArm->CameraLagMaxDistance = 0.0f;  // 최대 지연 거리를 0으로 설정
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
