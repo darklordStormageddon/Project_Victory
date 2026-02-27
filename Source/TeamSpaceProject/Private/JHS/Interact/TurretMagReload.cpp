@@ -33,7 +33,7 @@ void ATurretMagReload::OnInteractEnter(int32 CallerPlayerId, TObjectPtr<UUIBase>
 		}
 	}
 
-	_uiTurretMagReload->InitializeMagReload(_turretPosition);
+	_uiTurretMagReload->InitializeMagReload();
 	_turretStateGroup->UpdateTurretState();
 }
 

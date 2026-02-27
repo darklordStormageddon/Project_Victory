@@ -31,13 +31,15 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> TXT_Label = nullptr;
 
-	UFUNCTION()
-	void _OnButtonClicked();
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> IMG_BlockClick = nullptr;
 
 protected:
 	void NativeOnInitialized() override;
 
 	void NativeConstruct() override;
+
+	void OnChangeClickable(bool IsClickable) override;
 
 	void OnHover() override;
 
@@ -49,5 +51,9 @@ protected:
 
 public:
 	void InitializeButton(FString Label);
+
+private:
+	UFUNCTION()
+	void OnButtonClicked();
 };
 

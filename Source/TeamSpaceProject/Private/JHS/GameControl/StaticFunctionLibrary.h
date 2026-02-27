@@ -48,4 +48,8 @@ public:
 
 private:
     static bool TryGetWorld(UWorld*& OutWorld);
+
+    static bool GetOrCacheLocalPlayerController(AJHSPlayerController*& OutController);
+
+    static TWeakObjectPtr<AJHSPlayerController> _cachedLocalPlayerController;
 };

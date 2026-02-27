@@ -208,7 +208,7 @@ void ATurretBase_GT::Tick(float DeltaTime)
 		float CurrentFireCoolTime = 0.0f;
 		UTurretStateGroup* TurretStateGroup = _cachedGameState->GetTurretStateGroup();
 
-		if (TurretStateGroup && TurretStateGroup->TryGetTurretFireInterval(TurretPosition, &CurrentFireCoolTime))
+		if (TurretStateGroup && TurretStateGroup->TryGetTurretFireInterval(true, E_AMMO_TYPE::Bullet, &CurrentFireCoolTime))
 		{
 			float AdjustedFireCoolTime = CurrentFireCoolTime / FireRateMultiplier;
 
@@ -333,7 +333,7 @@ void ATurretBase_GT::TryFire()
 	}
 
 	// TryFireTurret으로 탄약 소비 및 발사 가능 여부 확인
-	if (!TurretStateGroup->TryFireTurret(TurretPosition))
+	if (!TurretStateGroup->TryFireTurret(true, E_AMMO_TYPE::Bullet))
 	{
 		// 발사 실패 (탄약 부족 등)
 		return;

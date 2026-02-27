@@ -13,7 +13,7 @@ void UPurchaseCategory::InitializeCategory(TObjectPtr<UUIPanelShop> UIShop, E_PU
 	_uiPanelShop = UIShop;
 	_category = Category;
 
-	BTN_Category->Clicked.AddDynamic(this, &UPurchaseCategory::OnSelectCategory);
+	BTN_Category->ClickedEnter.AddDynamic(this, &UPurchaseCategory::OnSelectCategory);
 
 	FString _categoryName = "Unknown";
 	switch (Category)

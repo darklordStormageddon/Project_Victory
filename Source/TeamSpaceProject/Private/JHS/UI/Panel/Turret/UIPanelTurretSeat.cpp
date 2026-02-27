@@ -65,10 +65,10 @@ void UUIPanelTurretSeat::OnChangeTurret(UEventOnChangeTurretData* Event)
     if (Event == nullptr)
         return;
 
-    E_TURRET_POSITION _turretPosition = Event->TurretPosition;
-    FTurretData _turretData = Event->TurretData;
+    const bool& _isMainTurret = Event->IsMainTurret;
+    const FTurretData& _turretData = Event->TurretData;
     FMaxCurrentData _mag = _turretData.Mag.Value;
-    if (_turretPosition == E_TURRET_POSITION::Main)
+    if (_isMainTurret)
     {
         if (_circleProgressBar)
         {
@@ -88,13 +88,17 @@ void UUIPanelTurretSeat::OnChangeTurret(UEventOnChangeTurretData* Event)
         return;
     
     TObjectPtr<UTexture2D> _texture = _outAmmoData->AmmoImage;
-    if (_turretPosition == E_TURRET_POSITION::Left)
+    switch (_turretData.AmmoType)
     {
+    case E_AMMO_TYPE::Bullet:
         IMG_LeftTurret->SetBrushFromTexture(_texture);
         SetProgressBarUI(_mag.CurrentValue, _mag.MaxValue, PROG_LeftTurretAmmo, TXT_LeftTurretAmmo, true);
-    }
-    else
-    {
+
+    case E_AMMO_TYPE::Cannon:
+        IMG_RightTurret->SetBrushFromTexture(_texture);
+        SetProgressBarUI(_mag.CurrentValue, _mag.MaxValue, PROG_RightTurretAmmo, TXT_RightTurretAmmo, true);
+
+    case E_AMMO_TYPE::Missile:
         IMG_RightTurret->SetBrushFromTexture(_texture);
         SetProgressBarUI(_mag.CurrentValue, _mag.MaxValue, PROG_RightTurretAmmo, TXT_RightTurretAmmo, true);
     }

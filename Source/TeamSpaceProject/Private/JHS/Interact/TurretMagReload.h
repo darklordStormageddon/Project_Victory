@@ -23,10 +23,6 @@ private:
 	TObjectPtr<UUIPanelTurretMagReload> _uiTurretMagReload = nullptr;
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interactable|TurretMagReload")
-	E_TURRET_POSITION _turretPosition;
-
-protected:
 	virtual void BeginPlay() override;
 
 	void OnInteractEnter(int32 CallerPlayerId, TObjectPtr<UUIBase> OpenedUI) override;
