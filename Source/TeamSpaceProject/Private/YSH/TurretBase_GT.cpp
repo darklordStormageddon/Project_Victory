@@ -502,6 +502,7 @@ void ATurretBase_GT::SetPilot(APSJ_Character* NewPilot, ATaskChair* Chair)
 // [신규] 클라이언트 탑승 성공 처리 (UI, IMC)
 void ATurretBase_GT::Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot)
 {
+	Super::Client_BoardingSuccess_Implementation(BoardingPilot);
 	// 탑승 시 포탑 회전 초기화
 	if (YawPivot)
 	{
@@ -574,6 +575,7 @@ void ATurretBase_GT::DisembarkCharacter()
 // [신규] 클라이언트 하차 후처리
 void ATurretBase_GT::Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot)
 {
+
 	if (!ExitingPilot) return;
 
 	// 캐릭터의 입력 복구 함수 호출 (PSJ_Spaceship에 구현된 것과 동일한 원리)
