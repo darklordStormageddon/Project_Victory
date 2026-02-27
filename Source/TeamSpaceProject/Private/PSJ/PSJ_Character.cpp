@@ -85,6 +85,46 @@ void APSJ_Character::BeginPlay()
 
 }
 
+ATaskChair* APSJ_Character::GetRepairTargetFromTrace()
+{
+	if (!FPSCamera) return nullptr;
+
+	FVector TraceStart = FPSCamera->GetComponentLocation();
+	FVector TraceEnd = TraceStart + (FPSCamera->GetForwardVector() * RepairTraceLength);
+
+	FHitResult HitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams);
+
+	// 디버그 라인 (에디터 확인용)
+	if (bHit)
+	{
+		DrawDebugLine(GetWorld(), TraceStart, HitResult.ImpactPoint, FColor::Green, false, 0.1f, 0, 1.0f);
+		DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 10.0f, FColor::Green, false, 0.1f);
+	}
+	else
+	{
+		DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 0.1f, 0, 1.0f);
+	}
+
+	if (bHit && HitResult.GetActor())
+	{
+		ATaskChair* TargetChair = Cast<ATaskChair>(HitResult.GetActor());
+
+		if (TargetChair && TargetChair->bIsMalfunctioning)
+		{
+			float Dist = FVector::Dist(GetActorLocation(), TargetChair->GetActorLocation());
+			if (Dist <= RepairMaxDistance)
+			{
+				return TargetChair;
+			}
+		}
+	}
+	return nullptr;
+}
+
 void APSJ_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -401,6 +441,7 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		GetCharacterMovement()->SafeMoveUpdatedComponent(FallVector, GetActorRotation(), true, FallHit);
 	}
 }
+
 
 
 void APSJ_Character::SetBaseActorData(AActor* NewBase)
@@ -899,7 +940,7 @@ void APSJ_Character::Input_StartRepair(const FInputActionValue& Value)
 void APSJ_Character::Input_StopRepair(const FInputActionValue& Value)
 {
 	bIsRepairingInputDown = false;
-	bIsActivelyRepairing = false; 
+	bIsActivelyRepairing = false;
 
 	if (ClientRepairTarget)
 	{
@@ -910,86 +951,26 @@ void APSJ_Character::Input_StopRepair(const FInputActionValue& Value)
 
 void APSJ_Character::UpdateRepairLogic()
 {
+	// 좌클릭을 누르고 있지 않으면 무시
 	if (!bIsRepairingInputDown) return;
 
-	FVector TraceStart;
-	FRotator TraceRot;
+	// 누르고 있는 동안 매 프레임 트레이스 발사
+	ATaskChair* TargetChair = GetRepairTargetFromTrace();
 
-	if (FPSCamera)
-	{
-		TraceStart = FPSCamera->GetComponentLocation();
-		TraceRot = FPSCamera->GetComponentRotation();
-	}
-	else
-	{
-		GetController()->GetPlayerViewPoint(TraceStart, TraceRot);
-	}
-
-	FVector TraceEnd = TraceStart + (TraceRot.Vector() * RepairTraceLength);
-
-	FHitResult HitResult;
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);
-
-	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams);
-
-	if (bHit)
-	{
-
-		DrawDebugLine(GetWorld(), TraceStart, HitResult.ImpactPoint, FColor::Green, false, 0.1f, 0, 1.0f);
-
-		DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 10.0f, FColor::Green, false, 0.1f);
-	}
-	else
-	{
-
-		DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 0.1f, 0, 1.0f);
-	}
-	// =========================================================
-
-	ATaskChair* TargetChair = nullptr;
-	if (bHit && HitResult.GetActor())
-	{
-		TargetChair = Cast<ATaskChair>(HitResult.GetActor());
-	}
-
-
-	bool bCanRepair = false;
-
+	// 시야에 조건이 맞는 대상(고장난 의자 + 사거리 내)이 있을 때
 	if (TargetChair)
 	{
-
-		if (TargetChair->bIsMalfunctioning)
-		{
-
-			float Dist = FVector::Dist(GetActorLocation(), TargetChair->GetActorLocation());
-			if (Dist <= RepairMaxDistance)
-			{
-				bCanRepair = true;
-			}
-			else
-			{
-
-			}
-		}
-	}
-
-
-	if (bCanRepair)
-	{
-
 		if (!bIsActivelyRepairing)
 		{
-
+			// 이동 멈춤 처리
 			CurrentInputVector = FVector2D::ZeroVector;
 			Server_SetInputVector(FVector2D::ZeroVector);
-
-
 			GetCharacterMovement()->Velocity = FVector::ZeroVector;
 		}
 
-		bIsActivelyRepairing = true; 
+		bIsActivelyRepairing = true;
 
+		// 타겟이 새로 잡혔거나 다른 의자로 바뀌었을 때 서버 연동
 		if (ClientRepairTarget != TargetChair)
 		{
 			if (ClientRepairTarget) Server_StopRepair();
@@ -999,9 +980,10 @@ void APSJ_Character::UpdateRepairLogic()
 	}
 	else
 	{
+		// 마우스를 누르고 있지만 허공을 보거나, 대상이 고쳐졌거나, 사거리 밖으로 벗어났을 때
 		bIsActivelyRepairing = false;
 
-		if (ClientRepairTarget != nullptr)
+		if (ClientRepairTarget)
 		{
 			Server_StopRepair();
 			ClientRepairTarget = nullptr;

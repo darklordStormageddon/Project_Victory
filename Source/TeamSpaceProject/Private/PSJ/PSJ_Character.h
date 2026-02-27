@@ -149,6 +149,9 @@ protected:
 
 	bool bIsRepairingInputDown = false;
 
+	UFUNCTION(BlueprintCallable, Category = "Interaction | Repair")
+	class ATaskChair* GetRepairTargetFromTrace();
+
 
 	UPROPERTY()
 	class ATaskChair* ClientRepairTarget = nullptr;
