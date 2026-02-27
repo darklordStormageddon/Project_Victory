@@ -394,15 +394,15 @@ void ATurretBase_GT::TryFire()
 
 		bIsLeftMuzzleNext = !bIsLeftMuzzleNext;
 
-		// Cascade 이펙트 (보정된 회전 사용)
+	
 		if (MuzzleFlashEffect)
 		{
 			UParticleSystemComponent* PSC = UGameplayStatics::SpawnEmitterAtLocation(
 				GetWorld(),
 				MuzzleFlashEffect,
-				EffectLocation,           // ← 오프셋 적용된 위치
-				EffectRotation,           // ← 보정된 회전 (90도 조정)
-				FVector(MuzzleFlashScale), // ← 크기
+				EffectLocation,          
+				EffectRotation,          
+				FVector(MuzzleFlashScale), 
 				true,
 				EPSCPoolMethod::AutoRelease,
 				true
@@ -415,13 +415,13 @@ void ATurretBase_GT::TryFire()
 			}
 		}
 
-		// 사운드
+
 		if (FireSound)
 		{
 			UGameplayStatics::PlaySoundAtLocation(this, FireSound, EffectLocation);
 		}
 
-		// 카메라 쉐이크
+
 		if (FireCameraShake)
 		{
 			APlayerController* PC = Cast<APlayerController>(GetController());
@@ -477,7 +477,7 @@ void ATurretBase_GT::AddPitchInput(float PitchInputDegPerSec, float DeltaTime)
 	}
 }
 
-// [신규] 탑승 설정 (서버에서 실행)
+
 void ATurretBase_GT::SetPilot(APSJ_Character* NewPilot, ATaskChair* Chair)
 {
 	CurrentPilot = NewPilot;
@@ -485,10 +485,9 @@ void ATurretBase_GT::SetPilot(APSJ_Character* NewPilot, ATaskChair* Chair)
 
 	if (CurrentPilot)
 	{
-		// 1. 캐릭터 충돌 끄고 숨기기 (또는 의자에 앉히기)
+
 		CurrentPilot->SetActorEnableCollision(false);
 
-		// 터렛 위치 혹은 의자 위치로 이동 (여기서는 터렛 Root에 붙임, 필요 시 소켓 지정 가능)
 		CurrentPilot->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
 		if (auto* CMC = CurrentPilot->GetCharacterMovement())
@@ -499,15 +498,14 @@ void ATurretBase_GT::SetPilot(APSJ_Character* NewPilot, ATaskChair* Chair)
 	}
 }
 
-// [신규] 클라이언트 탑승 성공 처리 (UI, IMC)
 void ATurretBase_GT::Client_BoardingSuccess_Implementation(APSJ_Character* BoardingPilot)
 {
 	Super::Client_BoardingSuccess_Implementation(BoardingPilot);
-	// 탑승 시 포탑 회전 초기화
+
 	if (YawPivot)
 	{
 		FRotator ResetYaw = YawPivot->GetRelativeRotation();
-		ResetYaw.Yaw = 0.0f;  // Yaw를 0도로 초기화 (정면)
+		ResetYaw.Yaw = 0.0f;  
 		YawPivot->SetRelativeRotation(ResetYaw);
 		TargetYaw = 0.0f;
 	}
@@ -515,7 +513,7 @@ void ATurretBase_GT::Client_BoardingSuccess_Implementation(APSJ_Character* Board
 	if (PitchPivot)
 	{
 		FRotator ResetPitch = PitchPivot->GetRelativeRotation();
-		ResetPitch.Roll = 0.0f;  // Roll을 0으로 초기화 (수평)
+		ResetPitch.Roll = 0.0f; 
 		PitchPivot->SetRelativeRotation(ResetPitch);
 		TargetPitchRoll = 0.0f;
 	}
@@ -532,20 +530,7 @@ void ATurretBase_GT::Client_BoardingSuccess_Implementation(APSJ_Character* Board
 			}
 		}
 	}
-
-	// UI 열기 (UIPanelTurretSeat)
-	UUIManager* TempUIManager = nullptr;
-	if (UStaticFunctionLibrary::TryGetUIManager(TempUIManager))
-	{
-		TempUIManager->OpenUI(E_UI_TYPE::UIPanelTurretSeat);
-	}
 }
-
-//// [신규] 하차 요청 (입력 시 호출)
-//void ATurretBase_GT::Input_Exit(const FInputActionValue& Value)
-//{
-//	Server_RequestDisembark();
-//}
 
 void ATurretBase_GT::DisembarkCharacter()
 {
@@ -572,7 +557,6 @@ void ATurretBase_GT::DisembarkCharacter()
 	Super::DisembarkCharacter();
 }
 
-// [신규] 클라이언트 하차 후처리
 void ATurretBase_GT::Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot)
 {
 
@@ -580,16 +564,6 @@ void ATurretBase_GT::Client_DisembarkSuccess_Implementation(APSJ_Character* Exit
 
 	// 캐릭터의 입력 복구 함수 호출 (PSJ_Spaceship에 구현된 것과 동일한 원리)
 	ExitingPilot->ForceInputRecovery();
-
-	// 2. [추가] 터렛 UI 닫기
-		// UI 매니저를 불러와서 열려있는 터렛 UI를 닫습니다.
-	UUIManager* TempUIManager = nullptr;
-	if (UStaticFunctionLibrary::TryGetUIManager(TempUIManager))
-	{
-		// CloseUI 함수가 있고, 같은 Enum을 쓴다고 가정합니다.
-		// 만약 함수 이름이 ClosePanel 이거나 HideUI라면 그에 맞춰 수정해주세요.
-		TempUIManager->CloseUI(E_UI_TYPE::UIPanelTurretSeat);
-	}
 
 	// 터렛 매핑 컨텍스트 제거
 	if (UWorld* World = GetWorld())
