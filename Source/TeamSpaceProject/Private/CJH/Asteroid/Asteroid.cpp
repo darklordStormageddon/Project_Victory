@@ -199,6 +199,7 @@ void AAsteroid::DebugDrawing()
 
 void AAsteroid::OnDestroy()
 {
+	UE_LOG(LogTemp, Warning, TEXT("Asternoid's CurrentHealth : %.f"), HealthComp->CurrentHealth);
 	this->Destroy();
 }
 
@@ -216,9 +217,11 @@ void AAsteroid::OnHit(
 		MulticastHitEffect(Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
 
 	if (UHealthComponent* Health = OtherActor->FindComponentByClass<UHealthComponent>())
+	{
 		Health->TakeDamage(_targetInfo.Attack_Damage);
-
-	Destroy(); // 맞으면 사라짐
+		Destroy(); // 맞으면 사라짐
+	}
+		
 }
 
 void AAsteroid::MulticastHitEffect_Implementation(
