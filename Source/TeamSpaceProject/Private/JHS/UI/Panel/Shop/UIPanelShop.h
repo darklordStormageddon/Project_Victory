@@ -71,7 +71,7 @@ public:
 private:
 	void CreatePurchaseCategories();
 
-	void UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory);
+	void UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory, TObjectPtr<UPurchaseCategory> CategoryButton);
 
 	TArray<FPurchaseData*> GetPurchaseDataArray(E_PURCHASE_CATEGORY SelectedCategory);
 

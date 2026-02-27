@@ -39,9 +39,10 @@ private:
 public:
 	void InitializeCategory(TObjectPtr<UUIPanelShop> UIShop, E_PURCHASE_CATEGORY Category);
 
+	UFUNCTION()
 	void ChangeSelect(bool IsSelected);
 
-private:
 	UFUNCTION()
 	void OnSelectCategory();
+	
 };

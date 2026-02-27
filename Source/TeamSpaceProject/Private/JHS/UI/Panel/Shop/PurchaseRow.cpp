@@ -3,6 +3,7 @@
 
 #include "JHS/UI/Panel/Shop/PurchaseRow.h"
 #include "JHS/GameControl/ShopManager.h"
+#include "JHS/UI/Panel/Shop/PurchaseCategory.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "JHS/UI/Interact/InteractableButton.h"
@@ -19,24 +20,32 @@ void UPurchaseRow::NativeOnInitialized()
 	}
 }
 
+void UPurchaseRow::InitializeRow(TObjectPtr<UPurchaseCategory> PurchaseCategory)
+{
+	_purchaseCategory = PurchaseCategory;
+}
+
 void UPurchaseRow::OnClickPurchase()
 {
 	_currentPurchaseData->OnPurchaseRequested.ExecuteIfBound();
-	UpdateRow(_currentPurchaseData);
+	if (_purchaseCategory)
+	{
+		_purchaseCategory->OnSelectCategory();
+	}
 }
 
 void UPurchaseRow::UpdateRow(FPurchaseData* PurchaseData)
 {
 	_currentPurchaseData = PurchaseData;
-
 	const FPurchaseData& _purchaseData = *_currentPurchaseData;
+
 	IMG_Icon->SetBrushFromTexture(_purchaseData.Image);
 	TXT_Description->SetText(FText::FromString(_purchaseData.Description));
 
 	const float _currentValue = _purchaseData.Value.CurrentValue;
-	TXT_CurrentValue->SetText(FText::FromString(FString::Printf(TEXT("%d"), (int32)_currentValue)));
+	TXT_CurrentValue->SetText(FText::FromString(FString::Printf(TEXT("%0.2f"), _currentValue)));
 	const float _nextValue = UShopManager::CalculateValue(_purchaseData.InitValue, _purchaseData.IncreasePerValue, _purchaseData.Level.CurrentValue + 1);
-	TXT_NextValue->SetText(FText::FromString(FString::Printf(TEXT("%d"), (int32)_nextValue)));
+	TXT_NextValue->SetText(FText::FromString(FString::Printf(TEXT("%0.2f"), _nextValue)));
 
 	TXT_PurchaseDollar->SetText(FText::FromString(FString::Printf(TEXT("%d"), (int32)_purchaseData.PurchaseDollar)));
 

@@ -124,16 +124,18 @@ void UUIPanelShop::SelectCategory(E_PURCHASE_CATEGORY Category)
 
 	_categoryButton->ChangeSelect(true);
 
-	UpdatePurchaseRow(_selectedCategory);
+	UpdatePurchaseRow(_selectedCategory, _categoryButton);
 }
 
-void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
+void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory, TObjectPtr<UPurchaseCategory> CategoryButton)
 {
 	if (_gameState == nullptr || _gameState->GetCollectStateGroup() == nullptr)
 		return;
 
 	if (SB_ScrollBox == nullptr || _purchaseRowClass == nullptr)
 		return;
+
+	SB_ScrollBox->ClearChildren();
 
 	TArray<FPurchaseData*> _purchaseDataArray = GetPurchaseDataArray(SelectedCategory);
 	int32 _activeCount = _purchaseDataArray.Num();
@@ -154,13 +156,14 @@ void UUIPanelShop::UpdatePurchaseRow(E_PURCHASE_CATEGORY SelectedCategory)
 				UE_LOG(LogTemp, Error, TEXT("UUIPanelShop: Failed to create PurchaseRow widget for index %d"), i);
 				break;
 			}
-			SB_ScrollBox->AddChild(_rowWidget);
 			_purchaseRowMap.Add(i, _rowWidget);
 		}
-		
+
+		_rowWidget->InitializeRow(CategoryButton);
 		FPurchaseData* _purchaseData = _purchaseDataArray[i];
 		_rowWidget->UpdateRow(_purchaseData);
 		_rowWidget->SetVisibility(ESlateVisibility::Visible);
+		SB_ScrollBox->AddChild(_rowWidget);
 	}
 
 	// _purchaseRowMap.Num()+1 ~ _purchaseRowMap.Num() 비활성화
