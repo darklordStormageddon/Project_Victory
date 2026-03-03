@@ -204,7 +204,7 @@ void APSJ_Character::Tick(float DeltaTime)
 		SetReplicateMovement(true);
 	}
 
-	if (IsLocallyControlled())
+	if (IsLocallyControlled() || HasAuthority())
 	{
 		if (!CurrentInputVector.IsNearlyZero())
 		{
@@ -230,19 +230,15 @@ void APSJ_Character::Tick(float DeltaTime)
 
 		UpdateMagBoots(DeltaTime);
 
-		if (!bJustDisembarked)
+		// [복구됨] 원래 있던 로직: 로컬 플레이어인 경우 서버로 위치/회전 전송
+		if (IsLocallyControlled() && !HasAuthority())
 		{
-			if (!HasAuthority())
-				Server_UpdateRelativeTransform(GetRootComponent()->GetRelativeLocation(), GetRootComponent()->GetRelativeRotation());
-			else
-			{
-				ReplicatedRelativeData.RelativeLocation = GetRootComponent()->GetRelativeLocation();
-				ReplicatedRelativeData.RelativeRotation = GetRootComponent()->GetRelativeRotation();
-			}
+			Server_UpdateRelativeTransform(GetRootComponent()->GetRelativeLocation(), GetRootComponent()->GetRelativeRotation());
 		}
 	}
 	else
 	{
+		// [복구됨] 원래 있던 로직: 다른 클라이언트(Simulated Proxy)들의 움직임 보간
 		if (ReplicatedRelativeData.BaseActor)
 		{
 			FVector OldRelLocation = GetRootComponent()->GetRelativeLocation();
@@ -278,7 +274,8 @@ void APSJ_Character::ForceExecuteMagBoots()
 
 void APSJ_Character::UpdateMagBoots(float DeltaTime)
 {
-	if (!IsLocallyControlled()) return;
+	// 서버(HasAuthority)도 자석 부츠 연산을 똑같이 수행하도록 열어줌
+	if (!IsLocallyControlled() && !HasAuthority()) return;
 
 	FVector GravityUpDir = FVector::UpVector;
 	AActor* AttachedActor = GetAttachParentActor();
@@ -377,8 +374,6 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 
 		CurrentFloorNormal = Hit.Normal;
 
-		// 참고: 기존 코드에 AttachToActor 로직이 두 번 중복해서 들어가 있었습니다.
-		// 작동상 치명적인 문제는 없으나 아래의 중복 코드는 삭제하셔도 무방합니다.
 		AActor* NewFloor = Hit.GetActor();
 
 		if (GetAttachParentActor() != NewFloor)
@@ -394,6 +389,7 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		float TargetHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + FloorHeightOffset;
 		FVector TargetLoc = Hit.ImpactPoint + (Hit.Normal * TargetHeight);
 
+		
 		FVector ToTarget = TargetLoc - GetActorLocation();
 		FVector HeightAdjustment = Hit.Normal * FVector::DotProduct(ToTarget, Hit.Normal);
 		FVector CorrectedTargetLoc = GetActorLocation() + HeightAdjustment;
@@ -606,18 +602,15 @@ void APSJ_Character::OnShootAnimFinished()
 void APSJ_Character::Move(const FInputActionValue& Value)
 {
 
-	if (bIsActivelyRepairing || bIsPlayingShootAnim)
-	{
-		return;
-	}
+	if (bIsActivelyRepairing) return;
 
-	CurrentInputVector = Value.Get<FVector2D>();
-	Server_SetInputVector(CurrentInputVector);
+	FVector2D NewInput = Value.Get<FVector2D>();
 
-	if (!CurrentInputVector.IsNearlyZero())
+	// 입력값이 이전과 다를 때만 서버로 전송하여 네트워크 부하 최소화
+	if (!CurrentInputVector.Equals(NewInput, 0.01f))
 	{
-		FString ModeString = UEnum::GetValueAsString(GetCharacterMovement()->MovementMode);
-		FVector Vel = GetVelocity();
+		CurrentInputVector = NewInput;
+		Server_SetInputVector(CurrentInputVector);
 	}
 }
 
@@ -625,16 +618,12 @@ void APSJ_Character::StopMove(const FInputActionValue& Value)
 {
 	CurrentInputVector = FVector2D::ZeroVector;
 	Server_SetInputVector(FVector2D::ZeroVector);
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->Velocity = FVector::ZeroVector;
-	}
 }
 
 void APSJ_Character::Look(const FInputActionValue& Value)
 {
 
-	//if (bIsPlayingShootAnim) return;
+	if (bIsPlayingShootAnim) return;
 
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
@@ -810,14 +799,14 @@ void APSJ_Character::Server_SetAnchoring_Implementation(AActor* NewBase)
 
 		GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 
-		SetReplicateMovement(false);
+
 	}
 	else
 	{
 
 		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-		SetReplicateMovement(true);
+
 	}
 }
 
