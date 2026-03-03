@@ -19,19 +19,19 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	FString Name;
 	UPROPERTY(BlueprintReadWrite)
-	int32 CurrentPlayers;
+	int32 CurrentPlayers = 0;
 	UPROPERTY(BlueprintReadWrite)
 	FString HostUserName;
 	UPROPERTY(BlueprintReadWrite)
 	FString Password;
 	UPROPERTY(BlueprintReadWrite)
-	bool Accessibility;
+	bool Accessibility = false;
 
 	UPROPERTY(BlueprintReadWrite)
-	int32 SearchResultIndex;
+	int32 SearchResultIndex = 0;
 
 	UPROPERTY(BlueprintReadWrite)
-	int32 Port;
+	int32 Port = 0;
 };
 
 UCLASS()
