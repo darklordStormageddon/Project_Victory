@@ -4,6 +4,10 @@
 #include "JHS/GameControl/JHSPlayerController.h"
 #include "JHS/UI/UIManager.h"
 #include "JHS/Interact/InteractableComponent.h"
+#include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
+#include "JHS/GameControl/StateData/CollectStateGroup.h"
+#include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "Net/UnrealNetwork.h"
 
 AJHSPlayerController::AJHSPlayerController()
@@ -48,5 +52,41 @@ void AJHSPlayerController::ServerRequestToggleWorldUI_Implementation(UInteractab
 	if (IsValid(Target))
 	{
 		Target->AuthorityToggleWorldUI();
+	}
+}
+
+void AJHSPlayerController::ServerRequestPurchaseSpaceShip_Implementation(E_SPACE_SHIP_DATA_TYPE DataType)
+{
+	AJHSGameState* _gameState = GetWorld()->GetGameState<AJHSGameState>();
+	if (_gameState != nullptr && _gameState->GetSpaceShipStateGroup() != nullptr)
+	{
+		_gameState->GetSpaceShipStateGroup()->ExecutePurchaseSpaceShipData(DataType);
+	}
+}
+
+void AJHSPlayerController::ServerRequestPurchaseCollectTool_Implementation(E_COLLECT_TOOL_TYPE ToolType, bool IsDurability)
+{
+	AJHSGameState* _gameState = GetWorld()->GetGameState<AJHSGameState>();
+	if (_gameState != nullptr && _gameState->GetCollectStateGroup() != nullptr)
+	{
+		_gameState->GetCollectStateGroup()->ExecutePurchaseCollectTool(ToolType, IsDurability);
+	}
+}
+
+void AJHSPlayerController::ServerRequestPurchaseTurret_Implementation(bool IsMainTurret, E_AMMO_TYPE AmmoType, int32 FieldIndex)
+{
+	AJHSGameState* _gameState = GetWorld()->GetGameState<AJHSGameState>();
+	if (_gameState != nullptr && _gameState->GetTurretStateGroup() != nullptr)
+	{
+		_gameState->GetTurretStateGroup()->ExecutePurchaseTurret(IsMainTurret, AmmoType, FieldIndex);
+	}
+}
+
+void AJHSPlayerController::ServerRequestPurchaseAmmo_Implementation(E_AMMO_TYPE AmmoType, int32 FieldIndex)
+{
+	AJHSGameState* _gameState = GetWorld()->GetGameState<AJHSGameState>();
+	if (_gameState != nullptr && _gameState->GetTurretStateGroup() != nullptr)
+	{
+		_gameState->GetTurretStateGroup()->ExecutePurchaseAmmo(AmmoType, FieldIndex);
 	}
 }

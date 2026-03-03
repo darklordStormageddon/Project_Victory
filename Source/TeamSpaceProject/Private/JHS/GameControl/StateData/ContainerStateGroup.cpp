@@ -27,11 +27,16 @@ void UContainerStateGroup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 void UContainerStateGroup::OnRep_ContainerStateReplicated()
 {
-	_containerState.OwnedDollar = _replicatedOwnedDollar;
 	_containerState.SaleInterval = _replicatedSaleInterval;
 	_containerState.ElementDataMap.Empty();
 	for (const FElementData& _data : _replicatedElementArray)
 		_containerState.ElementDataMap.Add(_data.ElementType, _data);
+}
+
+void UContainerStateGroup::OnRep_OwnedDollar()
+{
+	_containerState.OwnedDollar = _replicatedOwnedDollar;
+	ExecuteEventOnChangeOwnedDollar(_containerState.OwnedDollar);
 }
 
 // Called when the game starts
@@ -79,6 +84,8 @@ void UContainerStateGroup::UpdateContainerState()
 	{
 		ExecuteEventOnChangeElement(_elementData.Value);
 	}
+
+	ExecuteEventOnChangeOwnedDollar(_containerState.OwnedDollar);
 }
 
 void UContainerStateGroup::AddElement(E_ELEMENT_TYPE ElementType, int32 Amount)

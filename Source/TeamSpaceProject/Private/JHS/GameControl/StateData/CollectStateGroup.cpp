@@ -3,6 +3,7 @@
 
 #include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/JHSPlayerController.h"
 #include "JHS/GameControl/StateData/PlayerStateGroup.h"
 #include "JHS/GameControl/ShopManager.h"
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
@@ -95,6 +96,23 @@ TArray<FPurchaseData*> UCollectStateGroup::GetPurchaseDataArray()
 }
 
 void UCollectStateGroup::TryPurchaseCollectTool(E_COLLECT_TOOL_TYPE ToolType, bool IsDurability)
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		ExecutePurchaseCollectTool(ToolType, IsDurability);
+	}
+	else
+	{
+		APlayerController* _playerController = GetWorld()->GetFirstPlayerController();
+		AJHSPlayerController* _jhsPlayerController = Cast<AJHSPlayerController>(_playerController);
+		if (_jhsPlayerController == nullptr)
+			return;
+
+		_jhsPlayerController->ServerRequestPurchaseCollectTool(ToolType, IsDurability);
+	}
+}
+
+void UCollectStateGroup::ExecutePurchaseCollectTool(E_COLLECT_TOOL_TYPE ToolType, bool IsDurability)
 {
 	FCollectToolData* _outCollectToolData = nullptr;
 	if (!TryGetCollectToolData(ToolType, _outCollectToolData) || _gameState == nullptr)

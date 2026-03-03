@@ -54,4 +54,16 @@ public:
 	/** 월드 UI 토글 요청. 서버에서만 상태 갱신 후 멀티캐스트로 결과 전파 (Interactable은 owning connection 없어 컨트롤러 경유). */
 	UFUNCTION(Server, Reliable)
 	void ServerRequestToggleWorldUI(UInteractableComponent* Target);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestPurchaseSpaceShip(E_SPACE_SHIP_DATA_TYPE DataType);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestPurchaseCollectTool(E_COLLECT_TOOL_TYPE ToolType, bool IsDurability);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestPurchaseTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType, int32 FieldIndex);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestPurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex);
 };

@@ -49,6 +49,9 @@ public:
 
 	bool TryPurchase(FPurchaseData* PurchaseData);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastNotifyPurchase();
+
 public:
 	static float CalculateValue(float InitValue, float IncreasePerValue, int32 Level);
 };

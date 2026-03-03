@@ -277,6 +277,23 @@ void USpaceShipStateGroup::DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType
 
 void USpaceShipStateGroup::TryPurchaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType)
 {
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		ExecutePurchaseSpaceShipData(DataType);
+	}
+	else
+	{
+		APlayerController* _playerController = GetWorld()->GetFirstPlayerController();
+		AJHSPlayerController* _jhsPlayerController = Cast<AJHSPlayerController>(_playerController);
+		if (_jhsPlayerController == nullptr)
+			return;
+
+		_jhsPlayerController->ServerRequestPurchaseSpaceShip(DataType);
+	}
+}
+
+void USpaceShipStateGroup::ExecutePurchaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType)
+{
 	FSpaceShipData* _outSpaceShipData = nullptr;
 	if (!TryGetSpaceShipData(DataType, _outSpaceShipData) || _gameState == nullptr)
 		return;

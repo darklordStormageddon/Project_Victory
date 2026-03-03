@@ -31,7 +31,7 @@ private:
 	UPROPERTY(ReplicatedUsing = "OnRep_ContainerStateReplicated")
 	TArray<FElementData> _replicatedElementArray;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = "OnRep_OwnedDollar")
 	int32 _replicatedOwnedDollar = 0;
 
 	UPROPERTY(Replicated)
@@ -39,6 +39,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_ContainerStateReplicated();
+
+	UFUNCTION()
+	void OnRep_OwnedDollar();
 
 	FTimerHandle _saleAllElementTimerHandle;
 
