@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "JHS/Player/SpaceStation.h"
 #include "JHS/SpaceObject/DriveSeatRader.h"
+#include "JHS/SpaceObject/SpaceObjectComponent.h"
 
 // Sets default values for this component's properties
 USpaceManager::USpaceManager()
@@ -106,6 +107,11 @@ void USpaceManager::UpdateSpaceObject(FSpaceObjectData SpaceObjectData)
 
 void USpaceManager::RemoveSpaceObject(TObjectPtr<USpaceObjectComponent> NewSpaceObjectPtr)
 {
+	if (NewSpaceObjectPtr == nullptr ||
+		NewSpaceObjectPtr->GetOwner() == nullptr ||
+		!NewSpaceObjectPtr->GetOwner()->HasAuthority())
+		return;
+
 	if (_spaceObjectMap.Contains(NewSpaceObjectPtr))
 	{
 		_spaceObjectMap.Remove(NewSpaceObjectPtr);
