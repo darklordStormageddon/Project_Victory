@@ -33,7 +33,7 @@ void ASpaceRader::InitializeRader()
 	FRaderData _newraderData;
 
 	USpaceManager* _outSpaceManager = nullptr;
-	if (!UStaticFunctionLibrary::TryGetSpaceManager(_outSpaceManager))
+	if (!UStaticFunctionLibrary::TryGetSpaceManager(this, _outSpaceManager))
 		return;
 
 	_newraderData.StandardActor = Cast<AActor>(_outSpaceManager->GetSpaceStation());

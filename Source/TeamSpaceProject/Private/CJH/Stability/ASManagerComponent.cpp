@@ -88,8 +88,7 @@ void UASManagerComponent::ClearSpawnedSatellites()
 void UASManagerComponent::GetSetting()
 {
 	AJHSGameMode* InGameMode = nullptr;
-
-	if (!UStaticFunctionLibrary::TryGetGameMode(InGameMode))
+	if (!UStaticFunctionLibrary::TryGetGameMode(GetOwner(), InGameMode))
 		return;
 
 	if (InGameMode && InGameMode->GetSpaceManager())

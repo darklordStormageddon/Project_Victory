@@ -46,7 +46,7 @@ void AJHSPlayerBase::BeginPlay()
 	//GetWorld()->GetTimerManager().SetTimer(_timerHandle, this, &AJHSPlayerBase::AddElement, 3.0f, false);
 
 	AJHSGameMode* _outGameMode = nullptr;
-	if (!UStaticFunctionLibrary::TryGetGameMode(_outGameMode))
+	if (!UStaticFunctionLibrary::TryGetGameMode(this, _outGameMode))
 		return;
 
 	_outGameMode->StartGame(this);

@@ -11,8 +11,17 @@
 
 TWeakObjectPtr<AJHSPlayerController> UStaticFunctionLibrary::_cachedLocalPlayerController = nullptr;
 
-bool UStaticFunctionLibrary::TryGetGameMode(AJHSGameMode*& OutGameMode)
+bool UStaticFunctionLibrary::TryGetGameMode(AActor* Caller, AJHSGameMode*& OutGameMode)
 {
+	if (Caller == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TryGetGameMode: Caller is nullptr"));
+		return false;
+	}
+
+	if (!Caller->HasAuthority())
+		return false;
+
 	UWorld* _world = nullptr;
 	if (!TryGetWorld(_world))
 		return false;
@@ -98,10 +107,10 @@ bool UStaticFunctionLibrary::TryGetGameState(AJHSGameState*& OutGameState)
 	return true;
 }
 
-bool UStaticFunctionLibrary::TryGetSpaceManager(USpaceManager*& OutSpaceManager)
+bool UStaticFunctionLibrary::TryGetSpaceManager(AActor* Caller, USpaceManager*& OutSpaceManager)
 {
 	AJHSGameMode* _gameMode = nullptr;
-	if (!TryGetGameMode(_gameMode))
+	if (!TryGetGameMode(Caller, _gameMode))
         return false;
 
 	OutSpaceManager = _gameMode->GetSpaceManager();

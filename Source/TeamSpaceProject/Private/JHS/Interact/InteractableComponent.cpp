@@ -22,34 +22,6 @@ UInteractableComponent::UInteractableComponent()
 void UInteractableComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	AActor* _owner = GetOwner();
-	if (_owner != nullptr)
-	{
-		_collisionComponent = NewObject<USphereComponent>(_owner, USphereComponent::StaticClass(), TEXT("CollisionComponent"));
-		if (_collisionComponent != nullptr)
-		{
-			_collisionComponent->SetSphereRadius(_collisionRadius);
-			_collisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-			_collisionComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
-			_collisionComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
-			_collisionComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECR_Overlap);
-			_collisionComponent->SetGenerateOverlapEvents(true);
-
-			// Root Component Attach
-			USceneComponent* _rootComponent = _owner->GetRootComponent();
-			if (_rootComponent != nullptr)
-			{
-				_collisionComponent->SetupAttachment(_rootComponent);
-			}
-
-			_owner->AddInstanceComponent(_collisionComponent);
-			_collisionComponent->RegisterComponent();
-
-			_collisionComponent->OnComponentBeginOverlap.AddDynamic(this, &UInteractableComponent::OnTriggerEnter);
-			_collisionComponent->OnComponentEndOverlap.AddDynamic(this, &UInteractableComponent::OnTriggerExit);
-		}
-	}
 }
 
 
@@ -60,7 +32,7 @@ void UInteractableComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 	if (_isDebugDraw && _collisionComponent != nullptr)
 	{
-		DrawDebugSphere(GetWorld(), _collisionComponent->GetComponentLocation(), _collisionRadius, 16, FColor::Yellow, false, DeltaTime * 1.01f);
+		DrawDebugSphere(GetWorld(), _collisionComponent->GetComponentLocation(), _actorScale, 16, FColor::Yellow, false, DeltaTime * 1.01f);
 
 		// 월드 스페이스 UI 디버그 드로우
 		if (_isWorldSpaceUI)
@@ -93,6 +65,89 @@ void UInteractableComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 			}
 		}
 	}
+}
+
+void UInteractableComponent::InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType, bool IsWorldSpaceUI, FVector WorldUIRelativeLocation, float WorldUIScale)
+{
+	_isDebugDraw = IsDebugDraw;
+	_interactType = InteractType;
+	_interactUIType = InteractUIType;
+	_isWorldSpaceUI = IsWorldSpaceUI;
+	_worldUIRelativeLocation = WorldUIRelativeLocation;
+	_worldUIScale = WorldUIScale;
+
+	// 월드 UI 멀티캐스트는 오너 액터가 각 클라이언트에 있어야 수신됨. 서버에서 복제 활성화.
+	AActor* _owner = GetOwner();
+	if (_owner != nullptr)
+	{
+		if (_isWorldSpaceUI && _owner->HasAuthority())
+		{
+			_owner->SetReplicates(true);
+		}
+
+		// X, Y, Z 중 가장 작은 값을 사용
+		FVector _actorScale3D = _owner->GetActorRelativeScale3D();
+		_actorScale3D = FVector(FMath::Min(_actorScale3D.X, FMath::Min(_actorScale3D.Y, _actorScale3D.Z)));
+		_actorScale = _actorScale3D.X * InteractRadius;
+		if (_actorScale <= 0.0f)
+		{
+			_actorScale = 100.0f;
+		}
+
+		_collisionComponent = NewObject<USphereComponent>(_owner, USphereComponent::StaticClass(), TEXT("CollisionComponent"));
+		if (_collisionComponent != nullptr)
+		{
+			_collisionComponent->SetSphereRadius(_actorScale);
+			_collisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+			_collisionComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+			_collisionComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
+			_collisionComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECR_Overlap);
+			_collisionComponent->SetGenerateOverlapEvents(true);
+
+			// Root Component Attach
+			USceneComponent* _rootComponent = _owner->GetRootComponent();
+			if (_rootComponent != nullptr)
+			{
+				_collisionComponent->SetupAttachment(_rootComponent);
+			}
+
+			_owner->AddInstanceComponent(_collisionComponent);
+			_collisionComponent->RegisterComponent();
+
+			_collisionComponent->OnComponentBeginOverlap.AddDynamic(this, &UInteractableComponent::OnTriggerEnter);
+			_collisionComponent->OnComponentEndOverlap.AddDynamic(this, &UInteractableComponent::OnTriggerExit);
+		}
+	}
+}
+
+bool UInteractableComponent::TryInteract(APlayerController* CallerController, bool& OutIsInterupt, bool& IsCloseUI)
+{
+	OutIsInterupt = false;
+	IsCloseUI = false;
+	if (_interacter == nullptr)
+		return false;
+
+	if (CallerController == nullptr)
+		return false;
+
+	AJHSPlayerController* _jhsPC = Cast<AJHSPlayerController>(CallerController);
+	if (_jhsPC == nullptr)
+		return false;
+
+	// 월드 UI: 열림/닫힘은 서버에서만 처리. 클라이언트는 토글 요청만 보내고 상태 갱신·멀티캐스트는 서버가 담당.
+	if (_isWorldSpaceUI)
+	{
+		_jhsPC->ServerRequestToggleWorldUI(this);
+		IsCloseUI = false;
+		return true;
+	}
+
+	_isInteract = !_isInteract;
+	const int32 _callerAssignedId = _jhsPC->GetAssignedPlayerId();
+	ChangeInteractState(_isInteract, _callerAssignedId, CallerController);
+
+	IsCloseUI = _isInteract;
+	return true;
 }
 
 void UInteractableComponent::OnTriggerEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -394,52 +449,6 @@ void UInteractableComponent::MulticastCloseWorldUI_Implementation(E_UI_TYPE UITy
 	UUIManager* _localUIManager = _localController->GetUIManager();
 	if (_localUIManager != nullptr)
 		_localUIManager->CloseWorldUILocal(UIType);
-}
-
-void UInteractableComponent::InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType, bool IsWorldSpaceUI, FVector WorldUIRelativeLocation, float WorldUIScale)
-{
-	_isDebugDraw = IsDebugDraw;
-	_collisionRadius = InteractRadius;
-	_interactType = InteractType;
-	_interactUIType = InteractUIType;
-	_isWorldSpaceUI = IsWorldSpaceUI;
-	_worldUIRelativeLocation = WorldUIRelativeLocation;
-	_worldUIScale = WorldUIScale;
-
-	// 월드 UI 멀티캐스트는 오너 액터가 각 클라이언트에 있어야 수신됨. 서버에서 복제 활성화.
-	AActor* _owner = GetOwner();
-	if (_isWorldSpaceUI && _owner != nullptr && _owner->HasAuthority())
-		_owner->SetReplicates(true);
-}
-
-bool UInteractableComponent::TryInteract(APlayerController* CallerController, bool& OutIsInterupt, bool& IsCloseUI)
-{
-	OutIsInterupt = false;
-	IsCloseUI = false;
-	if (_interacter == nullptr)
-		return false;
-
-	if (CallerController == nullptr)
-		return false;
-
-	AJHSPlayerController* _jhsPC = Cast<AJHSPlayerController>(CallerController);
-	if (_jhsPC == nullptr)
-		return false;
-
-	// 월드 UI: 열림/닫힘은 서버에서만 처리. 클라이언트는 토글 요청만 보내고 상태 갱신·멀티캐스트는 서버가 담당.
-	if (_isWorldSpaceUI)
-	{
-		_jhsPC->ServerRequestToggleWorldUI(this);
-		IsCloseUI = false;
-		return true;
-	}
-
-	_isInteract = !_isInteract;
-	const int32 _callerAssignedId = _jhsPC->GetAssignedPlayerId();
-	ChangeInteractState(_isInteract, _callerAssignedId, CallerController);
-
-	IsCloseUI = _isInteract;
-	return true;
 }
 
 void UInteractableComponent::ChangeInteractState(bool IsInteract, int32 CallerPlayerId, APlayerController* CallerController)

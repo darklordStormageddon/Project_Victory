@@ -144,7 +144,7 @@ void USpaceShipStateGroup::TakeDamage(float Damage)
 		if (_pawn->HasAuthority())
 		{
 			AJHSGameMode* _outGameMode = nullptr;
-			if (!UStaticFunctionLibrary::TryGetGameMode(_outGameMode))
+			if (!UStaticFunctionLibrary::TryGetGameMode(GetOwner(), _outGameMode))
 				return;
 
 			_outGameMode->EndStage(_pawn);

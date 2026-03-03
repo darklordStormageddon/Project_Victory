@@ -20,7 +20,7 @@ class UStaticFunctionLibrary : public UBlueprintFunctionLibrary
 	
 public:
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|GameMode")
-    static bool TryGetGameMode(AJHSGameMode*& OutGameMode);
+    static bool TryGetGameMode(AActor* Caller, AJHSGameMode*& OutGameMode);
 
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|PlayerController")
     static bool TryGetPlayerController(AJHSPlayerController*& OutPlayerController);
@@ -35,7 +35,7 @@ public:
     static bool TryGetGameState(AJHSGameState*& OutGameState);
 
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|SpaceManager")
-    static bool TryGetSpaceManager(USpaceManager*& OutSpaceManager);
+    static bool TryGetSpaceManager(AActor* Caller, USpaceManager*& OutSpaceManager);
 
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|UIManager")
     static bool TryGetUIManager(UUIManager*& OutUIManager);

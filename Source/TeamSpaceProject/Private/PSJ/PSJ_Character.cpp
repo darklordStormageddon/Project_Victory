@@ -40,7 +40,7 @@ void APSJ_Character::BeginPlay()
 	if (HasAuthority())
 	{
 		AJHSGameMode* _outGameMode = nullptr;
-		if (UStaticFunctionLibrary::TryGetGameMode(_outGameMode))
+		if (UStaticFunctionLibrary::TryGetGameMode(this, _outGameMode))
 		{
 			_outGameMode->StartGame(this);
 		}

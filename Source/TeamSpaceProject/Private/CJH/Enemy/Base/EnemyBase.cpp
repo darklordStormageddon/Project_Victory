@@ -215,8 +215,7 @@ void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 
 	USpaceManager* OutSpaceManager = nullptr;
-
-	if (!UStaticFunctionLibrary::TryGetSpaceManager(OutSpaceManager))
+	if (!UStaticFunctionLibrary::TryGetSpaceManager(this, OutSpaceManager))
 	{
 		UE_LOG(LogTemp, Error, TEXT("AEnemyBase: OutSpaceManager is nullptr"));
 		return;

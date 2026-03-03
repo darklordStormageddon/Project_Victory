@@ -46,29 +46,29 @@ private:
 	UPROPERTY()
 	TObjectPtr<UInteracterComponent> _InterruptInteracter = nullptr;
 
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact|Debug")
+private:
+	UPROPERTY(EditAnywhere, Category = "Interact|Debug")
 	bool _isDebugDraw = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
-	float _collisionRadius = 100.0f;
+	UPROPERTY(EditAnywhere, Category = "Interact")
+	float _actorScale = 1.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
+	UPROPERTY(EditAnywhere, Category = "Interact")
 	E_INTERACT_TYPE _interactType;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
+	UPROPERTY(EditAnywhere, Category = "Interact")
 	bool _isInterrupt = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
+	UPROPERTY(EditAnywhere, Category = "Interact")
 	E_UI_TYPE _interactUIType;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
+	UPROPERTY(EditAnywhere, Category = "Interact")
 	bool _isWorldSpaceUI = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
+	UPROPERTY(EditAnywhere, Category = "Interact")
 	FVector _worldUIRelativeLocation = FVector(0, 0, 150);
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
+	UPROPERTY(EditAnywhere, Category = "Interact")
 	float _worldUIScale = 1.0f;
 
 public:
@@ -94,6 +94,11 @@ protected:
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+public:
+	void InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType, bool IsWorldSpaceUI, FVector WorldUIRelativeLocation, float WorldUIScale);
+
+	bool TryInteract(APlayerController* CallerController, bool& OutIsInterupt, bool& IsCloseUI);
 
 	UFUNCTION()
 	void OnTriggerEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -137,11 +142,6 @@ private:
 
 	/** 멀티캐스트 수신 측: AssignedPlayerId에 해당하는 PC를 찾고, 그 PC가 로컬일 때만 반환. (로컬 PC 우선 조회에 의존하지 않음) */
 	bool FindLocalPlayerControllerByAssignedId(UWorld* World, int32 AssignedPlayerId, AJHSPlayerController*& OutController);
-
-public:
-	void InitializeUIInteractable(bool IsDebugDraw, float InteractRadius, E_INTERACT_TYPE InteractType, E_UI_TYPE InteractUIType, bool IsWorldSpaceUI, FVector WorldUIRelativeLocation, float WorldUIScale);
-
-	bool TryInteract(APlayerController* CallerController, bool& OutIsInterupt, bool& IsCloseUI);
 
 private:
 	void ChangeInteractState(bool IsInteract, int32 CallerPlayerId, APlayerController* CallerController);

@@ -249,7 +249,7 @@ bool AAsteroid::GetSpaceManager()
 	if (SpaceManager == nullptr)  // Fixed: Use == for comparison instead of = for assignment
 	{
 		USpaceManager* _outSpaceManager = nullptr;
-		if (!UStaticFunctionLibrary::TryGetSpaceManager(_outSpaceManager))
+		if (!UStaticFunctionLibrary::TryGetSpaceManager(this, _outSpaceManager))
 			return false;  // Changed: Return false if failed to get SpaceManager
 
 		SpaceManager = _outSpaceManager;

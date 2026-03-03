@@ -190,7 +190,7 @@ void ARaderBase::LoadRaderObjectMesh()
 void ARaderBase::InitializeRaderBase()
 {
 	USpaceManager* _outSpaceManager = nullptr;
-	if (!UStaticFunctionLibrary::TryGetSpaceManager(_outSpaceManager))
+	if (!UStaticFunctionLibrary::TryGetSpaceManager(this, _outSpaceManager))
 		return;
 
 	_spaceManager = _outSpaceManager;

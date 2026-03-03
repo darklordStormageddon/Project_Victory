@@ -20,8 +20,13 @@ void AInteractableStageController::OnInteractExit(int32 CallerPlayerId, TObjectP
 
 void AInteractableStageController::InteractController(int32 CallerPlayerId)
 {
+	// 플레이어	
+	AJHSPlayerController* _outCallerController = nullptr;
+	if (!UStaticFunctionLibrary::TryGetPlayerController(_outCallerController))
+		return;
+
 	AJHSGameMode* _outGameMode = nullptr;
-	if (!UStaticFunctionLibrary::TryGetGameMode(_outGameMode))
+	if (!UStaticFunctionLibrary::TryGetGameMode(_outCallerController->GetPawn(), _outGameMode))
 		return;
 
 	AJHSPlayerController* _callerController = nullptr;

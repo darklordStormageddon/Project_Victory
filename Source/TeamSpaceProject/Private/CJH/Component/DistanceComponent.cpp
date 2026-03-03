@@ -29,7 +29,7 @@ void UDistanceComponent::BeginPlay()
 
 	OwnerActor = Cast<APSJ_Spaceship>(GetOwner());
 
-	if (UStaticFunctionLibrary::TryGetGameMode(InGameMode) && InGameMode)
+	if (UStaticFunctionLibrary::TryGetGameMode(OwnerActor, InGameMode) && InGameMode)
 	{
 		SpaceRadius = InGameMode->GetSpaceManager()->GetSpaceRadius();
 		SpaceStation = InGameMode->GetSpaceManager()->GetSpaceStation();

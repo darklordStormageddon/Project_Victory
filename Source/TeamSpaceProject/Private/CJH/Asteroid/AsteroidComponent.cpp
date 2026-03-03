@@ -142,7 +142,8 @@ void UAsteroidComponent::SpawnAsteroid()
 {
 	if (!_ownerActor || !TargetShip) return;
 
-	if (!UStaticFunctionLibrary::TryGetGameMode(InGameMode))
+	
+	if (!UStaticFunctionLibrary::TryGetGameMode(GetOwner(), InGameMode))
 		return;
 
 	// 스폰 플래그 설정

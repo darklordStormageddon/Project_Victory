@@ -44,7 +44,7 @@ void USpaceObjectComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 void USpaceObjectComponent::InitializeSpaceObject()
 {
 	AJHSGameMode* _outGameMode = nullptr;
-	if (!UStaticFunctionLibrary::TryGetGameMode(_outGameMode))
+	if (!UStaticFunctionLibrary::TryGetGameMode(GetOwner(), _outGameMode))
 		return;
 
 	_spaceManager = _outGameMode->GetSpaceManager();

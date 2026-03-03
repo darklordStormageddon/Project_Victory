@@ -51,7 +51,7 @@ void ADriveSeatRader::Tick(float DeltaTime)
 void ADriveSeatRader::InitializeRader()
 {
 	USpaceManager* _outSpaceManager = nullptr;
-	if (!UStaticFunctionLibrary::TryGetSpaceManager(_outSpaceManager))
+	if (!UStaticFunctionLibrary::TryGetSpaceManager(this, _outSpaceManager))
 		return;
 
 	if (_spaceShip == nullptr)
