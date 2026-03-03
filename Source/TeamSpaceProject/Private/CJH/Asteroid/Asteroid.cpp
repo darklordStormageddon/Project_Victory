@@ -179,7 +179,8 @@ void AAsteroid::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if(AsteroidComponent)
 		AsteroidComponent->RemoveAsteroid(this);
 
-	SpaceManager->RemoveSpaceObject(SpaceObjectComp);
+	if (SpaceManager)
+		SpaceManager->RemoveSpaceObject(SpaceObjectComp);
 	 
 	Super::EndPlay(EndPlayReason);
 }
