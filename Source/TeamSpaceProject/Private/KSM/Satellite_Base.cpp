@@ -16,7 +16,12 @@ ASatellite_Base::ASatellite_Base()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-    bReplicates = true;
+	SetReplicates(true);
+	SetReplicateMovement(true);
+	bAlwaysRelevant = true;
+	bNetLoadOnClient = true;
+	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
     // ∑Á∆Æ
     SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
     RootComponent = SceneRoot;
@@ -47,10 +52,8 @@ ASatellite_Base::ASatellite_Base()
     SceneChild8->SetupAttachment(SceneRoot);
 
     SpaceObjectComp = CreateDefaultSubobject<USpaceObjectComponent>(TEXT("SpaceObjectComponent"));
-
-    bReplicates = true;
-    bAlwaysRelevant = true;
 }
+
 
 // Called when the game starts or when spawned
 void ASatellite_Base::BeginPlay()
