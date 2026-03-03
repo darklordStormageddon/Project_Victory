@@ -8,6 +8,12 @@
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
 
+#include "JHS/GameControl/StageChangeExample.h" 
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/Event/EventManager.h"
+#include "JHS/Event/CommonEventBase.h"
+#include "JHS/GameControl/JHSGameMode.h"
+
 ASolarWindManager::ASolarWindManager()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -20,34 +26,24 @@ void ASolarWindManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//UE_LOG(LogTemp, Error, TEXT("========================================"));
-	//UE_LOG(LogTemp, Error, TEXT("🎬 SolarWindManager BeginPlay() CALLED"));
-	//UE_LOG(LogTemp, Error, TEXT("========================================"));
+	// BeginPlay에서는 타이머를 설정하지 않음 (HandleStartStage에서만 시작)
 
-	// 첫 태양풍 이벤트는 InitialDelay(3분) 후에 시작
-	if (InitialDelay > 0.0f)
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("⏰ Scheduling first event after initial delay: %.1f seconds (%.1f minutes)"),
-		//	InitialDelay, InitialDelay / 60.0f);
+	if (!UStaticFunctionLibrary::TryGetEventManager(EventManager) || !EventManager)
+		return;
 
-		GetWorldTimerManager().SetTimer(
-			SolarWindIntervalTimerHandle,
-			this,
-			&ASolarWindManager::StartSolarWindEvent,
-			InitialDelay,
-			false // 반복 안 함
-		);
-
-		if (bShowDebugInfo)
+	OnStartStageHandle = EventManager->AddListener<UEventOnStartStage>(
+		[this](UEventOnStartStage* Event)
 		{
-			//UE_LOG(LogTemp, Warning, TEXT("✓ Solar Wind Manager initialized. First event in %.1f seconds (%.1f minutes)"),
-			//	InitialDelay, InitialDelay / 60.0f);
+			HandleStartStage(Event);
 		}
-	}
-	else
-	{
-		//UE_LOG(LogTemp, Error, TEXT("❌ InitialDelay is <= 0! Timer NOT set! Value: %.1f"), InitialDelay);
-	}
+	);
+
+	OnEndStageHandle = EventManager->AddListener<UEventOnEndStage>(
+		[this](UEventOnEndStage* Event)
+		{
+			HandleEndStage(Event);
+		}
+	);
 }
 
 void ASolarWindManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -60,12 +56,83 @@ void ASolarWindManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	// 실행 중인 카메라 셰이크 정리
 	CleanupActiveCameraShakes();
 
+	// 이벤트 리스너 제거
+	if (EventManager)
+	{
+		if (OnStartStageHandle.IsValid())
+		{
+			EventManager->DelListener<UEventOnStartStage>(OnStartStageHandle);
+		}
+		if (OnEndStageHandle.IsValid())
+		{
+			EventManager->DelListener<UEventOnEndStage>(OnEndStageHandle);
+		}
+	}
+
 	Super::EndPlay(EndPlayReason);
+}
+
+void ASolarWindManager::HandleStartStage(UEventOnStartStage* Event)
+{
+	if (!Event)
+		return;
+
+	bIsStageActive = true;
+	bIsFirstEvent = true;
+
+	if (bShowDebugInfo)
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("Solar Wind System ACTIVATED - Stage %d started"), Event->Stage);
+	}
+
+	// 스테이지 시작 시 첫 태양풍 이벤트 스케줄링
+	if (InitialDelay > 0.0f)
+	{
+		GetWorldTimerManager().SetTimer(
+			SolarWindIntervalTimerHandle,
+			this,
+			&ASolarWindManager::StartSolarWindEvent,
+			InitialDelay,
+			false
+		);
+
+		if (bShowDebugInfo)
+		{
+			//UE_LOG(LogTemp, Warning, TEXT("First solar wind event scheduled in %.1f seconds (%.1f minutes)"),
+			//	InitialDelay, InitialDelay / 60.0f);
+		}
+	}
+}
+
+void ASolarWindManager::HandleEndStage(UEventOnEndStage* Event)
+{
+	if (!Event)
+		return;
+
+	bIsStageActive = false;
+
+	if (bShowDebugInfo)
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("Solar Wind System DEACTIVATED - Stage ended"));
+	}
+
+	// 스테이지 종료 시 모든 타이머 정리
+	GetWorldTimerManager().ClearTimer(SolarWindIntervalTimerHandle);
+	GetWorldTimerManager().ClearTimer(WarningTimerHandle);
+	GetWorldTimerManager().ClearTimer(ShakeTimerHandle);
+
+	// 진행 중인 경보 및 카메라 셰이크 정리
+	bIsWarningActive = false;
+	CleanupActiveCameraShakes();
 }
 
 void ASolarWindManager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// 스테이지가 활성화되지 않았으면 아무것도 하지 않음
+	if (!bIsStageActive)
+		return;
 
 	// 경보 중일 때 카운트다운 표시
 	if (bIsWarningActive)
@@ -88,8 +155,13 @@ void ASolarWindManager::Tick(float DeltaTime)
 	}
 }
 
+
 void ASolarWindManager::StartSolarWindEvent()
 {
+	// 스테이지가 활성화되지 않았으면 실행하지 않음
+	if (!bIsStageActive)
+		return;
+
 	//UE_LOG(LogTemp, Error, TEXT("========================================"));
 	//UE_LOG(LogTemp, Error, TEXT("🌞 StartSolarWindEvent() CALLED"));
 	//UE_LOG(LogTemp, Error, TEXT("========================================"));
@@ -119,6 +191,10 @@ void ASolarWindManager::StartSolarWindEvent()
 
 void ASolarWindManager::TriggerSolarWindWarning()
 {
+	// 스테이지가 활성화되지 않았으면 실행하지 않음
+	if (!bIsStageActive)
+		return;
+
 	//UE_LOG(LogTemp, Error, TEXT("========================================"));
 	//UE_LOG(LogTemp, Error, TEXT("⚠ TriggerSolarWindWarning() CALLED"));
 	//UE_LOG(LogTemp, Error, TEXT("========================================"));
@@ -133,6 +209,10 @@ void ASolarWindManager::TriggerSolarWindWarning()
 
 void ASolarWindManager::TriggerSolarWindImpact()
 {
+	// 스테이지가 활성화되지 않았으면 실행하지 않음
+	if (!bIsStageActive)
+		return;
+
 	//UE_LOG(LogTemp, Error, TEXT("========================================"));
 	//UE_LOG(LogTemp, Error, TEXT("💥 TriggerSolarWindImpact() CALLED"));
 	//UE_LOG(LogTemp, Error, TEXT("========================================"));
@@ -154,6 +234,10 @@ void ASolarWindManager::TriggerSolarWindImpact()
 
 void ASolarWindManager::ScheduleNextEvent()
 {
+	// 스테이지가 활성화되지 않았으면 스케줄링하지 않음
+	if (!bIsStageActive)
+		return;
+
 	float NextInterval = 0.0f;
 
 	if (bIsFirstEvent)

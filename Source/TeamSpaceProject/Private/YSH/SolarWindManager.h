@@ -6,6 +6,10 @@
 #include "GameFramework/Actor.h"
 #include "SolarWindManager.generated.h"
 
+class UEventManager;
+class UEventOnStartStage;
+class UEventOnEndStage;
+
 // 델리게이트 선언
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSolarWindWarning, float, WarningDuration);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSolarWindImpact);
@@ -83,6 +87,23 @@ private:
 	// 카메라 셰이크 추적
 	TArray<TWeakObjectPtr<class UCameraShakeBase>> ActiveCameraShakes;
 
+
+	// 이벤트 관련
+	FDelegateHandle OnStartStageHandle;
+	FDelegateHandle OnEndStageHandle;
+	UPROPERTY()
+	UEventManager* EventManager;
+
+	// 스테이지 상태 추적
+	bool bIsStageActive = false;
+
+	// 첫 이벤트 여부 추적
+	bool bIsFirstEvent;
+
+	// 이벤트 핸들러
+	void HandleStartStage(UEventOnStartStage* Event);
+	void HandleEndStage(UEventOnEndStage* Event);
+
 	// 내부 함수들
 	void StartSolarWindEvent();
 	void TriggerSolarWindWarning();
@@ -93,7 +114,4 @@ private:
 
 	// 다음 이벤트 스케줄링
 	void ScheduleNextEvent();
-
-	// 첫 이벤트 여부 추적
-	bool bIsFirstEvent = true;
 };
