@@ -593,12 +593,16 @@ bool APSJ_Character::TryUnboard()
 
 }
 
+void APSJ_Character::OnShootAnimFinished()
+{
+	bIsPlayingShootAnim = false;
+}
 
 
 void APSJ_Character::Move(const FInputActionValue& Value)
 {
 
-	if (bIsActivelyRepairing)
+	if (bIsActivelyRepairing || bIsPlayingShootAnim)
 	{
 		return;
 	}
@@ -621,6 +625,9 @@ void APSJ_Character::StopMove(const FInputActionValue& Value)
 
 void APSJ_Character::Look(const FInputActionValue& Value)
 {
+
+	//if (bIsPlayingShootAnim) return;
+
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
 	if (LookAxisVector.X != 0.0f)
@@ -808,12 +815,37 @@ void APSJ_Character::Server_SetAnchoring_Implementation(AActor* NewBase)
 
 void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
 {
-	if (CurrentSpaceship) return;
+	// 1. 우주선 탑승 중이거나 이미 애니메이션 재생 중이면 차단
+	if (CurrentSpaceship || bIsPlayingShootAnim) return;
 
+	// 2. [추가] 도구의 타이머(쿨다운)가 동작 중이면 우클릭 기능 완전히 차단
 	if (EquippedTool && EquippedTool->bIsOnCooldown)
 	{
-		Server_TryForceEject(nullptr);
 		return;
+	}
+
+	// 3. 애니메이션 재생 및 입력 제한 설정
+	if (ShootMontage)
+	{
+		float Duration = PlayAnimMontage(ShootMontage);
+		if (Duration > 0.0f)
+		{
+			bIsPlayingShootAnim = true;
+
+			// 애니메이션 길이만큼 대기 후 OnShootAnimFinished 호출
+			GetWorld()->GetTimerManager().SetTimer(
+				ShootAnimTimerHandle,
+				this,
+				&APSJ_Character::OnShootAnimFinished,
+				Duration,
+				false
+			);
+
+			// 즉시 이동 중지 처리
+			CurrentInputVector = FVector2D::ZeroVector;
+			Server_SetInputVector(FVector2D::ZeroVector);
+			if (GetCharacterMovement()) GetCharacterMovement()->Velocity = FVector::ZeroVector;
+		}
 	}
 
 
