@@ -67,9 +67,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Rotation")
 	float MaxRotateSpeed = 20.0f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Info")
-	float ShockConstant = 0.01f;//충격량 보정 상수
-
 	UPROPERTY(EditDefaultsOnly, Category = "Particle")
 	UParticleSystem* HitParticle;
 

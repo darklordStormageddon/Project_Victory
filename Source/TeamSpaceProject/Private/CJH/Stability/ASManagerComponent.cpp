@@ -39,19 +39,18 @@ void UASManagerComponent::BeginPlay()
 void UASManagerComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (GetOwner() && GetOwner()->HasAuthority())
-	{
 		StopSpawn();
-	}
 
 	Super::EndPlay(EndPlayReason);
 }
 
 void UASManagerComponent::StartSpawn()
 {
-	if (!GetOwner() || !GetOwner()->HasAuthority())
+	if (!GetOwner() || !spaceStation->HasAuthority())
 		return;
-
-	Artifical_Satellite_Spawn();
+	
+	if(spaceStation->HasAuthority())
+		Artifical_Satellite_Spawn();
 }
 
 void UASManagerComponent::StopSpawn()
@@ -59,7 +58,8 @@ void UASManagerComponent::StopSpawn()
 	if (!GetWorld())
 		return;
 
-	GetWorld()->GetTimerManager().ClearTimer(Spawn_TimerHandle);
+	if (spaceStation->HasAuthority())
+		GetWorld()->GetTimerManager().ClearTimer(Spawn_TimerHandle);
 }
 
 void UASManagerComponent::ClearSpawnedSatellites()
@@ -121,6 +121,9 @@ void UASManagerComponent::Artifical_Satellite_Spawn()
 
 void UASManagerComponent::SpawnNextArtificialSatellite()
 {
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+		return;
+
 	if (!spaceStation || Artifical_Satellite.Num() <= 0 || !GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(Spawn_TimerHandle);
@@ -151,7 +154,11 @@ void UASManagerComponent::SpawnNextArtificialSatellite()
 
 	int AS_Num = FMath::RandRange(0, Artifical_Satellite.Num() - 1);
 
-	ASatellite_Base* SpawnedSatellite = GetWorld()->SpawnActor<ASatellite_Base>(Artifical_Satellite[AS_Num], Spawn_Location, Spawn_Rotation);
+	ASatellite_Base* SpawnedSatellite = GetWorld()->SpawnActor<ASatellite_Base>(
+		Artifical_Satellite[AS_Num],
+		Spawn_Location,
+		Spawn_Rotation
+	);
 	if (SpawnedSatellite)
 	{
 		SpawnedSatellites.Add(SpawnedSatellite);

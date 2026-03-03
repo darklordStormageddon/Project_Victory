@@ -227,7 +227,7 @@ void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 
 	// ===== Á×¾úÀ» ¶§¸¸ Æó±â¹° ½ºÆù =====
-	if (EnemyGarbage && Murdered)
+	if (Murdered)
 	{
 		SpawnGarbageSetting();
 	}
