@@ -13,17 +13,36 @@
 #include "Kismet/GameplayStatics.h"
 #include "JHS/Turret/TurretStand.h"
 #include "YSH/TurretChair.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UTurretStateGroup::UTurretStateGroup()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
+	SetIsReplicatedByDefault(true);
 }
 
+void UTurretStateGroup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UTurretStateGroup, _replicatedTurretDataArray);
+	DOREPLIFETIME(UTurretStateGroup, _replicatedAmmoDataArray);
+	DOREPLIFETIME(UTurretStateGroup, _mainTurretType);
+}
+
+void UTurretStateGroup::OnRep_TurretDataArray()
+{
+	_turretDataMap.Empty();
+	for (const FTurretData& _data : _replicatedTurretDataArray)
+		_turretDataMap.Add(GetTurretKey(_data.IsMainTurret, _data.AmmoType), _data);
+}
+
+void UTurretStateGroup::OnRep_AmmoDataArray()
+{
+	_ammoDataMap.Empty();
+	for (const FAmmoData& _data : _replicatedAmmoDataArray)
+		_ammoDataMap.Add(_data.AmmoType, _data);
+}
 
 // Called when the game starts
 void UTurretStateGroup::BeginPlay()
@@ -221,6 +240,7 @@ void UTurretStateGroup::TryPurchaseTurret(bool IsMainTurret, E_AMMO_TYPE AmmoTyp
 	}
 
 	ExecuteTurretEvent(IsMainTurret, AmmoType, *_outTurretData);
+	SyncTurretStateToReplicated();
 }
 
 void UTurretStateGroup::TryPurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex)
@@ -233,6 +253,7 @@ void UTurretStateGroup::TryPurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex)
 	TObjectPtr<UShopManager> _shopManager = _gameState->GetShopManager();
 	if (_shopManager == nullptr || !_shopManager->TryPurchase(_data))
 		return;
+	SyncTurretStateToReplicated();
 }
 
 void UTurretStateGroup::SetStartSettings(bool IsInfiniteMagMode, E_AMMO_TYPE MainTurretType, bool IsStartEquipMainTurret, TArray<E_AMMO_TYPE> _startEquipAutoTurretArray)
@@ -488,6 +509,20 @@ void UTurretStateGroup::LoadTurretDataTable()
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("Ammo Data Table loaded successfully. %d rows loaded"), _turretDataMap.Num());
+	SyncTurretStateToReplicated();
+}
+
+void UTurretStateGroup::SyncTurretStateToReplicated()
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		_replicatedTurretDataArray.Empty();
+		for (const auto& _pair : _turretDataMap)
+			_replicatedTurretDataArray.Add(_pair.Value);
+		_replicatedAmmoDataArray.Empty();
+		for (const auto& _pair : _ammoDataMap)
+			_replicatedAmmoDataArray.Add(_pair.Value);
+	}
 }
 
 int32 UTurretStateGroup::GetTurretKey(bool IsMainTurret, E_AMMO_TYPE AmmoType)
@@ -556,6 +591,7 @@ void UTurretStateGroup::ChangeTurretAmmo(bool IsMainTurret, E_AMMO_TYPE AmmoType
 	}
 
 	ExecuteTurretEvent(IsMainTurret, AmmoType, *_outTurretData);
+	SyncTurretStateToReplicated();
 }
 
 void UTurretStateGroup::ExecuteTurretEvent(bool IsMainTurret, E_AMMO_TYPE AmmoType, FTurretData TurretData)

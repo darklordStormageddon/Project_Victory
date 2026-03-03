@@ -38,13 +38,13 @@ protected:
 
 	virtual void NativeDestruct() override;
 
+	virtual void RegisterEvent() {}
+
+	virtual void UnregisterEvent() {}
+
 	virtual void OnOpen() { }
 
 	virtual void OnClose() { }
-
-	virtual void RegisterEvent() { }
-
-	virtual void UnregisterEvent() { }
 
 public:
 	UPROPERTY(BlueprintReadOnly, Category = "UI|Base")

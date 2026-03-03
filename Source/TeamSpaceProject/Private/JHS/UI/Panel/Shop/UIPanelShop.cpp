@@ -4,6 +4,8 @@
 #include "JHS/UI/Panel/Shop/UIPanelShop.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/Event/EventManager.h"
+#include "JHS/Event/CommonEventBase.h"
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
@@ -50,6 +52,33 @@ void UUIPanelShop::NativeOnInitialized()
 	if (BTN_SaleElement != nullptr)
 	{
 		BTN_SaleElement->ClickedEnter.AddDynamic(this, &UUIPanelShop::OnClickSaleElement);
+	}
+}
+
+void UUIPanelShop::RegisterEvent()
+{
+	TObjectPtr<UEventManager> EventManager = GetEventManager();
+	if (EventManager != nullptr)
+	{
+		_eventHandleOnPurchase = EventManager->AddListener<UEventOnPurchase>(
+			[this](UEventOnPurchase* Event)
+			{
+				OnChangeSpaceShipData(Event);
+			}
+		);
+	}
+}
+
+void UUIPanelShop::UnregisterEvent()
+{
+	TObjectPtr<UEventManager> EventManager = GetEventManager();
+	if (EventManager != nullptr)
+	{
+		if (_eventHandleOnPurchase.IsValid())
+		{
+			EventManager->DelListener<UEventOnPurchase>(_eventHandleOnPurchase);
+			_eventHandleOnPurchase.Reset();
+		}
 	}
 }
 
@@ -214,6 +243,14 @@ bool UUIPanelShop::TryGetPurchaseCategory(E_PURCHASE_CATEGORY Category, TObjectP
 
     OutPurchaseCategory = _purchaseCategoryMap[Category];
 	return true;
+}
+
+void UUIPanelShop::OnChangeSpaceShipData(UEventOnPurchase* Event)
+{
+	if (Event == nullptr)
+		return;
+
+	SelectCategory(_selectedCategory);
 }
 
 void UUIPanelShop::OnClickSaleElement()

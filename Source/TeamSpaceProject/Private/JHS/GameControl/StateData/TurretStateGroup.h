@@ -36,8 +36,23 @@ private:
 	UPROPERTY()
 	TMap<E_AMMO_TYPE, TObjectPtr<ATurretStand>> _turretStandMap;
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	E_AMMO_TYPE _mainTurretType = E_AMMO_TYPE::NONE;
+
+	UPROPERTY(ReplicatedUsing = "OnRep_TurretDataArray")
+	TArray<FTurretData> _replicatedTurretDataArray;
+
+	UPROPERTY(ReplicatedUsing = "OnRep_AmmoDataArray")
+	TArray<FAmmoData> _replicatedAmmoDataArray;
+
+protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION()
+	void OnRep_TurretDataArray();
+
+	UFUNCTION()
+	void OnRep_AmmoDataArray();
 
 	const int32 CONSUME_AMMO = -1;
 
@@ -106,4 +121,6 @@ private:
 	void ChangeTurretAmmo(bool IsMainTurret, E_AMMO_TYPE AmmoType, int32 ChangeValue);
 
 	void ExecuteTurretEvent(bool IsMainTurret, E_AMMO_TYPE AmmoType, FTurretData TurretData);
+
+	void SyncTurretStateToReplicated();
 };

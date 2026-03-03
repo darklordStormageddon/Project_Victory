@@ -10,6 +10,7 @@
 #include "JHS/Event/CommonEventBase.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/GameControl/CommonEnums.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UCollectStateGroup::UCollectStateGroup()
@@ -18,9 +19,22 @@ UCollectStateGroup::UCollectStateGroup()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
+	SetIsReplicatedByDefault(true);
 }
 
+void UCollectStateGroup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UCollectStateGroup, _replicatedCollectToolDataArray);
+	DOREPLIFETIME(UCollectStateGroup, _selectedToolType);
+}
+
+void UCollectStateGroup::OnRep_CollectToolDataArray()
+{
+	_collectToolDataMap.Empty();
+	for (const FCollectToolData& _data : _replicatedCollectToolDataArray)
+		_collectToolDataMap.Add(_data.CollectToolType, _data);
+}
 
 // Called when the game starts
 void UCollectStateGroup::BeginPlay()
@@ -92,6 +106,7 @@ void UCollectStateGroup::TryPurchaseCollectTool(E_COLLECT_TOOL_TYPE ToolType, bo
 		return;
 
 	ExecuteEventToolDurability(*_outCollectToolData);
+	SyncCollectToolDataToReplicatedArray();
 }
 
 void UCollectStateGroup::RepairAllTool()
@@ -101,6 +116,7 @@ void UCollectStateGroup::RepairAllTool()
 		_collectToolData.Value.Durability.Value.CurrentValue = _collectToolData.Value.Durability.Value.MaxValue;
 		ExecuteEventToolDurability(_collectToolData.Value);
 	}
+	SyncCollectToolDataToReplicatedArray();
 }
 
 bool UCollectStateGroup::TrySelectTool(E_COLLECT_TOOL_TYPE CollectToolType)
@@ -145,6 +161,7 @@ bool UCollectStateGroup::TryUseTool(int32 CallerAssignedPlayerId, E_COLLECT_TOOL
 	OutToolDamage = _outCollectToolData->ToolDamage.Value.MaxValue;
 
 	ExecuteEventToolDurability(*_outCollectToolData);
+	SyncCollectToolDataToReplicatedArray();
 
 	if (_gameState != nullptr)
 	{
@@ -155,6 +172,16 @@ bool UCollectStateGroup::TryUseTool(int32 CallerAssignedPlayerId, E_COLLECT_TOOL
 		}
 	}
 	return true;
+}
+
+void UCollectStateGroup::SyncCollectToolDataToReplicatedArray()
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		_replicatedCollectToolDataArray.Empty();
+		for (const auto& _pair : _collectToolDataMap)
+			_replicatedCollectToolDataArray.Add(_pair.Value);
+	}
 }
 
 void UCollectStateGroup::LoadCollectToolDataTable()
@@ -190,6 +217,7 @@ void UCollectStateGroup::LoadCollectToolDataTable()
 			_collectToolDataMap.Add(_newCollectToolData.CollectToolType, _newCollectToolData);
 		}
 	}
+	SyncCollectToolDataToReplicatedArray();
 }
 
 bool UCollectStateGroup::TryGetCollectToolData(E_COLLECT_TOOL_TYPE CollectToolType, FCollectToolData*& OutCollectToolData)

@@ -26,6 +26,15 @@ private:
 	UPROPERTY()
 	TMap<E_SPACE_SHIP_DATA_TYPE, FSpaceShipData> _spaceShipDataMap;
 
+	UPROPERTY(ReplicatedUsing = "OnRep_SpaceShipDataArray")
+	TArray<FSpaceShipData> _replicatedSpaceShipDataArray;
+
+protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION()
+	void OnRep_SpaceShipDataArray();
+
 	const float CONSUME_FUEL_VALUE = 1.0f;
 
 	// Repair Shield
@@ -88,4 +97,6 @@ private:
 	void ExecuteEventSpaceShipData(FSpaceShipData SpaceShipData);
 
 	bool TryGetSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType, FSpaceShipData*& OutSpaceShipData);
+
+	void SyncSpaceShipDataToReplicated();
 };

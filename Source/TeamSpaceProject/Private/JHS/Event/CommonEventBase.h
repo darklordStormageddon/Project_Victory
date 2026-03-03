@@ -62,6 +62,18 @@ public:
 	{
 	}
 };
+
+UCLASS(BlueprintType)
+class UEventOnPurchase : public UCommonEventBase
+{
+	GENERATED_BODY()
+
+public:
+	UEventOnPurchase(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{
+	}
+};
 #pragma endregion Game Control
 
 #pragma region SpaceShip

@@ -16,6 +16,7 @@ class UInteractableScrollBox;
 class USizeBox;
 class UPlateContainer;
 class UInteractableButton;
+class UEventOnPurchase;
 
 UCLASS()
 class UUIPanelShop : public UUIBase
@@ -60,8 +61,14 @@ private:
 	UPROPERTY()
 	E_PURCHASE_CATEGORY _selectedCategory = E_PURCHASE_CATEGORY::SpaceShip;
 
+	FDelegateHandle _eventHandleOnPurchase;
+
 protected:
 	void NativeOnInitialized() override;
+
+	void RegisterEvent() override;
+
+	void UnregisterEvent() override;
 
 	void OnOpen() override;
 
@@ -76,6 +83,8 @@ private:
 	TArray<FPurchaseData*> GetPurchaseDataArray(E_PURCHASE_CATEGORY SelectedCategory);
 
 	bool TryGetPurchaseCategory(E_PURCHASE_CATEGORY Category, TObjectPtr<UPurchaseCategory>& OutPurchaseCategory);
+
+	void OnChangeSpaceShipData(UEventOnPurchase* Event);
 
 	// BTN_SaleElement
 private:

@@ -2,6 +2,8 @@
 
 
 #include "JHS/GameControl/ShopManager.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/Event/EventManager.h"
 #include "JHS/GameControl/StateData/ContainerStateGroup.h"
 
 // Sets default values for this component's properties
@@ -76,6 +78,12 @@ bool UShopManager::TryPurchase(FPurchaseData* PurchaseData)
 	_purchaseData.Value.CurrentValue = _purchaseData.Value.MaxValue;
 
 	*PurchaseData = _purchaseData;
+
+	UEventOnPurchase* _event = NewObject<UEventOnPurchase>(this);
+	if (_event == nullptr)
+		return true;
+
+	UEventManager::ExecuteEvent<UEventOnPurchase>(_event);
 	return true;
 }
 

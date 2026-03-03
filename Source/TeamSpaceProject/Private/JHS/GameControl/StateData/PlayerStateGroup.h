@@ -27,7 +27,15 @@ private:
 	UPROPERTY()
 	TMap<int32, FPlayerStateData> _playerStateMap;
 
+	UPROPERTY(ReplicatedUsing = "OnRep_PlayerStateArray")
+	TArray<FPlayerStateData> _replicatedPlayerStateArray;
+
+	UFUNCTION()
+	void OnRep_PlayerStateArray();
+
 protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
@@ -48,4 +56,6 @@ public:
 
 private:
 	bool TryGetPlayerStateData(int32 PlayerUID, FPlayerStateData*& OutPlayerStateData);
+
+	void SyncPlayerStateToReplicated();
 };

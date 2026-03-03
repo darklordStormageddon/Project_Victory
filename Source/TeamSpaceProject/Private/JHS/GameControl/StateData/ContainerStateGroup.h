@@ -27,7 +27,23 @@ private:
 	UPROPERTY()
 	FContainerState _containerState;
 
+	/** 리플리케이트용. 서버에서 _containerState 갱신 시 이 배열들 동기화. */
+	UPROPERTY(ReplicatedUsing = "OnRep_ContainerStateReplicated")
+	TArray<FElementData> _replicatedElementArray;
+
+	UPROPERTY(Replicated)
+	int32 _replicatedOwnedDollar = 0;
+
+	UPROPERTY(Replicated)
+	float _replicatedSaleInterval = 0.5f;
+
+	UFUNCTION()
+	void OnRep_ContainerStateReplicated();
+
 	FTimerHandle _saleAllElementTimerHandle;
+
+protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
 	int32 GetOwnedDollar() { return _containerState.OwnedDollar; }
@@ -62,4 +78,6 @@ private:
 	void ExecuteEventOnChangeElement(FElementData ElementData);
 
 	void ExecuteEventOnChangeOwnedDollar(int32 OwnedDollar);
+
+	void SyncContainerStateToReplicated();
 };

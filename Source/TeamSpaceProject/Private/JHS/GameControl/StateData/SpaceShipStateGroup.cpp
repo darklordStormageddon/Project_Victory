@@ -12,15 +12,27 @@
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
 #include "JHS/GameControl/CommonEnums.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 USpaceShipStateGroup::USpaceShipStateGroup()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
+	SetIsReplicatedByDefault(true);
 }
 
+void USpaceShipStateGroup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(USpaceShipStateGroup, _replicatedSpaceShipDataArray);
+}
+
+void USpaceShipStateGroup::OnRep_SpaceShipDataArray()
+{
+	_spaceShipDataMap.Empty();
+	for (const FSpaceShipData& _data : _replicatedSpaceShipDataArray)
+		_spaceShipDataMap.Add(_data.DataType, _data);
+}
 
 // Called when the game starts
 void USpaceShipStateGroup::BeginPlay()
@@ -56,6 +68,7 @@ void USpaceShipStateGroup::UpdateSpaceShipState()
 			ChangCurrentData(_outSpaceShipData, _outSpaceShipData->Data.Value.CurrentValue);
 		}
 	}
+	SyncSpaceShipDataToReplicated();
 }
 
 TArray<FPurchaseData*> USpaceShipStateGroup::GetPurchaseDataArray()
@@ -95,6 +108,7 @@ void USpaceShipStateGroup::RepairSpaceShip()
 	{
 		ChangCurrentData(_outSpaceShipData, _outSpaceShipData->Data.Value.MaxValue);
 	}
+	SyncSpaceShipDataToReplicated();
 }
 
 void USpaceShipStateGroup::TakeDamage(float Damage)
@@ -141,6 +155,7 @@ void USpaceShipStateGroup::TakeDamage(float Damage)
 
 	// Repair shield timer
 	StartRepairShield();
+	SyncSpaceShipDataToReplicated();
 }
 
 void USpaceShipStateGroup::StartRepairShield()
@@ -161,7 +176,11 @@ void USpaceShipStateGroup::RepairShield()
 		ChangCurrentData(_outSpaceShipData, _shieldData->CurrentValue + _deltaTime * _repairShieldValue);
 
 		if (_shieldData->CurrentValue >= _shieldData->MaxValue)
+		{
+			SyncSpaceShipDataToReplicated();
 			return;
+		}
+		SyncSpaceShipDataToReplicated();
 	}
 
 	if (_deltaTime > 0.0f)
@@ -184,6 +203,7 @@ bool USpaceShipStateGroup::TryConsumeFuel()
 		return false;
 
 	ChangCurrentData(_outFuelData, _outFuelData->Data.Value.CurrentValue - _consumeValue);
+	SyncSpaceShipDataToReplicated();
 	return true;
 }
 #pragma endregion Feul
@@ -233,6 +253,17 @@ void USpaceShipStateGroup::LoadSpaceShipData()
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("SpaceShip Data Table loaded successfully. %d rows loaded"), _spaceShipDataMap.Num());
+	SyncSpaceShipDataToReplicated();
+}
+
+void USpaceShipStateGroup::SyncSpaceShipDataToReplicated()
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		_replicatedSpaceShipDataArray.Empty();
+		for (const auto& _pair : _spaceShipDataMap)
+			_replicatedSpaceShipDataArray.Add(_pair.Value);
+	}
 }
 
 void USpaceShipStateGroup::DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType, float DecreaseValue)
@@ -255,6 +286,7 @@ void USpaceShipStateGroup::TryPurchaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataT
 		return;
 
 	ChangeMaxData(_outSpaceShipData, _outSpaceShipData->Data.Value.MaxValue, true);
+	SyncSpaceShipDataToReplicated();
 }
 
 void USpaceShipStateGroup::ChangeMaxData(FSpaceShipData* OriginalData, float MaxValue, bool IsRepairCurrentValue)

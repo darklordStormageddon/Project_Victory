@@ -8,17 +8,31 @@
 #include "JHS/Event/CommonEventBase.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/GameControl/CommonEnums.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UContainerStateGroup::UContainerStateGroup()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
+	SetIsReplicatedByDefault(true);
 }
 
+void UContainerStateGroup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UContainerStateGroup, _replicatedElementArray);
+	DOREPLIFETIME(UContainerStateGroup, _replicatedOwnedDollar);
+	DOREPLIFETIME(UContainerStateGroup, _replicatedSaleInterval);
+}
+
+void UContainerStateGroup::OnRep_ContainerStateReplicated()
+{
+	_containerState.OwnedDollar = _replicatedOwnedDollar;
+	_containerState.SaleInterval = _replicatedSaleInterval;
+	_containerState.ElementDataMap.Empty();
+	for (const FElementData& _data : _replicatedElementArray)
+		_containerState.ElementDataMap.Add(_data.ElementType, _data);
+}
 
 // Called when the game starts
 void UContainerStateGroup::BeginPlay()
@@ -38,12 +52,25 @@ void UContainerStateGroup::TickComponent(float DeltaTime, ELevelTick TickType, F
 	// ...
 }
 
+void UContainerStateGroup::SyncContainerStateToReplicated()
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		_replicatedOwnedDollar = _containerState.OwnedDollar;
+		_replicatedSaleInterval = _containerState.SaleInterval;
+		_replicatedElementArray.Empty();
+		for (const auto& _pair : _containerState.ElementDataMap)
+			_replicatedElementArray.Add(_pair.Value);
+	}
+}
+
 void UContainerStateGroup::InitializeContainerState(TObjectPtr<AJHSGameState> GameState, FContainerState InitContainerState)
 {
 	_gameState = GameState;
 
 	_containerState = InitContainerState;
 	LoadElementData();
+	SyncContainerStateToReplicated();
 }
 
 void UContainerStateGroup::UpdateContainerState()
@@ -69,6 +96,7 @@ void UContainerStateGroup::AddElement(E_ELEMENT_TYPE ElementType, int32 Amount)
 	_elementData->Amount += Amount;
 
 	ExecuteEventOnChangeElement(*_elementData);
+	SyncContainerStateToReplicated();
 }
 
 void UContainerStateGroup::SaleAllElement()
@@ -83,6 +111,7 @@ bool UContainerStateGroup::TryConsumeDollar(int32 Amount)
 
 	_containerState.OwnedDollar -= Amount;
 	ExecuteEventOnChangeOwnedDollar(_containerState.OwnedDollar);
+	SyncContainerStateToReplicated();
 	return true;
 }
 
@@ -109,6 +138,7 @@ void UContainerStateGroup::SaleElementInternal(int32 ElementTypeIndex)
 		_elementData->Amount = 0;
 
 		ExecuteEventOnChangeElement(*_elementData);
+		SyncContainerStateToReplicated();
 	}
 
 	if (_containerState.SaleInterval <= 0.0f)

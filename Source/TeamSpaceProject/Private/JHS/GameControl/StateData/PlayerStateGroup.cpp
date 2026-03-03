@@ -7,25 +7,42 @@
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UPlayerStateGroup::UPlayerStateGroup()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
+	SetIsReplicatedByDefault(true);
 }
 
+void UPlayerStateGroup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UPlayerStateGroup, _replicatedPlayerStateArray);
+}
+
+void UPlayerStateGroup::OnRep_PlayerStateArray()
+{
+	_playerStateMap.Empty();
+	for (const FPlayerStateData& _data : _replicatedPlayerStateArray)
+		_playerStateMap.Add(_data.AssignedPlayerId, _data);
+}
+
+void UPlayerStateGroup::SyncPlayerStateToReplicated()
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		_replicatedPlayerStateArray.Empty();
+		for (const auto& _pair : _playerStateMap)
+			_replicatedPlayerStateArray.Add(_pair.Value);
+	}
+}
 
 // Called when the game starts
 void UPlayerStateGroup::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// ...
-	
 }
 
 
@@ -104,6 +121,7 @@ bool UPlayerStateGroup::TryRegistPlayer(TObjectPtr<AJHSPlayerState> PlayerState,
 		_jhsPS->SetAssignedPlayerId(_assignedId);
 
 	_playerStateMap.Add(_newPlayerData.AssignedPlayerId, _newPlayerData);
+	SyncPlayerStateToReplicated();
 	return true;
 }
 
@@ -149,6 +167,7 @@ void UPlayerStateGroup::IncreasePlayerRadiation(int32 CallerAssignedPlayerId, fl
 		_eventDied->CallerAssignedPlayerId = CallerAssignedPlayerId;
 		_gameState->GetEventManager()->ExecuteEvent<UEventOnPlayerDied>(_eventDied);
 	}
+	SyncPlayerStateToReplicated();
 }
 
 bool UPlayerStateGroup::TryGetPlayerStateData(int32 PlayerUID, FPlayerStateData*& OutPlayerStateData)

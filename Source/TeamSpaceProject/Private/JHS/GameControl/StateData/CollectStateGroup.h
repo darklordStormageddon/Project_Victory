@@ -30,10 +30,19 @@ private:
 	UPROPERTY()
 	TMap<E_COLLECT_TOOL_TYPE, FCollectToolData> _collectToolDataMap;
 
-	UPROPERTY()
+	/** 리플리케이트용 (엔진이 TMap 복제 미지원). 서버에서 맵 갱신 시 _replicatedCollectToolDataArray 동기화 후 클라이언트 OnRep에서 맵 재구성. */
+	UPROPERTY(ReplicatedUsing = "OnRep_CollectToolDataArray")
+	TArray<FCollectToolData> _replicatedCollectToolDataArray;
+
+	UPROPERTY(Replicated)
 	E_COLLECT_TOOL_TYPE _selectedToolType = E_COLLECT_TOOL_TYPE::NONE;
 
+	UFUNCTION()
+	void OnRep_CollectToolDataArray();
+
 protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
@@ -64,4 +73,6 @@ private:
 	void ExecuteEventToolDurability(FCollectToolData CollectToolData);
 
 	void ExecuteEventToolSelect(E_COLLECT_TOOL_TYPE PrevToolType, E_COLLECT_TOOL_TYPE NextToolType);
+
+	void SyncCollectToolDataToReplicatedArray();
 };
