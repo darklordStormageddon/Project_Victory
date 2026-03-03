@@ -394,7 +394,11 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		float TargetHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + FloorHeightOffset;
 		FVector TargetLoc = Hit.ImpactPoint + (Hit.Normal * TargetHeight);
 
-		FVector NewLoc = FMath::VInterpTo(GetActorLocation(), TargetLoc, DeltaTime, AlignSpeed);
+		FVector ToTarget = TargetLoc - GetActorLocation();
+		FVector HeightAdjustment = Hit.Normal * FVector::DotProduct(ToTarget, Hit.Normal);
+		FVector CorrectedTargetLoc = GetActorLocation() + HeightAdjustment;
+
+		FVector NewLoc = FMath::VInterpTo(GetActorLocation(), CorrectedTargetLoc, DeltaTime, AlignSpeed);
 		SetActorLocation(NewLoc);
 
 		FRotator CurrentRot = GetActorRotation();
@@ -621,6 +625,10 @@ void APSJ_Character::StopMove(const FInputActionValue& Value)
 {
 	CurrentInputVector = FVector2D::ZeroVector;
 	Server_SetInputVector(FVector2D::ZeroVector);
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->Velocity = FVector::ZeroVector;
+	}
 }
 
 void APSJ_Character::Look(const FInputActionValue& Value)

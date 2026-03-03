@@ -217,7 +217,12 @@ void APSJ_Spaceship::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 bool APSJ_Spaceship::TryMove()
 {
-	return GetSpaceShipStateGroup()->TryConsumeFuel();
+	USpaceShipStateGroup* StateGroup = GetSpaceShipStateGroup();
+	if (StateGroup != nullptr)
+	{
+		return StateGroup->TryConsumeFuel();
+	}
+	return false; 
 }
 
 void APSJ_Spaceship::Tick(float DeltaTime)
