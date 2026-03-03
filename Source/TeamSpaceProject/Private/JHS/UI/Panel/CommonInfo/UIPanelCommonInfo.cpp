@@ -6,6 +6,7 @@
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/StateData/PlayerStateGroup.h"
 #include "JHS/Event/EventManager.h"
+#include "Components/HorizontalBox.h"
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
 
@@ -30,6 +31,8 @@ void UUIPanelCommonInfo::UnregisterEvent()
 
 void UUIPanelCommonInfo::InitializeUI(TObjectPtr<UTexture2D> RadiationImage)
 {
+	GRP_RadiationDose->SetVisibility(ESlateVisibility::Hidden);
+
 	if (IMG_RadiationDose)
 	{
 		IMG_RadiationDose->SetBrushFromTexture(RadiationImage);
