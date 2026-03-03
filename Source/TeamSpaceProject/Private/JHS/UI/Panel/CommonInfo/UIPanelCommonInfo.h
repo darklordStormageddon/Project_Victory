@@ -7,6 +7,7 @@
 
 #include "UIPanelCommonInfo.generated.h"
 
+class UHorizontalBox;
 class UImage;
 class UProgressBar;
 class UEventOnChangePlayerRadiation;
@@ -18,6 +19,9 @@ class UUIPanelCommonInfo : public UUIBase
 
 private:
 	FDelegateHandle _eventHandle;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UHorizontalBox> GRP_RadiationDose;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> IMG_RadiationDose;

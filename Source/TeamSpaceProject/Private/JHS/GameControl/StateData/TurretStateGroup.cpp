@@ -215,7 +215,10 @@ void UTurretStateGroup::TryPurchaseTurret(bool IsMainTurret, E_AMMO_TYPE AmmoTyp
 	if (_shopManager == nullptr || !_shopManager->TryPurchase(_data))
 		return;
 
-	TryEquipTurret(IsMainTurret, AmmoType);
+	if (FieldIndex == 0)
+	{
+		TryEquipTurret(IsMainTurret, AmmoType);
+	}
 
 	ExecuteTurretEvent(IsMainTurret, AmmoType, *_outTurretData);
 }
@@ -420,7 +423,7 @@ void UTurretStateGroup::LoadTurretDataTable()
 			// 가격
 			FPurchaseDataFormat _pricePurchaseDataFormat;
 			_pricePurchaseDataFormat.Description = _turrerInfo->Description;
-			_pricePurchaseDataFormat.MaxLevel = 2;
+			_pricePurchaseDataFormat.MaxLevel = 1;
 			_pricePurchaseDataFormat.InitValue = 0;
 			_pricePurchaseDataFormat.IncreasePerValue = 100.0f;
 			_pricePurchaseDataFormat.InitDollar = _turrerInfo->Price;
@@ -470,8 +473,7 @@ void UTurretStateGroup::LoadTurretDataTable()
 			FPurchaseData _price;
 			_price.Image = _newAmmoData.AmmoImage;
 			_price.Description = FString::Printf(TEXT("%s"), *_ammoInfo->Description);
-			_price.Level.MaxValue = 0;
-			_price.Level.CurrentValue = 0;
+			_price.Level.MaxValue = -1;
 			_price.PurchaseDollar = _ammoInfo->Price;
 			_newAmmoData.Price = _price;
 

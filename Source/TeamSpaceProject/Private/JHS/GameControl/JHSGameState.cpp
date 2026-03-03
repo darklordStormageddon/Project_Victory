@@ -92,7 +92,7 @@ FPurchaseData AJHSGameState::ParseFromDataRow(UTexture2D* Image, FPurchaseDataFo
 	_newPurchaseData.Description = PurchaseDataFormat.Description;
 
 	_newPurchaseData.Level.MaxValue = PurchaseDataFormat.MaxLevel;
-	_newPurchaseData.Level.CurrentValue = 1;
+	_newPurchaseData.Level.CurrentValue = 0;
 
 	_newPurchaseData.Value.MaxValue = PurchaseDataFormat.InitValue;
 	_newPurchaseData.Value.CurrentValue = _newPurchaseData.Value.MaxValue;

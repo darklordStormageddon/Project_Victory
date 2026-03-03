@@ -53,4 +53,6 @@ public:
 private:
 	UFUNCTION()
 	void OnClickPurchase();
+
+	FString ParseFloat2Text(float Value);
 };
