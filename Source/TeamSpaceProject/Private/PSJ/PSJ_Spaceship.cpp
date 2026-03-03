@@ -471,6 +471,5 @@ void APSJ_Spaceship::OnChangeMexSpeed(UEventOnChangeSpaceShipData* Event)
 	if (_spaceShipData.DataType != E_SPACE_SHIP_DATA_TYPE::MaxSpeed)
 		return;
 
-	UE_LOG(LogTemp, Warning, TEXT("MaxSpeed: %f"), _spaceShipData.Data.Value.MaxValue);
 	MaxSpeed = _spaceShipData.Data.Value.MaxValue;
 }

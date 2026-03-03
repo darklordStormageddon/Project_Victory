@@ -82,7 +82,5 @@ bool UShopManager::TryPurchase(FPurchaseData* PurchaseData)
 float UShopManager::CalculateValue(float InitValue, float IncreasePerValue, int32 Level)
 {
 	const float _increasePer = (100.0f + IncreasePerValue * Level) * 0.01f;
-	float _result = InitValue * _increasePer;
-	UE_LOG(LogTemp, Warning, TEXT("Value: %f"), _result);
-	return _result;
+	return InitValue * _increasePer;
 }
