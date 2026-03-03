@@ -59,6 +59,7 @@ void ADriveSeatRader::InitializeRader()
 		UE_LOG(LogTemp, Error, TEXT("ADriveSeatRader: SpaceShip is nullptr"));
 		return;
 	}
+
 	_outSpaceManager->InitializeDriveRader(this, _spaceShip);
 }
 
