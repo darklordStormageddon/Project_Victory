@@ -3,6 +3,7 @@
 
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/JHSPlayerController.h"
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "YSH/resource/TurretDataTable.h"
 #include "JHS/Event/EventManager.h"
@@ -225,6 +226,23 @@ TArray<FPurchaseData*> UTurretStateGroup::GetAmmoPurchaseDataArray()
 
 void UTurretStateGroup::TryPurchaseTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType, int32 FieldIndex)
 {
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		ExecutePurchaseTurret(IsMainTurret, AmmoType, FieldIndex);
+	}
+	else
+	{
+		APlayerController* _playerController = GetWorld()->GetFirstPlayerController();
+		AJHSPlayerController* _jhsPlayerController = Cast<AJHSPlayerController>(_playerController);
+		if (_jhsPlayerController == nullptr)
+			return;
+
+		_jhsPlayerController->ServerRequestPurchaseTurret(IsMainTurret, AmmoType, FieldIndex);
+	}
+}
+
+void UTurretStateGroup::ExecutePurchaseTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType, int32 FieldIndex)
+{
 	FTurretData* _outTurretData = nullptr;
 	if (!TryGetTurretData(IsMainTurret, AmmoType, _outTurretData) || _gameState == nullptr)
 		return;
@@ -244,6 +262,23 @@ void UTurretStateGroup::TryPurchaseTurret(bool IsMainTurret, E_AMMO_TYPE AmmoTyp
 }
 
 void UTurretStateGroup::TryPurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex)
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		ExecutePurchaseAmmo(AmmoType, FieldIndex);
+	}
+	else
+	{
+		APlayerController* _playerController = GetWorld()->GetFirstPlayerController();
+		AJHSPlayerController* _jhsPlayerController = Cast<AJHSPlayerController>(_playerController);
+		if (_jhsPlayerController == nullptr)
+			return;
+
+		_jhsPlayerController->ServerRequestPurchaseAmmo(AmmoType, FieldIndex);
+	}
+}
+
+void UTurretStateGroup::ExecutePurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex)
 {
 	FAmmoData* _outAmmoData = nullptr;
 	if (!TryGetAmmoData(AmmoType, _outAmmoData) || _gameState == nullptr)

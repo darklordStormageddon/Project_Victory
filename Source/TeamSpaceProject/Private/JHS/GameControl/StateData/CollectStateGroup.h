@@ -59,6 +59,8 @@ public:
 
 	void TryPurchaseCollectTool(E_COLLECT_TOOL_TYPE ToolType, bool IsDurability);
 
+	void ExecutePurchaseCollectTool(E_COLLECT_TOOL_TYPE ToolType, bool IsDurability);
+
 	void RepairAllTool();
 
 	bool TrySelectTool(E_COLLECT_TOOL_TYPE CollectToolType);

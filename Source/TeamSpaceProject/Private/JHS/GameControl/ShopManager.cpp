@@ -79,12 +79,17 @@ bool UShopManager::TryPurchase(FPurchaseData* PurchaseData)
 
 	*PurchaseData = _purchaseData;
 
+	MulticastNotifyPurchase();
+	return true;
+}
+
+void UShopManager::MulticastNotifyPurchase_Implementation()
+{
 	UEventOnPurchase* _event = NewObject<UEventOnPurchase>(this);
 	if (_event == nullptr)
-		return true;
+		return;
 
 	UEventManager::ExecuteEvent<UEventOnPurchase>(_event);
-	return true;
 }
 
 float UShopManager::CalculateValue(float InitValue, float IncreasePerValue, int32 Level)

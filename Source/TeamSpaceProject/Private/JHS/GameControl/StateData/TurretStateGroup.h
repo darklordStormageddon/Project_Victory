@@ -88,6 +88,11 @@ private:
 	void TryPurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex);
 
 public:
+	void ExecutePurchaseTurret(bool IsMainTurret, E_AMMO_TYPE AmmoType, int32 FieldIndex);
+
+	void ExecutePurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex);
+
+public:
 	void SetStartSettings(bool IsInfiniteMagMode, E_AMMO_TYPE MainTurretType, bool IsStartEquipMainTurret, TArray<E_AMMO_TYPE> _startEquipAutoTurretArray);
 
 	bool TryGetTurretFireInterval(bool IsMainTurret, E_AMMO_TYPE AmmoType, float* OutFireCoolTime);

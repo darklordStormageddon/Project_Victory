@@ -99,4 +99,7 @@ private:
 	bool TryGetSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType, FSpaceShipData*& OutSpaceShipData);
 
 	void SyncSpaceShipDataToReplicated();
+
+public:
+	void ExecutePurchaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType);
 };
