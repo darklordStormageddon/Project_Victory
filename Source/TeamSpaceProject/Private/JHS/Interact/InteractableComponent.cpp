@@ -262,11 +262,8 @@ void UInteractableComponent::ExecuteServerTriggerExit(AActor* OtherActor)
 		_callerJHSPC->ClientInteractableTriggerExit(this);
 	}
 
+	// 월드 UI는 트리거 이탈 시에도 닫히지 않음. 일반 UI만 트리거 이탈 시 닫기.
 	if (!_isWorldSpaceUI && _isInteract)
-	{
-		ChangeInteractState(false, _callerAssignedId, _callerJHSPC);
-	}
-	else if (_isWorldSpaceUI && _isInteract)
 	{
 		ChangeInteractState(false, _callerAssignedId, _callerJHSPC);
 	}
