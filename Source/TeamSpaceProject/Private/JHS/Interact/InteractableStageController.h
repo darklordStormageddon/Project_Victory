@@ -23,4 +23,6 @@ protected:
 
 private:
 	void InteractController(int32 CallerPlayerId);
+
+	void InteractControllerInternal(int32 CallerPlayerId);
 };

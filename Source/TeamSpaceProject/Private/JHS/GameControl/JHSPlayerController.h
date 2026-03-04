@@ -69,4 +69,7 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void ServerRequestSaleAllElement();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestEndStage();
 };

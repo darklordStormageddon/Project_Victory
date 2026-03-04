@@ -94,6 +94,11 @@ void UShopManager::MulticastNotifyPurchase_Implementation()
 
 float UShopManager::CalculateValue(float InitValue, float IncreasePerValue, int32 Level)
 {
-	const float _increasePer = (100.0f + IncreasePerValue * Level) * 0.01f;
-	return InitValue * _increasePer;
+	float _increaseValue = InitValue * IncreasePerValue * Level * 0.01f;
+	if (InitValue == 0.0f)
+	{
+		_increaseValue = IncreasePerValue * Level * 0.01f;
+	}
+
+	return InitValue + _increaseValue;
 }
