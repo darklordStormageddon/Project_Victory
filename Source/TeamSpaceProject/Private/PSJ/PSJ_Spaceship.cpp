@@ -23,6 +23,11 @@ APSJ_Spaceship::APSJ_Spaceship()
 	bReplicates = true;
 	SetReplicateMovement(true);
 
+	NetUpdateFrequency = 60.0f;
+	MinNetUpdateFrequency = 30.0f;
+	//bReplicatePhysicsToAutonomousProxy = false;
+
+
 	ShipRootComponent = nullptr;
 	PilotCamera = nullptr;
 	PilotSphere = nullptr;
@@ -54,7 +59,16 @@ void APSJ_Spaceship::Client_BoardingSuccess_Implementation(APSJ_Character* Board
 
 void APSJ_Spaceship::Input_ThrustForward(const FInputActionValue& Value)
 {
-	Server_ThrustForward(Value.Get<float>());
+	float Val = Value.Get<float>();
+
+	// 1. 내가 조종 중인 클라이언트라면 즉시 물리 힘 적용 (예측)
+	if (IsLocallyControlled() && ShipRootComponent && TryMove())
+	{
+		ShipRootComponent->AddForce(GetActorForwardVector() * ThrustSpeed * Val, NAME_None, true);
+	}
+
+	// 2. 서버에도 동일하게 적용하라고 명령
+	Server_ThrustForward(Val);
 }
 
 bool APSJ_Spaceship::Server_ThrustForward_Validate(float Value) { return true; }
@@ -110,28 +124,57 @@ void APSJ_Spaceship::Server_MoveUp_Implementation(float Value)
 
 void APSJ_Spaceship::Input_Roll(const FInputActionValue& Value)
 {
-	Server_Roll(Value.Get<float>());
+	float Val = Value.Get<float>();
+
+	// 1. 클라이언트 로컬 예측: 즉시 물리적 회전력(Torque) 적용
+	if (IsLocallyControlled() && ShipRootComponent && TryMove())
+	{
+		// Roll은 앞/뒤 축(Forward Vector)을 기준으로 회전
+		ShipRootComponent->AddTorqueInDegrees(GetActorForwardVector() * Val * RotateSpeed, NAME_None, true);
+	}
+
+	// 2. 서버 통지
+	Server_Roll(Val);
 }
 
 bool APSJ_Spaceship::Server_Roll_Validate(float Value) { return true; }
 
 void APSJ_Spaceship::Server_Roll_Implementation(float Value)
 {
-	if (!TryMove()) return;
-	AddActorLocalRotation(FRotator(0.0f, 0.0f, Value * RotateSpeed));
+	if (!TryMove() || !ShipRootComponent) return;
+
+	// 서버에서도 동일한 회전력 적용
+	ShipRootComponent->AddTorqueInDegrees(GetActorForwardVector() * Value * RotateSpeed, NAME_None, true);
 }
 
 void APSJ_Spaceship::Input_MouseLook(const FInputActionValue& Value)
 {
-	Server_MouseLook(Value.Get<FVector2D>());
+	FVector2D Val = Value.Get<FVector2D>();
+
+	// [개선] 기존에 누락되었던 클라이언트 측 즉각 반응(예측) 추가
+	if (IsLocallyControlled() && ShipRootComponent && TryMove())
+	{
+		// Pitch(위아래)는 우측 축(Right Vector) 기준, Yaw(좌우)는 위쪽 축(Up Vector) 기준
+		FVector PitchTorque = GetActorRightVector() * (Val.Y * -1.0f) * RotateSpeed;
+		FVector YawTorque = GetActorUpVector() * Val.X * RotateSpeed;
+
+		ShipRootComponent->AddTorqueInDegrees(PitchTorque + YawTorque, NAME_None, true);
+	}
+
+	// 서버 통지
+	Server_MouseLook(Val);
 }
 
 bool APSJ_Spaceship::Server_MouseLook_Validate(FVector2D Value) { return true; }
 
 void APSJ_Spaceship::Server_MouseLook_Implementation(FVector2D Value)
 {
-	if (!TryMove()) return;
-	AddActorLocalRotation(FRotator(Value.Y * -1.0f, Value.X, 0.0f));
+	if (!TryMove() || !ShipRootComponent) return;
+
+	FVector PitchTorque = GetActorRightVector() * (Value.Y * -1.0f) * RotateSpeed;
+	FVector YawTorque = GetActorUpVector() * Value.X * RotateSpeed;
+
+	ShipRootComponent->AddTorqueInDegrees(PitchTorque + YawTorque, NAME_None, true);
 }
 
 void APSJ_Spaceship::BeginPlay()
@@ -149,6 +192,11 @@ void APSJ_Spaceship::BeginPlay()
 		UStaticFunctionLibrary::TryGetGameState(_outGameState);
 
 	ShipRootComponent = Cast<UPrimitiveComponent>(RootComponent);
+
+	if (ShipRootComponent)
+	{
+		ShipRootComponent->bReplicatePhysicsToAutonomousProxy = false;
+	}
 
 	TArray<UStaticMeshComponent*> StaticMeshes;
 	GetComponents<UStaticMeshComponent>(StaticMeshes);

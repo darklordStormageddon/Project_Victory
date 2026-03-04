@@ -145,6 +145,13 @@ public:
 
 	bool TryUnboard();
 
+	FVector2D LastSentInputVector = FVector2D::ZeroVector;
+	float LastNetUpdateTime = 0.0f;
+	float MaxNetUpdateDelay = 0.2f;
+
+	UPROPERTY(Transient)
+	FRotator LastSentRelativeRotation = FRotator::ZeroRotator;
+
 protected:
 
 	bool bIsRepairingInputDown = false;

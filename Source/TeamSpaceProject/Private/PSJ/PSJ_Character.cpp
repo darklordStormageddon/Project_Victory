@@ -230,25 +230,65 @@ void APSJ_Character::Tick(float DeltaTime)
 
 		UpdateMagBoots(DeltaTime);
 
-		// [복구됨] 원래 있던 로직: 로컬 플레이어인 경우 서버로 위치/회전 전송
-		if (IsLocallyControlled() && !HasAuthority())
+		// [개선됨] 로컬 플레이어인 경우 서버로 위치/회전 전송 (입력 변화 및 시간 임계값 기준)
+		if (IsLocallyControlled())
 		{
-			Server_UpdateRelativeTransform(GetRootComponent()->GetRelativeLocation(), GetRootComponent()->GetRelativeRotation());
+			float CurrentTime = GetWorld()->GetTimeSeconds();
+			FVector CurrentLoc = GetRootComponent()->GetRelativeLocation();
+			FRotator CurrentRot = GetRootComponent()->GetRelativeRotation();
+
+			// 1. 방향키 입력이 달라졌는가?
+			bool bInputChanged = !CurrentInputVector.Equals(LastSentInputVector);
+			// 2. 마우스를 돌려서 회전각이 일정 수준(예: 1도) 이상 변했는가?
+			bool bRotationChanged = !CurrentRot.Equals(LastSentRelativeRotation, 1.0f);
+			// 3. 강제 동기화 시간이 지났는가?
+			bool bTimeThreshold = (CurrentTime - LastNetUpdateTime) >= MaxNetUpdateDelay;
+
+			// 셋 중 하나라도 해당되면 서버(혹은 본인 변수)에 갱신!
+			if (bInputChanged || bRotationChanged || bTimeThreshold)
+			{
+				if (!HasAuthority())
+				{
+					// 일반 클라이언트면 서버로 RPC 전송
+					Server_UpdateRelativeTransform(CurrentLoc, CurrentRot);
+				}
+				else
+				{
+					// 호스트(서버 본인)면 남들이 볼 수 있게 변수 직접 갱신
+					ReplicatedRelativeData.RelativeLocation = CurrentLoc;
+					ReplicatedRelativeData.RelativeRotation = CurrentRot;
+				}
+
+				// 현재 상태 저장
+				LastSentInputVector = CurrentInputVector;
+				LastSentRelativeRotation = CurrentRot;
+				LastNetUpdateTime = CurrentTime;
+			}
 		}
 	}
 	else
 	{
-		// [복구됨] 원래 있던 로직: 다른 클라이언트(Simulated Proxy)들의 움직임 보간
+		// 다른 클라이언트(Simulated Proxy)들의 움직임 보간 적용
 		if (ReplicatedRelativeData.BaseActor)
 		{
 			FVector OldRelLocation = GetRootComponent()->GetRelativeLocation();
+			FRotator OldRelRotation = GetRootComponent()->GetRelativeRotation();
 
-			SetActorRelativeLocation(ReplicatedRelativeData.RelativeLocation);
-			SetActorRelativeRotation(ReplicatedRelativeData.RelativeRotation);
+			FVector TargetLoc = FVector(ReplicatedRelativeData.RelativeLocation);
+			FRotator TargetRot = ReplicatedRelativeData.RelativeRotation;
+
+			// [수정된 부분] 즉각적인 Set 대신 VInterpTo, RInterpTo를 사용해 부드럽게 위치 및 회전 보간
+			// AlignSpeed를 활용해 목표 위치로 부드럽게 따라가도록 처리
+			FVector NewLoc = FMath::VInterpTo(OldRelLocation, TargetLoc, DeltaTime, AlignSpeed);
+			FRotator NewRot = FMath::RInterpTo(OldRelRotation, TargetRot, DeltaTime, AlignSpeed);
+
+			SetActorRelativeLocation(NewLoc);
+			SetActorRelativeRotation(NewRot);
 
 			if (DeltaTime > KINDA_SMALL_NUMBER)
 			{
-				FVector RelDelta = (FVector(ReplicatedRelativeData.RelativeLocation) - OldRelLocation) / DeltaTime;
+				// [수정된 부분] 변경된 위치(NewLoc)를 바탕으로 속도 계산 
+				FVector RelDelta = (NewLoc - OldRelLocation) / DeltaTime;
 				GetCharacterMovement()->Velocity = RelDelta;
 			}
 
