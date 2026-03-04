@@ -858,42 +858,26 @@ void APSJ_Character::Server_SetAnchoring_Implementation(AActor* NewBase)
 
 void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
 {
-	// 1. 우주선 탑승 중이거나 이미 애니메이션 재생 중이면 차단
+	// 1. 우주선 탑승 중이거나 이미 애니메이션 재생 중이면 차단 (유지)
 	if (CurrentSpaceship || bIsPlayingShootAnim) return;
 
-	// 2. [추가] 도구의 타이머(쿨다운)가 동작 중이면 우클릭 기능 완전히 차단
+	// 2. 도구의 타이머(쿨다운)가 동작 중이면 우클릭 기능 완전히 차단 (유지)
 	if (EquippedTool && EquippedTool->bIsOnCooldown)
 	{
 		return;
 	}
 
-	// 3. 애니메이션 재생 및 입력 제한 설정
-	if (ShootMontage)
+	// 3. 애니메이션 재생 요청 (기존 재생 로직을 지우고, 서버에 재생 요청을 보냅니다)
+	if (ShootMontage && IsLocallyControlled())
 	{
-		float Duration = PlayAnimMontage(ShootMontage);
-		if (Duration > 0.0f)
-		{
-			bIsPlayingShootAnim = true;
-
-			// 애니메이션 길이만큼 대기 후 OnShootAnimFinished 호출
-			GetWorld()->GetTimerManager().SetTimer(
-				ShootAnimTimerHandle,
-				this,
-				&APSJ_Character::OnShootAnimFinished,
-				Duration,
-				false
-			);
-
-			// 즉시 이동 중지 처리
-			CurrentInputVector = FVector2D::ZeroVector;
-			Server_SetInputVector(FVector2D::ZeroVector);
-			if (GetCharacterMovement()) GetCharacterMovement()->Velocity = FVector::ZeroVector;
-		}
+		Server_PlayShootMontage();
 	}
 
+	// ---------------------------------------------------------
+	// 아래의 트레이스(Sweep) 및 의자 판별 로직은 기존 그대로 유지합니다.
+	// ---------------------------------------------------------
 
 	FVector StartLoc = GetActorLocation() + GetActorRotation().RotateVector(ForceEjectSphereOffset);
-
 	FVector EndLoc = StartLoc + (GetActorForwardVector() * ForceEjectRange);
 
 	FHitResult HitResult;
@@ -933,8 +917,55 @@ void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
 		TargetChair = Cast<ATaskChair>(HitResult.GetActor());
 	}
 
-
+	// 의자 강제 사출 서버 요청 (유지)
 	Server_TryForceEject(TargetChair);
+}
+
+void APSJ_Character::Server_PlayShootMontage_Implementation()
+{
+	// 서버가 모든 클라이언트에게 멀티캐스트 함수를 실행하라고 명령합니다.
+	Multicast_PlayShootMontage();
+}
+
+bool APSJ_Character::Server_PlayShootMontage_Validate()
+{
+	return true;
+}
+
+void APSJ_Character::Multicast_PlayShootMontage_Implementation()
+{
+	// 기존 Input_ForceEject에 있던 '애니메이션 재생 및 입력 제한' 로직이 이쪽으로 이사왔습니다.
+	if (ShootMontage)
+	{
+		float Duration = PlayAnimMontage(ShootMontage);
+		if (Duration > 0.0f)
+		{
+			bIsPlayingShootAnim = true;
+
+			// 애니메이션 길이만큼 대기 후 OnShootAnimFinished 호출
+			GetWorld()->GetTimerManager().SetTimer(
+				ShootAnimTimerHandle,
+				this,
+				&APSJ_Character::OnShootAnimFinished,
+				Duration,
+				false
+			);
+
+			// 이동 중지 처리
+			// (주의: Server_SetInputVector는 해당 캐릭터를 조종하는(LocallyControlled) 플레이어만 서버로 요청할 수 있으므로 조건문을 걸어줍니다)
+			if (IsLocallyControlled())
+			{
+				CurrentInputVector = FVector2D::ZeroVector;
+				Server_SetInputVector(FVector2D::ZeroVector);
+			}
+
+			// 캐릭터 속도를 0으로 만드는 것은 모든 플레이어 화면에서 똑같이 실행되어 연출을 맞춥니다.
+			if (GetCharacterMovement())
+			{
+				GetCharacterMovement()->Velocity = FVector::ZeroVector;
+			}
+		}
+	}
 }
 
 bool APSJ_Character::Server_TryForceEject_Validate(ATaskChair* TargetChair)

@@ -23,7 +23,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tool")
 	UStaticMeshComponent* ToolMesh;
 
-	// [핵심] 트레이스가 나갈 방향과 위치를 지정해줄 화살표 컴포넌트
+	// 트레이스가 나갈 방향과 위치를 지정해줄 화살표 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tool")
 	UArrowComponent* TraceMuzzle;
 
@@ -62,6 +62,10 @@ public:
 	// 모두에게 이펙트/애니메이션 재생 지시
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_PlayEjectEffect(bool bSuccess, APSJ_Character* InstigatorChar);
+
+	// [추가] 모든 클라이언트에서 도구(액터)를 숨기거나 보이게 하는 함수
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetToolHidden(bool bHide);
 
 protected:
 	FTimerHandle CooldownTimerHandle;

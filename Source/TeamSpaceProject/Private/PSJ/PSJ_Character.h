@@ -163,6 +163,14 @@ protected:
 	UPROPERTY()
 	class ATaskChair* ClientRepairTarget = nullptr;
 
+	// 서버에서 실행될 함수
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_PlayShootMontage();
+
+	// 모든 클라이언트에서 실행될 함수
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayShootMontage();
+
 
 	UPROPERTY()
 	class ATaskChair* ServerRepairTarget = nullptr;
