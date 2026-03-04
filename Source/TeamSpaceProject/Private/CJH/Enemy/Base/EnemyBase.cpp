@@ -19,7 +19,9 @@ AEnemyBase::AEnemyBase()
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 
 	bReplicates = true;
-	SetReplicateMovement(false);
+	SetReplicateMovement(true);
+	NetUpdateFrequency = 20.0f;
+	MinNetUpdateFrequency = 10.0f;
 }
 
 // Called when the game starts or when spawned
