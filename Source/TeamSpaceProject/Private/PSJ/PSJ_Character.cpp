@@ -333,7 +333,6 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		}
 	}
 
-
 	FVector DownDir = -GravityUpDir;
 
 	float MyHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
@@ -361,14 +360,13 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 	FQuat ShapeRotation = FRotationMatrix::MakeFromZ(GravityUpDir).ToQuat();
 
 	// ==========================================
-	// 수정된 충돌 검사 및 바닥 판별 로직 시작
+	// 충돌 검사 및 바닥 판별 로직
 	// ==========================================
 	bool bFoundValidFloor = false;
 	bool bHit = GetWorld()->SweepSingleByChannel(Hit, Start, End, ShapeRotation, ECC_Spaceship_Floor, CapsuleShape, Params);
 
 	if (bHit && Hit.GetActor())
 	{
-		// 다른 캐릭터를 바닥으로 인식하는 것을 완벽히 차단
 		if (!Hit.GetActor()->IsA(APSJ_Character::StaticClass()))
 		{
 			bFoundValidFloor = true;
@@ -380,94 +378,90 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 
 		if (bHit && Hit.GetActor())
 		{
-			// 1. 맞은 액터가 캐릭터인 경우 무조건 바닥 취급 안 함
 			if (Hit.GetActor()->IsA(APSJ_Character::StaticClass()))
 			{
 				bFoundValidFloor = false;
 			}
-			// 2. 계단 태그가 있는 경우 바닥으로 인정
 			else if (Hit.GetActor()->ActorHasTag(TEXT("Stairs")))
 			{
 				bFoundValidFloor = true;
 			}
-			// 3. 그 외의 오브젝트는 바닥으로 취급 안 함
 			else
 			{
 				bFoundValidFloor = false;
 			}
 		}
 	}
-	// ==========================================
-	// 수정된 충돌 검사 및 바닥 판별 로직 끝
-	// ==========================================
 
+	// ==========================================
+	// 바닥에 부착 및 보간 로직
+	// ==========================================
 	if (bFoundValidFloor && Hit.GetActor())
 	{
-		if (GetAttachParentActor() != Hit.GetActor())
-		{
-			AttachToActor(Hit.GetActor(), FAttachmentTransformRules::KeepWorldTransform);
-			GetCharacterMovement()->SetMovementMode(MOVE_Custom);
-			ReplicatedRelativeData.BaseActor = Hit.GetActor();
-			ReplicatedRelativeData.bIsAnchored = true;
-			Server_SetAnchoring(Hit.GetActor());
-		}
-
-		CurrentFloorNormal = Hit.Normal;
-
-		AActor* NewFloor = Hit.GetActor();
-
-		if (GetAttachParentActor() != NewFloor)
-		{
-			AttachToActor(NewFloor, FAttachmentTransformRules::KeepWorldTransform);
-			GetCharacterMovement()->SetMovementMode(MOVE_Custom);
-			ReplicatedRelativeData.BaseActor = NewFloor;
-			ReplicatedRelativeData.bIsAnchored = true;
-		}
-
-		CurrentFloorNormal = Hit.Normal;
-
-		float TargetHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + FloorHeightOffset;
-		FVector TargetLoc = Hit.ImpactPoint + (Hit.Normal * TargetHeight);
-
-		
-		FVector ToTarget = TargetLoc - GetActorLocation();
-		FVector HeightAdjustment = Hit.Normal * FVector::DotProduct(ToTarget, Hit.Normal);
-		FVector CorrectedTargetLoc = GetActorLocation() + HeightAdjustment;
-
-		FVector NewLoc = FMath::VInterpTo(GetActorLocation(), CorrectedTargetLoc, DeltaTime, AlignSpeed);
-		SetActorLocation(NewLoc);
-
-		FRotator CurrentRot = GetActorRotation();
-
-		FVector FinalUpDir = GravityUpDir;
 		AActor* FloorActor = Hit.GetActor();
 
+		// [수정 1] 중복된 AttachToActor 블록 하나로 통합
+		if (GetAttachParentActor() != FloorActor)
+		{
+			AttachToActor(FloorActor, FAttachmentTransformRules::KeepWorldTransform);
+			GetCharacterMovement()->SetMovementMode(MOVE_Custom);
+
+			// 고속 이동 시 고무줄 현상 방지
+			GetCharacterMovement()->bIgnoreClientMovementErrorChecksAndCorrection = true;
+
+			ReplicatedRelativeData.BaseActor = FloorActor;
+			ReplicatedRelativeData.bIsAnchored = true;
+
+			Server_SetAnchoring(FloorActor);
+		}
+
+		CurrentFloorNormal = Hit.Normal;
+
+		// 1. 위치(Location) 로컬 보간
+		float TargetHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + FloorHeightOffset;
+		FVector TargetWorldLoc = Hit.ImpactPoint + (Hit.Normal * TargetHeight);
+
+		FVector ToTarget = TargetWorldLoc - GetActorLocation();
+		FVector HeightAdjustment = Hit.Normal * FVector::DotProduct(ToTarget, Hit.Normal);
+		FVector CorrectedTargetWorldLoc = GetActorLocation() + HeightAdjustment;
+
+		FVector TargetLocalLoc = FloorActor->GetActorTransform().InverseTransformPosition(CorrectedTargetWorldLoc);
+		FVector CurrentLocalLoc = GetRootComponent()->GetRelativeLocation();
+
+		FVector NewLocalLoc = FMath::VInterpTo(CurrentLocalLoc, TargetLocalLoc, DeltaTime, AlignSpeed);
+		SetActorRelativeLocation(NewLocalLoc);
+
+		// 2. 회전(Rotation) 로컬 보간 [수정 2]
+		FVector FinalUpDir = GravityUpDir;
 		if (FloorActor->ActorHasTag(TEXT("Stairs")))
 		{
 			AActor* FloorParent = FloorActor->GetAttachParentActor();
-			if (FloorParent)
-			{
-				FinalUpDir = FloorParent->GetActorUpVector();
-			}
-			else
-			{
-				FinalUpDir = FVector::UpVector;
-			}
+			FinalUpDir = FloorParent ? FloorParent->GetActorUpVector() : FVector::UpVector;
 		}
 		else
 		{
 			FinalUpDir = FloorActor->GetActorUpVector();
 		}
 
-		FRotator TargetRot = FRotationMatrix::MakeFromZX(GravityUpDir, GetActorForwardVector()).Rotator();
-		FQuat NewQuat = FMath::QInterpTo(CurrentRot.Quaternion(), TargetRot.Quaternion(), DeltaTime, AlignSpeed);
-		SetActorRotation(NewQuat);
+		// 월드 기준 목표 회전값
+		FRotator TargetWorldRot = FRotationMatrix::MakeFromZX(GravityUpDir, GetActorForwardVector()).Rotator();
+
+		// 목표 회전과 현재 회전을 모두 '바닥 액터 기준의 로컬 좌표(Quat)'로 변환
+		FQuat TargetLocalQuat = FloorActor->GetActorTransform().InverseTransformRotation(TargetWorldRot.Quaternion());
+		FQuat CurrentLocalQuat = GetRootComponent()->GetRelativeRotation().Quaternion();
+
+		// 로컬 좌표계에서 부드럽게 보간 후 적용
+		FQuat NewLocalQuat = FMath::QInterpTo(CurrentLocalQuat, TargetLocalQuat, DeltaTime, AlignSpeed);
+		SetActorRelativeRotation(NewLocalQuat.Rotator());
 	}
 	else
 	{
 		if (ReplicatedRelativeData.bIsAnchored)
 		{
 			Server_SetAnchoring(nullptr);
+
+			// 허공에 떨어지면 다시 에러 체크 활성화
+			GetCharacterMovement()->bIgnoreClientMovementErrorChecksAndCorrection = false;
 
 			ReplicatedRelativeData.BaseActor = nullptr;
 			ReplicatedRelativeData.bIsAnchored = false;
