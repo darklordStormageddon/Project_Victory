@@ -181,6 +181,8 @@ public:
 	void Input_Roll(const FInputActionValue& Value);
 
 
+	virtual void Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector LocalLoc, FRotator LocalRot) override;
+
 
 	void EnableCollisionWithPassenger(APSJ_Character* ExitedChar);
 

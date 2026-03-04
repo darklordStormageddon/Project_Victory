@@ -42,6 +42,7 @@ void APSJ_Spaceship::Client_BoardingSuccess_Implementation(APSJ_Character* Board
 {
 	Super::Client_BoardingSuccess_Implementation(BoardingPilot); // 부모 로직 실행
 
+
 	// 우주선 전용 조작키 설정
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
@@ -282,16 +283,18 @@ void APSJ_Spaceship::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (ShipRootComponent && ShipRootComponent->IsSimulatingPhysics())
+	if (HasAuthority() || IsLocallyControlled())
 	{
-		FVector CurrentVelocity = ShipRootComponent->GetComponentVelocity();
-		float CurrentSpeed = CurrentVelocity.Size();
-
-		if (CurrentSpeed > MaxSpeed)
+		if (ShipRootComponent && ShipRootComponent->IsSimulatingPhysics())
 		{
-			FVector ClampedVelocity = CurrentVelocity.GetSafeNormal() * MaxSpeed;
+			FVector CurrentVelocity = ShipRootComponent->GetComponentVelocity();
+			float CurrentSpeed = CurrentVelocity.Size();
 
-			ShipRootComponent->SetPhysicsLinearVelocity(ClampedVelocity);
+			if (CurrentSpeed > MaxSpeed)
+			{
+				FVector ClampedVelocity = CurrentVelocity.GetSafeNormal() * MaxSpeed;
+				ShipRootComponent->SetPhysicsLinearVelocity(ClampedVelocity);
+			}
 		}
 	}
 
@@ -580,4 +583,9 @@ void APSJ_Spaceship::OnChangeMexSpeed(UEventOnChangeSpaceShipData* Event)
 		return;
 
 	MaxSpeed = _spaceShipData.Data.Value.MaxValue;
+}
+
+void APSJ_Spaceship::Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector LocalLoc, FRotator LocalRot)
+{
+	Super::Client_DisembarkSuccess_Implementation(ExitingPilot, LocalLoc, LocalRot);
 }
