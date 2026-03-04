@@ -34,6 +34,7 @@ void APSJ_ToolBase::StartCooldownTimer()
 	if (HasAuthority())
 	{
 		bIsOnCooldown = true;
+		// 기존에 있던 UpdateToolVisibility() 호출 제거
 		GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, this, &APSJ_ToolBase::ResetCooldown, ForceEjectCooldownTime, false);
 	}
 }
@@ -41,6 +42,10 @@ void APSJ_ToolBase::StartCooldownTimer()
 void APSJ_ToolBase::ResetCooldown()
 {
 	bIsOnCooldown = false;
+
+	// [추가] 쿨다운 타이머가 끝났을 때 도구가 숨겨져 있는 상태라면 강제로 보이게 원상복구 시켜줍니다.
+	// 이 함수는 서버(HasAuthority)에서 실행되므로 안전하게 멀티캐스트 호출이 가능합니다.
+	Multicast_SetToolHidden(false);
 }
 
 void APSJ_ToolBase::Multicast_PlayEjectEffect_Implementation(bool bSuccess, APSJ_Character* InstigatorChar)
@@ -52,9 +57,7 @@ void APSJ_ToolBase::Multicast_PlayEjectEffect_Implementation(bool bSuccess, APSJ
 		UGameplayStatics::SpawnEmitterAttached(EffectToPlay, TraceMuzzle);
 	}
 
-	// 2. [중요] 애니메이션 동기화
-	// 로컬 플레이어는 이미 Input_ForceEject에서 재생했으므로, 
-	// 로컬이 아닌 다른 클라이언트(들)에게만 재생하도록 처리할 수 있습니다.
+	// 2. 애니메이션 동기화
 	if (InstigatorChar && Montage_ForceEject)
 	{
 		if (!InstigatorChar->IsLocallyControlled())
@@ -62,4 +65,13 @@ void APSJ_ToolBase::Multicast_PlayEjectEffect_Implementation(bool bSuccess, APSJ
 			InstigatorChar->PlayAnimMontage(Montage_ForceEject);
 		}
 	}
+}
+
+// =========================================================================
+// [추가] 멀티플레이어 환경에서 액터 자체를 확실하게 숨기는 로직
+// =========================================================================
+void APSJ_ToolBase::Multicast_SetToolHidden_Implementation(bool bHide)
+{
+	// 컴포넌트 단위의 SetVisibility 보다 액터 전체를 숨기는 것이 부착된 장비 동기화에 훨씬 안정적입니다.
+	SetActorHiddenInGame(bHide);
 }
