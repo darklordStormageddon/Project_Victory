@@ -2,38 +2,38 @@
 
 
 #include "CJH/Enemy/Base/GarbageEnemyBase.h"
-
 #include "KSM/HealthComponent.h"
+#include "Net/UnrealNetwork.h"
 
 AGarbageEnemyBase::AGarbageEnemyBase()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	// 클라이언트 보간은 매 프레임 필요
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickInterval = 0.0f;
+
+	bReplicates = true;
+	SetReplicateMovement(false);
+	NetUpdateFrequency = 20.0f;
+	MinNetUpdateFrequency = 10.0f;
 }
 
 void AGarbageEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	if (HasAuthority())
-	{
-		// 초기 중심
-		if (_owner)
-			Center = _owner->GetActorLocation();
-		else
-			Center = GetActorLocation();
 
-		CenterAngle = 0.0f;
+	const FVector StartLoc = GetActorLocation();
+	ClientSmoothLoc = StartLoc;
+	ClientTargetLoc = StartLoc;
+	bClientLocInit  = false;
 
-		FTimerHandle DelayHandle;
+	if (!HasAuthority())
+		return;
 
-		GetWorld()->GetTimerManager().SetTimer(
-			DelayHandle,
-			this,
-			&AGarbageEnemyBase::SetInfo,
-			0.01f,
-			false
-		);
-	}
+	RepLocation = StartLoc;
+
+	FTimerHandle DelayHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		DelayHandle, this, &AGarbageEnemyBase::SetInfo, 0.01f, false);
 }
 
 void AGarbageEnemyBase::SetInfo()
@@ -42,49 +42,115 @@ void AGarbageEnemyBase::SetInfo()
 		return;
 
 	_targetInfo.Size = FMath::RandRange(_spawnedInfo.MinSize, _spawnedInfo.MaxSize);
-
-	// 적 크기 구조체에 따라 크기 설정
 	NewScale = FVector(_targetInfo.Size, _targetInfo.Size, _targetInfo.Size);
-
 	Super::SetInfo();
 }
 
-void AGarbageEnemyBase::FollowOrbitTarget(float DeltaTime)
+// SpawnComponent가 0.05초마다 호출 - 서버에서 궤도 위치에 직접 배치
+void AGarbageEnemyBase::SetOrbitPosition(const FVector& InPos, float TangentSpeed)
 {
-    if (!HasAuthority() || !bHasOrbitTarget)
-        return;
+	if (!HasAuthority())
+		return;
 
-    const FVector Current = GetActorLocation();
-    const FVector ToTarget = OrbitTarget - Current;
+	SetActorLocation(InPos, false, nullptr, ETeleportType::None);
 
-    const float DistSq = ToTarget.SizeSquared();
+	if (!RotationAxis.IsNearlyZero())
+	{
+		const FQuat SpinQuat(
+			GetActorQuat().RotateVector(RotationAxis).GetSafeNormal(),
+			FMath::DegreesToRadians(SpinSpeed * 0.05f));
+		SetActorRotation(SpinQuat * GetActorQuat());
+	}
 
-    const float StopThreshold = 10.0f;
-    const float StopThresholdSq = StopThreshold * StopThreshold;
+	RepLocation = InPos;
+}
 
-    if (DistSq <= StopThresholdSq)
-    {
-        SetActorLocation(OrbitTarget);
-        return;
-    }
+// 클라이언트에서 RepLocation 수신 시 호출
+void AGarbageEnemyBase::OnRep_GarbageState()
+{
+	const FVector NewTarget = FVector(RepLocation);
 
-    const float Speed = 800.f;
+	if (!bClientLocInit)
+	{
+		ClientSmoothLoc   = NewTarget;
+		ClientTargetLoc   = NewTarget;
+		ClientPrevLoc     = NewTarget;
+		ClientInterpAlpha = 1.0f;
+		ClientInterpSpeed = 0.0f;
+		bClientLocInit    = true;
+		return;
+	}
 
-    // 여기서만 sqrt 1번
-    const float Dist = FMath::Sqrt(DistSq);
-    const FVector Dir = ToTarget / Dist;
+	const float Dist = FVector::Dist(ClientSmoothLoc, NewTarget);
 
-    const FVector MoveDelta = Dir * Speed * DeltaTime;
+	// 즉시 스냅 조건: 스폰 직후 또는 비정상적으로 먼 거리
+	if (Dist > 1500.0f)
+	{
+		ClientSmoothLoc   = NewTarget;
+		ClientTargetLoc   = NewTarget;
+		ClientPrevLoc     = NewTarget;
+		ClientInterpAlpha = 1.0f;
+		ClientInterpSpeed = 0.0f;
+		return;
+	}
 
-    AddActorWorldOffset(MoveDelta, true);
+	// 보간 시작점 = 현재 스무스 위치
+	ClientPrevLoc     = ClientSmoothLoc;
+	ClientTargetLoc   = NewTarget;
+	ClientInterpAlpha = 0.0f;
 
-    const FRotator DesiredRot = Dir.Rotation();
-    const FRotator NewRot = FMath::RInterpTo(
-        GetActorRotation(),
-        DesiredRot,
-        DeltaTime,
-        5.0f
-    );
+	// 속도 = 이번 OnRep까지의 거리 / 갱신 주기
+	// 이 속도가 다음 OnRep까지 고정 → 일정한 속도 보장
+	ClientInterpSpeed = (Dist > KINDA_SMALL_NUMBER) ? (Dist / 0.05f) : 0.0f;
+}
 
-    SetActorRotation(NewRot);
+void AGarbageEnemyBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (HasAuthority())
+		return;
+
+	if (!bClientLocInit)
+	{
+		const FVector Loc = GetActorLocation();
+		ClientSmoothLoc   = Loc;
+		ClientTargetLoc   = Loc;
+		ClientPrevLoc     = Loc;
+		ClientInterpAlpha = 1.0f;
+		bClientLocInit    = true;
+		SetActorLocation(Loc, false, nullptr, ETeleportType::None);
+		return;
+	}
+
+	if (ClientInterpAlpha < 1.0f && ClientInterpSpeed > KINDA_SMALL_NUMBER)
+	{
+		const float SegDist = FVector::Dist(ClientPrevLoc, ClientTargetLoc);
+
+		if (SegDist > KINDA_SMALL_NUMBER)
+		{
+			// Alpha 증가량 = 이동 속도 * DeltaTime / 구간 거리
+			// = (SegDist/0.05) * DeltaTime / SegDist
+			// = DeltaTime / 0.05
+			// → 항상 0.05초에 걸쳐 선형 이동, 속도 변화 없음
+			ClientInterpAlpha += DeltaTime / 0.05f;
+		}
+
+		ClientInterpAlpha = FMath::Min(ClientInterpAlpha, 1.0f);
+		ClientSmoothLoc   = FMath::Lerp(ClientPrevLoc, ClientTargetLoc, ClientInterpAlpha);
+	}
+	else
+	{
+		// 이미 목표 도달 또는 OnRep 지연 중
+		// 현재 위치 유지 (다음 OnRep이 올 때까지)
+		ClientSmoothLoc = ClientTargetLoc;
+	}
+
+	SetActorLocation(ClientSmoothLoc, false, nullptr, ETeleportType::None);
+}
+
+void AGarbageEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME_CONDITION_NOTIFY(AGarbageEnemyBase, RepLocation, COND_None, REPNOTIFY_Always);
 }
