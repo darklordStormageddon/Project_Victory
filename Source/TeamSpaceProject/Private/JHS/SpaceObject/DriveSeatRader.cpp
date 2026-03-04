@@ -33,6 +33,8 @@ void ADriveSeatRader::Tick(float DeltaTime)
 		FRotator _spaceShipRotator = _spaceShip->GetActorRotation();
 		_spaceShipMeshCenter->SetRelativeRotation(_spaceShipRotator);
 
+		DrawDebugSphere(GetWorld(), GetActorLocation(), 100, 10, FColor::Blue, false, DeltaTime * 1.01);
+
 		// _driveSeatRaderCenter를 회전
 		//FVector _spaceShipRotation = FVector(_spaceShipRotator.Roll, _spaceShipRotator.Pitch, _spaceShipRotator.Yaw);
 

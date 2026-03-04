@@ -24,6 +24,25 @@ struct FStaticAsteroidInfo
 	float MaxSize = 20.f;
 };
 
+// 소행성 하나의 스폰 정보 - 복제용
+USTRUCT()
+struct FStaticAsteroidSpawnData
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TSubclassOf<AActor> AsteroidClass;
+
+	UPROPERTY()
+	FVector_NetQuantize Location = FVector::ZeroVector;
+
+	UPROPERTY()
+	FRotator Rotation = FRotator::ZeroRotator;
+
+	UPROPERTY()
+	float Scale = 1.0f;
+};
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UStaticAsternoidManagerComponent : public UActorComponent
 {
@@ -31,8 +50,17 @@ class UStaticAsternoidManagerComponent : public UActorComponent
 private:
 	AActor* SpaceStation = nullptr;
 
+	// 서버: 실제 스폰된 액터 목록
 	UPROPERTY()
 	TArray<AActor*> SpawnedAsteroids;
+
+	// 클라이언트: 로컬 스폰된 액터 목록
+	UPROPERTY()
+	TArray<AActor*> ClientSpawnedAsteroids;
+
+	// 복제되는 스폰 데이터 목록 - OnRep으로 클라이언트에서 스폰
+	UPROPERTY(ReplicatedUsing = OnRep_SpawnDataList)
+	TArray<FStaticAsteroidSpawnData> RepSpawnDataList;
 
 	UPROPERTY(EditAnywhere, Category = "Asteroid")
 	TArray<FStaticAsteroidInfo> AsteroidInfoArray;
@@ -42,7 +70,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Radius")
 	float StaticAsteroidSaveRadius = 500.f;
 
-	float SpaceRadius = 0.f;
+	float SpawnRadius = 0.f;
 
 	UPROPERTY(EditAnywhere, Category = "Spawn")
 	int32 SpawnMinNum = 20;
@@ -60,8 +88,13 @@ private:
 
 private:
 	void ClearRoundActors();
-
 	void InitSpaceRadius();
+
+	// 클라이언트에서 RepSpawnDataList를 받아 실제로 스폰
+	UFUNCTION()
+	void OnRep_SpawnDataList();
+
+	void SpawnAsteroidOnClient(const FStaticAsteroidSpawnData& Data);
 
 public:	
 	UStaticAsternoidManagerComponent();
@@ -77,6 +110,7 @@ public:
 	void SpawnStaticAsteroid();
 	
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UFUNCTION(BlueprintCallable)
 	void StartRound();
