@@ -313,10 +313,10 @@ public:
 	FString Description = "";
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 MaxLevel;
+	int32 MaxLevel = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float InitValue;
+	float InitValue = 0.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float IncreasePerValue = 0.0f;
