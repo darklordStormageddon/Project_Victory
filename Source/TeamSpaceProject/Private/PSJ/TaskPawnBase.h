@@ -64,7 +64,9 @@ public:
 	virtual void DisembarkCharacter();
 
 	UFUNCTION(Client, Reliable)
-	void Client_DisembarkSuccess(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot);
+	void Client_DisembarkSuccess(APSJ_Character* ExitingPilot, FVector LocalLoc, FRotator LocalRot);
+
+	virtual void Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector LocalLoc, FRotator LocalRot);
 
 	void OnEndStage(UEventOnEndStage* Event);
 };

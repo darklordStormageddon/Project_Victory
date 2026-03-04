@@ -102,9 +102,11 @@ void ATaskPawnBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 void ATaskPawnBase::DisembarkCharacter()
 {
-	if (!CurrentPilot) return; // 파일럿이 없으면 return 예외처리
+	if (!HasAuthority()) return;
 
-	CurrentPilot->TryUnboard(); // 하차 시 입력이 즉시 복구되도록 함
+	if (!CurrentPilot) return;
+
+	CurrentPilot->TryUnboard();
 
 	APSJ_Character* ExitingChar = CurrentPilot;
 	AController* ShipController = GetController();
@@ -115,7 +117,6 @@ void ATaskPawnBase::DisembarkCharacter()
 	FRotator SpawnRot = GetActorRotation();
 
 	ATaskChair* FoundChair = Cast<ATaskChair>(LinkedSeat);
-
 	if (!FoundChair)
 	{
 		TArray<AActor*> AllChairs;
@@ -124,7 +125,6 @@ void ATaskPawnBase::DisembarkCharacter()
 		for (AActor* Actor : AllChairs)
 		{
 			ATaskChair* Chair = Cast<ATaskChair>(Actor);
-
 			if (Chair && Chair->GetTargetTaskPawn() == this)
 			{
 				FoundChair = Chair;
@@ -133,10 +133,10 @@ void ATaskPawnBase::DisembarkCharacter()
 		}
 	}
 
-	// 의자의 오프셋을 기준으로 하차 위치 계산
 	if (FoundChair)
 	{
 		SpawnLoc = FoundChair->GetActorTransform().TransformPosition(FoundChair->SeatDisembarkOffset);
+		SpawnRot = FoundChair->GetActorRotation();
 	}
 
 	if (UCharacterMovementComponent* CMC = ExitingChar->GetCharacterMovement())
@@ -145,22 +145,24 @@ void ATaskPawnBase::DisembarkCharacter()
 		CMC->Velocity = FVector::ZeroVector;
 	}
 
-	ExitingChar->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-	ExitingChar->ForceClearAnchoring();
+	// [핵심 변경 1] 허공에 버리지(Detach) 않고, 하차할 기기에 명시적으로 묶어둡니다(Attach).
+	ExitingChar->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 	ExitingChar->SetActorLocationAndRotation(SpawnLoc, SpawnRot, false, nullptr, ETeleportType::TeleportPhysics);
 
+	// 서버 데이터 상으로도 캐릭터가 기기에 Anchored 되어 있음을 기록합니다.
+	ExitingChar->SetBaseActorData(this);
 	ExitingChar->GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 	ExitingChar->SetReplicateMovement(true);
 
-	//ExitingChar->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-
-	//ExitingChar->SetBaseActorData(this);
 	ExitingChar->StartDisembarkState();
-
 	ExitingChar->SetActorEnableCollision(true);
 	ExitingChar->SetActorHiddenInGame(false);
 
-	Client_DisembarkSuccess(ExitingChar, SpawnLoc, SpawnRot);
+	// [핵심 변경 2] 현재 기기 기준의 '로컬 좌표'를 구해서 클라이언트로 전송합니다.
+	FVector LocalLoc = this->GetActorTransform().InverseTransformPosition(SpawnLoc);
+	FRotator LocalRot = this->GetActorTransform().InverseTransformRotation(SpawnRot.Quaternion()).Rotator();
+
+	Client_DisembarkSuccess(ExitingChar, LocalLoc, LocalRot);
 
 	if (ShipController)
 	{
@@ -186,19 +188,26 @@ void ATaskPawnBase::Server_RequestDisembark_Implementation()
 }
 
 
-void ATaskPawnBase::Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector ExitLoc, FRotator ExitRot)
+void ATaskPawnBase::Client_DisembarkSuccess_Implementation(APSJ_Character* ExitingPilot, FVector LocalLoc, FRotator LocalRot)
 {
 	if (!ExitingPilot) return;
 
 	ExitingPilot->MoveIgnoreActorRemove(this);
 	this->MoveIgnoreActorRemove(ExitingPilot);
 
-	ExitingPilot->Client_ForceCleanupImmediate();
+	// [핵심 변경 3] 완전히 분리해 버리는 Client_ForceCleanupImmediate() 함수 호출을 삭제했습니다.
+	// 네트워크 지연 시간 동안 기기가 이동했더라도 캐릭터가 붙어서 따라가게 됩니다.
 
-	// 1. 위치 텔레포트
-	ExitingPilot->SetActorLocationAndRotation(ExitLoc, ExitRot, false, nullptr, ETeleportType::TeleportPhysics);
+	// 1. 서버에서 받은 로컬 좌표를, '클라이언트 패킷 수신 시점'의 최신 기기 월드 좌표로 변환
+	FVector TargetWorldLoc = this->GetActorTransform().TransformPosition(LocalLoc);
+	FRotator TargetWorldRot = this->GetActorTransform().TransformRotation(LocalRot.Quaternion()).Rotator();
 
-	// 2. 무브먼트 보간 데이터 초기화 (이전 팁 유지)
+	// 2. 텔레포트 전, 확실하게 기기에 Attach 시킵니다.
+	ExitingPilot->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+	ExitingPilot->SetActorLocationAndRotation(TargetWorldLoc, TargetWorldRot, false, nullptr, ETeleportType::TeleportPhysics);
+
+	// 3. 콜리전 및 무브먼트 보간 데이터 초기화 (클라이언트 단 안전장치)
+	ExitingPilot->SetActorEnableCollision(true);
 	if (UCharacterMovementComponent* CMC = ExitingPilot->GetCharacterMovement())
 	{
 		CMC->StopMovementImmediately();
@@ -213,10 +222,11 @@ void ATaskPawnBase::Client_DisembarkSuccess_Implementation(APSJ_Character* Exiti
 
 	ExitingPilot->StartDisembarkState();
 
-	// 3. [핵심] 타이머 딜레이 삭제하고 자석 부츠 1회 강제 실행!
+	// 4. 자석 부츠 1회 강제 실행
+	// 이제 기기에 제대로 Attach 되어 있기 때문에, 기기가 기울어져 있어도 올바른 UpVector를 참조합니다.
 	ExitingPilot->ForceExecuteMagBoots();
 
-	// 4. 입력 즉시 복구
+	// 5. 입력 즉시 복구
 	ExitingPilot->ForceInputRecovery();
 }
 

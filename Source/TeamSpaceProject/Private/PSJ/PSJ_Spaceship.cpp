@@ -181,6 +181,9 @@ void APSJ_Spaceship::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// 우주선이 스폰된 최초의 위치와 회전(Transform)을 기억해 둡니다.
+	InitialTransform = GetActorTransform();
+
 	RegistEvent();
 
 	if (HealthComp)
@@ -254,6 +257,8 @@ void APSJ_Spaceship::BeginPlay()
 		DistanceComp->OnDistanceDamaged.AddDynamic(this, &APSJ_Spaceship::OverDistanceDamageCheck);
 	else
 		UE_LOG(LogTemp, Warning, TEXT("Warning: Distance Component not found in BP"));
+
+
 }
 
 void APSJ_Spaceship::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -472,6 +477,14 @@ void APSJ_Spaceship::RegistEvent()
 			OnChangeMexSpeed(Event);
 		}
 	);
+
+	// 로비 이동 이벤트 수신 등록
+	_eventHandleOnToLobby = _outEventManager->AddListener<UEventOnToLobby>(
+		[this](UEventOnToLobby* Event)
+		{
+			OnMoveToLobby(Event);
+		}
+	);
 }
 
 void APSJ_Spaceship::UnregistEvent()
@@ -497,6 +510,12 @@ void APSJ_Spaceship::UnregistEvent()
 		_outEventManager->DelListener<UEventOnChangeSpaceShipData>(_eventHandleOnChangeMaxSpeed);
 		_eventHandleOnChangeMaxSpeed.Reset();
 	}
+
+	if (_eventHandleOnToLobby.IsValid())
+	{
+		_outEventManager->DelListener<UEventOnToLobby>(_eventHandleOnToLobby);
+		_eventHandleOnToLobby.Reset();
+	}
 }
 
 void APSJ_Spaceship::OnStartStage(UEventOnStartStage* Event)
@@ -513,6 +532,42 @@ void APSJ_Spaceship::OnEndStage(UEventOnEndStage* Event)
 		return;
 
 	Server_SpaceshipBrake();
+}
+
+void APSJ_Spaceship::OnMoveToLobby(UEventOnToLobby* Event)
+{
+	if (Event == nullptr)
+		return;
+
+	// 권한이 있는 서버에서만 타이머를 작동시킵니다.
+	if (HasAuthority())
+	{
+		// 2초(2.0f) 뒤에 ExecuteReturnToLobby 함수를 1회(false) 실행하도록 예약합니다.
+		GetWorld()->GetTimerManager().SetTimer(
+			ReturnToLobbyTimerHandle,
+			this,
+			&APSJ_Spaceship::ExecuteReturnToLobby,
+			2.0f,
+			false
+		);
+
+	}
+}
+
+// 2초 뒤에 실제로 실행될 초기화 로직
+void APSJ_Spaceship::ExecuteReturnToLobby()
+{
+	if (ShipRootComponent && ShipRootComponent->IsSimulatingPhysics())
+	{
+		// 1. 선형 속도(이동)와 각속도(회전)를 완벽하게 0으로 만듭니다.
+		ShipRootComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
+		ShipRootComponent->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+	}
+
+	// 2. 우주선을 게임 시작 시 기억해둔 최초 위치로 순간이동시킵니다.
+	SetActorTransform(InitialTransform, false, nullptr, ETeleportType::TeleportPhysics);
+
+	UE_LOG(LogTemp, Warning, TEXT("[Spaceship] 2초 지연 완료: 우주선 위치 및 속도 초기화 적용됨"));
 }
 
 void APSJ_Spaceship::OnChangeMexSpeed(UEventOnChangeSpaceShipData* Event)

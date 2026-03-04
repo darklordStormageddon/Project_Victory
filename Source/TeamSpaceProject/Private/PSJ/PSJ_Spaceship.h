@@ -56,6 +56,19 @@ private:
 private:
 	AJHSGameState* _outGameState = nullptr;
 
+	// 초기 위치와 회전값을 기억할 변수
+	FTransform InitialTransform;
+
+	// 로비 이동 이벤트를 수신할 핸들
+	FDelegateHandle _eventHandleOnToLobby;
+
+	// 이벤트 수신 시 실행될 함수
+	void OnMoveToLobby(class UEventOnToLobby* Event);
+
+	// --- [추가됨] 2초 지연을 위한 타이머 및 실제 복귀 함수 ---
+	FTimerHandle ReturnToLobbyTimerHandle;
+	void ExecuteReturnToLobby();
+
 private:
 	void ShowShield();
 	void HideShield();
