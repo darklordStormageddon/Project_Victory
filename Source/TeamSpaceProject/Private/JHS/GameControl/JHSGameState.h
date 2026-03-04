@@ -9,6 +9,7 @@
 #include "JHSGameState.generated.h"
 
 class UEventManager;
+class USpaceManager;
 class USpaceShipStateGroup;
 class UPlayerStateGroup;
 class UCollectStateGroup;
@@ -25,16 +26,18 @@ public:
 	AJHSGameState();
 
 private:
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|RootComponent")
+	TObjectPtr<USceneComponent> _rootComponent = nullptr;
+
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|Manager")
 	TObjectPtr<UEventManager> _eventManager = nullptr;
+
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|Manager")
+	TObjectPtr<USpaceManager> _spaceManager = nullptr;
 
 private:
 	UPROPERTY(EditAnywhere, Category = "GameState|Goal")
 	int32 _goalDollar = 1000;
-
-protected:
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "GameState|Components")
-	TObjectPtr<USceneComponent> _rootComponent = nullptr;
 
 #pragma region State Group
 private:
@@ -89,6 +92,8 @@ public:
 	TObjectPtr<UTurretStateGroup> GetTurretStateGroup() { return _turretStateGroup; }
 
 	TObjectPtr<UShopManager> GetShopManager() { return _shopManager; }
+
+	TObjectPtr<USpaceManager> GetSpaceManager() { return _spaceManager; }
 
 protected:
 	virtual void BeginPlay() override;

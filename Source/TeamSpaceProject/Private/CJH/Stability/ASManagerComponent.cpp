@@ -11,7 +11,7 @@
 
 #include "JHS/Player/SpaceStation.h"
 
-#include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/SpaceManager.h"
 
 #include "Kismet/GameplayStatics.h"
@@ -87,13 +87,13 @@ void UASManagerComponent::ClearSpawnedSatellites()
 
 void UASManagerComponent::GetSetting()
 {
-	AJHSGameMode* InGameMode = nullptr;
-	if (!UStaticFunctionLibrary::TryGetGameMode(GetOwner(), InGameMode))
+	AJHSGameState* _gameState = nullptr;
+	if (!UStaticFunctionLibrary::TryGetGameState(_gameState))
 		return;
 
-	if (InGameMode && InGameMode->GetSpaceManager())
+	if (_gameState && _gameState->GetSpaceManager())
 	{
-		Spawn_Distance = InGameMode->GetSpaceManager()->GetSpaceRadius() / 1.5f;
+		Spawn_Distance = _gameState->GetSpaceManager()->GetSpaceRadius() / 1.5f;
 	}
 }
 

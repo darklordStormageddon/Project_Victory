@@ -9,7 +9,6 @@
 #include "JHSGameMode.generated.h"
 
 class UEventManager;
-class USpaceManager;
 class UShopManager;
 class AJHSGameState;
 
@@ -24,9 +23,6 @@ public:
 private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
 	TObjectPtr<UEventManager> _eventManager = nullptr;
-
-	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
-	TObjectPtr<USpaceManager> _spaceManager = nullptr;
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameMode|Manager")
 	TObjectPtr<UShopManager> _shopManager = nullptr;
@@ -59,9 +55,6 @@ private:
 public:
 	UFUNCTION(BlueprintCallable, Category = "GameMode|Event Manager")
 	UEventManager* GetEventManager() { return _eventManager; }
-
-	UFUNCTION(BlueprintCallable, Category = "GameMode|Space Manager")
-	USpaceManager* GetSpaceManager() { return _spaceManager; }
 
 protected:
 	virtual void BeginPlay() override;

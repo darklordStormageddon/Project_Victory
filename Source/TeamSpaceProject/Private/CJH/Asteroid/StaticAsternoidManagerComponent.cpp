@@ -3,7 +3,6 @@
 
 #include "CJH/Asteroid/StaticAsternoidManagerComponent.h"
 
-#include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/GameControl/SpaceManager.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/Event/EventManager.h"
@@ -34,15 +33,12 @@ void UStaticAsternoidManagerComponent::BeginPlay()
 
 void UStaticAsternoidManagerComponent::InitSpaceRadius()
 {
-	AJHSGameMode* InGameMode = nullptr;
+	USpaceManager* SpaceManager = nullptr;
 
-	if (!UStaticFunctionLibrary::TryGetGameMode(GetOwner(), InGameMode))
+	if (!UStaticFunctionLibrary::TryGetSpaceManager(SpaceManager))
 		return;
 
-	if (InGameMode && InGameMode->GetSpaceManager())
-	{
-		SpaceRadius = InGameMode->GetSpaceManager()->GetSpaceRadius() / 1.5f;
-	}
+	SpaceRadius = SpaceManager->GetSpaceRadius() / 1.5f;
 }
 
 // Called every frame

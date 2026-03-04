@@ -19,7 +19,9 @@ AEnemyBase::AEnemyBase()
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 
 	bReplicates = true;
-	SetReplicateMovement(false);
+	SetReplicateMovement(true);
+	NetUpdateFrequency = 20.0f;
+	MinNetUpdateFrequency = 10.0f;
 }
 
 // Called when the game starts or when spawned
@@ -215,7 +217,7 @@ void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 
 	USpaceManager* OutSpaceManager = nullptr;
-	if (!UStaticFunctionLibrary::TryGetSpaceManager(this, OutSpaceManager))
+	if (!UStaticFunctionLibrary::TryGetSpaceManager(OutSpaceManager))
 	{
 		UE_LOG(LogTemp, Error, TEXT("AEnemyBase: OutSpaceManager is nullptr"));
 		return;

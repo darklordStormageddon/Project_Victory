@@ -5,6 +5,7 @@
 
 #include "JHS/GameControl/StageChangeExample.h" 
 #include "JHS/GameControl/StaticFunctionLibrary.h"
+#include "JHS/GameControl/SpaceManager.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
 
@@ -14,7 +15,6 @@
 #include "Kismet/GameplayStatics.h"
 
 #include "JHS/GameControl/JHSGameMode.h"
-#include "JHS/GameControl/SpaceManager.h"
 #include "JHS/Player/SpaceStation.h"
 
 UAsteroidComponent::UAsteroidComponent()
@@ -28,12 +28,13 @@ void UAsteroidComponent::BeginPlay()
 	// ...
 	_ownerActor = GetOwner();
 
-	InGameMode = Cast<AJHSGameMode>(GetWorld()->GetAuthGameMode());
-
 	if (!_ownerActor || !_ownerActor->HasAuthority())
 		return;
 
 	TargetShip = Cast<AActor>(UGameplayStatics::GetActorOfClass(GetWorld(), _asteroidInfo.TargetShip));
+
+	if (!UStaticFunctionLibrary::TryGetSpaceManager(SpaceManager) || !SpaceManager)
+		return;
 
 	if (!UStaticFunctionLibrary::TryGetEventManager(EventManager) || !EventManager)
 		return;
@@ -142,16 +143,12 @@ void UAsteroidComponent::SpawnAsteroid()
 {
 	if (!_ownerActor || !TargetShip) return;
 
-	
-	if (!UStaticFunctionLibrary::TryGetGameMode(GetOwner(), InGameMode))
-		return;
-
 	// 스폰 플래그 설정
 	bIsSpawning = true;
 
 	// 랜덤 방향과 위치
 	FVector RandomDirection = FMath::VRand();
-	FVector SpawnLocation = InGameMode->GetSpaceManager()->GetSpaceStation()->GetActorLocation() + RandomDirection * (InGameMode->GetSpaceManager()->GetSpaceRadius() - 200.f);
+	FVector SpawnLocation = SpaceManager->GetSpaceStation()->GetActorLocation() + RandomDirection * (SpaceManager->GetSpaceRadius() - 200.f);
 
 	float Size = FMath::RandRange(_asteroidInfo.MinSize, _asteroidInfo.MaxSize);
 	float Speed = FMath::RandRange(_asteroidInfo.MinSpeed, _asteroidInfo.MaxSpeed);
@@ -204,7 +201,7 @@ void UAsteroidComponent::SpawnAsteroid()
 
 		Asteroid->InitSpaceStation(GetOwner());
 
-		Asteroid->DestroyDistance = InGameMode->GetSpaceManager()->GetSpaceRadius();
+		Asteroid->DestroyDistance = SpaceManager->GetSpaceRadius();
 		Asteroids.Add(Asteroid);
 
 		if(_asteroidInfo.debugDraw)

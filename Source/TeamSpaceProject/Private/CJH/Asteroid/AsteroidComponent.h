@@ -51,10 +51,10 @@ struct FSpawnAsteroidInfo
 	TSubclassOf<AActor> TargetShip = nullptr;
 };
 
+class USpaceManager;
 class UEventManager;
 class UEventOnStartStage;
 class UEventOnEndStage;
-class AJHSGameMode;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 
@@ -69,7 +69,7 @@ private:
 
 	AActor* _ownerActor = nullptr;
 
-	AJHSGameMode* InGameMode = nullptr;
+	USpaceManager* SpaceManager = nullptr;
 
 	UEventManager* EventManager = nullptr;
 

@@ -3,7 +3,7 @@
 
 #include "JHS/SpaceObject/SpaceObjectComponent.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
-#include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/JHSGameState.h"
 
 // Sets default values for this component's properties
 USpaceObjectComponent::USpaceObjectComponent()
@@ -43,11 +43,11 @@ void USpaceObjectComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 void USpaceObjectComponent::InitializeSpaceObject()
 {
-	AJHSGameMode* _outGameMode = nullptr;
-	if (!UStaticFunctionLibrary::TryGetGameMode(GetOwner(), _outGameMode))
+	AJHSGameState* _gameState = nullptr;
+	if (!UStaticFunctionLibrary::TryGetGameState(_gameState))
 		return;
 
-	_spaceManager = _outGameMode->GetSpaceManager();
+	_spaceManager = _gameState->GetSpaceManager();
 	Send();
 }
 
@@ -107,13 +107,21 @@ void USpaceObjectComponent::UpdateSpaceObjectData(FSpaceObjectData NewSpaceObjec
 
 void USpaceObjectComponent::Server_UpdateSpaceObjectData_Implementation(FSpaceObjectData NewSpaceObjectData)
 {
-	// 서버의 위치와 회전을 모든 클라이언트에 동기화
+	if (_spaceManager)
+	{
+		_spaceManager->UpdateSpaceObject(NewSpaceObjectData);
+	}
+	
 	Multicast_UpdateSpaceObjectData(NewSpaceObjectData);
 }
 
 void USpaceObjectComponent::Multicast_UpdateSpaceObjectData_Implementation(FSpaceObjectData NewSpaceObjectData)
 {
-	// 서버와 클라이언트의 좌표 및 회전 동기화
+	if (_spaceManager)
+	{
+		_spaceManager->UpdateSpaceObject(NewSpaceObjectData);
+	}
+	
 	if (_owner)
 	{
 		_owner->SetActorLocation(NewSpaceObjectData.Location);
