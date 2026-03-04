@@ -36,7 +36,7 @@ void ATaskPawnBase::SetPilot(ACharacter* Character)
 
 	if (CurrentPilot)
 	{
-		// 1. 나를 가리키는 의자(TaskChair) 찾기 (이 작업은 즉시 수행)
+		// 1. 의자 찾기 로직 (기존과 동일)
 		ATaskChair* FoundChair = Cast<ATaskChair>(LinkedSeat);
 		if (!FoundChair)
 		{
@@ -53,23 +53,26 @@ void ATaskPawnBase::SetPilot(ACharacter* Character)
 			}
 		}
 
-		// 안전한 지연 실행을 위한 약참조(Weak Pointer) 설정
 		TWeakObjectPtr<ATaskPawnBase> WeakThis(this);
 		TWeakObjectPtr<APSJ_Character> WeakPilot(CurrentPilot);
 		TWeakObjectPtr<ATaskChair> WeakChair(FoundChair);
 
-		// 2. 물리 충돌 변경 및 이동 로직을 다음 프레임(Next Tick)으로 지연!
+		// 2. [수정] 모든 물리/상태 변화를 다음 프레임으로 지연 실행
+		// 이렇게 하면 InteracterComponent의 TryInteractInput 함수가 안전하게 종료된 후 콜리전이 꺼집니다.
 		GetWorld()->GetTimerManager().SetTimerForNextTick([WeakThis, WeakPilot, WeakChair]()
 			{
-				if (WeakThis.IsValid() && WeakPilot.IsValid())
+				if (WeakThis.IsValid() && WeakPilot.IsValid() && WeakChair.IsValid())
 				{
-					// 캐릭터 위치 이동
-					if (WeakChair.IsValid())
+					// [여기서 점유 상태 변경]
+					// 서버 캐릭터의 경우, 함수 호출 스택이 완전히 빠져나간 뒤 실행되므로 안전합니다.
+					if (WeakThis->HasAuthority())
 					{
-						WeakPilot->SetActorLocationAndRotation(WeakChair->GetActorLocation(), WeakChair->GetActorRotation());
+						WeakChair->bIsOccupied = true;
+						WeakChair->OnRep_IsOccupied();
 					}
 
-					// 부착 및 충돌 해제
+					// 캐릭터 위치 이동 및 부착 (기존 로직)
+					WeakPilot->SetActorLocationAndRotation(WeakChair->GetActorLocation(), WeakChair->GetActorRotation());
 					WeakPilot->AttachToActor(WeakThis.Get(), FAttachmentTransformRules::KeepWorldTransform);
 					WeakPilot->SetActorEnableCollision(false);
 
@@ -79,7 +82,7 @@ void ATaskPawnBase::SetPilot(ACharacter* Character)
 						CMC->DisableMovement();
 					}
 				}
-			});
+		});
 	}
 }
 
@@ -135,6 +138,11 @@ void ATaskPawnBase::DisembarkCharacter()
 
 	if (FoundChair)
 	{
+		if (HasAuthority())
+		{
+			FoundChair->bIsOccupied = false;
+			FoundChair->OnRep_IsOccupied(); // 콜리전 즉시 활성화
+		}
 		SpawnLoc = FoundChair->GetActorTransform().TransformPosition(FoundChair->SeatDisembarkOffset);
 		SpawnRot = FoundChair->GetActorRotation();
 	}

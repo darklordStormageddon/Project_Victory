@@ -8,6 +8,7 @@
 #include "PSJ_ToolBase.h"
 #include "Net/UnrealNetwork.h"
 #include "PSJ_Character.h" 
+#include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Pawn.h" // APawn 사용을 위해 필요
 #include "GameFramework/Controller.h" // Controller 체크를 위해 필요
@@ -94,6 +95,7 @@ void ATaskChair::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(ATaskChair, TargetTaskPawn);
 	DOREPLIFETIME(ATaskChair, bIsMalfunctioning); // 추가
+    DOREPLIFETIME(ATaskChair, bIsOccupied);
 }
 
 void ATaskChair::OnInteractEnter(int32 CallerPlayerId, TObjectPtr<UUIBase> OpenedUI)
@@ -225,9 +227,56 @@ void ATaskChair::RemoveRepairer(APSJ_Character* Mechanic)
     }
 }
 
+void ATaskChair::OnRep_IsOccupied()
+{
+	TArray<USphereComponent*> Spheres;
+	GetComponents<USphereComponent>(Spheres);
+
+	for (USphereComponent* Sphere : Spheres)
+	{
+		// InteractableComponent가 동적으로 생성한 콜리전 찾기
+		if (Sphere->GetName().Contains(TEXT("CollisionComponent")))
+		{
+			if (bIsOccupied)
+			{
+				// 누군가 탔으면 상호작용 구체 자체를 없애버림 (F키 UI 안 뜸)
+				Sphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			}
+			else
+			{
+				// 내렸으면 다시 켬
+				Sphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+			}
+		}
+	}
+}
+
 // [6] RepNotify (클라이언트 효과 처리)
 void ATaskChair::OnRep_IsMalfunctioning()
 {
+	{
+		// InteractableComponent가 생성한 "CollisionComponent"를 찾습니다.
+		TArray<USphereComponent*> Spheres;
+		GetComponents<USphereComponent>(Spheres);
+
+		for (USphereComponent* Sphere : Spheres)
+		{
+			if (Sphere->GetName().Contains(TEXT("CollisionComponent")))
+			{
+				if (bIsOccupied)
+				{
+					// 누군가 타고 있으면 아예 접근(오버랩) 자체를 차단하여 남에게 UI도 안 뜨게 만듭니다.
+					Sphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				}
+				else
+				{
+					// 내렸다면 다시 상호작용 가능하게 켭니다.
+					Sphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+				}
+			}
+		}
+	}
+
     if (bIsMalfunctioning)
     {
         // 예: 스파크 파티클 켜기, 고장음 루프 재생

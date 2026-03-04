@@ -727,6 +727,12 @@ void APSJ_Character::Server_RequestBoarding_Implementation(ATaskPawnBase* TaskPa
 {
 	if (!TaskPawn) return;
 
+	if (TaskPawn->CurrentPilot != nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Seat Steal Blocked: The pawn is already occupied."));
+		return;
+	}
+
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		TaskPawn->SetPilot(this);

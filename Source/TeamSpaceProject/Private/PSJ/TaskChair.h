@@ -34,6 +34,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Link")
 	void SetTargetTaskPawn(ATaskPawnBase* NewTaskPawn);
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_IsOccupied, Category = "State")
+	bool bIsOccupied = false;
+
+	UFUNCTION()
+	void OnRep_IsOccupied();
+
+
 	virtual void OnInteractExit(int32 CallerPlayerId, TObjectPtr<UUIBase> ClosedUI) override;
 
 	ATaskPawnBase* GetTargetTaskPawn() const { return TargetTaskPawn; }
