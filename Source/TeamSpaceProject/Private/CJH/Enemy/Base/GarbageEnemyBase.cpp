@@ -94,8 +94,8 @@ void AGarbageEnemyBase::OnRep_GarbageState()
 		return;
 	}
 
-	// 보간 시작점 = 현재 스무스 위치
-	ClientPrevLoc     = ClientSmoothLoc;
+	// 현재 부드러운 위치에서 새 목표로 보간 시작
+	ClientPrevLoc     = ClientSmoothLoc; // 현재 렌더 위치에서 출발
 	ClientTargetLoc   = NewTarget;
 	ClientInterpAlpha = 0.0f;
 
@@ -123,26 +123,19 @@ void AGarbageEnemyBase::Tick(float DeltaTime)
 		return;
 	}
 
-	if (ClientInterpAlpha < 1.0f && ClientInterpSpeed > KINDA_SMALL_NUMBER)
+	ClientTickInterp(DeltaTime);
+}
+
+void AGarbageEnemyBase::ClientTickInterp(float DeltaTime)
+{
+	if (ClientInterpAlpha < 1.0f)
 	{
-		const float SegDist = FVector::Dist(ClientPrevLoc, ClientTargetLoc);
-
-		if (SegDist > KINDA_SMALL_NUMBER)
-		{
-			// Alpha 증가량 = 이동 속도 * DeltaTime / 구간 거리
-			// = (SegDist/0.05) * DeltaTime / SegDist
-			// = DeltaTime / 0.05
-			// → 항상 0.05초에 걸쳐 선형 이동, 속도 변화 없음
-			ClientInterpAlpha += DeltaTime / 0.05f;
-		}
-
-		ClientInterpAlpha = FMath::Min(ClientInterpAlpha, 1.0f);
-		ClientSmoothLoc   = FMath::Lerp(ClientPrevLoc, ClientTargetLoc, ClientInterpAlpha);
+		ClientInterpAlpha += DeltaTime / 0.1f;
+		ClientInterpAlpha  = FMath::Min(ClientInterpAlpha, 1.0f);
+		ClientSmoothLoc    = FMath::Lerp(ClientPrevLoc, ClientTargetLoc, ClientInterpAlpha);
 	}
 	else
 	{
-		// 이미 목표 도달 또는 OnRep 지연 중
-		// 현재 위치 유지 (다음 OnRep이 올 때까지)
 		ClientSmoothLoc = ClientTargetLoc;
 	}
 

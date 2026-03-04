@@ -45,8 +45,11 @@ ABullet::ABullet()
 
 	// ===== 최적화 =====
 	InitialLifeSpan = 2.0f;
-	NetUpdateFrequency = 10.0f;      // 클라에 주기적으로 위치 동기화
-	MinNetUpdateFrequency = 5.0f;
+	NetUpdateFrequency = 60.0f;      // 클라에 주기적으로 위치 동기화
+	MinNetUpdateFrequency = 30.0f;
+	// 클라이언트에 스폰 패킷이 전달되기 전에 Destroy되지 않도록 최소 생존 시간 보장
+	NetDormancy = DORM_Never;
+	bAlwaysRelevant = true;
 }
 
 // Called when the game starts or when spawned

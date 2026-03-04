@@ -44,6 +44,9 @@ protected:
 	virtual void SetInfo() override;
 	virtual void Tick(float DeltaTime) override;
 
+	// 자식 클래스에서 override하면 부모 보간을 차단할 수 있음
+	virtual void ClientTickInterp(float DeltaTime);
+
 public:
 	// SpawnComponent가 0.05초마다 호출: 서버에서 액터를 궤도 위에 직접 배치
 	// TangentSpeed: 실제 궤도 접선 속도 (클라이언트 보간 속도로 사용)

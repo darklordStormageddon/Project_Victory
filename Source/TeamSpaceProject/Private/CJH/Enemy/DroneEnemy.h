@@ -39,6 +39,7 @@ private:
 	float ChaseDetectionMult = 1.0f;
 
 	float ChaseCurvePhase = 0.0f;
+	float OrbitAngle      = 0.0f; // 공전 각도 누적
 
 	float AngularSpeedTarget = 0.0f;
 	float AngularSpeedCurrent = 0.0f;
@@ -70,26 +71,36 @@ private:
 	// ── 네트워크 위치·회전 복제 ───────────────────────────────
 	// RepLocation은 AGarbageEnemyBase에서 상속
 protected:
-	UPROPERTY(ReplicatedUsing = OnRep_DroneState)
+	UPROPERTY(ReplicatedUsing = OnRep_DroneRot)
 	FRotator RepRotation;
+
+	UPROPERTY(ReplicatedUsing = OnRep_DroneState)
+	FVector_NetQuantize RepDroneLoc;
+
+	// 서버 공전 각도 복제 → 클라이언트 예측 동기화용
+	UPROPERTY(Replicated)
+	float RepOrbitAngle = 0.0f;
 
 	// ── 서버 이동 타이머 ─────────────────────────────────────
 	private:
-	FTimerHandle ServerMoveTimerHandle;
-	float        ServerMoveDeltaTime = 0.05f;
+		float ServerMoveDeltaTime = 0.05f; // 클라이언트 보간 기준 주기로만 사용
 
-	// ── 클라이언트 보간 ───────────────────────────────────────
-	// ClientSmoothLoc, ClientTargetLoc, ClientPrevLoc,
-	// ClientInterpSpeed, ClientInterpAlpha 는 부모에서 상속
+	// ── 클라이언트 보간 (VInterpTo 방식) ────────────────────────
 private:
 	FRotator ClientSmoothRot  = FRotator::ZeroRotator;
-	FRotator ClientPrevRot    = FRotator::ZeroRotator;
 	FRotator ClientTargetRot  = FRotator::ZeroRotator;
-	float    ClientRotAlpha   = 1.0f;
 	bool     bDroneClientInit = false;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Network", meta = (ClampMin = "200.0"))
 	float SnapDistance = 1500.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Network", meta = (ClampMin = "1.0", ClampMax = "50.0"))
+	float ClientInterpSpeed = 8.0f;
+
+	// ── 클라이언트 공전 예측 ──────────────────────────────────
+private:
+	float    ClientOrbitAngle    = 0.0f;  // 클라이언트 측 각도 누적
+	bool     bClientOrbitSynced  = false; // 서버 각도 첫 동기화 완료 여부
 
 	// ── 내부 함수 ─────────────────────────────────────────────
 	private:
@@ -97,13 +108,16 @@ private:
 		void ChaseMoveServer(float DeltaTime);
 		void OrbitMoveServer(float DeltaTime);
 
-		void LookAtTarget();
+		void LookAtTarget(float DeltaTime);
 		void TryFire();
 		void EnableFiring() { CanFire = true; }
 		void CheckTarget();
 
 		UFUNCTION()
 		void OnRep_DroneState();
+
+		UFUNCTION()
+		void OnRep_DroneRot();
 
 		UFUNCTION(NetMulticast, Unreliable)
 		void Multicast_FireEffect();
@@ -112,6 +126,7 @@ private:
 	ADroneEnemy();
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	virtual void ClientTickInterp(float DeltaTime) override {}
 
 	public:
 	bool IsChasing() const { return bIsChasing; }
