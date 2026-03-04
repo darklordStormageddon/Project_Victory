@@ -10,6 +10,7 @@
 #include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/GameControl/ShopManager.h"
 #include "JHS/Event/EventManager.h"
+#include "JHS/GameControl/SpaceManager.h"
 
 AJHSGameState::AJHSGameState()
 {
@@ -27,6 +28,9 @@ AJHSGameState::AJHSGameState()
 	_turretStateGroup = CreateDefaultSubobject<UTurretStateGroup>(TEXT("TurretStateGroup"));
 
 	_shopManager = CreateDefaultSubobject<UShopManager>(TEXT("ShopManager"));
+
+	// SpaceManager: GameState에 두어 서버·클라이언트 모두에서 접근 가능 (GameMode는 클라이언트에 없음)
+	_spaceManager = CreateDefaultSubobject<USpaceManager>(TEXT("SpaceManager"));
 
 	// EventManager: GameState에 두어 서버·클라이언트 모두에서 접근 가능 (GameMode는 클라이언트에 없음)
 	_eventManager = CreateDefaultSubobject<UEventManager>(TEXT("EventManager"));

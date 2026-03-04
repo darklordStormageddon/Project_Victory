@@ -6,8 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "DistanceComponent.generated.h"
 
-class AJHSGameMode;
-class UStaticFunctionLibrary;
+class USpaceManager;
 
 class UEventManager;
 class UEventOnStartStage;
@@ -32,7 +31,7 @@ private:
 	float CheckDistanceTime = 1.0f;
 
 private:
-	AJHSGameMode* InGameMode = nullptr;
+	USpaceManager* SpaceManager = nullptr;
 
 	double SpaceRadius = 0.0;
 

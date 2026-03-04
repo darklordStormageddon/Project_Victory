@@ -33,13 +33,12 @@ void ASpaceRader::InitializeRader()
 	FRaderData _newraderData;
 
 	USpaceManager* _outSpaceManager = nullptr;
-	if (!UStaticFunctionLibrary::TryGetSpaceManager(this, _outSpaceManager))
+	if (!UStaticFunctionLibrary::TryGetSpaceManager(_outSpaceManager))
 		return;
 
 	_newraderData.StandardActor = Cast<AActor>(_outSpaceManager->GetSpaceStation());
 	_newraderData.RaderRenderRadius = _outSpaceManager->GetSpaceRadius();
 
-	// 레이더 표시 시작
 	StartRenderRader(_newraderData);
 }
 

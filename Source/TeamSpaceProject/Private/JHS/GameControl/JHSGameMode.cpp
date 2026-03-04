@@ -4,7 +4,6 @@
 #include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/Event/EventManager.h"
 #include "JHS/Event/CommonEventBase.h"
-#include "JHS/GameControl/SpaceManager.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
@@ -18,7 +17,6 @@
 AJHSGameMode::AJHSGameMode()
 {
 	_eventManager = CreateDefaultSubobject<UEventManager>(TEXT("EventManager"));
-	_spaceManager = CreateDefaultSubobject<USpaceManager>(TEXT("SpaceManager"));
 }
 
 void AJHSGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
