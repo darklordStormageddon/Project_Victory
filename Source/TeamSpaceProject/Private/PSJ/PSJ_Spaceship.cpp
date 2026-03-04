@@ -82,7 +82,12 @@ void APSJ_Spaceship::Server_ThrustForward_Implementation(float Value)
 
 void APSJ_Spaceship::Input_ThrustBackward(const FInputActionValue& Value)
 {
-	Server_ThrustBackward(Value.Get<float>());
+	float Val = Value.Get<float>();
+	if (IsLocallyControlled() && ShipRootComponent && TryMove())
+	{
+		ShipRootComponent->AddForce(GetActorForwardVector() * -ThrustSpeed * Val, NAME_None, true);
+	}
+	Server_ThrustBackward(Val);
 }
 
 bool APSJ_Spaceship::Server_ThrustBackward_Validate(float Value) { return true; }
@@ -95,7 +100,14 @@ void APSJ_Spaceship::Server_ThrustBackward_Implementation(float Value)
 
 void APSJ_Spaceship::Input_MoveAxes(const FInputActionValue& Value)
 {
-	Server_MoveAxes(Value.Get<FVector2D>());
+	FVector2D Val = Value.Get<FVector2D>();
+	if (IsLocallyControlled() && ShipRootComponent && TryMove())
+	{
+		FVector RightForce = GetActorRightVector() * Val.X * ThrustSpeed * 0.5f;
+		FVector UpForce = GetActorUpVector() * Val.Y * ThrustSpeed * 0.5f;
+		ShipRootComponent->AddForce(RightForce + UpForce, NAME_None, true);
+	}
+	Server_MoveAxes(Val);
 }
 
 bool APSJ_Spaceship::Server_MoveAxes_Validate(FVector2D Value) { return true; }
@@ -111,7 +123,13 @@ void APSJ_Spaceship::Server_MoveAxes_Implementation(FVector2D Value)
 
 void APSJ_Spaceship::Input_MoveUp(const FInputActionValue& Value)
 {
-	Server_MoveUp(Value.Get<float>());
+	float Val = Value.Get<float>();
+	if (IsLocallyControlled() && ShipRootComponent && TryMove())
+	{
+		FVector UpForce = GetActorUpVector() * Val * ThrustSpeed * 0.5f;
+		ShipRootComponent->AddForce(UpForce, NAME_None, true);
+	}
+	Server_MoveUp(Val);
 }
 
 bool APSJ_Spaceship::Server_MoveUp_Validate(float Value) { return true; }
