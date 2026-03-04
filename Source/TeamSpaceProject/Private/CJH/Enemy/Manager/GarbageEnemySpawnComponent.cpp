@@ -121,13 +121,13 @@ void UGarbageEnemySpawnComponent::TurnOrbit()
 		return;
 
 	const float FixedDeltaTime = 0.05f;
-	
+
 	CurrentOrbitPhase += RotateSpeed * FixedDeltaTime;
-	if (CurrentOrbitPhase >= 360.0f) 
+	if (CurrentOrbitPhase >= 360.0f)
 		CurrentOrbitPhase -= 360.0f;
 
 	FVector Center = GetCenterLocation();
-	
+
 	int32 GarbageCount = GarbageEnemies.Num();
 	if (GarbageCount == 0)
 		return;
@@ -135,7 +135,7 @@ void UGarbageEnemySpawnComponent::TurnOrbit()
 	for (int32 i = 0; i < GarbageCount; ++i)
 	{
 		AGarbageEnemyBase* GarbageEnemy = GarbageEnemies[i];
-		if (!GarbageEnemy || !IsValid(GarbageEnemy)) 
+		if (!GarbageEnemy || !IsValid(GarbageEnemy))
 			continue;
 
 		ADroneEnemy* DroneEnemy = Cast<ADroneEnemy>(GarbageEnemy);
@@ -157,22 +157,24 @@ void UGarbageEnemySpawnComponent::TurnOrbit()
 			Data->Phase -= 360.0f;
 
 		FVector Axis = Data->OrbitAxis;
-
 		FVector Temp = (FMath::Abs(FVector::DotProduct(Axis, FVector::UpVector)) > 0.99f)
-			? FVector::RightVector
-			: FVector::UpVector;
+			? FVector::RightVector : FVector::UpVector;
 
-		FVector Right = FVector::CrossProduct(Temp, Axis).GetSafeNormal();
+		FVector Right   = FVector::CrossProduct(Temp, Axis).GetSafeNormal();
 		FVector Forward = FVector::CrossProduct(Axis, Right).GetSafeNormal();
 
-		float Rad = FMath::DegreesToRadians(Data->Phase);
+		float Rad    = FMath::DegreesToRadians(Data->Phase);
 		FVector Radial = Right * FMath::Cos(Rad) + Forward * FMath::Sin(Rad);
 
 		FVector TargetPos = Center + Radial * Data->OrbitRadius;
 
 		JuniorEnemies[GarbageEnemy] = TargetPos;
 
-		GarbageEnemy->SetOrbitTarget(TargetPos);
+		// 접선 속도 = ω(rad/s) * r
+		const float AngularRad  = FMath::DegreesToRadians(Data->AngularSpeed);
+		const float TangentSpeed = AngularRad * Data->OrbitRadius;
+
+		GarbageEnemy->SetOrbitPosition(TargetPos, TangentSpeed);
 	}
 }
 
