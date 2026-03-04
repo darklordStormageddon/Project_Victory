@@ -13,8 +13,6 @@ ACollectable_base::ACollectable_base()
 	PrimaryActorTick.bCanEverTick = true;
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Ore"));
 	SetRootComponent(Mesh);
-	Mesh->SetupAttachment(RootComponent);
-	Mesh->SetSimulatePhysics(true);
 
 	bReplicates = true;
 }
@@ -24,6 +22,7 @@ void ACollectable_base::BeginPlay()
 {
 	Super::BeginPlay();
 
+	Mesh->SetSimulatePhysics(true);
 	if (!UStaticFunctionLibrary::TryGetGameState(_outGameState))
 		return;
 	
