@@ -5,8 +5,9 @@
 #include "CJH/Enemy/Base/EnemyBase.h"
 #include "KSM/Satellite_Base.h"
 
-#include "JHS/GameControl/JHSGameMode.h"
+#include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/SpaceManager.h"
+#include "JHS/GameControl/StaticFunctionLibrary.h"
 
 UEnemySpawnComponent::UEnemySpawnComponent()
 {
@@ -22,13 +23,15 @@ void UEnemySpawnComponent::BeginPlay()
 	if (!_owner)
 		return;
 
-	_gameMode = Cast<AJHSGameMode>(GetWorld()->GetAuthGameMode());
-
-	if (!_gameMode || !_gameMode->GetSpaceManager())
+	AJHSGameState* _gameState = nullptr;
+	if (!UStaticFunctionLibrary::TryGetGameState(_gameState))
 		return;
 
-	_spaceRadius = _gameMode->GetSpaceManager()->GetSpaceRadius();
-	_spaceStation = _gameMode->GetSpaceManager()->GetSpaceStation();
+	if (!_gameState || !_gameState->GetSpaceManager())
+		return;
+
+	_spaceRadius = _gameState->GetSpaceManager()->GetSpaceRadius();
+	_spaceStation = _gameState->GetSpaceManager()->GetSpaceStation();
 }
 
 void UEnemySpawnComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

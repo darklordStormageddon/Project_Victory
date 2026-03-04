@@ -107,13 +107,13 @@ bool UStaticFunctionLibrary::TryGetGameState(AJHSGameState*& OutGameState)
 	return true;
 }
 
-bool UStaticFunctionLibrary::TryGetSpaceManager(AActor* Caller, USpaceManager*& OutSpaceManager)
+bool UStaticFunctionLibrary::TryGetSpaceManager(USpaceManager*& OutSpaceManager)
 {
-	AJHSGameMode* _gameMode = nullptr;
-	if (!TryGetGameMode(Caller, _gameMode))
+	AJHSGameState* _gameState = nullptr;
+	if (!TryGetGameState(_gameState))
         return false;
 
-	OutSpaceManager = _gameMode->GetSpaceManager();
+	OutSpaceManager = _gameState->GetSpaceManager();
     if (OutSpaceManager == nullptr)
     {
         UE_LOG(LogTemp, Error, TEXT("TryGetSpaceManager: SpaceManager is nullptr"));

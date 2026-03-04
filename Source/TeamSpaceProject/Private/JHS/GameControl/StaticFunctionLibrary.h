@@ -10,6 +10,7 @@ class AJHSGameMode;
 class AJHSPlayerController;
 class AJHSGameState;
 class USpaceObjectManager;
+class USpaceManager;
 class UUIManager;
 class UEventManager;
 
@@ -35,7 +36,7 @@ public:
     static bool TryGetGameState(AJHSGameState*& OutGameState);
 
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|SpaceManager")
-    static bool TryGetSpaceManager(AActor* Caller, USpaceManager*& OutSpaceManager);
+    static bool TryGetSpaceManager(USpaceManager*& OutSpaceManager);
 
     UFUNCTION(BlueprintCallable, Category = "StaticFunctionLibrary|UIManager")
     static bool TryGetUIManager(UUIManager*& OutUIManager);

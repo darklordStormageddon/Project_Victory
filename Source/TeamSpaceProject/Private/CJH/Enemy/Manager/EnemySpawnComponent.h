@@ -6,7 +6,6 @@
 #include "Components/ActorComponent.h"
 #include "EnemySpawnComponent.generated.h"
 
-class AJHSGameMode;
 class ASpaceStation;
 class AEnemyBase;
 class ASatellite_Base;
@@ -25,7 +24,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "TargetShip")
 	TSubclassOf<AActor> _spaceShip;
 
-	AJHSGameMode* _gameMode = nullptr;
 	ASpaceStation* _spaceStation = nullptr;
 
 	float _spaceRadius = 0.f;
