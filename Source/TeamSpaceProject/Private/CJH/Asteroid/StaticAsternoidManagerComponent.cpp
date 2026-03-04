@@ -6,8 +6,8 @@
 #include "JHS/GameControl/SpaceManager.h"
 #include "JHS/GameControl/StaticFunctionLibrary.h"
 #include "JHS/Event/EventManager.h"
-
 #include "JHS/Player/SpaceStation.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UStaticAsternoidManagerComponent::UStaticAsternoidManagerComponent()
@@ -16,7 +16,7 @@ UStaticAsternoidManagerComponent::UStaticAsternoidManagerComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
+	SetIsReplicatedByDefault(true);
 }
 
 
@@ -31,6 +31,13 @@ void UStaticAsternoidManagerComponent::BeginPlay()
 		StartRound();
 }
 
+void UStaticAsternoidManagerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UStaticAsternoidManagerComponent, RepSpawnDataList);
+}
+
 void UStaticAsternoidManagerComponent::InitSpaceRadius()
 {
 	USpaceManager* SpaceManager = nullptr;
@@ -38,7 +45,7 @@ void UStaticAsternoidManagerComponent::InitSpaceRadius()
 	if (!UStaticFunctionLibrary::TryGetSpaceManager(SpaceManager))
 		return;
 
-	SpaceRadius = SpaceManager->GetSpaceRadius() / 1.5f;
+	SpawnRadius = SpaceManager->GetSpaceRadius() / 1.5f;
 }
 
 // Called every frame
@@ -54,14 +61,16 @@ void UStaticAsternoidManagerComponent::SpawnStaticAsteroid()
 	if (!GetOwner() || !GetOwner()->HasAuthority() || !GetWorld())
 		return;
 
-	if(!SpaceStation)
+	if (!SpaceStation)
 		return;
-	if(!AsteroidInfoArray.IsValidIndex(0))
+	if (!AsteroidInfoArray.IsValidIndex(0))
 		return;
-	
 
-	const FVector StationPos = SpaceStation ? SpaceStation->GetActorLocation() : FVector::ZeroVector;
+	const FVector StationPos = SpaceStation->GetActorLocation();
 	const int32 SpawnNum = FMath::RandRange(SpawnMinNum, SpawnMaxNum);
+
+	// 기존 스폰 데이터 초기화
+	RepSpawnDataList.Empty();
 
 	for (int32 i = 0; i < SpawnNum; i++)
 	{
@@ -74,8 +83,7 @@ void UStaticAsternoidManagerComponent::SpawnStaticAsteroid()
 			Retries++;
 
 			const FVector RandDir = FMath::VRand();
-
-			SpawnLocation = StationPos + RandDir * FMath::RandRange(SpaceStationSaveRadius, SpaceRadius);
+			SpawnLocation = StationPos + RandDir * FMath::RandRange(SpaceStationSaveRadius, SpawnRadius);
 
 			// 정거장 안전 범위 체크
 			if (FVector::DistSquared(SpawnLocation, StationPos) < SpaceStationSaveRadius * SpaceStationSaveRadius)
@@ -103,25 +111,77 @@ void UStaticAsternoidManagerComponent::SpawnStaticAsteroid()
 
 		if (!bValidLocation)
 			continue;
-		
+
 		const FStaticAsteroidInfo& AsteroidInfo = AsteroidInfoArray[FMath::RandRange(0, AsteroidInfoArray.Num() - 1)];
 
 		const float RandScale = FMath::RandRange(AsteroidInfo.MinSize, AsteroidInfo.MaxSize);
+
 		FTransform SpawnTransform;
 		SpawnTransform.SetLocation(SpawnLocation);
 		SpawnTransform.SetRotation(FMath::VRand().ToOrientationQuat());
 		SpawnTransform.SetScale3D(FVector(RandScale));
 
+		// 서버: 직접 스폰
 		AActor* NewAsteroid = GetWorld()->SpawnActor<AActor>(
 			AsteroidInfo.StaticAsteroidClass,
 			SpawnTransform
 		);
 
 		if (NewAsteroid)
+		{
 			SpawnedAsteroids.Add(NewAsteroid);
+
+			// 클라이언트 스폰용 데이터 저장
+			FStaticAsteroidSpawnData Data;
+			Data.AsteroidClass = AsteroidInfo.StaticAsteroidClass;
+			Data.Location      = SpawnLocation;
+			Data.Rotation      = SpawnTransform.GetRotation().Rotator();
+			Data.Scale         = RandScale;
+			RepSpawnDataList.Add(Data);
+		}
 	}
 
+	// RepSpawnDataList가 복제되면 클라이언트의 OnRep_SpawnDataList가 호출됨
 	OnStaticAsteroidSpawnComplete.Broadcast();
+}
+
+// 클라이언트에서 RepSpawnDataList 수신 시 호출
+void UStaticAsternoidManagerComponent::OnRep_SpawnDataList()
+{
+	if (!GetWorld())
+		return;
+
+	// 기존 클라이언트 소행성 제거 후 재스폰
+	for (AActor* A : ClientSpawnedAsteroids)
+	{
+		if (IsValid(A))
+			A->Destroy();
+	}
+	ClientSpawnedAsteroids.Empty();
+
+	for (const FStaticAsteroidSpawnData& Data : RepSpawnDataList)
+	{
+		SpawnAsteroidOnClient(Data);
+	}
+}
+
+void UStaticAsternoidManagerComponent::SpawnAsteroidOnClient(const FStaticAsteroidSpawnData& Data)
+{
+	if (!Data.AsteroidClass || !GetWorld())
+		return;
+
+	FTransform SpawnTransform;
+	SpawnTransform.SetLocation(Data.Location);
+	SpawnTransform.SetRotation(Data.Rotation.Quaternion());
+	SpawnTransform.SetScale3D(FVector(Data.Scale));
+
+	AActor* NewAsteroid = GetWorld()->SpawnActor<AActor>(
+		Data.AsteroidClass,
+		SpawnTransform
+	);
+
+	if (NewAsteroid)
+		ClientSpawnedAsteroids.Add(NewAsteroid);
 }
 
 void UStaticAsternoidManagerComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -153,6 +213,14 @@ void UStaticAsternoidManagerComponent::ClearRoundActors()
 		if (IsValid(Asteroid))
 			Asteroid->Destroy();
 	}
-
 	SpawnedAsteroids.Empty();
+
+	for (AActor* Asteroid : ClientSpawnedAsteroids)
+	{
+		if (IsValid(Asteroid))
+			Asteroid->Destroy();
+	}
+	ClientSpawnedAsteroids.Empty();
+
+	RepSpawnDataList.Empty();
 }
