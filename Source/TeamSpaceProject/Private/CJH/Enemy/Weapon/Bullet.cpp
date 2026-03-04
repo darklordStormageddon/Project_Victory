@@ -77,24 +77,20 @@ void ABullet::OnOverlap(
 	if (!OtherActor)
 		return;
 
-	// ===== Owner 체크: 자신을 쏜 드론과의 충돌 방지 =====
-	if (OtherActor == _owner)
+	// ===== Owner가 아직 살아있으면 자신 타격 방지 =====
+	if (IsValid(_owner) && OtherActor == _owner)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Bullet: Hit own owner, ignoring"));
 		return;
 	}
 
-	// ===== Owner가 null이 아닌지 확인 =====
-	if (!IsValid(_owner))
+	// ===== Owner의 Owner와도 비교 (Pawn이 Vehicle에 탑승한 경우) =====
+	if (IsValid(_owner))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Bullet: Owner is invalid"));
-		return;
+		APawn* OwnerPawn = Cast<APawn>(_owner);
+		if (OwnerPawn && OtherActor == OwnerPawn->GetOwner())
+			return;
 	}
-
-	// ===== 최종 체크: Owner의 Owner와도 비교 (Pawn이 Vehicle에 탑승한 경우) =====
-	APawn* OwnerPawn = Cast<APawn>(_owner);
-	if (OwnerPawn && OtherActor == OwnerPawn->GetOwner())
-		return;
 
 	// ===== 이펙트 위치 검증 =====
 	FVector ImpactLocation = SweepResult.ImpactPoint;
