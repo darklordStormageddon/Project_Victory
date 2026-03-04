@@ -42,6 +42,10 @@
 		{
 			"Name": "MovieRenderPipeline",
 			"Enabled": true
+		},
+		{
+			"Name": "MfMedia",
+			"Enabled": true
 		}
 	]
 }
