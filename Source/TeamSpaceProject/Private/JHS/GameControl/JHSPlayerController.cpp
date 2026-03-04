@@ -7,6 +7,7 @@
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/CollectStateGroup.h"
+#include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "Net/UnrealNetwork.h"
 
@@ -88,5 +89,14 @@ void AJHSPlayerController::ServerRequestPurchaseAmmo_Implementation(E_AMMO_TYPE 
 	if (_gameState != nullptr && _gameState->GetTurretStateGroup() != nullptr)
 	{
 		_gameState->GetTurretStateGroup()->ExecutePurchaseAmmo(AmmoType, FieldIndex);
+	}
+}
+
+void AJHSPlayerController::ServerRequestSaleAllElement_Implementation()
+{
+	AJHSGameState* _gameState = GetWorld()->GetGameState<AJHSGameState>();
+	if (_gameState != nullptr && _gameState->GetContainerStateGroup() != nullptr)
+	{
+		_gameState->GetContainerStateGroup()->ServerSaleAllElement();
 	}
 }
