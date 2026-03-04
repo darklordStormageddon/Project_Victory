@@ -46,6 +46,16 @@ void ADroneEnemy::BeginPlay()
 		CanDistanceHandle, this, &ADroneEnemy::CheckTarget, 0.5f, true);
 }
 
+void ADroneEnemy::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearAllTimersForObject(this);
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 void ADroneEnemy::OnRep_DroneState()
 {
