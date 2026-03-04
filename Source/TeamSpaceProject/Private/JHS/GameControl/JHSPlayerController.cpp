@@ -5,6 +5,7 @@
 #include "JHS/UI/UIManager.h"
 #include "JHS/Interact/InteractableComponent.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/JHSGameMode.h"
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "JHS/GameControl/StateData/ContainerStateGroup.h"
@@ -99,4 +100,15 @@ void AJHSPlayerController::ServerRequestSaleAllElement_Implementation()
 	{
 		_gameState->GetContainerStateGroup()->ServerSaleAllElement();
 	}
+}
+
+void AJHSPlayerController::ServerRequestEndStage_Implementation()
+{
+	AGameModeBase* _baseGameMode = GetWorld()->GetAuthGameMode();
+	AJHSGameMode* _gameMode = Cast<AJHSGameMode>(_baseGameMode);
+	if (_gameMode == nullptr)
+		return;
+
+	APawn* _pawn = GetPawn();
+	_gameMode->EndStage(_pawn);
 }
