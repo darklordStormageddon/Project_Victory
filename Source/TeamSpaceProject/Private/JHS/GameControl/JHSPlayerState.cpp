@@ -22,7 +22,7 @@ void AJHSPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
 
-	OpenCommonInfoUI();
+	//OpenCommonInfoUI();
 }
 
 bool AJHSPlayerState::TryRegistPlayer(FString Name, E_REGIST_ERROR_TYPE& OutErrorType)
