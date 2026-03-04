@@ -68,6 +68,15 @@ public:
 
 	void SaleAllElement();
 
+	void ServerSaleAllElement();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSaleElementInternal(int32 ElementTypeIndex);
+
+private:
+	void SaleElementInternal(int32 ElementTypeIndex);
+
+public:
 	/** 보유 달러에서 차감 시도. 성공 시 true 및 차감, 실패 시 false. */
 	bool TryConsumeDollar(int32 Amount);
 
@@ -75,8 +84,6 @@ public:
 
 private:
 	void LoadElementData();
-
-	void SaleElementInternal(int32 ElementTypeIndex);
 
 	void ExecuteEventOnChangeElement(FElementData ElementData);
 

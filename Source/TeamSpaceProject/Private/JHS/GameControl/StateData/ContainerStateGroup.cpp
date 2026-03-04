@@ -3,6 +3,7 @@
 
 #include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/GameControl/JHSGameState.h"
+#include "JHS/GameControl/JHSPlayerController.h"
 #include "JHS/GameControl/Constant/ConstantLibrary.h"
 #include "KSM/DataTable/ElementDataTable.h"
 #include "JHS/Event/CommonEventBase.h"
@@ -30,7 +31,10 @@ void UContainerStateGroup::OnRep_ContainerStateReplicated()
 	_containerState.SaleInterval = _replicatedSaleInterval;
 	_containerState.ElementDataMap.Empty();
 	for (const FElementData& _data : _replicatedElementArray)
+	{
 		_containerState.ElementDataMap.Add(_data.ElementType, _data);
+		ExecuteEventOnChangeElement(_data);
+	}
 }
 
 void UContainerStateGroup::OnRep_OwnedDollar()
@@ -108,18 +112,33 @@ void UContainerStateGroup::AddElement(E_ELEMENT_TYPE ElementType, int32 Amount)
 
 void UContainerStateGroup::SaleAllElement()
 {
-	SaleElementInternal(0);
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		ServerSaleAllElement();
+	}
+	else
+	{
+		UWorld* _world = GetWorld();
+		if (_world == nullptr)
+			return;
+
+		APlayerController* _playerController = _world->GetFirstPlayerController();
+		AJHSPlayerController* _jhsPlayerController = Cast<AJHSPlayerController>(_playerController);
+		if (_jhsPlayerController == nullptr)
+			return;
+
+		_jhsPlayerController->ServerRequestSaleAllElement();
+	}
 }
 
-bool UContainerStateGroup::TryConsumeDollar(int32 Amount)
+void UContainerStateGroup::ServerSaleAllElement()
 {
-	if (Amount <= 0 || _containerState.OwnedDollar < Amount)
-		return false;
+	MulticastSaleElementInternal(0);
+}
 
-	_containerState.OwnedDollar -= Amount;
-	ExecuteEventOnChangeOwnedDollar(_containerState.OwnedDollar);
-	SyncContainerStateToReplicated();
-	return true;
+void UContainerStateGroup::MulticastSaleElementInternal_Implementation(int32 ElementTypeIndex)
+{
+	SaleElementInternal(ElementTypeIndex);
 }
 
 void UContainerStateGroup::SaleElementInternal(int32 ElementTypeIndex)
@@ -140,22 +159,39 @@ void UContainerStateGroup::SaleElementInternal(int32 ElementTypeIndex)
 	const E_ELEMENT_TYPE _elementType = (E_ELEMENT_TYPE)ElementTypeIndex;
 	if (TryGetElementData(_elementType, _elementData))
 	{
-		int32 _totalDollar = _elementData->Price * _elementData->Amount;
-		_containerState.OwnedDollar += _totalDollar;
-		_elementData->Amount = 0;
+		if (GetOwner() && GetOwner()->HasAuthority())
+		{
+			int32 _totalDollar = _elementData->Price * _elementData->Amount;
+			_containerState.OwnedDollar += _totalDollar;
+			_elementData->Amount = 0;
 
-		ExecuteEventOnChangeElement(*_elementData);
-		SyncContainerStateToReplicated();
+			ExecuteEventOnChangeElement(*_elementData);
+			SyncContainerStateToReplicated();
+		}
 	}
 
-	if (_containerState.SaleInterval <= 0.0f)
+	if (GetOwner() && GetOwner()->HasAuthority())
 	{
-		_containerState.SaleInterval = 0.5f;
-	}
+		if (_containerState.SaleInterval <= 0.0f)
+		{
+			_containerState.SaleInterval = 0.5f;
+		}
 
-	FTimerDelegate _delegate;
-	_delegate.BindUObject(this, &UContainerStateGroup::SaleElementInternal, ElementTypeIndex + 1);
-	GetWorld()->GetTimerManager().SetTimer(_saleAllElementTimerHandle, _delegate, _containerState.SaleInterval, false);
+		FTimerDelegate _delegate;
+		_delegate.BindUObject(this, &UContainerStateGroup::MulticastSaleElementInternal, ElementTypeIndex + 1);
+		GetWorld()->GetTimerManager().SetTimer(_saleAllElementTimerHandle, _delegate, _containerState.SaleInterval, false);
+	}
+}
+
+bool UContainerStateGroup::TryConsumeDollar(int32 Amount)
+{
+	if (Amount <= 0 || _containerState.OwnedDollar < Amount)
+		return false;
+
+	_containerState.OwnedDollar -= Amount;
+	ExecuteEventOnChangeOwnedDollar(_containerState.OwnedDollar);
+	SyncContainerStateToReplicated();
+	return true;
 }
 
 bool UContainerStateGroup::TryGetElementData(E_ELEMENT_TYPE ElementType, FElementData*& OutElementData)

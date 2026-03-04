@@ -66,4 +66,7 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void ServerRequestPurchaseAmmo(E_AMMO_TYPE AmmoType, int32 FieldIndex);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestSaleAllElement();
 };
