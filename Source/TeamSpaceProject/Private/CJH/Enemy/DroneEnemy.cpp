@@ -41,13 +41,7 @@ void ADroneEnemy::BeginPlay()
 	TiltAngleTarget = FMath::RandRange(-TiltAngleRange, TiltAngleRange);
 	TiltAxisYaw     = FMath::RandRange(0.f, 360.f);
 
-	// 서버 이동은 0.05초 타이머로 분리 → Tick 부하 없음
-	GetWorld()->GetTimerManager().SetTimer(
-		ServerMoveTimerHandle,
-		[this]() { if (IsValid(this)) ServerMove(ServerMoveDeltaTime); },
-		ServerMoveDeltaTime, true);
-
-	// 타겟 감지는 0.5초마다
+	// 타겟 감지가면 타이머로 (0.5초마다)
 	GetWorld()->GetTimerManager().SetTimer(
 		CanDistanceHandle, this, &ADroneEnemy::CheckTarget, 0.5f, true);
 }
@@ -55,82 +49,112 @@ void ADroneEnemy::BeginPlay()
 // ─────────────────────────────────────────────────────────────────────────────
 void ADroneEnemy::OnRep_DroneState()
 {
-	const FVector  NewLoc = FVector(RepLocation);
-	const FRotator NewRot = RepRotation;
+	const FVector NewLoc = FVector(RepDroneLoc);
 
 	if (!bDroneClientInit)
 	{
-		ClientSmoothLoc   = NewLoc;
-		ClientTargetLoc   = NewLoc;
-		ClientPrevLoc     = NewLoc;
-		ClientInterpAlpha = 1.0f;
-		ClientInterpSpeed = 0.0f;
-		ClientSmoothRot   = NewRot;
-		ClientTargetRot   = NewRot;
-		ClientPrevRot     = NewRot;
-		ClientRotAlpha    = 1.0f;
-		bDroneClientInit  = true;
+		ClientSmoothLoc  = NewLoc;
+		ClientTargetLoc  = NewLoc;
+		ClientSmoothRot  = RepRotation;
+		ClientTargetRot  = RepRotation;
+		bDroneClientInit = true;
+		SetActorLocationAndRotation(NewLoc, RepRotation, false, nullptr, ETeleportType::TeleportPhysics);
 		return;
 	}
 
 	const float Dist = FVector::Dist(ClientSmoothLoc, NewLoc);
-
 	if (Dist > SnapDistance)
 	{
-		// 너무 멀면 즉시 스냅
-		ClientSmoothLoc   = NewLoc;
-		ClientTargetLoc   = NewLoc;
-		ClientPrevLoc     = NewLoc;
-		ClientInterpAlpha = 1.0f;
-		ClientInterpSpeed = 0.0f;
+		ClientSmoothLoc = NewLoc;
+		ClientTargetLoc = NewLoc;
 	}
 	else
 	{
-		ClientPrevLoc     = ClientSmoothLoc;
-		ClientTargetLoc   = NewLoc;
-		ClientInterpAlpha = 0.0f;
-		ClientInterpSpeed = (Dist > KINDA_SMALL_NUMBER) ? (Dist / 0.05f) : 0.0f;
+		ClientTargetLoc = NewLoc;
 	}
+}
 
-	ClientPrevRot   = ClientSmoothRot;
-	ClientTargetRot = NewRot;
-	ClientRotAlpha  = 0.0f;
+void ADroneEnemy::OnRep_DroneRot()
+{
+	if (!bDroneClientInit)
+		return;
+
+	ClientTargetRot = RepRotation;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 void ADroneEnemy::Tick(float DeltaTime)
 {
-	AActor::Tick(DeltaTime);
+	// GarbageEnemyBase::Tick을 통해 Super 체인 유지
+	// ClientTickInterp은 override해서 부모 보간 차단
+	AGarbageEnemyBase::Tick(DeltaTime);
 
 	if (HasAuthority())
+	{
+		ServerMove(DeltaTime);
 		return;
+	}
 
 	if (!bDroneClientInit)
 		return;
 
-	// 위치: Alpha를 DeltaTime/0.05씩 증가 → 항상 0.05초에 선형 이동
-	if (ClientInterpAlpha < 1.0f)
+	// ── 공전 중: 클라이언트가 독립적으로 궤도 계산 ─────────────
+	// 네트워크 업데이트(20Hz)와 무관하게 매 프레임 부드럽게 이동
+	if (!bIsChasing && IsValid(_owner))
 	{
-		ClientInterpAlpha += DeltaTime / 0.05f;
-		ClientInterpAlpha  = FMath::Min(ClientInterpAlpha, 1.0f);
-		ClientSmoothLoc    = FMath::Lerp(ClientPrevLoc, ClientTargetLoc, ClientInterpAlpha);
-	}
-	else
-	{
-		ClientSmoothLoc = ClientTargetLoc;
+		// 서버 각도가 처음 도착하면 동기화
+		if (!bClientOrbitSynced)
+		{
+			ClientOrbitAngle  = RepOrbitAngle;
+			bClientOrbitSynced = true;
+		}
+
+		const FVector Axis  = RotationAxis.IsNearlyZero()
+			? FVector::UpVector : RotationAxis.GetSafeNormal();
+		const FVector Temp  = (FMath::Abs(FVector::DotProduct(Axis, FVector::UpVector)) > 0.99f)
+			? FVector::RightVector : FVector::UpVector;
+		const FVector Right   = FVector::CrossProduct(Temp,  Axis).GetSafeNormal();
+		const FVector Forward = FVector::CrossProduct(Axis,  Right).GetSafeNormal();
+
+		// 서버와 동일한 속도로 각도 누적
+		const float OrbitSpeed = FMath::DegreesToRadians(30.0f);
+		ClientOrbitAngle += OrbitSpeed * DeltaTime;
+		if (ClientOrbitAngle > 2.0f * PI)
+			ClientOrbitAngle -= 2.0f * PI;
+
+		// 서버 각도와 오차 보정 (너무 벌어지면 부드럽게 동기화)
+		// FMath::FindDeltaAngle은 없으므로 라디안 델타 직접 계산
+		float AngleDiff = RepOrbitAngle - ClientOrbitAngle;
+		// -PI ~ PI 범위로 정규화
+		while (AngleDiff >  PI) AngleDiff -= 2.0f * PI;
+		while (AngleDiff < -PI) AngleDiff += 2.0f * PI;
+		ClientOrbitAngle += AngleDiff * FMath::Min(DeltaTime * 2.0f, 1.0f);
+
+		const float   OrbitR   = 800.0f;
+		const FVector OwnerLoc = _owner->GetActorLocation();
+		const FVector OrbitPos = OwnerLoc
+			+ Right   * OrbitR * FMath::Cos(ClientOrbitAngle)
+			+ Forward * OrbitR * FMath::Sin(ClientOrbitAngle);
+
+		// 자전
+		if (!RotationAxis.IsNearlyZero())
+		{
+			const FQuat SpinQ(
+				GetActorQuat().RotateVector(RotationAxis).GetSafeNormal(),
+				FMath::DegreesToRadians(SpinSpeed * DeltaTime));
+			ClientSmoothRot = (SpinQ * GetActorQuat()).Rotator();
+		}
+
+		SetActorLocationAndRotation(OrbitPos, ClientSmoothRot, false, nullptr, ETeleportType::None);
+		ClientSmoothLoc = OrbitPos;
+		return;
 	}
 
-	// 회전: 동일하게 0.05초에 선형 보간
-	if (ClientRotAlpha < 1.0f)
-	{
-		ClientRotAlpha += DeltaTime / 0.05f;
-		ClientRotAlpha  = FMath::Min(ClientRotAlpha, 1.0f);
-		ClientSmoothRot = FMath::Lerp(ClientPrevRot, ClientTargetRot, ClientRotAlpha);
-	}
-	else
-	{
-		ClientSmoothRot = ClientTargetRot;
-	}
+	// ── 추격 중: VInterpTo 보간 ─────────────────────────────────
+	bClientOrbitSynced = false; // 추격 끝나면 각도 재동기화
+
+	ClientSmoothLoc = FMath::VInterpTo(ClientSmoothLoc, ClientTargetLoc, DeltaTime, ClientInterpSpeed);
+	ClientSmoothRot = FMath::RInterpTo(ClientSmoothRot, ClientTargetRot, DeltaTime, ClientInterpSpeed);
 
 	SetActorLocationAndRotation(
 		ClientSmoothLoc, ClientSmoothRot,
@@ -145,8 +169,10 @@ void ADroneEnemy::ServerMove(float DeltaTime)
 
 	if (bIsChasing && IsValid(Target))
 	{
+		// LookAtTarget을 이동 전에 호출 → 현재 위치 기준으로 방향 계산
+		// 이동 후 호출하면 매 프레임 방향이 미세하게 달라져 버벅임 발생
+		LookAtTarget(DeltaTime);
 		ChaseMoveServer(DeltaTime);
-		LookAtTarget();
 
 		if (DistanceCheck(_spawnedInfo.Attack_Range))
 			TryFire();
@@ -156,8 +182,8 @@ void ADroneEnemy::ServerMove(float DeltaTime)
 		OrbitMoveServer(DeltaTime);
 	}
 
-	// 이동 후 복제 변수 갱신
-	RepLocation = GetActorLocation();
+	// GarbageEnemyBase의 RepLocation이 아닌 드론 전용 변수에 저장
+	RepDroneLoc = GetActorLocation();
 	RepRotation = GetActorRotation();
 }
 
@@ -245,24 +271,55 @@ void ADroneEnemy::ChaseMoveServer(float DeltaTime)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 궤도 공전: GarbageEnemyBase의 FollowOrbitTarget을 그대로 활용
+// 궤도 공전: GarbageEnemyBase의 FollowOrbitTarget은 그대로 활용
 void ADroneEnemy::OrbitMoveServer(float DeltaTime)
 {
-	FollowOrbitTarget(DeltaTime);
-
-	// 자전
-	if (!RotationAxis.IsNearlyZero())
+	// ── 자전 공통 처리 ─────────────────────────────────────────
+	auto DoSpin = [&]()
 	{
-		const FQuat SpinQ(
-			GetActorQuat().RotateVector(RotationAxis).GetSafeNormal(),
-			FMath::DegreesToRadians(SpinSpeed * DeltaTime));
-		SetActorRotation(SpinQ * GetActorQuat());
+		if (!RotationAxis.IsNearlyZero())
+		{
+			const FQuat SpinQ(
+				GetActorQuat().RotateVector(RotationAxis).GetSafeNormal(),
+				FMath::DegreesToRadians(SpinSpeed * DeltaTime));
+			SetActorRotation(SpinQ * GetActorQuat());
+		}
+	};
+
+	if (!IsValid(_owner))
+	{
+		DoSpin();
+		return;
 	}
+
+	const FVector OwnerLoc = _owner->GetActorLocation();
+	const FVector Axis  = RotationAxis.IsNearlyZero()
+		? FVector::UpVector : RotationAxis.GetSafeNormal();
+	const FVector Temp  = (FMath::Abs(FVector::DotProduct(Axis, FVector::UpVector)) > 0.99f)
+		? FVector::RightVector : FVector::UpVector;
+	const FVector Right   = FVector::CrossProduct(Temp,  Axis).GetSafeNormal();
+	const FVector Forward = FVector::CrossProduct(Axis,  Right).GetSafeNormal();
+
+	const float OrbitSpeed = FMath::DegreesToRadians(30.0f);
+	OrbitAngle += OrbitSpeed * DeltaTime;
+	if (OrbitAngle > 2.0f * PI)
+		OrbitAngle -= 2.0f * PI;
+
+	// RepOrbitAngle도 동기화 (클라이언트 예측 보정용)
+	RepOrbitAngle = OrbitAngle;
+
+	const float   OrbitR   = 800.0f;
+	const FVector OrbitPos = OwnerLoc
+		+ Right   * OrbitR * FMath::Cos(OrbitAngle)
+		+ Forward * OrbitR * FMath::Sin(OrbitAngle);
+
+	SetActorLocation(OrbitPos, false, nullptr, ETeleportType::None);
+	DoSpin();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 타겟 방향 회전 (서버에서만, 결과는 RepRotation으로 복제)
-void ADroneEnemy::LookAtTarget()
+void ADroneEnemy::LookAtTarget(float DeltaTime)
 {
 	if (!IsValid(Target))
 		return;
@@ -271,9 +328,12 @@ void ADroneEnemy::LookAtTarget()
 	if (ToTarget.IsNearlyZero(1.0f))
 		return;
 
-	// 속도 기반 고속 회전 (틱 간격 0.05초이므로 빠르게)
-	const FRotator WantRot = ToTarget.Rotation();
-	SetActorRotation(FMath::RInterpTo(GetActorRotation(), WantRot, 0.05f, 10.0f));
+	const FRotator WantRot    = ToTarget.Rotation();
+	const FRotator CurrentRot = GetActorRotation();
+
+	// RInterpConstantTo 대신 RInterpTo(부드러운 감속) 사용
+	// 초당 10 = 빠르게 목표 방향으로 수렴, 완전히 도달하면 더 이상 변화 없음
+	SetActorRotation(FMath::RInterpTo(CurrentRot, WantRot, DeltaTime, 10.0f));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -370,7 +430,8 @@ void ADroneEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// RepLocation은 부모(AGarbageEnemyBase)에서 등록
+	DOREPLIFETIME_CONDITION_NOTIFY(ADroneEnemy, RepDroneLoc, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(ADroneEnemy, RepRotation, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME(ADroneEnemy, bIsChasing);
+	DOREPLIFETIME(ADroneEnemy, RepOrbitAngle);
 }

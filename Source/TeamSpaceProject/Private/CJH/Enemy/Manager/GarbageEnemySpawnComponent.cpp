@@ -139,8 +139,8 @@ void UGarbageEnemySpawnComponent::TurnOrbit()
 			continue;
 
 		ADroneEnemy* DroneEnemy = Cast<ADroneEnemy>(GarbageEnemy);
-		if (DroneEnemy && DroneEnemy->IsChasing())
-			continue;
+		if (DroneEnemy)
+			continue; // 드론은 자체 OrbitMoveServer로 궤도를 계산하므로 외부 위치 지정 불필요
 
 		FDroneOrbitData* Data = OrbitData.Find(GarbageEnemy);
 		if (!Data)
