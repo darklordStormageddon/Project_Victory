@@ -1,4 +1,4 @@
-// [PSJ_Character.h]
+
 
 #pragma once
 #define ECC_Spaceship_Floor ECC_GameTraceChannel5
@@ -163,11 +163,9 @@ protected:
 	UPROPERTY()
 	class ATaskChair* ClientRepairTarget = nullptr;
 
-	// 서버에서 실행될 함수
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_PlayShootMontage();
 
-	// 모든 클라이언트에서 실행될 함수
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayShootMontage();
 
@@ -182,14 +180,11 @@ protected:
 
 	void UpdateRepairLogic();
 
-	// 에디터에서 "Anim_little_Astronaut_Shoot"으로 만든 몽타주를 할당하세요.
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	UAnimMontage* ShootMontage;
 
-	// 애니메이션 재생 중 입력을 막기 위한 플래그
 	bool bIsPlayingShootAnim = false;
 
-	// 애니메이션 종료 후 플래그를 해제할 타이머 핸들과 함수
 	FTimerHandle ShootAnimTimerHandle;
 	void OnShootAnimFinished();
 

@@ -98,16 +98,6 @@ ATaskChair* APSJ_Character::GetRepairTargetFromTrace()
 
 	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams);
 
-	// 디버그 라인 (에디터 확인용)
-	if (bHit)
-	{
-		DrawDebugLine(GetWorld(), TraceStart, HitResult.ImpactPoint, FColor::Green, false, 0.1f, 0, 1.0f);
-		DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 10.0f, FColor::Green, false, 0.1f);
-	}
-	else
-	{
-		DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 0.1f, 0, 1.0f);
-	}
 
 	if (bHit && HitResult.GetActor())
 	{
@@ -182,7 +172,7 @@ void APSJ_Character::Tick(float DeltaTime)
 		if (CMC->MovementMode == MOVE_Walking || CMC->MovementMode == MOVE_Falling)
 		{
 			if (ReplicatedRelativeData.bIsAnchored) CMC->SetMovementMode(MOVE_Custom);
-			else CMC->SetMovementMode(MOVE_Flying);
+			else CMC->SetMovementMode(MOVE_Flying); 
 			CMC->Velocity = FVector::ZeroVector;
 		}
 	}
@@ -230,36 +220,25 @@ void APSJ_Character::Tick(float DeltaTime)
 
 		UpdateMagBoots(DeltaTime);
 
-		// [개선됨] 로컬 플레이어인 경우 서버로 위치/회전 전송 (입력 변화 및 시간 임계값 기준)
 		if (IsLocallyControlled())
 		{
 			float CurrentTime = GetWorld()->GetTimeSeconds();
 			FVector CurrentLoc = GetRootComponent()->GetRelativeLocation();
 			FRotator CurrentRot = GetRootComponent()->GetRelativeRotation();
 
-			// 1. 방향키 입력이 달라졌는가?
 			bool bInputChanged = !CurrentInputVector.Equals(LastSentInputVector);
-			// 2. 마우스를 돌려서 회전각이 일정 수준(예: 1도) 이상 변했는가?
 			bool bRotationChanged = !CurrentRot.Equals(LastSentRelativeRotation, 1.0f);
-			// 3. 강제 동기화 시간이 지났는가?
 			bool bTimeThreshold = (CurrentTime - LastNetUpdateTime) >= MaxNetUpdateDelay;
 
-			// 셋 중 하나라도 해당되면 서버(혹은 본인 변수)에 갱신!
 			if (bInputChanged || bRotationChanged || bTimeThreshold)
 			{
-				if (!HasAuthority())
-				{
-					// 일반 클라이언트면 서버로 RPC 전송
-					Server_UpdateRelativeTransform(CurrentLoc, CurrentRot);
-				}
+				if (!HasAuthority()) Server_UpdateRelativeTransform(CurrentLoc, CurrentRot);
 				else
 				{
-					// 호스트(서버 본인)면 남들이 볼 수 있게 변수 직접 갱신
 					ReplicatedRelativeData.RelativeLocation = CurrentLoc;
 					ReplicatedRelativeData.RelativeRotation = CurrentRot;
 				}
 
-				// 현재 상태 저장
 				LastSentInputVector = CurrentInputVector;
 				LastSentRelativeRotation = CurrentRot;
 				LastNetUpdateTime = CurrentTime;
@@ -268,7 +247,6 @@ void APSJ_Character::Tick(float DeltaTime)
 	}
 	else
 	{
-		// 다른 클라이언트(Simulated Proxy)들의 움직임 보간 적용
 		if (ReplicatedRelativeData.BaseActor)
 		{
 			FVector OldRelLocation = GetRootComponent()->GetRelativeLocation();
@@ -277,8 +255,6 @@ void APSJ_Character::Tick(float DeltaTime)
 			FVector TargetLoc = FVector(ReplicatedRelativeData.RelativeLocation);
 			FRotator TargetRot = ReplicatedRelativeData.RelativeRotation;
 
-			// [수정된 부분] 즉각적인 Set 대신 VInterpTo, RInterpTo를 사용해 부드럽게 위치 및 회전 보간
-			// AlignSpeed를 활용해 목표 위치로 부드럽게 따라가도록 처리
 			FVector NewLoc = FMath::VInterpTo(OldRelLocation, TargetLoc, DeltaTime, AlignSpeed);
 			FRotator NewRot = FMath::RInterpTo(OldRelRotation, TargetRot, DeltaTime, AlignSpeed);
 
@@ -287,7 +263,6 @@ void APSJ_Character::Tick(float DeltaTime)
 
 			if (DeltaTime > KINDA_SMALL_NUMBER)
 			{
-				// [수정된 부분] 변경된 위치(NewLoc)를 바탕으로 속도 계산 
 				FVector RelDelta = (NewLoc - OldRelLocation) / DeltaTime;
 				GetCharacterMovement()->Velocity = RelDelta;
 			}
@@ -308,13 +283,11 @@ void APSJ_Character::Tick(float DeltaTime)
 
 void APSJ_Character::ForceExecuteMagBoots()
 {
-	// DeltaTime을 1.0f로 크게 주어 InterpTo(보간)를 무시하고 즉시 바닥에 밀착 및 각도 정렬되게 합니다.
 	UpdateMagBoots(1.0f);
 }
 
 void APSJ_Character::UpdateMagBoots(float DeltaTime)
 {
-	// 서버(HasAuthority)도 자석 부츠 연산을 똑같이 수행하도록 열어줌
 	if (!IsLocallyControlled() && !HasAuthority()) return;
 
 	FVector GravityUpDir = FVector::UpVector;
@@ -337,11 +310,7 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 
 	float MyHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 	float TraceHalfHeight = MagBootsTraceHalfHeight;
-
-	float HeightDiff = TraceHalfHeight - MyHalfHeight;
-	FVector StartOffset = GravityUpDir * (HeightDiff + 0.1f);
-
-	FVector Start = GetActorLocation() + StartOffset;
+	FVector Start = GetActorLocation();
 
 	FVector Velocity = GetVelocity();
 	if (Velocity.SizeSquared() > 10.0f)
@@ -350,7 +319,9 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		PredictionOffset = FVector::VectorPlaneProject(PredictionOffset, GravityUpDir);
 		Start += PredictionOffset;
 	}
-	FVector End = Start + (DownDir * CheckDistance);
+
+	float SafeSweepDistance = MyHalfHeight - TraceHalfHeight + CheckDistance;
+	FVector End = Start + (DownDir * SafeSweepDistance);
 
 	FHitResult Hit;
 	FCollisionQueryParams Params;
@@ -359,9 +330,6 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 	FCollisionShape CapsuleShape = FCollisionShape::MakeCapsule(MagBootsTraceRadius, MagBootsTraceHalfHeight);
 	FQuat ShapeRotation = FRotationMatrix::MakeFromZ(GravityUpDir).ToQuat();
 
-	// ==========================================
-	// 충돌 검사 및 바닥 판별 로직
-	// ==========================================
 	bool bFoundValidFloor = false;
 	bool bHit = GetWorld()->SweepSingleByChannel(Hit, Start, End, ShapeRotation, ECC_Spaceship_Floor, CapsuleShape, Params);
 
@@ -393,31 +361,26 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		}
 	}
 
-	// ==========================================
-	// 바닥에 부착 및 보간 로직
-	// ==========================================
 	if (bFoundValidFloor && Hit.GetActor())
 	{
 		AActor* FloorActor = Hit.GetActor();
 
-		// [수정 1] 중복된 AttachToActor 블록 하나로 통합
 		if (GetAttachParentActor() != FloorActor)
 		{
 			AttachToActor(FloorActor, FAttachmentTransformRules::KeepWorldTransform);
 			GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 
-			// 고속 이동 시 고무줄 현상 방지
 			GetCharacterMovement()->bIgnoreClientMovementErrorChecksAndCorrection = true;
 
 			ReplicatedRelativeData.BaseActor = FloorActor;
 			ReplicatedRelativeData.bIsAnchored = true;
 
 			Server_SetAnchoring(FloorActor);
+			SetReplicateMovement(false);
 		}
 
 		CurrentFloorNormal = Hit.Normal;
 
-		// 1. 위치(Location) 로컬 보간
 		float TargetHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + FloorHeightOffset;
 		FVector TargetWorldLoc = Hit.ImpactPoint + (Hit.Normal * TargetHeight);
 
@@ -431,7 +394,6 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		FVector NewLocalLoc = FMath::VInterpTo(CurrentLocalLoc, TargetLocalLoc, DeltaTime, AlignSpeed);
 		SetActorRelativeLocation(NewLocalLoc);
 
-		// 2. 회전(Rotation) 로컬 보간 [수정 2]
 		FVector FinalUpDir = GravityUpDir;
 		if (FloorActor->ActorHasTag(TEXT("Stairs")))
 		{
@@ -443,15 +405,14 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 			FinalUpDir = FloorActor->GetActorUpVector();
 		}
 
-		// 월드 기준 목표 회전값
-		FRotator TargetWorldRot = FRotationMatrix::MakeFromZX(GravityUpDir, GetActorForwardVector()).Rotator();
+		FVector CurrentUp = GetActorUpVector();
+		FQuat DeltaAlign = FQuat::FindBetweenNormals(CurrentUp, FinalUpDir);
 
-		// 목표 회전과 현재 회전을 모두 '바닥 액터 기준의 로컬 좌표(Quat)'로 변환
-		FQuat TargetLocalQuat = FloorActor->GetActorTransform().InverseTransformRotation(TargetWorldRot.Quaternion());
-		FQuat CurrentLocalQuat = GetRootComponent()->GetRelativeRotation().Quaternion();
+		FQuat SmoothAlign = FMath::QInterpTo(FQuat::Identity, DeltaAlign, DeltaTime, AlignSpeed);
 
-		// 로컬 좌표계에서 부드럽게 보간 후 적용
-		FQuat NewLocalQuat = FMath::QInterpTo(CurrentLocalQuat, TargetLocalQuat, DeltaTime, AlignSpeed);
+		FQuat TargetWorldQuat = SmoothAlign * GetActorRotation().Quaternion();
+
+		FQuat NewLocalQuat = FloorActor->GetActorTransform().InverseTransformRotation(TargetWorldQuat);
 		SetActorRelativeRotation(NewLocalQuat.Rotator());
 	}
 	else
@@ -460,12 +421,12 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		{
 			Server_SetAnchoring(nullptr);
 
-			// 허공에 떨어지면 다시 에러 체크 활성화
 			GetCharacterMovement()->bIgnoreClientMovementErrorChecksAndCorrection = false;
 
 			ReplicatedRelativeData.BaseActor = nullptr;
 			ReplicatedRelativeData.bIsAnchored = false;
 			GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+			SetReplicateMovement(true);
 		}
 
 		CurrentFloorNormal = FVector::ZeroVector;
@@ -599,18 +560,15 @@ void APSJ_Character::InteractEnter(const FInputActionValue& Value)
 
 	if (InteracterComponent)
 	{
-		// 1. TryInteractInput에서 반환받을 상태값 변수 선언
 		bool bOutIsInterrupt = false;
 		bool bOutIsInteractEnter = false;
 
-		// 2. 변수를 인자로 넣어서 함수 호출
 		bool bSuccess = InteracterComponent->TryInteractInput(bOutIsInterrupt, bOutIsInteractEnter);
 
-		// 필요하다면 bSuccess, bOutIsInterrupt, bOutIsInteractEnter 값에 따라 
-		// 추가적인 캐릭터 로직(예: 애니메이션 재생 등)을 작성할 수 있습니다.
+
 		if (bSuccess)
 		{
-			// 상호작용 성공 시 처리
+
 		}
 	}
 }
@@ -640,7 +598,6 @@ void APSJ_Character::Move(const FInputActionValue& Value)
 
 	FVector2D NewInput = Value.Get<FVector2D>();
 
-	// 입력값이 이전과 다를 때만 서버로 전송하여 네트워크 부하 최소화
 	if (!CurrentInputVector.Equals(NewInput, 0.01f))
 	{
 		CurrentInputVector = NewInput;
@@ -723,7 +680,6 @@ void APSJ_Character::Server_RequestBoarding_Implementation(ATaskPawnBase* TaskPa
 
 	if (TaskPawn->CurrentPilot != nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Seat Steal Blocked: The pawn is already occupied."));
 		return;
 	}
 
@@ -731,7 +687,6 @@ void APSJ_Character::Server_RequestBoarding_Implementation(ATaskPawnBase* TaskPa
 	{
 		TaskPawn->SetPilot(this);
 		PC->Possess(TaskPawn);
-		// 수정: Client_BoardingSuccess에 본인(Character)을 인자로 전달
 		TaskPawn->Client_BoardingSuccess(this);
 	}
 }
@@ -839,6 +794,8 @@ void APSJ_Character::Server_SetAnchoring_Implementation(AActor* NewBase)
 
 		GetCharacterMovement()->SetMovementMode(MOVE_Custom);
 
+		GetCharacterMovement()->bIgnoreClientMovementErrorChecksAndCorrection = true;
+		SetReplicateMovement(false);
 
 	}
 	else
@@ -847,29 +804,27 @@ void APSJ_Character::Server_SetAnchoring_Implementation(AActor* NewBase)
 		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 
+		GetCharacterMovement()->bIgnoreClientMovementErrorChecksAndCorrection = false;
+		SetReplicateMovement(true);
+
 	}
 }
 
 void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
 {
-	// 1. 우주선 탑승 중이거나 이미 애니메이션 재생 중이면 차단 (유지)
 	if (CurrentSpaceship || bIsPlayingShootAnim) return;
 
-	// 2. 도구의 타이머(쿨다운)가 동작 중이면 우클릭 기능 완전히 차단 (유지)
 	if (EquippedTool && EquippedTool->bIsOnCooldown)
 	{
 		return;
 	}
 
-	// 3. 애니메이션 재생 요청 (기존 재생 로직을 지우고, 서버에 재생 요청을 보냅니다)
 	if (ShootMontage && IsLocallyControlled())
 	{
 		Server_PlayShootMontage();
 	}
 
-	// ---------------------------------------------------------
-	// 아래의 트레이스(Sweep) 및 의자 판별 로직은 기존 그대로 유지합니다.
-	// ---------------------------------------------------------
+
 
 	FVector StartLoc = GetActorLocation() + GetActorRotation().RotateVector(ForceEjectSphereOffset);
 	FVector EndLoc = StartLoc + (GetActorForwardVector() * ForceEjectRange);
@@ -911,13 +866,11 @@ void APSJ_Character::Input_ForceEject(const FInputActionValue& Value)
 		TargetChair = Cast<ATaskChair>(HitResult.GetActor());
 	}
 
-	// 의자 강제 사출 서버 요청 (유지)
 	Server_TryForceEject(TargetChair);
 }
 
 void APSJ_Character::Server_PlayShootMontage_Implementation()
 {
-	// 서버가 모든 클라이언트에게 멀티캐스트 함수를 실행하라고 명령합니다.
 	Multicast_PlayShootMontage();
 }
 
@@ -928,7 +881,6 @@ bool APSJ_Character::Server_PlayShootMontage_Validate()
 
 void APSJ_Character::Multicast_PlayShootMontage_Implementation()
 {
-	// 기존 Input_ForceEject에 있던 '애니메이션 재생 및 입력 제한' 로직이 이쪽으로 이사왔습니다.
 	if (ShootMontage)
 	{
 		float Duration = PlayAnimMontage(ShootMontage);
@@ -936,7 +888,6 @@ void APSJ_Character::Multicast_PlayShootMontage_Implementation()
 		{
 			bIsPlayingShootAnim = true;
 
-			// 애니메이션 길이만큼 대기 후 OnShootAnimFinished 호출
 			GetWorld()->GetTimerManager().SetTimer(
 				ShootAnimTimerHandle,
 				this,
@@ -945,15 +896,13 @@ void APSJ_Character::Multicast_PlayShootMontage_Implementation()
 				false
 			);
 
-			// 이동 중지 처리
-			// (주의: Server_SetInputVector는 해당 캐릭터를 조종하는(LocallyControlled) 플레이어만 서버로 요청할 수 있으므로 조건문을 걸어줍니다)
 			if (IsLocallyControlled())
 			{
 				CurrentInputVector = FVector2D::ZeroVector;
 				Server_SetInputVector(FVector2D::ZeroVector);
 			}
 
-			// 캐릭터 속도를 0으로 만드는 것은 모든 플레이어 화면에서 똑같이 실행되어 연출을 맞춥니다.
+
 			if (GetCharacterMovement())
 			{
 				GetCharacterMovement()->Velocity = FVector::ZeroVector;
@@ -1051,18 +1000,14 @@ void APSJ_Character::Input_StopRepair(const FInputActionValue& Value)
 
 void APSJ_Character::UpdateRepairLogic()
 {
-	// 좌클릭을 누르고 있지 않으면 무시
 	if (!bIsRepairingInputDown) return;
 
-	// 누르고 있는 동안 매 프레임 트레이스 발사
 	ATaskChair* TargetChair = GetRepairTargetFromTrace();
 
-	// 시야에 조건이 맞는 대상(고장난 의자 + 사거리 내)이 있을 때
 	if (TargetChair)
 	{
 		if (!bIsActivelyRepairing)
 		{
-			// 이동 멈춤 처리
 			CurrentInputVector = FVector2D::ZeroVector;
 			Server_SetInputVector(FVector2D::ZeroVector);
 			GetCharacterMovement()->Velocity = FVector::ZeroVector;
@@ -1070,7 +1015,6 @@ void APSJ_Character::UpdateRepairLogic()
 
 		bIsActivelyRepairing = true;
 
-		// 타겟이 새로 잡혔거나 다른 의자로 바뀌었을 때 서버 연동
 		if (ClientRepairTarget != TargetChair)
 		{
 			if (ClientRepairTarget) Server_StopRepair();
@@ -1080,7 +1024,6 @@ void APSJ_Character::UpdateRepairLogic()
 	}
 	else
 	{
-		// 마우스를 누르고 있지만 허공을 보거나, 대상이 고쳐졌거나, 사거리 밖으로 벗어났을 때
 		bIsActivelyRepairing = false;
 
 		if (ClientRepairTarget)
