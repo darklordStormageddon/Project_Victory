@@ -1,4 +1,6 @@
 #include "PSJ_ToolBase.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "PSJ_Character.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/ArrowComponent.h"
@@ -42,6 +44,14 @@ void APSJ_ToolBase::ResetCooldown()
 	bIsOnCooldown = false;
 
 	Multicast_SetToolHidden(false);
+
+	if (APSJ_Character* OwnerChar = Cast<APSJ_Character>(GetOwner()))
+	{
+		if (OwnerChar->bIsActivelyRepairing)
+		{
+			Multicast_SetRepairEffectActive(true); 
+		}
+	}
 }
 
 void APSJ_ToolBase::Multicast_PlayEjectEffect_Implementation(bool bSuccess, APSJ_Character* InstigatorChar)
@@ -65,4 +75,38 @@ void APSJ_ToolBase::Multicast_PlayEjectEffect_Implementation(bool bSuccess, APSJ
 void APSJ_ToolBase::Multicast_SetToolHidden_Implementation(bool bHide)
 {
 	SetActorHiddenInGame(bHide);
+}
+
+void APSJ_ToolBase::Multicast_SetRepairEffectActive_Implementation(bool bActive)
+{
+	// 1. ±âÁ¸ Àç»ý ÁßÀÎ ÀÌÆåÆ® ²ô±â
+	if (ActiveRepairNiagara)
+	{
+		ActiveRepairNiagara->Deactivate();
+		ActiveRepairNiagara->DestroyComponent();
+		ActiveRepairNiagara = nullptr;
+	}
+
+	// 2. ÀÌÆåÆ® ÄÑ±â
+	if (bActive)
+	{
+		UNiagaraSystem* SystemToPlay = bIsOnCooldown ? Niagara_RepairCooldown : Niagara_RepairNormal;
+
+		if (SystemToPlay)
+		{
+			ActiveRepairNiagara = UNiagaraFunctionLibrary::SpawnSystemAttached(
+				SystemToPlay,
+				TraceMuzzle,        
+				NAME_None,
+				RepairEffectLocationOffset, 
+				RepairEffectRotationOffset, 
+				EAttachLocation::KeepRelativeOffset,
+				true
+			);
+			if (ActiveRepairNiagara)
+			{
+				ActiveRepairNiagara->SetRelativeScale3D(RepairEffectScale);
+			}
+		}
+	}
 }

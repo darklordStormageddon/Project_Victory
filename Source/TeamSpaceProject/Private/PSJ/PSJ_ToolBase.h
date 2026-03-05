@@ -9,6 +9,9 @@ class UArrowComponent;
 class UAnimMontage;
 class UParticleSystem;
 class APSJ_Character;
+class UNiagaraSystem;
+class UNiagaraComponent;
+
 
 UCLASS()
 class TEAMSPACEPROJECT_API APSJ_ToolBase : public AActor
@@ -58,6 +61,27 @@ public:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SetToolHidden(bool bHide);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool|Effects")
+	UNiagaraSystem* Niagara_RepairNormal;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool|Effects")
+	UNiagaraSystem* Niagara_RepairCooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool|Effects")
+	FVector RepairEffectLocationOffset = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool|Effects")
+	FRotator RepairEffectRotationOffset = FRotator::ZeroRotator;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool|Effects")
+	FVector RepairEffectScale = FVector(1.0f, 1.0f, 1.0f);
+
+	UPROPERTY()
+	UNiagaraComponent* ActiveRepairNiagara;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetRepairEffectActive(bool bActive);
 
 protected:
 	FTimerHandle CooldownTimerHandle;

@@ -13,6 +13,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
+#include "Components/AudioComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
@@ -209,6 +210,8 @@ void APSJ_Character::Tick(float DeltaTime)
 			FVector MoveDelta = WorldDir * FlyModeMaxSpeed * DeltaTime;
 			FHitResult MoveHit;
 
+			FVector OldLocation = GetActorLocation();
+
 			GetCharacterMovement()->SafeMoveUpdatedComponent(MoveDelta, GetActorRotation(), true, MoveHit);
 
 			if (MoveHit.IsValidBlockingHit())
@@ -216,6 +219,24 @@ void APSJ_Character::Tick(float DeltaTime)
 				FVector SlideVector = FVector::VectorPlaneProject(MoveDelta, MoveHit.Normal);
 				GetCharacterMovement()->SafeMoveUpdatedComponent(SlideVector * (1.0f - MoveHit.Time), GetActorRotation(), true, MoveHit);
 			}
+			if (!IsLocallyControlled())
+			{
+				GetCharacterMovement()->Velocity = MoveDelta / DeltaTime;
+			}
+		}
+		else
+		{
+		
+			if (!IsLocallyControlled())
+			{
+				GetCharacterMovement()->Velocity = FVector::ZeroVector;
+			}
+		}
+		
+		if (!IsLocallyControlled() && GetMesh())
+		{
+			GetMesh()->TickAnimation(DeltaTime, false);
+			GetMesh()->RefreshBoneTransforms();
 		}
 
 		UpdateMagBoots(DeltaTime);
@@ -413,7 +434,7 @@ void APSJ_Character::UpdateMagBoots(float DeltaTime)
 		FQuat TargetWorldQuat = SmoothAlign * GetActorRotation().Quaternion();
 
 		FQuat NewLocalQuat = FloorActor->GetActorTransform().InverseTransformRotation(TargetWorldQuat);
-		SetActorRelativeRotation(NewLocalQuat.Rotator());
+		SetActorRelativeRotation(NewLocalQuat);
 	}
 	else
 	{
@@ -588,6 +609,10 @@ bool APSJ_Character::TryUnboard()
 void APSJ_Character::OnShootAnimFinished()
 {
 	bIsPlayingShootAnim = false;
+	if (EquippedTool && !bIsActivelyRepairing)
+	{
+		EquippedTool->SetActorRelativeRotation(FRotator::ZeroRotator);
+	}
 }
 
 
@@ -654,7 +679,7 @@ void APSJ_Character::Server_UpdateRelativeTransform_Implementation(FVector NewRe
 
 	if (ReplicatedRelativeData.BaseActor && GetAttachParentActor() == ReplicatedRelativeData.BaseActor)
 	{
-		SetActorRelativeLocation(NewRelLoc);
+		//SetActorRelativeLocation(NewRelLoc);
 		SetActorRelativeRotation(NewRelRot);
 	}
 }
@@ -888,6 +913,11 @@ void APSJ_Character::Multicast_PlayShootMontage_Implementation()
 		{
 			bIsPlayingShootAnim = true;
 
+			if (EquippedTool)
+			{
+				EquippedTool->SetActorRelativeRotation(ShootToolRotationOffset);
+			}
+
 			GetWorld()->GetTimerManager().SetTimer(
 				ShootAnimTimerHandle,
 				this,
@@ -1048,6 +1078,12 @@ void APSJ_Character::Server_StartRepair_Implementation(ATaskChair* TargetChair)
 	}
 
 	bIsActivelyRepairing = true;
+	Multicast_StartRepairAnim();
+
+	if (EquippedTool)
+	{
+		EquippedTool->Multicast_SetRepairEffectActive(true);
+	}
 }
 
 
@@ -1062,6 +1098,11 @@ void APSJ_Character::Server_StopRepair_Implementation()
 	}
 
 	bIsActivelyRepairing = false;
+	Multicast_StopRepairAnim();
+	if (EquippedTool)
+	{
+		EquippedTool->Multicast_SetRepairEffectActive(false);
+	}
 }
 
 
@@ -1111,4 +1152,56 @@ void APSJ_Character::Client_TeleportAndReset_Implementation(const FVector& DestL
 	Client_ForceCleanupImmediate();
 
 	SetActorLocationAndRotation(DestLocation, DestRotation, false, nullptr, ETeleportType::TeleportPhysics);
+}
+
+void APSJ_Character::Multicast_StartRepairAnim_Implementation()
+{
+	// 1. 수리 몽타주 재생
+	if (RepairMontage)
+	{
+		PlayAnimMontage(RepairMontage);
+	}
+
+	// 2. 수리용 각도로 툴 꺾기
+	if (EquippedTool)
+	{
+		EquippedTool->SetActorRelativeRotation(RepairToolRotationOffset);
+	}
+
+	if (RepairSound && !RepairAudioComponent)
+	{
+		// 소리가 툴(장비) 위치에서 나도록 부착. 장비가 없다면 캐릭터 루트에 부착.
+		USceneComponent* AttachComp = EquippedTool ? EquippedTool->GetRootComponent() : GetRootComponent();
+
+		RepairAudioComponent = UGameplayStatics::SpawnSoundAttached(
+			RepairSound,
+			AttachComp,
+			NAME_None,
+			FVector::ZeroVector,
+			EAttachLocation::KeepRelativeOffset,
+			true
+		);
+	}
+}
+
+void APSJ_Character::Multicast_StopRepairAnim_Implementation()
+{
+	// 1. 수리 몽타주 정지
+	if (RepairMontage)
+	{
+		StopAnimMontage(RepairMontage);
+	}
+
+	// 2. 원래 각도로 복구 (단, 사격 중이 아닐 때만 0으로 복구하여 충돌 방지)
+	if (EquippedTool && !bIsPlayingShootAnim)
+	{
+		EquippedTool->SetActorRelativeRotation(FRotator::ZeroRotator);
+	}
+
+	if (RepairAudioComponent)
+	{
+		RepairAudioComponent->Stop();
+		RepairAudioComponent->DestroyComponent(); // 메모리 정리
+		RepairAudioComponent = nullptr;
+	}
 }
