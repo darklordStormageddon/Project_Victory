@@ -119,9 +119,8 @@ ATaskChair* APSJ_Character::GetRepairTargetFromTrace()
 void APSJ_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(APSJ_Character, ReplicatedRelativeData);
-
-	DOREPLIFETIME(APSJ_Character, CurrentInputVector);
+	DOREPLIFETIME_CONDITION(APSJ_Character, ReplicatedRelativeData, COND_SkipOwner);
+	DOREPLIFETIME_CONDITION(APSJ_Character, CurrentInputVector, COND_SkipOwner);
 	DOREPLIFETIME(APSJ_Character, bIsSprinting);
 
 	DOREPLIFETIME(APSJ_Character, bIsActivelyRepairing);
@@ -679,7 +678,7 @@ void APSJ_Character::Server_UpdateRelativeTransform_Implementation(FVector NewRe
 
 	if (ReplicatedRelativeData.BaseActor && GetAttachParentActor() == ReplicatedRelativeData.BaseActor)
 	{
-		//SetActorRelativeLocation(NewRelLoc);
+		SetActorRelativeLocation(NewRelLoc);
 		SetActorRelativeRotation(NewRelRot);
 	}
 }
