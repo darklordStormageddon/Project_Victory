@@ -8,6 +8,7 @@
 #include "JHS/GameControl/JHSGameState.h"
 #include "JHS/GameControl/StateData/SpaceShipStateGroup.h"
 #include "JHS/GameControl/StateData/PlayerStateGroup.h"
+#include "JHS/GameControl/StateData/ContainerStateGroup.h"
 #include "JHS/GameControl/StateData/CollectStateGroup.h"
 #include "JHS/GameControl/StateData/TurretStateGroup.h"
 #include "JHS/GameControl/JHSPlayerController.h"
@@ -119,6 +120,9 @@ void AJHSGameMode::StartNextStage(AActor* Caller)
 	AJHSGameState* _outGameState = nullptr;
 	if (!TryGetGameState(_outGameState))
 		return;
+
+	// 목표 금액 갱신
+	_outGameState->GetContainerStateGroup()->SetStageGoalDollar(_currentStage);
 
 	// 플레이어 방사선 초기화
 	_outGameState->GetPlayerStateGroup()->UpdatePlayerRadiation();

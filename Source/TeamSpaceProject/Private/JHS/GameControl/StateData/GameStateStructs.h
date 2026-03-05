@@ -296,6 +296,12 @@ public:
 	int32 OwnedDollar = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 IncreaseGoalDollar = 1000;
+
+	UPROPERTY()
+	int32 CurrentGoalDollar = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float SaleInterval = 0.5f;
 
 	UPROPERTY()

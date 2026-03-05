@@ -34,14 +34,11 @@ private:
 	UPROPERTY(ReplicatedUsing = "OnRep_OwnedDollar")
 	int32 _replicatedOwnedDollar = 0;
 
+	UPROPERTY(ReplicatedUsing = "OnRep_GoalDollar")
+	int32 _replicatedCurrentGoalDollar = 0;
+
 	UPROPERTY(Replicated)
 	float _replicatedSaleInterval = 0.5f;
-
-	UFUNCTION()
-	void OnRep_ContainerStateReplicated();
-
-	UFUNCTION()
-	void OnRep_OwnedDollar();
 
 	FTimerHandle _saleAllElementTimerHandle;
 
@@ -64,6 +61,8 @@ public:
 
 	void UpdateContainerState();
 
+	void SetStageGoalDollar(int32 Stage);
+
 	void AddElement(E_ELEMENT_TYPE ElementType, int32 Amount);
 
 	void SaleAllElement();
@@ -85,9 +84,20 @@ public:
 private:
 	void LoadElementData();
 
+	UFUNCTION()
+	void OnRep_ContainerStateReplicated();
+
+	UFUNCTION()
+	void OnRep_OwnedDollar();
+
+	UFUNCTION()
+	void OnRep_GoalDollar();
+
 	void ExecuteEventOnChangeElement(FElementData ElementData);
 
 	void ExecuteEventOnChangeOwnedDollar(int32 OwnedDollar);
+
+	void ExecuteEventOnChangeGoalDollar(int32 GoalDollar);
 
 	void SyncContainerStateToReplicated();
 };

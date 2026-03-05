@@ -14,6 +14,7 @@ class UContainerItemSlot;
 class UTextBlock;
 class UEventOnChangeElementData;
 class UEventOnChangeOwnedDollar;
+class UEventOnChangeGoalDollar;
 
 UCLASS()
 class UPlateContainer : public UUserWidget
@@ -24,6 +25,8 @@ private:
 	FDelegateHandle _eventHandleOnChangeElementData;
 
 	FDelegateHandle _eventHandleOnChangeOwnedDollar;
+
+	FDelegateHandle _eventHandleOnChangeGoalDollar;
 
 	TMap<E_ELEMENT_TYPE, TObjectPtr<UContainerItemSlot>> _elementSlotMap;
 
@@ -97,6 +100,8 @@ private:
 	void OnChangeElementData(UEventOnChangeElementData* Event);
 
 	void OnChangeOwnedDollar(UEventOnChangeOwnedDollar* Event);
+
+	void OnChangeGoalDollar(UEventOnChangeGoalDollar* Event);
 
 	void UpdateDollar();
 

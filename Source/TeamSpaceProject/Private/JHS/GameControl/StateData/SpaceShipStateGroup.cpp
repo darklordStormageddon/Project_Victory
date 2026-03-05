@@ -68,6 +68,7 @@ void USpaceShipStateGroup::UpdateSpaceShipState()
 			ChangCurrentData(_outSpaceShipData, _outSpaceShipData->Data.Value.CurrentValue);
 		}
 	}
+
 	SyncSpaceShipDataToReplicated();
 }
 
@@ -256,16 +257,6 @@ void USpaceShipStateGroup::LoadSpaceShipData()
 	SyncSpaceShipDataToReplicated();
 }
 
-void USpaceShipStateGroup::SyncSpaceShipDataToReplicated()
-{
-	if (GetOwner() && GetOwner()->HasAuthority())
-	{
-		_replicatedSpaceShipDataArray.Empty();
-		for (const auto& _pair : _spaceShipDataMap)
-			_replicatedSpaceShipDataArray.Add(_pair.Value);
-	}
-}
-
 void USpaceShipStateGroup::DecreaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType, float DecreaseValue)
 {
 	FSpaceShipData* _outSpaceShipData = nullptr;
@@ -290,20 +281,6 @@ void USpaceShipStateGroup::TryPurchaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataT
 
 		_jhsPlayerController->ServerRequestPurchaseSpaceShip(DataType);
 	}
-}
-
-void USpaceShipStateGroup::ExecutePurchaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType)
-{
-	FSpaceShipData* _outSpaceShipData = nullptr;
-	if (!TryGetSpaceShipData(DataType, _outSpaceShipData) || _gameState == nullptr)
-		return;
-
-	TObjectPtr<UShopManager> _shopManager = _gameState->GetShopManager();
-	if (_shopManager == nullptr || !_shopManager->TryPurchase(&_outSpaceShipData->Data))
-		return;
-
-	ChangeMaxData(_outSpaceShipData, _outSpaceShipData->Data.Value.MaxValue, true);
-	SyncSpaceShipDataToReplicated();
 }
 
 void USpaceShipStateGroup::ChangeMaxData(FSpaceShipData* OriginalData, float MaxValue, bool IsRepairCurrentValue)
@@ -367,4 +344,28 @@ bool USpaceShipStateGroup::TryGetSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType, 
 
 	OutSpaceShipData = _spaceShipDataMap.Find(DataType);
 	return OutSpaceShipData != nullptr;
+}
+
+void USpaceShipStateGroup::SyncSpaceShipDataToReplicated()
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		_replicatedSpaceShipDataArray.Empty();
+		for (const auto& _pair : _spaceShipDataMap)
+			_replicatedSpaceShipDataArray.Add(_pair.Value);
+	}
+}
+
+void USpaceShipStateGroup::ExecutePurchaseSpaceShipData(E_SPACE_SHIP_DATA_TYPE DataType)
+{
+	FSpaceShipData* _outSpaceShipData = nullptr;
+	if (!TryGetSpaceShipData(DataType, _outSpaceShipData) || _gameState == nullptr)
+		return;
+
+	TObjectPtr<UShopManager> _shopManager = _gameState->GetShopManager();
+	if (_shopManager == nullptr || !_shopManager->TryPurchase(&_outSpaceShipData->Data))
+		return;
+
+	ChangeMaxData(_outSpaceShipData, _outSpaceShipData->Data.Value.MaxValue, true);
+	SyncSpaceShipDataToReplicated();
 }

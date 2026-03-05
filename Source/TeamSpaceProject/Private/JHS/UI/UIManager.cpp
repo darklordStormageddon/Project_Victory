@@ -185,6 +185,8 @@ UUIBase* UUIManager::OpenUIInWorldInternal(E_UI_TYPE UIType, AActor* OwnerActor,
 	_widgetComponent->SetBlendMode(EWidgetBlendMode::Transparent); // 투명 블렌드
 	_widgetComponent->SetBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.0f)); // 투명 배경
 	_widgetComponent->SetTwoSided(true); // 양면 렌더링
+	_widgetComponent->SetWindowFocusable(false); // 포커스 비활성화 (반투명 렌더링에 필요)
+	//_widgetComponent->SetRedrawTime(0.0f); // 매 프레임 다시 그리기 (반투명 알파 정확도 향상)
 	
 	// DrawSize를 고정 크기로 설정 (InitWidget 전에)
 	_widgetComponent->SetDrawSize(FVector2D(1920.0f, 1080.0f));

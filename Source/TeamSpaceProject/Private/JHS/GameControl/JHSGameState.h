@@ -35,10 +35,6 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|Manager")
 	TObjectPtr<USpaceManager> _spaceManager = nullptr;
 
-private:
-	UPROPERTY(EditAnywhere, Category = "GameState|Goal")
-	int32 _goalDollar = 1000;
-
 #pragma region State Group
 private:
 	// SpaceShip
@@ -76,9 +72,6 @@ private:
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "GameState|ShopManager")
 	TObjectPtr<UShopManager> _shopManager = nullptr;
-
-public:
-	int32 GetGoalDollar() { return _goalDollar; }
 
 public:
 	TObjectPtr<USpaceShipStateGroup> GetSpaceShipStateGroup() { return _spaceShipStateGroup; }

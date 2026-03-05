@@ -52,6 +52,7 @@ void UUIPanelShop::NativeOnInitialized()
 	if (BTN_SaleElement != nullptr)
 	{
 		BTN_SaleElement->ClickedEnter.AddDynamic(this, &UUIPanelShop::OnClickSaleElement);
+		BTN_SaleElement->InitializeButton(TEXT("판매"));
 	}
 }
 

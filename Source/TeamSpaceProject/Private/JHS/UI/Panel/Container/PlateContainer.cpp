@@ -35,6 +35,13 @@ void UPlateContainer::NativeConstruct()
 		}
 	);
 
+	_eventHandleOnChangeGoalDollar = _outEventManager->AddListener<UEventOnChangeGoalDollar>(
+		[this](UEventOnChangeGoalDollar* Event)
+		{
+			OnChangeGoalDollar(Event);
+		}
+	);
+
 	_currentSlotCount = _elementSlotMap.Num();
 
 	AJHSGameState* _outGameState = nullptr;
@@ -60,6 +67,12 @@ void UPlateContainer::NativeDestruct()
 	{
 		_outEventManager->DelListener<UEventOnChangeElementData>(_eventHandleOnChangeOwnedDollar);
 		_eventHandleOnChangeOwnedDollar.Reset();
+	}
+
+	if (_eventHandleOnChangeGoalDollar.IsValid())
+	{
+		_outEventManager->DelListener<UEventOnChangeGoalDollar>(_eventHandleOnChangeGoalDollar);
+		_eventHandleOnChangeGoalDollar.Reset();
 	}
 }
 
@@ -110,13 +123,24 @@ void UPlateContainer::OnChangeElementData(UEventOnChangeElementData* Event)
 
 	// Text
 	_targetCumulativePrice = Event->CumulativePrice;
-	_goalDollar = Event->GoalDollar;
 	UpdateDollar();
 }
 
 void UPlateContainer::OnChangeOwnedDollar(UEventOnChangeOwnedDollar* Event)
 {
+	if (Event == nullptr)
+		return;
+
 	_targetOwnedDollar = Event->OwnedDollar;
+	UpdateDollar();
+}
+
+void UPlateContainer::OnChangeGoalDollar(UEventOnChangeGoalDollar* Event)
+{
+	if (Event == nullptr)
+		return;
+
+	_goalDollar = Event->GoalDollar;
 	UpdateDollar();
 }
 

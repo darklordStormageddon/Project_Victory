@@ -214,9 +214,6 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
 	int32 CumulativePrice = 0;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
-	int32 GoalDollar = 0;
 };
 
 UCLASS(BlueprintType)
@@ -232,5 +229,20 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
 	int32 OwnedDollar = 0;
+};
+
+UCLASS(BlueprintType)
+class UEventOnChangeGoalDollar : public UCommonEventBase
+{
+	GENERATED_BODY()
+
+public:
+	UEventOnChangeGoalDollar(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get())
+		: Super(ObjectInitializer)
+	{
+	}
+
+	UPROPERTY(BlueprintReadOnly, Category = "Event|Container")
+	int32 GoalDollar = 0;
 };
 #pragma endregion Container

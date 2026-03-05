@@ -23,24 +23,8 @@ void UContainerStateGroup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UContainerStateGroup, _replicatedElementArray);
 	DOREPLIFETIME(UContainerStateGroup, _replicatedOwnedDollar);
+	DOREPLIFETIME(UContainerStateGroup, _replicatedCurrentGoalDollar);
 	DOREPLIFETIME(UContainerStateGroup, _replicatedSaleInterval);
-}
-
-void UContainerStateGroup::OnRep_ContainerStateReplicated()
-{
-	_containerState.SaleInterval = _replicatedSaleInterval;
-	_containerState.ElementDataMap.Empty();
-	for (const FElementData& _data : _replicatedElementArray)
-	{
-		_containerState.ElementDataMap.Add(_data.ElementType, _data);
-		ExecuteEventOnChangeElement(_data);
-	}
-}
-
-void UContainerStateGroup::OnRep_OwnedDollar()
-{
-	_containerState.OwnedDollar = _replicatedOwnedDollar;
-	ExecuteEventOnChangeOwnedDollar(_containerState.OwnedDollar);
 }
 
 // Called when the game starts
@@ -61,18 +45,6 @@ void UContainerStateGroup::TickComponent(float DeltaTime, ELevelTick TickType, F
 	// ...
 }
 
-void UContainerStateGroup::SyncContainerStateToReplicated()
-{
-	if (GetOwner() && GetOwner()->HasAuthority())
-	{
-		_replicatedOwnedDollar = _containerState.OwnedDollar;
-		_replicatedSaleInterval = _containerState.SaleInterval;
-		_replicatedElementArray.Empty();
-		for (const auto& _pair : _containerState.ElementDataMap)
-			_replicatedElementArray.Add(_pair.Value);
-	}
-}
-
 void UContainerStateGroup::InitializeContainerState(TObjectPtr<AJHSGameState> GameState, FContainerState InitContainerState)
 {
 	_gameState = GameState;
@@ -90,6 +62,16 @@ void UContainerStateGroup::UpdateContainerState()
 	}
 
 	ExecuteEventOnChangeOwnedDollar(_containerState.OwnedDollar);
+}
+
+void UContainerStateGroup::SetStageGoalDollar(int32 Stage)
+{
+	_containerState.CurrentGoalDollar = Stage <= 0 ? 0 : _containerState.IncreaseGoalDollar * Stage;
+	
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		_replicatedCurrentGoalDollar = _containerState.CurrentGoalDollar;
+	}
 }
 
 void UContainerStateGroup::AddElement(E_ELEMENT_TYPE ElementType, int32 Amount)
@@ -243,6 +225,29 @@ void UContainerStateGroup::LoadElementData()
 	}
 }
 
+void UContainerStateGroup::OnRep_ContainerStateReplicated()
+{
+	_containerState.SaleInterval = _replicatedSaleInterval;
+	_containerState.ElementDataMap.Empty();
+	for (const FElementData& _data : _replicatedElementArray)
+	{
+		_containerState.ElementDataMap.Add(_data.ElementType, _data);
+		ExecuteEventOnChangeElement(_data);
+	}
+}
+
+void UContainerStateGroup::OnRep_OwnedDollar()
+{
+	_containerState.OwnedDollar = _replicatedOwnedDollar;
+	ExecuteEventOnChangeOwnedDollar(_containerState.OwnedDollar);
+}
+
+void UContainerStateGroup::OnRep_GoalDollar()
+{
+	_containerState.CurrentGoalDollar = _replicatedCurrentGoalDollar;
+	ExecuteEventOnChangeGoalDollar(_containerState.CurrentGoalDollar);
+}
+
 void UContainerStateGroup::ExecuteEventOnChangeElement(FElementData ElementData)
 {
 	UEventOnChangeElementData* _event = NewObject<UEventOnChangeElementData>(this);
@@ -255,9 +260,9 @@ void UContainerStateGroup::ExecuteEventOnChangeElement(FElementData ElementData)
 	}
 	_event->CumulativePrice = _cumulativePrice;
 
-	_event->GoalDollar = _gameState->GetGoalDollar();
-
 	UEventManager::ExecuteEvent<UEventOnChangeElementData>(_event);
+	
+	ExecuteEventOnChangeGoalDollar(_containerState.CurrentGoalDollar);
 	ExecuteEventOnChangeOwnedDollar(_containerState.OwnedDollar);
 }
 
@@ -266,4 +271,24 @@ void UContainerStateGroup::ExecuteEventOnChangeOwnedDollar(int32 OwnedDollar)
 	UEventOnChangeOwnedDollar* _event = NewObject<UEventOnChangeOwnedDollar>(this);
 	_event->OwnedDollar = OwnedDollar;
 	UEventManager::ExecuteEvent<UEventOnChangeOwnedDollar>(_event);
+}
+
+void UContainerStateGroup::ExecuteEventOnChangeGoalDollar(int32 GoalDollar)
+{
+	UEventOnChangeGoalDollar* _event = NewObject<UEventOnChangeGoalDollar>(this);
+	_event->GoalDollar = GoalDollar;
+	UEventManager::ExecuteEvent<UEventOnChangeGoalDollar>(_event);
+}
+
+void UContainerStateGroup::SyncContainerStateToReplicated()
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		_replicatedOwnedDollar = _containerState.OwnedDollar;
+		_replicatedCurrentGoalDollar = _containerState.CurrentGoalDollar;
+		_replicatedSaleInterval = _containerState.SaleInterval;
+		_replicatedElementArray.Empty();
+		for (const auto& _pair : _containerState.ElementDataMap)
+			_replicatedElementArray.Add(_pair.Value);
+	}
 }
