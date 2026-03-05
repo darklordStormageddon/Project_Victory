@@ -20,6 +20,8 @@ class APSJ_Spaceship;
 class ATurretBase_GT;
 class APSJ_ToolBase;
 class ATaskPawnBase;
+class USoundBase;
+class UAudioComponent;
 
 
 USTRUCT()
@@ -72,10 +74,14 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RequestBoarding(ATaskPawnBase* TaskPawn);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* RepairSound;
+
 private:
 
 	bool bJustDisembarked = false;
 	float DisembarkGraceTimer = 0.0f;
+
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Movement")
@@ -152,6 +158,15 @@ public:
 	UPROPERTY(Transient)
 	FRotator LastSentRelativeRotation = FRotator::ZeroRotator;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Tool")
+	FRotator ShootToolRotationOffset = FRotator(0.0f, 0.0f, 0.0f);
+
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	UAnimMontage* RepairMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Tool")
+	FRotator RepairToolRotationOffset = FRotator(0.0f, 0.0f, 0.0f);
+
 protected:
 
 	bool bIsRepairingInputDown = false;
@@ -159,6 +174,15 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Interaction | Repair")
 	class ATaskChair* GetRepairTargetFromTrace();
 
+	UPROPERTY()
+	UAudioComponent* RepairAudioComponent;
+
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_StartRepairAnim();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_StopRepairAnim();
 
 	UPROPERTY()
 	class ATaskChair* ClientRepairTarget = nullptr;
