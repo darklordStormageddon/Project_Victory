@@ -24,7 +24,7 @@ public:
 private:
 	FDelegateHandle _eventHandleOnEndStage;
 public:
-	// 모든 자식이 공유할 하차 입력 액션
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* IA_Interact;
 
@@ -53,7 +53,6 @@ public:
 public:
 	virtual void SetPilot(ACharacter* Character);
 
-	// TaskPawnBase.h 파일 내부
 
 	UFUNCTION(Client, Reliable)
 	void Client_BoardingSuccess(APSJ_Character* BoardingPilot);
