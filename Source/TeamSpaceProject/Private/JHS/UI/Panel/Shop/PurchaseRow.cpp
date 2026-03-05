@@ -43,7 +43,7 @@ void UPurchaseRow::UpdateRow(FPurchaseData* PurchaseData)
 	TXT_Description->SetText(FText::FromString(_purchaseData.Description));
 
 	// Current value
-	const float _currentValue = _purchaseData.Value.CurrentValue;
+	const float _currentValue = _purchaseData.Value.MaxValue;
 	TXT_CurrentValue->SetText(FText::FromString(ParseFloat2Text(_currentValue)));
 
 	// Next value
