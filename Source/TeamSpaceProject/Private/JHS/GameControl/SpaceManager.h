@@ -14,12 +14,12 @@ class ADriveSeatRader;
 UENUM(BlueprintType)
 enum class E_SPACE_OBJECT_TYPE : uint8
 {
-	SpaceStation = 0 UMETA(DisplayName = "SpaceStation"),		// 快林 沥芭厘
-	SpaceGarbage UMETA(DisplayName = "SpaceGarbage"),			// 快林 企扁拱
-	Asteroid UMETA(DisplayName = "Asteroid"),					// 家青己
-	Enemy UMETA(DisplayName = "Enemy"),							// 利
+	SpaceStation = 0 UMETA(DisplayName = "SpaceStation"),
+	SpaceGarbage UMETA(DisplayName = "SpaceGarbage"),
+	Asteroid UMETA(DisplayName = "Asteroid"),
+	Enemy UMETA(DisplayName = "Enemy"),
 
-	SpaceShip UMETA(DisplayName = "SpaceShip"),					// 快林急
+	SpaceShip UMETA(DisplayName = "SpaceShip"),
 };
 
 USTRUCT(BlueprintType)
@@ -99,4 +99,8 @@ public:
 	void UpdateSpaceObject(FSpaceObjectData SpaceObjectData);
 
 	void RemoveSpaceObject(TObjectPtr<USpaceObjectComponent> NewSpaceObjectPtr);
+
+private:
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_RemoveSpaceObject(USpaceObjectComponent* SpaceObjectPtr);
 };

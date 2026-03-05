@@ -8,15 +8,14 @@
 #include "JHS/Player/SpaceStation.h"
 #include "JHS/SpaceObject/DriveSeatRader.h"
 #include "JHS/SpaceObject/SpaceObjectComponent.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 USpaceManager::USpaceManager()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
+	SetIsReplicatedByDefault(true);
 }
 
 
@@ -47,7 +46,7 @@ void USpaceManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 
 ASpaceStation* USpaceManager::GetSpaceStation()
 {
-	// ¾øÀ¸¸é ½ºÄµÇØ¼­ Ã£±â
+	// ì—†ìœ¼ë©´ ìŠ¤ìº”í•´ì„œ ì°¾ê¸°
 	if (_spaceStation == nullptr)
 	{
 		UWorld* _world = GetWorld();
@@ -84,7 +83,7 @@ void USpaceManager::UpdateSpaceObject(FSpaceObjectData SpaceObjectData)
 	{
 		_spaceStation = GetSpaceStation();
 
-		// ¿ìÁÖ Á¤°ÅÀå ÃÊ±âÈ­
+		// ìš°ì£¼ ì •ê±°ìž¥ ì´ˆê¸°í™”
 		if (_spaceStation)
 		{
 			FSpaceObjectData _spaceStationData;
@@ -107,13 +106,23 @@ void USpaceManager::UpdateSpaceObject(FSpaceObjectData SpaceObjectData)
 
 void USpaceManager::RemoveSpaceObject(TObjectPtr<USpaceObjectComponent> NewSpaceObjectPtr)
 {
-	if (NewSpaceObjectPtr == nullptr ||
-		NewSpaceObjectPtr->GetOwner() == nullptr ||
-		!NewSpaceObjectPtr->GetOwner()->HasAuthority())
+	if (NewSpaceObjectPtr == nullptr)
 		return;
 
-	if (_spaceObjectMap.Contains(NewSpaceObjectPtr))
+	AActor* _ownerActor = GetOwner();
+	if (_ownerActor == nullptr || !_ownerActor->HasAuthority())
+		return;
+
+	Multicast_RemoveSpaceObject(NewSpaceObjectPtr);
+}
+
+void USpaceManager::Multicast_RemoveSpaceObject_Implementation(USpaceObjectComponent* SpaceObjectPtr)
+{
+	if (SpaceObjectPtr == nullptr)
+		return;
+
+	if (_spaceObjectMap.Contains(SpaceObjectPtr))
 	{
-		_spaceObjectMap.Remove(NewSpaceObjectPtr);
+		_spaceObjectMap.Remove(SpaceObjectPtr);
 	}
 }
