@@ -26,7 +26,7 @@ void USpaceManager::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	
+
 }
 
 
